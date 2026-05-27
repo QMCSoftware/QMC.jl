@@ -1,0 +1,45 @@
+name: Format Check
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'qmcju_software/src/**'
+      - 'qmcju_software/test/**'
+  pull_request:
+    paths:
+      - 'qmcju_software/src/**'
+      - 'qmcju_software/test/**'
+
+defaults:
+  run:
+    working-directory: qmcju_software
+
+jobs:
+  format:
+    name: JuliaFormatter Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+
+      - name: Install JuliaFormatter
+        run: |
+          julia -e 'using Pkg; Pkg.add("JuliaFormatter")'
+
+      - name: Check formatting
+        run: |
+          julia -e '
+            using JuliaFormatter
+            result = format("src/", overwrite=false)
+            result &= format("test/", overwrite=false)
+            if !result
+                @error "Code is not formatted. Run: julia -e '\''using JuliaFormatter; format(\"src/\"); format(\"test/\")'\''"
+                exit(1)
+            end
+            @info "All files properly formatted."
+          '
