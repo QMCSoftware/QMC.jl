@@ -32,3 +32,12 @@ setup:
 # Run a quick smoke test
 smoke:
 	julia --project=. -e 'using QMCJu; dd = Lattice(3; randomize=true); tm = Uniform(dd); f = Genz(tm; kind=:continuous); sc = CubQMCLatticeG(f; abs_tol=0.01); r = integrate(sc); println(r)'
+
+
+# Run all demo notebooks (like Python's booktest)
+notebooks:
+	julia --project=. test/run_notebooks.jl
+
+# Run a single notebook by name: make notebook-quickstart
+notebook-%:
+	julia --project=. test/run_notebooks.jl $*
