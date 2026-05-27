@@ -1,13 +1,13 @@
-The `jupyter` command is a shim pointing to a conda environment (`qmcpy`) whose Python 3.12 no longer exists. A few ways to fix this:
+The `jupyter` command is a shim pointing to a conda environment (`qmcju`) whose Python 3.12 no longer exists. A few ways to fix this:
 
 **Option 1 — Use the conda environment that has Julia's IJulia:**
 ```bash
-conda activate qmcpy
+conda activate qmcju
 conda install jupyter
 jupyter notebook demos/quickstart.ipynb
 ```
 
-If the `qmcpy` env was removed, recreate it or use a different env.
+If the `qmcju` env was removed, recreate it or use a different env.
 
 **Option 2 — Use IJulia's built-in notebook server (no conda needed):**
 ```bash

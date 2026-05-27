@@ -10,7 +10,7 @@ IID Monte Carlo cubature with CLT-based confidence interval (two-stage method).
    Draw those samples and compute the final mean and confidence interval from the
    main-stage samples alone.
 
-Matches QMCPy v2.3's `CubMCCLT` algorithm.
+Matches QMCJu v2.3's `CubMCCLT` algorithm.
 
 # Example
 ```julia

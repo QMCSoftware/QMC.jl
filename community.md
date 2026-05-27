@@ -8,8 +8,8 @@
 
 ## Contributors
 
-We gratefully acknowledge all contributors to QMCPy and QMCJu.
-See the full list at the [QMCPy community page](https://qmcsoftware.github.io/QMCSoftware/community/).
+We gratefully acknowledge all contributors to QMCJu and QMCJu.
+See the full list at the [QMCJu community page](https://qmcsoftware.github.io/QMCSoftware/community/).
 
 ## Julia Community Resources
 
@@ -21,5 +21,5 @@ See the full list at the [QMCPy community page](https://qmcsoftware.github.io/QM
 ## Select References
 
 The mathematical and algorithmic foundations of QMCJu are documented in the
-[QMCPy publications page](https://qmcpy.org/publications/) and the
+[QMCJu publications page](https://qmcju.org/publications/) and the
 [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).

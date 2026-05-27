@@ -1,6 +1,6 @@
 # QMCJu: Quasi-Monte Carlo Community Software in Julia
 
-> A Julia translation of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) (v2.3) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
+> A Julia translation of [QMCJu](https://github.com/QMCSoftware/QMCSoftware) (v2.3) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 ## Overview
 
@@ -34,11 +34,11 @@ cd QMCSoftware/qmcju_software
 
 ### 2. Create and activate a Conda environment
 
-If your project sits alongside the Python QMCPy package, reuse its environment. Otherwise create a fresh one:
+If your project sits alongside the Python QMCJu package, reuse its environment. Otherwise create a fresh one:
 
 ```bash
-conda create -n qmcpy python=3.12 -y
-conda activate qmcpy
+conda create -n qmcju python=3.12 -y
+conda activate qmcju
 ```
 
 ### 3. Install Julia (if not already installed)
@@ -100,7 +100,7 @@ println("Exact:    $(keister_exact(3))")
 Nine demo notebooks live in `demos/`. Launch them with:
 
 ```bash
-conda activate qmcpy
+conda activate qmcju
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
@@ -120,7 +120,7 @@ Or open any `.ipynb` file directly in VS Code (with the Jupyter extension and Ju
 
 ## Documentation
 
-See the [QMCPy documentation](https://qmcsoftware.github.io/QMCSoftware/) for mathematical background. Julia-specific API docs are available via `?` in the Julia REPL:
+See the [QMCJu documentation](https://qmcsoftware.github.io/QMCSoftware/) for mathematical background. Julia-specific API docs are available via `?` in the Julia REPL:
 
 ```julia
 julia> using QMCJu

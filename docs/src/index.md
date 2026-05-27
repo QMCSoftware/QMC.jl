@@ -1,6 +1,6 @@
 # QMCJu: Quasi-Monte Carlo Software in Julia
 
-QMCJu is the Julia implementation of the [QMCPy](https://github.com/QMCSoftware/QMCSoftware) framework for Quasi-Monte Carlo (QMC) numerical integration.
+QMCJu is the Julia implementation of the [QMCJu](https://github.com/QMCSoftware/QMCSoftware) framework for Quasi-Monte Carlo (QMC) numerical integration.
 
 ## Overview
 

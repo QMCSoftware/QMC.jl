@@ -4,7 +4,7 @@ Thank you for your interest in contributing to QMCJu! This guide walks through t
 
 Please submit **pull requests** to the `develop` branch and **issues** using a template from `.github/ISSUE_TEMPLATE/`.
 
-Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@googlegroups.com). If you develop a new component, consider writing a blog for [qmcpy.org](https://qmcpy.org).
+Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@googlegroups.com). If you develop a new component, consider writing a blog for [qmcju.org](https://qmcju.org).
 
 ## Developer Setup
 
@@ -25,11 +25,11 @@ cd QMCSoftware/qmcju_software
 
 ### 2. Create the Conda environment
 
-If you also work on the Python QMCPy package, reuse its environment. Otherwise:
+If you also work on the Python QMCJu package, reuse its environment. Otherwise:
 
 ```bash
-conda create -n qmcpy python=3.12 -y
-conda activate qmcpy
+conda create -n qmcju python=3.12 -y
+conda activate qmcju
 ```
 
 ### 3. Install Julia dependencies
@@ -116,7 +116,7 @@ qmcju_software/
 Launch the Jupyter notebook server:
 
 ```bash
-conda activate qmcpy
+conda activate qmcju
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
