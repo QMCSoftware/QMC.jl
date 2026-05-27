@@ -111,6 +111,14 @@ Nine demo notebooks live in `demos/`. Launch them with:
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
+If you want the notebooks to use this repository's Julia environment by default, install a custom kernel from the repository root first:
+
+```bash
+julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+```
+
+Then select the `QMCJu` kernel in Jupyter or VS Code once.
+
 Or open any `.ipynb` (e.g., `quickstart.ipynb` or `qmcju_intro.ipynb`) file directly in VS Code (with the Jupyter extension and Julia kernel).
 
 If VS Code selects `qmcju (Python 3.12.x)` or another Python kernel, switch the notebook kernel to Julia before running cells. Julia code such as `using QMCJu` will raise a Python `SyntaxError` under a Python kernel.

@@ -120,6 +120,14 @@ conda activate qmcju
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
+To bind notebooks to this repository's Julia environment by default, install a custom kernel from the repository root first:
+
+```bash
+julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+```
+
+Then select the `QMCJu` kernel in Jupyter or VS Code once.
+
 Or open any `.ipynb` in VS Code with the Jupyter extension, then select the Julia kernel before running cells. Do not use the Python `qmcju` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`.
 
 ## Code Style
