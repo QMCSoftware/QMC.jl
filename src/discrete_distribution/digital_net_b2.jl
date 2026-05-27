@@ -63,6 +63,13 @@ end
 # ──────────────────────────────────────────────────────────────────────────────
 # Struct
 # ──────────────────────────────────────────────────────────────────────────────
+"""
+    DigitalNetB2 <: AbstractDiscreteDistribution
+
+Digital net in base 2 (Sobol' sequence) with optional scrambling.
+Supports up to 1024 dimensions using Joe-Kuo direction numbers.
+See the outer constructor for full documentation.
+"""
 mutable struct DigitalNetB2 <: AbstractDiscreteDistribution
     dimension::Int
     randomize::String

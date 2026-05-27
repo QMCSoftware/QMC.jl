@@ -15,6 +15,12 @@ where r = |x - x'| and m depends on the kernel variant:
 - **Gaussian (RBF):** m(z) = exp(-z²/2)
 """
 
+"""
+    AbstractStationaryKernel <: AbstractKernel
+
+Abstract supertype for stationary (distance-based) kernels.
+Subtypes must implement `kernel_eval(k, r::Float64)` where `r` is the Euclidean distance.
+"""
 abstract type AbstractStationaryKernel <: AbstractKernel end
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -36,6 +42,11 @@ function KernelMatern12(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     return KernelMatern12(lengthscale, outputscale)
 end
 
+"""
+    kernel_eval(k::AbstractStationaryKernel, r::Float64) -> Float64
+
+Evaluate kernel `k` at distance `r`. Each kernel subtype has its own method.
+"""
 function kernel_eval(k::KernelMatern12, r::Float64)
     return k.outputscale * exp(-r / k.lengthscale)
 end

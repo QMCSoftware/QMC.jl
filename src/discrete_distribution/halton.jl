@@ -58,6 +58,13 @@ const _PRIMES_250 = Int[
 # ──────────────────────────────────────────────────────────────────────────────
 # Struct
 # ──────────────────────────────────────────────────────────────────────────────
+"""
+    Halton <: AbstractDiscreteDistribution
+
+Halton sequence based on van der Corput sequences in successive prime bases.
+Supports up to 250 dimensions with optional random shift and generalized permutations.
+See the outer constructor for full documentation.
+"""
 mutable struct Halton <: AbstractDiscreteDistribution
     dimension::Int
     randomize::Bool
