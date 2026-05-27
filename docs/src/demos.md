@@ -5,8 +5,8 @@
 ```julia
 # In terminal, run `julia`. Issue the following command:
 #   import Pkg; Pkg.add("QMCJu")
-# It the package is not on path, do the following instead:
-#   import Pkg; Pkg.develop(path="/Users/terrya/Documents/ProgramData/QMCSoftware/qmcju_software")
+# If the package is not on path and you started Julia from the repository root:
+#   import Pkg; Pkg.develop(path=pwd())
 using QMCJu
 
 # 1. IID Monte Carlo for a simple integral
