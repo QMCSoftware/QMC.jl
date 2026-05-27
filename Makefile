@@ -25,7 +25,7 @@ clean:
 	rm -rf docs/build
 	rm -rf *.jl.cov *.jl.*.cov *.jl.mem
 
-# Instantiate project dependencies
+# Instantiate project dependencies (includes Plots and all other deps)
 setup:
 	julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
