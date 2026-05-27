@@ -1,0 +1,120 @@
+@testset "True Measures" begin
+
+    @testset "Uniform" begin
+        dd = IIDStdUniform(2; seed=10)
+        tm = Uniform(dd; lower_bound=-1.0, upper_bound=2.0)
+        x = gen_samples(dd, 1000)
+        xt = transform(tm, x)
+        @test size(xt) == (1000, 2)
+        @test all(-1.0 .<= xt .<= 2.0)
+        @test abs(mean(xt) - 0.5) < 0.1
+    end
+
+    @testset "Gaussian (scalar)" begin
+        dd = IIDStdUniform(3; seed=20)
+        tm = Gaussian(dd; mean=0.0, covariance=1.0)
+        x = gen_samples(dd, 5000)
+        xt = transform(tm, x)
+        @test size(xt) == (5000, 3)
+        @test abs(mean(xt)) < 0.1
+        @test abs(std(xt) - 1.0) < 0.15
+    end
+
+    @testset "Gaussian (custom covariance)" begin
+        dd = IIDStdUniform(2; seed=30)
+        Σ = [2.0 0.5; 0.5 1.0]
+        tm = Gaussian(dd; mean=[1.0, -1.0], covariance=Σ, decomp_type=:Cholesky)
+        x = gen_samples(dd, 5000)
+        xt = transform(tm, x)
+        @test size(xt) == (5000, 2)
+        @test abs(mean(xt[:, 1]) - 1.0) < 0.2
+        @test abs(mean(xt[:, 2]) - (-1.0)) < 0.2
+    end
+
+    @testset "BrownianMotion" begin
+        dd = IIDStdUniform(4; seed=40)
+        tm = BrownianMotion(dd)
+        x = gen_samples(dd, 2000)
+        xt = transform(tm, x)
+        @test size(xt) == (2000, 4)
+        @test abs(mean(xt[:, end])) < 0.1
+        @test abs(var(xt[:, end]) - 1.0) < 0.3
+    end
+
+    @testset "Lebesgue" begin
+        dd = IIDStdUniform(2; seed=50)
+        tm = Lebesgue(dd; lower_bound=0.0, upper_bound=3.0)
+        @test tm.volume ≈ 9.0
+        x = gen_samples(dd, 100)
+        xt = transform(tm, x)
+        @test all(0.0 .<= xt .<= 3.0)
+    end
+
+    @testset "GeometricBrownianMotion" begin
+        dd = IIDStdUniform(4; seed=60)
+        gbm = GeometricBrownianMotion(dd; t_final=1.0, initial_value=100.0,
+                                        drift=0.05, diffusion=0.04)
+        x = gen_samples(dd, 5000)
+        paths = transform(gbm, x)
+        @test size(paths) == (5000, 4)
+        # GBM values must be positive
+        @test all(paths .> 0)
+        # Mean of GBM at time T: S₀ exp(γ T)
+        expected_mean_T = 100.0 * exp(0.05 * 1.0)
+        @test abs(mean(paths[:, end]) - expected_mean_T) / expected_mean_T < 0.1
+    end
+
+    @testset "StudentT" begin
+        dd = IIDStdUniform(2; seed=70)
+        tm = StudentT(dd; df=5.0)
+        x = gen_samples(dd, 5000)
+        xt = transform(tm, x)
+        @test size(xt) == (5000, 2)
+        # Student-t with df=5 has mean 0 and variance df/(df-2) = 5/3
+        @test abs(mean(xt)) < 0.15
+    end
+
+    @testset "Triangular" begin
+        dd = IIDStdUniform(2; seed=80)
+        tm = Triangular(dd; lower=0.0, upper=1.0, mode=0.5)
+        x = gen_samples(dd, 5000)
+        xt = transform(tm, x)
+        @test size(xt) == (5000, 2)
+        @test all(0.0 .<= xt .<= 1.0)
+        # Mean of Triangular(0,1,0.5) = (0+1+0.5)/3 = 0.5
+        @test abs(mean(xt) - 0.5) < 0.05
+    end
+
+    @testset "Kumaraswamy" begin
+        dd = IIDStdUniform(2; seed=90)
+        tm = Kumaraswamy(dd; alpha=2.0, beta=5.0)
+        x = gen_samples(dd, 5000)
+        xt = transform(tm, x)
+        @test size(xt) == (5000, 2)
+        @test all(0.0 .<= xt .<= 1.0)
+    end
+
+    @testset "JohnsonsSU" begin
+        dd = IIDStdUniform(2; seed=91)
+        tm = JohnsonsSU(dd; xi=0.0, lambda=1.0, gamma=0.0, delta=1.0)
+        x = gen_samples(dd, 3000)
+        xt = transform(tm, x)
+        @test size(xt) == (3000, 2)
+        @test !any(isnan, xt)
+    end
+
+    @testset "BernoulliCont" begin
+        dd = IIDStdUniform(2; seed=92)
+        tm = BernoulliCont(dd; lam=0.3)
+        x = gen_samples(dd, 3000)
+        xt = transform(tm, x)
+        @test size(xt) == (3000, 2)
+        @test all(0.0 .<= xt .<= 1.0)
+        # λ = 0.5 is identity
+        tm05 = BernoulliCont(dd; lam=0.5)
+        x2 = gen_samples(dd, 100)
+        xt2 = transform(tm05, x2)
+        @test xt2 ≈ x2 atol=1e-10
+    end
+
+end

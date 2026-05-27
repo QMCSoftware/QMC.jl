@@ -1,0 +1,34 @@
+.PHONY: test docs format lint clean
+
+# Run all tests
+test:
+	julia --project=. -e 'using Pkg; Pkg.test()'
+
+# Run specific test file
+test-%:
+	julia --project=. -e 'include("test/$*.jl")'
+
+# Build documentation
+doc:
+	julia --project=docs docs/make.jl
+
+# Format code with JuliaFormatter
+format:
+	julia --project=. -e 'using JuliaFormatter; format("src/"); format("test/")'
+
+# Check formatting (CI-friendly, fails if changes needed)
+format-check:
+	julia --project=. -e 'using JuliaFormatter; @assert format("src/", overwrite=false); @assert format("test/", overwrite=false)'
+
+# Clean build artifacts
+clean:
+	rm -rf docs/build
+	rm -rf *.jl.cov *.jl.*.cov *.jl.mem
+
+# Instantiate project dependencies
+setup:
+	julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+# Run a quick smoke test
+smoke:
+	julia --project=. -e 'using QMCJu; dd = Lattice(3; randomize=true); tm = Uniform(dd); f = Genz(tm; kind=:continuous); sc = CubQMCLatticeG(f; abs_tol=0.01); r = integrate(sc); println(r)'

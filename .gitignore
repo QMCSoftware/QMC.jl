@@ -1,0 +1,30 @@
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+Manifest.toml
+
+# Documentation build
+docs/build/
+docs/site/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Julia compilation artifacts
+*.ji
+deps/build.log
+
+# Developer-specific files
+sc_*
