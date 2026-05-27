@@ -23,3 +23,11 @@ See the full list at the [QMCJu community page](https://qmcsoftware.github.io/QM
 The mathematical and algorithmic foundations of QMCJu are documented in the
 [QMCJu publications page](https://qmcju.org/publications/) and the
 [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
+
+### (Q)MC Reference Books (in Chicago style)
+
+- Owen, Art B. *Monte Carlo Theory, Methods and Examples.* Self-published, 2013. <https://artowen.su.domains/mc/>
+
+- Owen, Art B. *Monte Carlo Book: The Quasi-Monte Carlo Parts.* Self-published, 2024. <https://ziangniu6.github.io/files/qmcstuff.pdf>
+
+- Sanz-Alonso, Daniel, and Omar Al-Ghattas. *A First Course in Monte Carlo Methods.* Preprint, 2024. <https://arxiv.org/pdf/2405.16359>

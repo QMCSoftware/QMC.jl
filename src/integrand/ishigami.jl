@@ -20,8 +20,9 @@ struct Ishigami <: AbstractIntegrand
     b::Float64
 end
 
-function Ishigami(tm::AbstractTrueMeasure; a::Float64=7.0, b::Float64=0.1)
-    tm.dimension == 3 || throw(ArgumentError("Ishigami requires dimension 3, got $(tm.dimension)"))
+function Ishigami(tm::AbstractTrueMeasure; a::Float64 = 7.0, b::Float64 = 0.1)
+    tm.dimension == 3 ||
+        throw(ArgumentError("Ishigami requires dimension 3, got $(tm.dimension)"))
     return Ishigami(tm, 3, a, b)
 end
 

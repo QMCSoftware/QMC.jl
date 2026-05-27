@@ -32,12 +32,12 @@ mutable struct CubMCCLT <: AbstractStoppingCriterion
 end
 
 function CubMCCLT(integrand::AbstractIntegrand;
-                  abs_tol::Float64=0.01,
-                  rel_tol::Float64=0.0,
-                  n_init::Int=1024,
-                  n_max::Int=2^30,
-                  alpha::Float64=0.01,
-                  inflate::Float64=1.2)
+        abs_tol::Float64 = 0.01,
+        rel_tol::Float64 = 0.0,
+        n_init::Int = 1024,
+        n_max::Int = 2^30,
+        alpha::Float64 = 0.01,
+        inflate::Float64 = 1.2)
     n_max > 2 * n_init || throw(ArgumentError("n_max must be > 2 * n_init"))
     inflate >= 1.0 || throw(ArgumentError("inflate must be ≥ 1.0"))
     0.0 < alpha < 1.0 || throw(ArgumentError("alpha must be in (0, 1)"))
@@ -49,7 +49,7 @@ function integrate(sc::CubMCCLT)
 
     # ── Stage 1: Pilot sample to estimate variance ──
     y0 = sample_and_evaluate(sc.integrand, sc.n_init)
-    sig_hat0 = std(y0; corrected=true)
+    sig_hat0 = std(y0; corrected = true)
     mu_hat0 = mean(y0)
 
     # Determine tolerance using pilot estimate
@@ -67,7 +67,7 @@ function integrate(sc::CubMCCLT)
 
     # ── Stage 2: Main sample ──
     y = sample_and_evaluate(sc.integrand, n_mu)
-    sig_hat = std(y; corrected=true)
+    sig_hat = std(y; corrected = true)
     mu_hat = mean(y)
 
     # Final confidence interval from main-stage samples
@@ -83,7 +83,7 @@ function integrate(sc::CubMCCLT)
               "Error bound: $err, tolerance: $(max(sc.abs_tol, sc.rel_tol * abs(mu_hat)))"
     end
 
-    data = Dict{Symbol,Any}(
+    data = Dict{Symbol, Any}(
         :n => n_total,
         :n_mu => n_mu,
         :error_bound => err,
@@ -93,7 +93,7 @@ function integrate(sc::CubMCCLT)
         :sigma_pilot => sig_hat0,
         :sigma_main => sig_hat,
         :converged => converged,
-        :confidence_level => 1.0 - sc.alpha,
+        :confidence_level => 1.0 - sc.alpha
     )
     return QMCResult(mu_hat, data)
 end

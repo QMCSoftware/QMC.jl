@@ -77,11 +77,11 @@ mutable struct DigitalNetB2 <: AbstractDiscreteDistribution
     rng::AbstractRNG
     direction_nums::Matrix{UInt32}   # ndim × BITS
     mimics::String
-    replications::Union{Nothing,Int}
+    replications::Union{Nothing, Int}
 end
 
-function DigitalNetB2(dimension::Int; randomize::String="LMS_DS", seed=nothing,
-                      graycode::Bool=true, replications::Union{Nothing,Int}=nothing)
+function DigitalNetB2(dimension::Int; randomize::String = "LMS_DS", seed = nothing,
+        graycode::Bool = true, replications::Union{Nothing, Int} = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     dimension <= _JK_DIRECTION_MATRIX_DIMS || throw(ArgumentError(
         "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)"))
@@ -154,15 +154,15 @@ function _sobol_points_uint(dd::DigitalNetB2, n::Int)
     pts = zeros(UInt32, n, d)
 
     if dd.graycode
-        @inbounds for i in 1:n-1
+        @inbounds for i in 1:(n - 1)
             c = trailing_zeros(~UInt32(i - 1)) + 1
             c = min(c, B)
             for j in 1:d
-                pts[i+1, j] = xor(pts[i, j], V[j, c])
+                pts[i + 1, j] = xor(pts[i, j], V[j, c])
             end
         end
     else
-        @inbounds for i in 1:n-1
+        @inbounds for i in 1:(n - 1)
             gray_idx = UInt32(i)
             for j in 1:d
                 val = UInt32(0)
@@ -175,7 +175,7 @@ function _sobol_points_uint(dd::DigitalNetB2, n::Int)
                     gi >>= 1
                     k += 1
                 end
-                pts[i+1, j] = val
+                pts[i + 1, j] = val
             end
         end
     end
@@ -231,7 +231,7 @@ function gen_samples(dd::DigitalNetB2, n::Int)
         return _gen_single_replication(dd, n)
     else
         R = dd.replications
-        result = Array{Float64,3}(undef, R, n, dd.dimension)
+        result = Array{Float64, 3}(undef, R, n, dd.dimension)
         for r in 1:R
             result[r, :, :] = _gen_single_replication(dd, n)
         end
@@ -241,5 +241,6 @@ end
 
 function Base.show(io::IO, dd::DigitalNetB2)
     rep_str = isnothing(dd.replications) ? "" : ", R=$(dd.replications)"
-    print(io, "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)")
+    print(io,
+        "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)")
 end

@@ -34,25 +34,27 @@ struct GeometricBrownianMotion <: AbstractTrueMeasure
 end
 
 function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
-                                  t_final::Float64=1.0,
-                                  initial_value::Float64=1.0,
-                                  drift::Float64=0.0,
-                                  diffusion::Float64=1.0,
-                                  decomp_type::Symbol=:PCA)
+        t_final::Float64 = 1.0,
+        initial_value::Float64 = 1.0,
+        drift::Float64 = 0.0,
+        diffusion::Float64 = 1.0,
+        decomp_type::Symbol = :PCA)
     t_final >= 0.0 || throw(ArgumentError("t_final must be non-negative, got $t_final"))
-    initial_value > 0.0 || throw(ArgumentError("initial_value must be positive, got $initial_value"))
+    initial_value > 0.0 ||
+        throw(ArgumentError("initial_value must be positive, got $initial_value"))
     diffusion > 0.0 || throw(ArgumentError("diffusion must be positive, got $diffusion"))
 
     d = dd.dimension
-    tv = collect(range(t_final / d, t_final; length=d))
+    tv = collect(range(t_final / d, t_final; length = d))
 
     # Build BM covariance: C[i,j] = diffusion * min(t[i], t[j])
     cov = Matrix{Float64}(undef, d, d)
     @inbounds for j in 1:d, i in 1:d
+
         cov[i, j] = diffusion * min(tv[i], tv[j])
     end
 
-    gauss = Gaussian(dd; mean=0.0, covariance=cov, decomp_type=decomp_type)
+    gauss = Gaussian(dd; mean = 0.0, covariance = cov, decomp_type = decomp_type)
     bm = BrownianMotion(dd, d, tv, 0.0, gauss)
 
     return GeometricBrownianMotion(dd, d, tv, initial_value, drift, diffusion, bm)
@@ -75,5 +77,6 @@ function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, tm::GeometricBrownianMotion)
-    print(io, "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))")
+    print(io,
+        "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))")
 end

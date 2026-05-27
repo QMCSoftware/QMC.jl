@@ -35,11 +35,12 @@ struct Gaussian <: AbstractTrueMeasure
 end
 
 function Gaussian(dd::AbstractDiscreteDistribution;
-                  mean=0.0, covariance=1.0, decomp_type::Symbol=:PCA)
+        mean = 0.0, covariance = 1.0, decomp_type::Symbol = :PCA)
     d = dd.dimension
     mu = _expand_mean(mean, d)
     cov = _expand_covariance(covariance, d)
-    decomp_type in (:PCA, :Cholesky) || throw(ArgumentError("decomp_type must be :PCA or :Cholesky, got :$decomp_type"))
+    decomp_type in (:PCA, :Cholesky) ||
+        throw(ArgumentError("decomp_type must be :PCA or :Cholesky, got :$decomp_type"))
     A = _compute_decomp(cov, decomp_type)
     return Gaussian(dd, d, mu, cov, decomp_type, A)
 end
@@ -48,7 +49,8 @@ function _expand_mean(val, d::Int)
     if val isa Real
         return fill(Float64(val), d)
     else
-        length(val) == d || throw(ArgumentError("mean vector length ($(length(val))) must match dimension ($d)"))
+        length(val) == d ||
+            throw(ArgumentError("mean vector length ($(length(val))) must match dimension ($d)"))
         return Float64.(collect(val))
     end
 end
@@ -57,10 +59,12 @@ function _expand_covariance(val, d::Int)
     if val isa Real
         return Float64(val) * Matrix{Float64}(I, d, d)
     elseif val isa AbstractVector
-        length(val) == d || throw(ArgumentError("covariance diagonal length ($(length(val))) must match dimension ($d)"))
+        length(val) == d ||
+            throw(ArgumentError("covariance diagonal length ($(length(val))) must match dimension ($d)"))
         return diagm(Float64.(collect(val)))
     elseif val isa AbstractMatrix
-        size(val) == (d, d) || throw(ArgumentError("covariance matrix size $(size(val)) must be ($d, $d)"))
+        size(val) == (d, d) ||
+            throw(ArgumentError("covariance matrix size $(size(val)) must be ($d, $d)"))
         return Float64.(collect(val))
     else
         throw(ArgumentError("covariance must be a scalar, vector, or matrix"))
@@ -79,7 +83,7 @@ function _compute_decomp(cov::Matrix{Float64}, decomp_type::Symbol)
     if decomp_type == :PCA
         eig = eigen(Symmetric(cov))
         # Sort eigenvalues descending
-        idx = sortperm(eig.values; rev=true)
+        idx = sortperm(eig.values; rev = true)
         vals = eig.values[idx]
         vecs = eig.vectors[:, idx]
         # Clamp small negative eigenvalues to zero (numerical tolerance)

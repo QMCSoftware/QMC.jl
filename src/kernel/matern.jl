@@ -36,7 +36,7 @@ struct KernelMatern12 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern12(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
+function KernelMatern12(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern12(lengthscale, outputscale)
@@ -64,7 +64,7 @@ struct KernelMatern32 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern32(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
+function KernelMatern32(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern32(lengthscale, outputscale)
@@ -88,7 +88,7 @@ struct KernelMatern52 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern52(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
+function KernelMatern52(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern52(lengthscale, outputscale)
@@ -112,7 +112,7 @@ struct KernelGaussian <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelGaussian(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
+function KernelGaussian(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelGaussian(lengthscale, outputscale)
@@ -136,7 +136,7 @@ function kernel_matrix(k::AbstractStationaryKernel, x::AbstractMatrix)
     K = Matrix{Float64}(undef, n, n)
     @inbounds for j in 1:n
         K[j, j] = kernel_eval(k, 0.0)
-        for i in j+1:n
+        for i in (j + 1):n
             r = 0.0
             for dim in 1:d
                 r += (x[i, dim] - x[j, dim])^2

@@ -18,7 +18,7 @@ mutable struct IIDStdUniform <: AbstractDiscreteDistribution
     mimics::String
 end
 
-function IIDStdUniform(dimension::Int; seed=nothing)
+function IIDStdUniform(dimension::Int; seed = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
     return IIDStdUniform(dimension, rng, "StdUniform")

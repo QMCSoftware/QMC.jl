@@ -8,17 +8,17 @@ The transform computes y = H_n * x where H_n is the n x n
 Hadamard matrix. This is done in O(n log n) operations using
 the butterfly decomposition.
 """
-function fwht!(x::AbstractVector{T}) where T<:Real
+function fwht!(x::AbstractVector{T}) where {T <: Real}
     n = length(x)
     @assert ispow2(n) "Length must be a power of 2, got $n"
     h = 1
     while h < n
-        for i in 0:2h:n-1
-            for j in 0:h-1
-                u = x[i+j+1]
-                v = x[i+j+h+1]
-                x[i+j+1] = u + v
-                x[i+j+h+1] = u - v
+        for i in 0:2h:(n - 1)
+            for j in 0:(h - 1)
+                u = x[i + j + 1]
+                v = x[i + j + h + 1]
+                x[i + j + 1] = u + v
+                x[i + j + h + 1] = u - v
             end
         end
         h *= 2
@@ -68,7 +68,7 @@ In-place Fast Walsh-Hadamard Transform in sequency (Walsh) order.
 The sequency ordering sorts basis functions by number of zero crossings.
 Length of `x` must be a power of 2.
 """
-function fwht_sequency!(x::AbstractVector{T}) where T<:Real
+function fwht_sequency!(x::AbstractVector{T}) where {T <: Real}
     n = length(x)
     @assert ispow2(n) "Length must be a power of 2, got $n"
     # Apply natural-order WHT
@@ -77,7 +77,7 @@ function fwht_sequency!(x::AbstractVector{T}) where T<:Real
     # to convert from natural to sequency order
     log2n = trailing_zeros(n)
     perm = zeros(Int, n)
-    for i in 0:n-1
+    for i in 0:(n - 1)
         # Gray code: g = i XOR (i >> 1)
         g = i ⊻ (i >> 1)
         # Bit-reverse the Gray code
@@ -87,7 +87,7 @@ function fwht_sequency!(x::AbstractVector{T}) where T<:Real
             br = (br << 1) | (val & 1)
             val >>= 1
         end
-        perm[i+1] = br + 1
+        perm[i + 1] = br + 1
     end
     x .= x[perm]
     return x
@@ -110,7 +110,7 @@ end
 In-place 2D Fast Walsh-Hadamard Transform applied along both
 rows and columns of a square matrix. Both dimensions must be powers of 2.
 """
-function fwht_2d!(X::AbstractMatrix{T}) where T<:Real
+function fwht_2d!(X::AbstractMatrix{T}) where {T <: Real}
     m, n = size(X)
     @assert ispow2(m) && ispow2(n) "Both dimensions must be powers of 2, got ($m, $n)"
     # Transform along rows

@@ -17,7 +17,7 @@ struct BoxIntegral <: AbstractIntegrand
     s::Float64
 end
 
-function BoxIntegral(tm::AbstractTrueMeasure; s::Float64=2.0)
+function BoxIntegral(tm::AbstractTrueMeasure; s::Float64 = 2.0)
     return BoxIntegral(tm, tm.dimension, s)
 end
 

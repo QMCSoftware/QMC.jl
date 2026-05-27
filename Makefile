@@ -1,4 +1,6 @@
-.PHONY: test docs format lint clean
+.PHONY: test docs format format-check lint clean
+
+FORMATTER_PROJECT=devtools/formatter
 
 # Run all tests
 test:
@@ -14,11 +16,11 @@ doc:
 
 # Format code with JuliaFormatter
 format:
-	julia --project=. -e 'using JuliaFormatter; format("src/"); format("test/")'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format("src/"); format("test/")'
 
 # Check formatting (CI-friendly, fails if changes needed)
 format-check:
-	julia --project=. -e 'using JuliaFormatter; @assert format("src/", overwrite=false); @assert format("test/", overwrite=false)'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format("src/", overwrite=false); @assert format("test/", overwrite=false)'
 
 # Clean build artifacts
 clean:

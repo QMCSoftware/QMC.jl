@@ -31,20 +31,20 @@ mutable struct Lattice <: AbstractDiscreteDistribution
     dimension::Int
     randomize::Bool
     order::String
-    replications::Union{Nothing,Int}
+    replications::Union{Nothing, Int}
     gen_vector::Vector{UInt64}
     shift::Matrix{Float64}   # R × d
     rng::AbstractRNG
     mimics::String
 end
 
-function Lattice(dimension::Int; randomize::Bool=true, seed=nothing,
-                 order::String="natural", replications=nothing)
+function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
+        order::String = "natural", replications = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
     dimension <= _KUO_LATTICE_MAX_DIM || throw(ArgumentError(
         "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)"))
     order_lc = lowercase(strip(order))
-    order_lc in ("natural","linear","radical_inverse","gray") ||
+    order_lc in ("natural", "linear", "radical_inverse", "gray") ||
         throw(ArgumentError("order must be natural/linear/radical_inverse/gray"))
 
     R = isnothing(replications) ? 1 : replications
@@ -54,7 +54,8 @@ function Lattice(dimension::Int; randomize::Bool=true, seed=nothing,
     gv = _KUO_LATTICE_GEN_VECTOR[1:dimension]
     shift = randomize ? rand(rng, R, dimension) : zeros(R, dimension)
 
-    return Lattice(dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
+    return Lattice(
+        dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
 end
 
 """
@@ -98,25 +99,25 @@ function gen_samples(dd::Lattice, n::Int)
     if dd.order == "linear"
         @inbounds for j in 1:d
             zj = Float64(z[j])
-            for i in 0:n-1
-                x_base[i+1, j] = mod(i * zj / n, 1.0)
+            for i in 0:(n - 1)
+                x_base[i + 1, j] = mod(i * zj / n, 1.0)
             end
         end
     elseif dd.order == "radical_inverse" || dd.order == "natural"
         # Radical-inverse (bit-reversal) ordering
         @inbounds for j in 1:d
             zj = Float64(z[j])
-            for i in 0:n-1
+            for i in 0:(n - 1)
                 ri = ispow2(n) ? _radical_inverse(i, n) : i
-                x_base[ri+1, j] = mod(i * zj / n, 1.0)
+                x_base[ri + 1, j] = mod(i * zj / n, 1.0)
             end
         end
     elseif dd.order == "gray"
         @inbounds for j in 1:d
             zj = Float64(z[j])
-            for i in 0:n-1
+            for i in 0:(n - 1)
                 gi = _gray_code(i)
-                x_base[i+1, j] = mod(gi * zj / n, 1.0)
+                x_base[i + 1, j] = mod(gi * zj / n, 1.0)
             end
         end
     end

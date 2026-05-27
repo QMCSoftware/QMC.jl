@@ -31,12 +31,12 @@ mutable struct CubQMCLatticeG <: AbstractStoppingCriterion
 end
 
 function CubQMCLatticeG(integrand::AbstractIntegrand;
-                        abs_tol::Float64=0.01,
-                        rel_tol::Float64=0.0,
-                        n_init::Int=2^10,
-                        n_max::Int=2^30,
-                        n_reps::Int=16,
-                        alpha::Float64=0.01)
+        abs_tol::Float64 = 0.01,
+        rel_tol::Float64 = 0.0,
+        n_init::Int = 2^10,
+        n_max::Int = 2^30,
+        n_reps::Int = 16,
+        alpha::Float64 = 0.01)
     return CubQMCLatticeG(integrand, abs_tol, rel_tol, n_init, n_max, n_reps, alpha)
 end
 
@@ -58,7 +58,7 @@ function integrate(sc::CubQMCLatticeG)
         end
 
         mu_hat = mean(estimates)
-        sigma_reps = std(estimates; corrected=true)
+        sigma_reps = std(estimates; corrected = true)
         err = t_crit * sigma_reps / sqrt(R)
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
 
@@ -75,12 +75,12 @@ function integrate(sc::CubQMCLatticeG)
         @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
     end
 
-    data = Dict{Symbol,Any}(
+    data = Dict{Symbol, Any}(
         :n => n,
         :n_reps => R,
         :error_bound => err,
         :n_iterations => n_iter,
-        :converged => converged,
+        :converged => converged
     )
     return QMCResult(mu_hat, data)
 end

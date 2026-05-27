@@ -108,7 +108,6 @@ qmcju/
 │   ├── runtests.jl             # Test entry point
 │   └── test_*.jl               # Per-module test files
 └── demos/
-    ├── *.jl                    # Julia script versions
     └── *.ipynb                 # Jupyter notebook versions
 ```
 
@@ -141,12 +140,18 @@ Do not use the Python `qmcju` kernel for these notebooks, or Julia code such as 
 
 ## Code Style
 
-We use [JuliaFormatter.jl](https://github.com/domluna/JuliaFormatter.jl) for consistent formatting:
+We use [JuliaFormatter.jl](https://github.com/domluna/JuliaFormatter.jl) with the [SciML style](https://github.com/SciML/SciMLStyle) for consistent formatting. The style is configured in `.JuliaFormatter.toml` at the project root and is picked up automatically:
 
 ```julia
 using JuliaFormatter
 format("src/")
 format("test/")
+```
+
+Or via `make`:
+
+```bash
+make format
 ```
 
 Please format your code before submitting a pull request.

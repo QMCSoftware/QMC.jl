@@ -42,13 +42,13 @@ mutable struct FinancialOption <: AbstractIntegrand
 end
 
 function FinancialOption(tm::AbstractTrueMeasure;
-                         volatility::Float64=0.5,
-                         start_price::Float64=30.0,
-                         strike_price::Float64=25.0,
-                         interest_rate::Float64=0.0,
-                         call_put::Symbol=:call,
-                         option_type::Symbol=:european,
-                         mean_type::Symbol=:arithmetic)
+        volatility::Float64 = 0.5,
+        start_price::Float64 = 30.0,
+        strike_price::Float64 = 25.0,
+        interest_rate::Float64 = 0.0,
+        call_put::Symbol = :call,
+        option_type::Symbol = :european,
+        mean_type::Symbol = :arithmetic)
     call_put in (:call, :put) || throw(ArgumentError("call_put must be :call or :put"))
     option_type in (:european, :asian, :lookback, :digital) ||
         throw(ArgumentError("option_type must be :european, :asian, :lookback, or :digital"))
@@ -59,14 +59,14 @@ function FinancialOption(tm::AbstractTrueMeasure;
     tv = if hasproperty(tm, :time_vector)
         tm.time_vector
     else
-        collect(range(1.0 / d, 1.0; length=d))
+        collect(range(1.0 / d, 1.0; length = d))
     end
 
     use_gbm = tm isa GeometricBrownianMotion
 
     return FinancialOption(tm, d, volatility, start_price, strike_price,
-                           interest_rate, call_put, option_type, mean_type,
-                           tv, use_gbm)
+        interest_rate, call_put, option_type, mean_type,
+        tv, use_gbm)
 end
 
 function _stock_prices(f::FinancialOption, x_row::AbstractVector)
@@ -135,6 +135,7 @@ function evaluate(f::FinancialOption, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, f::FinancialOption)
-    print(io, "FinancialOption(:$(f.option_type), :$(f.call_put), d=$(f.dimension), " *
-          "S₀=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility))")
+    print(io,
+        "FinancialOption(:$(f.option_type), :$(f.call_put), d=$(f.dimension), " *
+        "S₀=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility))")
 end

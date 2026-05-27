@@ -22,7 +22,7 @@ struct KernelShiftInvar <: AbstractKernel
     order::Int
 end
 
-function KernelShiftInvar(; order::Int=2)
+function KernelShiftInvar(; order::Int = 2)
     @assert order >= 1 "Kernel order must be ≥ 1"
     return KernelShiftInvar(order)
 end
