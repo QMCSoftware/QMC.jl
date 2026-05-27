@@ -113,6 +113,8 @@ julia -e 'using IJulia; notebook(dir="demos")'
 
 Or open any `.ipynb` (e.g., `quickstart.ipynb` or `qmcju_intro.ipynb`) file directly in VS Code (with the Jupyter extension and Julia kernel).
 
+If VS Code selects `qmcju (Python 3.12.x)` or another Python kernel, switch the notebook kernel to Julia before running cells. Julia code such as `using QMCJu` will raise a Python `SyntaxError` under a Python kernel.
+
 See [`demos/README.md`](demos/README.md) for the notebook list and topic summaries.
 
 ## Documentation

@@ -44,7 +44,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia -e 'using Pkg; Pkg.add("IJulia")'
 ```
 
-This registers the Julia 1.10 kernel with Jupyter so you can run and edit demo notebooks.
+This registers the Julia kernel with Jupyter so you can run and edit demo notebooks.
 
 ### 5. Verify everything works
 
@@ -120,7 +120,7 @@ conda activate qmcju
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-Or open any `.ipynb` in VS Code with the Jupyter extension, then select the Julia 1.10 kernel.
+Or open any `.ipynb` in VS Code with the Jupyter extension, then select the Julia kernel before running cells. Do not use the Python `qmcju` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`.
 
 ## Code Style
 

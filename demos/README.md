@@ -1,31 +1,38 @@
-The `jupyter` command is a shim pointing to a conda environment (`qmcju`) whose Python 3.12 no longer exists. A few ways to fix this:
+# Demo Notebooks
 
-**Option 1 — Use the conda environment that has Julia's IJulia:**
-```bash
-conda activate qmcju
-conda install jupyter
-jupyter notebook demos/quickstart.ipynb
-```
+These notebooks contain Julia code. Run them with a Julia kernel, not the Python `qmcju` kernel.
 
-If the `qmcju` env was removed, recreate it or use a different env.
-
-**Option 2 — Use IJulia's built-in notebook server (no conda needed):**
+**Option 1 — Use IJulia's built-in notebook server:**
 ```bash
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-This launches Jupyter directly from Julia's IJulia package. If IJulia isn't installed yet:
+If you want the notebooks to use this repository's environment by default, install a custom kernel from the repository root first:
+```bash
+julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+```
+
+Then open a demo notebook and select the `QMCJu` kernel once. Jupyter usually remembers that choice for that notebook.
+
+If IJulia is not installed yet:
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-**Option 3 — Use VS Code:**
-Open any `.ipynb` file in VS Code with the Jupyter extension installed, then select the Julia 1.10 kernel from the kernel picker.
+**Option 2 — Use VS Code:**
+Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, then select the Julia kernel from the kernel picker before running cells.
 
-Option 2 is probably the quickest path since it bypasses the broken conda shim entirely.
+If VS Code selects `qmcju (Python 3.12.x)` or another Python kernel, switch to Julia. Otherwise Julia code such as `using QMCJu` will fail with a Python `SyntaxError`.
 
-## Demo Notebooks
+**Option 3 — Use Conda + Jupyter explicitly:**
+```bash
+conda activate qmcju
+conda install jupyter ipykernel
+jupyter notebook demos/quickstart.ipynb
+```
+
+When Jupyter opens, choose the Julia kernel for the notebook.
 
 | Notebook | Topic |
 |---|---|
