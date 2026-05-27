@@ -4,15 +4,15 @@ on:
   push:
     branches: [master, develop]
     paths:
-      - 'qmcju_software/**'
+      - 'qmcju/**'
   pull_request:
     branches: [master, develop]
     paths:
-      - 'qmcju_software/**'
+      - 'qmcju/**'
 
 defaults:
   run:
-    working-directory: qmcju_software
+    working-directory: qmcju
 
 jobs:
   test:
@@ -51,7 +51,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.julia-version == '1.11'
         uses: julia-actions/julia-processcoverage@v1
         with:
-          directories: qmcju_software/src
+          directories: qmcju/src
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.julia-version == '1.11'

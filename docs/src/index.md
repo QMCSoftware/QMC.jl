@@ -32,7 +32,7 @@ println("Error bound: $(result.data[:error_bound])")
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/QMCSoftware", subdir="qmcju_software")
+Pkg.add(url="https://github.com/QMCSoftware/QMCSoftware", subdir="qmcju")
 ```
 
 ## Contents

@@ -4,15 +4,15 @@ on:
   push:
     branches: [master, develop]
     paths:
-      - 'qmcju_software/**'
+      - 'qmcju/**'
   pull_request:
     branches: [master, develop]
     paths:
-      - 'qmcju_software/**'
+      - 'qmcju/**'
 
 defaults:
   run:
-    working-directory: qmcju_software
+    working-directory: qmcju
 
 jobs:
   test:

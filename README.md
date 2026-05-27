@@ -81,9 +81,13 @@ All tests should pass.
 
 ## Quick Start
 
+In terminal, start Julia:
+
 ```bash
 julia
 ```
+
+In Julia, run the following commands:
 
 ```julia
 using QMCJu
@@ -113,19 +117,21 @@ See [`demos/README.md`](demos/README.md) for the notebook list and topic summari
 
 ## Documentation
 
-See the [QMCJu documentation](https://qmcsoftware.github.io/QMCSoftware/) for mathematical background. Julia-specific API docs are available via `?` in the Julia REPL:
+See the [QMCJu documentation](https://qmcsoftware.github.io/QMCSoftware/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
 
 ```julia
-julia> using QMCJu
-julia> ?Lattice
-julia> ?CubQMCBayesLatticeG
+using QMCJu
+@doc Lattice
+@doc CubQMCBayesLatticeG
 ```
+
+In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice` or `CubQMCBayesLatticeG`.
 
 ## Citation
 
 ```bibtex
 @misc{qmcju2026,
-  author = {Sou-Cheng T. Choi and Fred J. Hickernell and contributors},
+  author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
   title  = {{QMCJu}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
   url    = {https://github.com/QMCSoftware/QMCSoftware}
