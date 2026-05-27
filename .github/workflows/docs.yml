@@ -4,16 +4,19 @@ on:
   push:
     branches: [master]
     paths:
-      - 'qmcju/docs/**'
-      - 'qmcju/src/**'
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
+      - 'Manifest.toml'
+      - '.github/workflows/docs.yml'
   pull_request:
     paths:
-      - 'qmcju/docs/**'
-      - 'qmcju/src/**'
-
-defaults:
-  run:
-    working-directory: qmcju
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
+      - 'Manifest.toml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
 
 jobs:
   build:

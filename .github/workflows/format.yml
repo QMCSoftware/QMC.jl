@@ -2,18 +2,16 @@ name: Format Check
 
 on:
   push:
-    branches: [develop]
     paths:
-      - 'qmcju/src/**'
-      - 'qmcju/test/**'
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/format.yml'
   pull_request:
     paths:
-      - 'qmcju/src/**'
-      - 'qmcju/test/**'
-
-defaults:
-  run:
-    working-directory: qmcju
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/format.yml'
+  workflow_dispatch:
 
 jobs:
   format:

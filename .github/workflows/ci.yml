@@ -2,17 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
-    paths:
-      - 'qmcju/**'
   pull_request:
-    branches: [master, develop]
-    paths:
-      - 'qmcju/**'
-
-defaults:
-  run:
-    working-directory: qmcju
+  workflow_dispatch:
 
 jobs:
   test:
