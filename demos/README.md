@@ -24,3 +24,17 @@ julia -e 'using IJulia; notebook(dir="demos")'
 Open any `.ipynb` file in VS Code with the Jupyter extension installed, then select the Julia 1.10 kernel from the kernel picker.
 
 Option 2 is probably the quickest path since it bypasses the broken conda shim entirely.
+
+## Demo Notebooks
+
+| Notebook | Topic |
+|---|---|
+| `quickstart.ipynb` | Keister integral with all 5 stopping criteria |
+| `pricing_options.ipynb` | European, Asian, Lookback, Digital options |
+| `digital_net_b2.ipynb` | Sobol' sequences, scrambling, replications |
+| `lattice.ipynb` | Lattice orderings, shifts, Kuo vectors |
+| `lebesgue_integration.ipynb` | Lebesgue measure integration |
+| `some_true_measures.ipynb` | All 10 true measures demonstrated |
+| `gbm_demo.ipynb` | Geometric Brownian Motion for finance |
+| `qmcju_intro.ipynb` | Package tour: building blocks explained |
+| `sample_scatter_plots.ipynb` | Point set visualizations and statistics |
