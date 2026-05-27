@@ -155,6 +155,10 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
 }
 ```
 
+## Editorial Note
+
+Some repository content was initially and partially produced with the help of AI tools and was reviewed and published by the authors.
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE) for details.
