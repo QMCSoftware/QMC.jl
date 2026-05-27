@@ -63,13 +63,14 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 This reads `Project.toml` and installs all Julia dependencies (Distributions, FFTW, SpecialFunctions, etc.).
 
-### 5. Install IJulia (for Jupyter notebooks)
+### 5. Install IJulia and register the `QMCJu` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
+julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 ```
 
-This registers the Julia kernel with Jupyter so you can run the demo notebooks.
+Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so notebooks can load `QMCJu`, `Plots`, and the rest of the project dependencies.
 
 ### 6. Verify the installation
 
@@ -111,7 +112,7 @@ Nine demo notebooks live in `demos/`. Launch them with:
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-If you want the notebooks to use this repository's Julia environment by default, install a custom kernel from the repository root first:
+If you have not created the project-bound kernel yet, run this once from the repository root:
 
 ```bash
 julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
@@ -119,9 +120,15 @@ julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 
 Then select the `QMCJu` kernel in Jupyter or VS Code once.
 
-Or open any `.ipynb` (e.g., `quickstart.ipynb` or `qmcju_intro.ipynb`) file directly in VS Code (with the Jupyter extension and Julia kernel).
+To run a notebook in VS Code:
 
-If VS Code selects `qmcju (Python 3.12.x)` or another Python kernel, switch the notebook kernel to Julia before running cells. Julia code such as `using QMCJu` will raise a Python `SyntaxError` under a Python kernel.
+1. Install the VS Code `Julia` and `Jupyter` extensions.
+2. Open this repository in VS Code and open a notebook from `demos/`.
+3. Click the notebook kernel picker in the top-right corner.
+4. Select `QMCJu`.
+5. Restart the notebook kernel if the notebook was previously attached to another kernel.
+
+If VS Code selects `qmcju (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMCJu` kernel, switch it before running cells. Julia code such as `using QMCJu` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
 
 See [`demos/README.md`](demos/README.md) for the notebook list and topic summaries.
 

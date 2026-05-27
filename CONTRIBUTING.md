@@ -38,13 +38,14 @@ conda activate qmcju
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-### 4. Install IJulia for notebooks
+### 4. Install IJulia and register the `QMCJu` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
+julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 ```
 
-This registers the Julia kernel with Jupyter so you can run and edit demo notebooks.
+Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so demo notebooks use the same dependencies as local development and CI.
 
 ### 5. Verify everything works
 
@@ -120,7 +121,7 @@ conda activate qmcju
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-To bind notebooks to this repository's Julia environment by default, install a custom kernel from the repository root first:
+If you have not created the project-bound kernel yet, run this once from the repository root:
 
 ```bash
 julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
@@ -128,7 +129,15 @@ julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 
 Then select the `QMCJu` kernel in Jupyter or VS Code once.
 
-Or open any `.ipynb` in VS Code with the Jupyter extension, then select the Julia kernel before running cells. Do not use the Python `qmcju` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`.
+To run a notebook in VS Code:
+
+1. Install the `Julia` and `Jupyter` extensions.
+2. Open this repository folder in VS Code.
+3. Open a notebook from `demos/`.
+4. Click the notebook kernel picker and select `QMCJu`.
+5. Restart the notebook kernel if it was previously attached to another interpreter.
+
+Do not use the Python `qmcju` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
 
 ## Code Style
 

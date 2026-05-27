@@ -7,23 +7,19 @@ These notebooks contain Julia code. Run them with a Julia kernel, not the Python
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-If you want the notebooks to use this repository's environment by default, install a custom kernel from the repository root first:
+From the repository root, create the project-bound notebook kernel once:
 ```bash
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia -e 'using Pkg; Pkg.add("IJulia")'
 julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 ```
 
 Then open a demo notebook and select the `QMCJu` kernel once. Jupyter usually remembers that choice for that notebook.
 
-If IJulia is not installed yet:
-```bash
-julia -e 'using Pkg; Pkg.add("IJulia")'
-julia -e 'using IJulia; notebook(dir="demos")'
-```
-
 **Option 2 — Use VS Code:**
-Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, then select the Julia kernel from the kernel picker before running cells.
+Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, click the notebook kernel picker, and select `QMCJu` before running cells.
 
-If VS Code selects `qmcju (Python 3.12.x)` or another Python kernel, switch to Julia. Otherwise Julia code such as `using QMCJu` will fail with a Python `SyntaxError`.
+If VS Code selects `qmcju (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMCJu` kernel, switch it before running cells. Otherwise Julia code such as `using QMCJu` will fail with a Python `SyntaxError`, or a generic Julia kernel may not see this repository's dependencies.
 
 **Option 3 — Use Conda + Jupyter explicitly:**
 ```bash
