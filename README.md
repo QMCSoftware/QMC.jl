@@ -157,7 +157,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
 
 ## Editorial Note
 
-Some repository content was initially and partially produced with the help of AI tools and was reviewed and published by the authors.
+Some repository content was partially produced with the help of AI tools Claude and was reviewed and published by the authors and contributors.
 
 ## License
 
