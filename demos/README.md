@@ -1,6 +1,6 @@
-# Demo Notebooks
+# QMCJu.jl Demo Notebooks
 
-These notebooks contain Julia code. Run them with a Julia kernel, not the Python `qmcju` kernel.
+These notebooks contain Julia code for the QMCJu.jl package. Run them with a Julia kernel, not the Python `qmcju` kernel.
 
 **Option 1 — Use IJulia's built-in notebook server:**
 ```bash

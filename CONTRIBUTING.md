@@ -1,6 +1,6 @@
-# Contributing to QMCJu
+# Contributing to QMCJu.jl
 
-Thank you for your interest in contributing to QMCJu! This guide walks through the full developer setup, project conventions, and how to add new components.
+Thank you for your interest in contributing to QMCJu.jl. This guide walks through the full developer setup, project conventions, and how to add new components.
 
 Please submit **pull requests** to the `develop` branch and **issues** using a template from `.github/ISSUE_TEMPLATE/`.
 
@@ -45,7 +45,7 @@ julia -e 'using Pkg; Pkg.add("IJulia")'
 julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 ```
 
-Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so demo notebooks use the same dependencies as local development and CI.
+Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI.
 
 ### 5. Verify everything works
 
@@ -158,7 +158,7 @@ Please format your code before submitting a pull request.
 
 ## Adding a New Component
 
-QMCJu uses Julia's abstract type hierarchy with multiple dispatch. To add a new component:
+QMCJu.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new component:
 
 ### Discrete Distribution
 

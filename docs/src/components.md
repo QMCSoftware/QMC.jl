@@ -1,6 +1,6 @@
 # Mathematical Components
 
-QMCJu implements a modular framework for Quasi-Monte Carlo integration. The four main components interact as follows:
+QMCJu.jl implements a modular framework for Quasi-Monte Carlo integration. The four main components interact as follows:
 
 ## Discrete Distribution
 

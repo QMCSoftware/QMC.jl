@@ -1,6 +1,6 @@
-# QMCJu: Quasi-Monte Carlo Software in Julia
+# QMCJu.jl: Quasi-Monte Carlo Software in Julia
 
-QMCJu is the Julia implementation of the [QMCJu](https://github.com/QMCSoftware/qmcju.jl) framework for Quasi-Monte Carlo (QMC) numerical integration.
+QMCJu.jl is a Julia translation of the original QMCJu package for Quasi-Monte Carlo (QMC) numerical integration.
 
 ## Overview
 

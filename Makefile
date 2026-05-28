@@ -37,7 +37,7 @@ smoke:
 
 
 # Run all demo notebooks (like Python's booktest)
-notebooks:
+notebook:
 	julia --project=. test/run_notebooks.jl
 
 # Run a single notebook by name: make notebook-quickstart

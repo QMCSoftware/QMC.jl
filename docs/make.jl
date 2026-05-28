@@ -2,7 +2,7 @@ using Documenter
 using QMCJu
 
 makedocs(
-    sitename = "QMCJu",
+    sitename = "QMCJu.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
     modules = [QMCJu],
     remotes = nothing,

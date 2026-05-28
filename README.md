@@ -1,10 +1,10 @@
-# QMCJu: Quasi-Monte Carlo Community Software in Julia
+# QMCJu.jl: Quasi-Monte Carlo Community Software in Julia
 
-> A Julia translation of [QMCJu](https://github.com/QMCSoftware/qmcju.jl) (v2.3) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
+> QMCJu.jl is a Julia translation of the original QMCJu package, with quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 ## Overview
 
-QMCJu provides four building blocks that snap together to solve integration problems:
+QMCJu.jl provides four building blocks that snap together to solve integration problems:
 
 | Component | Purpose | Available types |
 |---|---|---|
@@ -70,7 +70,7 @@ julia -e 'using Pkg; Pkg.add("IJulia")'
 julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 ```
 
-Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so notebooks can load `QMCJu`, `Plots`, and the rest of the project dependencies.
+Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so notebooks can load the `QMCJu` module, `Plots`, and the rest of the project dependencies.
 
 ### 6. Verify the installation
 
@@ -134,7 +134,7 @@ See [`demos/README.md`](demos/README.md) for the notebook list and topic summari
 
 ## Documentation
 
-See the [QMCJu documentation](https://qmcsoftware.github.io/QMCSoftware/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
+See the [QMCJu.jl documentation](https://qmcsoftware.github.io/qmcju.jl/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
 
 ```julia
 using QMCJu
@@ -149,7 +149,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
 ```bibtex
 @misc{qmcju2026,
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
-  title  = {{QMCJu}: Quasi-Monte Carlo Community Software in Julia},
+  title  = {{QMCJu.jl}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
   url    = {https://github.com/QMCSoftware/qmcju.jl}
 }
