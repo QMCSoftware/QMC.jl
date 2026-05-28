@@ -128,7 +128,7 @@ To run a notebook in VS Code:
 4. Select `QMCJu`.
 5. Restart the notebook kernel if the notebook was previously attached to another kernel.
 
-If VS Code selects `qmcju (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMCJu` kernel, switch it before running cells. Julia code such as `using QMCJu` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
+If VS Code selects `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMCJu` kernel, switch it before running cells. Julia code such as `using QMCJu` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
 
 See [`demos/README.md`](demos/README.md) for the notebook list and topic summaries.
 
@@ -157,7 +157,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
 
 ## Editorial Note
 
-Some repository content was partially produced with the help of AI tools Claude and was reviewed and published by the authors and contributors.
+Some repository content was partially produced with the help of AI tools Claude and was reviewed by the authors and contributors.
 
 ## License
 
