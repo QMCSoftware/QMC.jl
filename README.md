@@ -4,6 +4,13 @@
 
 > Status: Experimental work in progress. Collaborators are welcome.
 
+## Why Julia?
+
+Julia is a strong fit for this project because it combines high performance with rapid development:
+
+- Faster than typical pure-Python implementations for numerical kernels and large simulation workloads.
+- Easier to implement and maintain than C/C++ for scientific algorithms, while still delivering compiled-language performance.
+
 ## Overview
 
 QMC.jl provides four building blocks that snap together to solve integration problems:
