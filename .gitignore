@@ -1,7 +1,10 @@
-# Julia
+# Julia artifacts and local lockfiles
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+
+# Ignore the root package lockfile and the formatter tool lockfile.
+# Keep docs/Manifest.toml trackable for reproducible documentation builds.
 /Manifest.toml
 /devtools/formatter/Manifest.toml
 
