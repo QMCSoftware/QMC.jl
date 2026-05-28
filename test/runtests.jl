@@ -1,12 +1,12 @@
 using Test
-using QMCJu
+using QMC
 using Statistics
 using LinearAlgebra
 using Distributions
-# Resolve name conflicts: prefer QMCJu's versions in tests
-import QMCJu: Uniform, Kumaraswamy
+# Resolve name conflicts: prefer QMC's versions in tests
+import QMC: Uniform, Kumaraswamy
 
-@testset "QMCJu" begin
+@testset "QMC" begin
     include("test_discrete_distributions.jl")
     include("test_true_measures.jl")
     include("test_integrands.jl")

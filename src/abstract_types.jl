@@ -56,7 +56,7 @@ Result type returned by `integrate`.
 """
 struct QMCResult
     solution::Float64
-    data::Dict{Symbol,Any}
+    data::Dict{Symbol, Any}
 end
 
 function Base.show(io::IO, r::QMCResult)

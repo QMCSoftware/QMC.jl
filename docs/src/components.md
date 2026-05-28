@@ -1,6 +1,6 @@
 # Mathematical Components
 
-QMCJu implements a modular framework for Quasi-Monte Carlo integration. The four main components interact as follows:
+QMC.jl implements a modular framework for Quasi-Monte Carlo integration. The four main components interact as follows:
 
 ## Discrete Distribution
 
@@ -10,6 +10,9 @@ Generates low-discrepancy point sets in ``[0,1)^d``. Available generators:
 - **`Lattice`** — rank-1 integration lattice with optional random shift
 - **`DigitalNetB2`** — Sobol' digital net (base 2) with optional scrambling
 - **`Halton`** — Halton sequence using prime bases
+
+`Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL
+shared library, so Python is a current runtime dependency for these QMC generators.
 
 ## True Measure
 

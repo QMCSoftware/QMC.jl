@@ -13,26 +13,30 @@ using Logging
 # A logger that counts warnings while forwarding them to the console
 struct CountingLogger <: AbstractLogger
     inner::ConsoleLogger
-    counts::Dict{String,Int}  # notebook name → warning count
+    counts::Dict{String, Int}  # notebook name → warning count
     current_nb::Ref{String}
 end
 
-CountingLogger() = CountingLogger(
-    ConsoleLogger(stderr, Logging.Warn),
-    Dict{String,Int}(),
-    Ref("")
-)
+function CountingLogger()
+    CountingLogger(
+        ConsoleLogger(stderr, Logging.Warn),
+        Dict{String, Int}(),
+        Ref("")
+    )
+end
 
 Logging.min_enabled_level(cl::CountingLogger) = Logging.min_enabled_level(cl.inner)
 Logging.shouldlog(cl::CountingLogger, args...) = Logging.shouldlog(cl.inner, args...)
 Logging.catch_exceptions(cl::CountingLogger) = Logging.catch_exceptions(cl.inner)
 
-function Logging.handle_message(cl::CountingLogger, level, message, _module, group, id, file, line; kwargs...)
+function Logging.handle_message(
+        cl::CountingLogger, level, message, _module, group, id, file, line; kwargs...)
     if level >= Logging.Warn
         nb = cl.current_nb[]
         cl.counts[nb] = get(cl.counts, nb, 0) + 1
     end
-    Logging.handle_message(cl.inner, level, message, _module, group, id, file, line; kwargs...)
+    Logging.handle_message(
+        cl.inner, level, message, _module, group, id, file, line; kwargs...)
 end
 
 # ── Main ─────────────────────────────────────────────────
@@ -67,7 +71,7 @@ for nb in notebooks
 end
 
 # ── Summary ──────────────────────────────────────────────
-total_warnings = sum(values(clogger.counts); init=0)
+total_warnings = sum(values(clogger.counts); init = 0)
 n_pass = length(notebooks) - length(errors)
 
 println("\n", "="^60)

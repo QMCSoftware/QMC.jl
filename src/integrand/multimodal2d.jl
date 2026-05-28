@@ -14,7 +14,8 @@ struct Multimodal2D <: AbstractIntegrand
 end
 
 function Multimodal2D(tm::AbstractTrueMeasure)
-    tm.dimension == 2 || throw(ArgumentError("Multimodal2D requires dimension 2, got $(tm.dimension)"))
+    tm.dimension == 2 ||
+        throw(ArgumentError("Multimodal2D requires dimension 2, got $(tm.dimension)"))
     return Multimodal2D(tm, 2)
 end
 
@@ -32,7 +33,8 @@ function evaluate(f::Multimodal2D, x::AbstractMatrix)
         x1 = x[i, 1]
         x2 = x[i, 2]
         for k in 1:5
-            val += _MM2D_H[k] * exp(-_MM2D_A[k] * ((x1 - _MM2D_C[k])^2 + (x2 - _MM2D_D[k])^2))
+            val += _MM2D_H[k] *
+                   exp(-_MM2D_A[k] * ((x1 - _MM2D_C[k])^2 + (x2 - _MM2D_D[k])^2))
         end
         y[i] = val
     end

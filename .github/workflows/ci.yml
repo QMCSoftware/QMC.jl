@@ -2,17 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
-    paths:
-      - 'qmcju/**'
+    branches: [develop, master]
   pull_request:
-    branches: [master, develop]
-    paths:
-      - 'qmcju/**'
-
-defaults:
-  run:
-    working-directory: qmcju
+    branches: [develop, master]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -21,13 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.10', '1.11', 'nightly']
+        julia-version: ['1.10', '1.11']
         os: [ubuntu-latest, macos-latest, windows-latest]
-        exclude:
-          - julia-version: 'nightly'
-            os: macos-latest
-          - julia-version: 'nightly'
-            os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +25,13 @@ jobs:
           version: ${{ matrix.julia-version }}
 
       - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install qmctoolscl
+        run: pip install qmctoolscl
 
       - name: Install dependencies
         run: |

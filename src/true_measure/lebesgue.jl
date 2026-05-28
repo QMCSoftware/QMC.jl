@@ -29,11 +29,12 @@ struct Lebesgue <: AbstractTrueMeasure
 end
 
 function Lebesgue(dd::AbstractDiscreteDistribution;
-                  lower_bound=0.0, upper_bound=1.0)
+        lower_bound = 0.0, upper_bound = 1.0)
     d = dd.dimension
     lb = _expand_bounds(lower_bound, d)
     ub = _expand_bounds(upper_bound, d)
-    all(lb .< ub) || throw(ArgumentError("lower_bound must be less than upper_bound in every dimension"))
+    all(lb .< ub) ||
+        throw(ArgumentError("lower_bound must be less than upper_bound in every dimension"))
     vol = prod(ub .- lb)
     return Lebesgue(dd, d, lb, ub, vol)
 end
@@ -45,5 +46,6 @@ function transform(tm::Lebesgue, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, tm::Lebesgue)
-    print(io, "Lebesgue(d=$(tm.dimension), volume=$(tm.volume), lower=$(tm.lower_bound), upper=$(tm.upper_bound))")
+    print(io,
+        "Lebesgue(d=$(tm.dimension), volume=$(tm.volume), lower=$(tm.lower_bound), upper=$(tm.upper_bound))")
 end

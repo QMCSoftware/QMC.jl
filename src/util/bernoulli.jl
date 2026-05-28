@@ -58,7 +58,7 @@ Compute the one-dimensional shift-invariant kernel component for lattice rules:
 where `x` should be the fractional part of the shifted point and `alpha` controls smoothness.
 Only `alpha = 1, 2, 3` are supported (using B_2, B_4, B_6).
 """
-function lattice_kernel_component(x::Real, alpha::Int=2)
+function lattice_kernel_component(x::Real, alpha::Int = 2)
     if alpha < 1 || alpha > 3
         error("lattice_kernel_component: alpha must be 1, 2, or 3, got alpha = $alpha")
     end
