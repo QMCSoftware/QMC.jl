@@ -19,8 +19,8 @@ Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@
 ### 1. Clone and enter the project
 
 ```bash
-git clone https://github.com/QMCSoftware/qmcju.git
-cd QMCSoftware/qmcju
+git clone https://github.com/QMCSoftware/qmcju.jl.git
+cd QMCSoftware/qmcju.jl
 ```
 
 ### 2. Create the Conda environment
@@ -208,7 +208,7 @@ QMCJu uses Julia's abstract type hierarchy with multiple dispatch. To add a new 
 
 [VS Code](https://code.visualstudio.com) with the [Julia extension](https://www.julia-vscode.org/) is the recommended editor.
 
-- Open `qmcju/` as your workspace
+- Open `qmcju.jl/` as your workspace
 - Activate the project: `Ctrl/Cmd+Shift+P` → **Julia: Activate This Environment**
 - Use the integrated terminal for test runs
 - The Julia extension provides inline evaluation, debugging, and profiling
