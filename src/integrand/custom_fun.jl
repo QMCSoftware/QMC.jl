@@ -41,6 +41,11 @@ Generate `n` samples, transform, and evaluate the integrand. Returns a vector of
 function sample_and_evaluate(f::AbstractIntegrand, n::Int)
     dd = f.true_measure.dd
     x_uniform = gen_samples(dd, n)
+    if ndims(x_uniform) == 3
+        # Replicated sampler: (R, n, d) → (R*n, d) so transform accepts a matrix.
+        R, m, d = size(x_uniform)
+        x_uniform = reshape(x_uniform, R * m, d)
+    end
     x_transformed = transform(f.true_measure, x_uniform)
     return evaluate(f, x_transformed)
 end

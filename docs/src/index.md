@@ -2,6 +2,10 @@
 
 QMCJu.jl is a Julia translation of the original QMCJu package for Quasi-Monte Carlo (QMC) numerical integration.
 
+`IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`,
+`DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library,
+so Python is a current runtime dependency for full QMC functionality.
+
 ## Overview
 
 QMC methods approximate multivariate integrals using four main components:
@@ -12,6 +16,9 @@ QMC methods approximate multivariate integrals using four main components:
 4. **Stopping Criterion** — adaptive algorithm to determine when tolerance is met
 
 ## Quick Start
+
+This example uses `Lattice`, so `qmctoolscl` must be installed in a Python
+visible to Julia.
 
 ```julia
 using QMCJu
@@ -34,6 +41,16 @@ println("Error bound: $(result.data[:error_bound])")
 using Pkg
 Pkg.add(url="https://github.com/QMCSoftware/qmcju.jl")
 ```
+
+For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python
+visible to Julia:
+
+```bash
+python3 -m pip install qmctoolscl
+```
+
+If Julia should use a specific Python interpreter, set `ENV["QMCJU_PYTHON"]`
+before `using QMCJu`.
 
 ## Contents
 

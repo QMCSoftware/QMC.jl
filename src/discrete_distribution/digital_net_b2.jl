@@ -6,6 +6,10 @@ Digital net in base 2 (Sobol' sequence) with optional scrambling.
 Generates Sobol' points using the published Joe-Kuo direction numbers,
 supporting up to 1024 dimensions and 2^32 points.
 
+This generator currently relies on the QMCToolsCL shared library. Install
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QMCJU_PYTHON"]`
+before `using QMCJu`.
+
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).
 - `"DS"`: digital shift only (XOR with random integers).
@@ -69,6 +73,8 @@ end
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 Supports up to 1024 dimensions using Joe-Kuo direction numbers.
 See the outer constructor for full documentation.
+
+QMCToolsCL is required for sample generation.
 """
 mutable struct DigitalNetB2 <: AbstractDiscreteDistribution
     dimension::Int

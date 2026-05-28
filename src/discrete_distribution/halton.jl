@@ -11,6 +11,10 @@ When `generalize=true`, a per-dimension permutation of digits is applied
 (generalized Halton / Faure permutation style) to improve uniformity in
 higher dimensions.
 
+This generator currently relies on the QMCToolsCL shared library. Install
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QMCJU_PYTHON"]`
+before `using QMCJu`.
+
 # Arguments
 - `dimension::Int`: number of dimensions (up to 250).
 - `randomize::Bool=true`: apply random shift randomization.
@@ -32,6 +36,8 @@ x = gen_samples(hal, 1000)  # 1000×5 matrix
 
 Halton sequence backed by the QMCToolsCL `halton_qrng` C function.
 Supports up to 250 dimensions.  See the outer constructor for full documentation.
+
+QMCToolsCL is required for sample generation.
 """
 mutable struct Halton <: AbstractDiscreteDistribution
     dimension::Int

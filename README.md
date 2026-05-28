@@ -20,9 +20,13 @@ Additional modules provide shift-invariant and Matérn kernels (`KernelShiftInva
 | Tool | Version | Notes |
 |---|---|---|
 | [Julia](https://julialang.org/downloads/) | ≥ 1.10 | the language runtime |
+| Python | any recent | currently required for the QMCToolsCL-backed generators `Lattice`, `DigitalNetB2`, and `Halton` |
 | Git | any recent | to clone the repo |
 
-Python/Conda is optional. Use it only if you want Jupyter as an external notebook frontend.
+Python is currently a runtime dependency for the main low-discrepancy QMC generators
+`Lattice`, `DigitalNetB2`, and `Halton`, because they rely on the QMCToolsCL shared library.
+Conda is optional; it is only one way to provide that Python environment and can also host
+an optional Jupyter frontend.
 
 ## Setup (from scratch)
 
@@ -55,7 +59,22 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 This reads `Project.toml` and installs all Julia dependencies (Distributions, FFTW, SpecialFunctions, etc.).
 
-### 4. Optional: install IJulia and register the `QMCJu` notebook kernel
+### 4. Install QMCToolsCL for `Lattice`, `DigitalNetB2`, and `Halton`
+
+The main low-discrepancy generators are backed by QMCToolsCL. Install it into a Python
+visible to Julia:
+
+```bash
+python3 -m pip install qmctoolscl
+```
+
+If Julia should use a specific Python interpreter, set this before first use of those generators:
+
+```julia
+ENV["QMCJU_PYTHON"] = "/path/to/python"
+```
+
+### 5. Optional: install IJulia and register the `QMCJu` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
@@ -64,7 +83,7 @@ julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 
 Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so notebooks can load the `QMCJu` module, `Plots`, and the rest of the project dependencies. This step is only needed if you plan to run the demo notebooks.
 
-### 5. Verify the installation
+### 6. Verify the installation
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'
@@ -99,8 +118,10 @@ println("Exact:    $(keister_exact(3))")
 ## Demos
 
 Nine demo notebooks live in `demos/`. They contain Julia code and should run on the `QMCJu` Julia kernel.
+Most of them use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl`
+to be installed in a Python visible to Julia.
 
-If you want the simplest path and do not need a separate Python environment, launch them directly from Julia with:
+If you want the simplest path and do not need a separate Jupyter Python environment, launch them directly from Julia with:
 
 ```bash
 julia -e 'using IJulia; notebook(dir="demos")'

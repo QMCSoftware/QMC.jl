@@ -11,6 +11,10 @@ Points: x_i = frac(i · z / n), with optional random shift Δ ~ U[0,1)^d.
 When `replications` is set to an integer R > 1, `gen_samples` returns an
 `R × n × d` array of R independently shifted copies.
 
+This generator currently relies on the QMCToolsCL shared library. Install
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QMCJU_PYTHON"]`
+before `using QMCJu`.
+
 # Arguments
 - `dimension`: number of dimensions (up to 9125).
 - `randomize`: if true, apply a random shift.

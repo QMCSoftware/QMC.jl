@@ -61,7 +61,7 @@ include("stopping_criterion/cub_qmc_bayes_lattice_g.jl")
 include("stopping_criterion/cub_qmc_bayes_net_g.jl")
 
 function __init__()
-    _init_qmctoolscl!()
+    _init_qmctoolscl!(; warn_on_failure = false)
 end
 
 # Exports — abstract types

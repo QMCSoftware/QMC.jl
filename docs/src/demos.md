@@ -2,6 +2,9 @@
 
 ## Quick Start
 
+Examples using `Lattice` require the QMCToolsCL shared library. Install
+`qmctoolscl` into a Python visible to Julia before running them.
+
 ```julia
 # In terminal, run `julia`. Issue the following command:
 #   import Pkg; Pkg.add("QMCJu")

@@ -1,8 +1,24 @@
 # QMCJu.jl Demo Notebooks
 
-These notebooks contain Julia code for the QMCJu.jl package. Python or Conda is optional and, if used, only provides a Jupyter frontend. The notebooks themselves must run with a Julia kernel, not a Python kernel.
+These notebooks contain Julia code for the QMCJu.jl package. Most demos use `Lattice`
+or `DigitalNetB2`, so Python is currently required because those generators depend on
+the `qmctoolscl` Python package. Conda is optional; it is only one way to provide that
+Python environment or to launch Jupyter. The notebooks themselves must run with a Julia
+kernel, not a Python kernel.
 
-**Option 1 — Use IJulia's built-in notebook server (no Python environment required):**
+Install `qmctoolscl` into a Python visible to Julia before running the low-discrepancy demos:
+
+```bash
+python3 -m pip install qmctoolscl
+```
+
+If Julia should use a specific Python interpreter, set this before first use of those generators:
+
+```julia
+ENV["QMCJU_PYTHON"] = "/path/to/python"
+```
+
+**Option 1 — Use IJulia's built-in notebook server (no separate Jupyter Python environment required):**
 ```bash
 julia -e 'using IJulia; notebook(dir="demos")'
 ```

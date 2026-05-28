@@ -2,22 +2,66 @@
 # QMCToolsCL C library bridge
 #
 # Provides low-level ccall wrappers around the compiled C functions in the
-# QMCToolsCL Python package.  The shared library is discovered at module load
-# time by asking Python where it installed qmctoolscl.
+# QMCToolsCL Python package. The shared library is discovered on demand by
+# asking Python where it installed qmctoolscl.
 #
 # Requires:  pip install qmctoolscl
 # ──────────────────────────────────────────────────────────────────────────────
 
 const _QMCTOOLSCL_LIB_PATH = Ref{String}("")
+const _QMCTOOLSCL_INIT_ATTEMPTED = Ref(false)
+const _QMCTOOLSCL_LAST_SEARCH = Ref("none")
+
+function _python_candidates()
+    candidates = String[]
+
+    # Allow callers to point QMCJu at a specific Python interpreter.
+    for key in ("QMCJU_PYTHON", "CONDA_PYTHON_EXE", "PYTHON")
+        if haskey(ENV, key) && !isempty(strip(ENV[key]))
+            push!(candidates, strip(ENV[key]))
+        end
+    end
+
+    # Prefer an active Conda environment when one is available.
+    if haskey(ENV, "CONDA_PREFIX") && !isempty(strip(ENV["CONDA_PREFIX"]))
+        push!(candidates, joinpath(strip(ENV["CONDA_PREFIX"]), "bin", "python"))
+    end
+
+    # Fall back to common user-level Conda installs before system Python.
+    for root in ("miniconda3", "miniforge3", "mambaforge", "anaconda3")
+        push!(candidates, joinpath(homedir(), root, "bin", "python"))
+    end
+
+    for py_cmd in ("python3", "python")
+        exe = Sys.which(py_cmd)
+        isnothing(exe) || push!(candidates, exe)
+    end
+
+    seen = Set{String}()
+    unique_candidates = String[]
+    for candidate in candidates
+        path = abspath(expanduser(candidate))
+        if isfile(path) && !(path in seen)
+            push!(unique_candidates, path)
+            push!(seen, path)
+        end
+    end
+
+    return unique_candidates
+end
 
 """
-    _init_qmctoolscl!()
+    _init_qmctoolscl!(; warn_on_failure=true, force=false)
 
 Locate the QMCToolsCL compiled C library via Python and pre-load it with
 `Libdl.RTLD_GLOBAL` so that subsequent `ccall`s can resolve symbols by name.
 Returns `true` on success, `false` (with a warning) if the library is not found.
 """
-function _init_qmctoolscl!()
+function _init_qmctoolscl!(; warn_on_failure::Bool = true, force::Bool = false)
+    !isempty(_QMCTOOLSCL_LIB_PATH[]) && return true
+    _QMCTOOLSCL_INIT_ATTEMPTED[] && !force && return false
+    _QMCTOOLSCL_INIT_ATTEMPTED[] = true
+
     py_script = """import glob, os
 try:
     import qmctoolscl
@@ -30,10 +74,10 @@ try:
 except Exception:
     print("")
 """
-    for py_cmd in ("python3", "python")
+    searched = String[]
+    for exe in _python_candidates()
+        push!(searched, exe)
         try
-            exe = Sys.which(py_cmd)
-            isnothing(exe) && continue
             path = strip(read(`$exe -c $py_script`, String))
             if !isempty(path) && isfile(path)
                 _QMCTOOLSCL_LIB_PATH[] = path
@@ -43,10 +87,16 @@ except Exception:
         catch
         end
     end
-    @warn """QMCToolsCL C library not found.
+    searched_str = isempty(searched) ? "none" : join(searched, ", ")
+    _QMCTOOLSCL_LAST_SEARCH[] = searched_str
+    if warn_on_failure
+        @warn """QMCToolsCL C library not found.
 Lattice, DigitalNetB2, and Halton generation require it.
-Install with:  pip install qmctoolscl
+Install `qmctoolscl` into a Python visible to Julia, or set
+ENV["QMCJU_PYTHON"] to the interpreter that has it installed.
+Searched Python interpreters: $searched_str
 Then restart Julia."""
+    end
     return false
 end
 
@@ -54,12 +104,19 @@ end
     _qmctoolscl_lib_path() -> String
 
 Return the cached path to the QMCToolsCL shared library, raising an informative
-error if the library was not successfully loaded at module initialisation.
+error if the library was not successfully loaded.
 """
 function _qmctoolscl_lib_path()
+    # Retry discovery on demand so users can set ENV["QMCJU_PYTHON"]
+    # after importing QMCJu but before first use of QMCToolsCL-backed generators.
+    isempty(_QMCTOOLSCL_LIB_PATH[]) &&
+        _init_qmctoolscl!(; warn_on_failure = false, force = true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) &&
         error("QMCToolsCL C library not loaded. " *
-              "Install with: pip install qmctoolscl, then restart Julia.")
+              "Lattice, DigitalNetB2, and Halton require it. " *
+              "Install `qmctoolscl` into a Python visible to Julia, or set " *
+              "ENV[\"QMCJU_PYTHON\"] to that interpreter before first use. " *
+              "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).")
     return _QMCTOOLSCL_LIB_PATH[]
 end
 
