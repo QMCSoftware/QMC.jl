@@ -39,7 +39,7 @@ println("Error bound: $(result.data[:error_bound])")
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/qmcju.jl")
+Pkg.add(url="https://github.com/QMCSoftware/QMC.jl")
 ```
 
 For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python

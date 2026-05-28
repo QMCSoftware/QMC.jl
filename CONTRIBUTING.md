@@ -24,8 +24,7 @@ an optional Jupyter frontend.
 ### 1. Clone and enter the project
 
 ```bash
-git clone https://github.com/QMCSoftware/qmcju.jl.git
-cd QMCSoftware/qmcju.jl
+git clone https://github.com/QMCSoftware/QMC.jl.git
 ```
 
 ### 2. Install Julia dependencies
@@ -223,7 +222,7 @@ QMC.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new
 
 [VS Code](https://code.visualstudio.com) with the [Julia extension](https://www.julia-vscode.org/) is the recommended editor.
 
-- Open `qmcju.jl/` as your workspace
+- Open `QMC.jl/` as your workspace
 - Activate the project: `Ctrl/Cmd+Shift+P` → **Julia: Activate This Environment**
 - Use the integrated terminal for test runs
 - The Julia extension provides inline evaluation, debugging, and profiling

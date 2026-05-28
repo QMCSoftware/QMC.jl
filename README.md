@@ -35,7 +35,7 @@ an optional Jupyter frontend.
 ### 1. Clone the repository
 
 ```bash
-git [clone https://github.com/QMCSoftware/qmcju.jl.git](https://github.com/QMCSoftware/QMC.jl.git)
+git [clone https://github.com/QMCSoftware/QMC.jl.git](https://github.com/QMCSoftware/QMC.jl.git)
 ```
 
 ### 2. Install Julia (if not already installed)
@@ -152,7 +152,7 @@ See [`demos/README.md`](demos/README.md) for the notebook list and topic summari
 
 ## Documentation
 
-See the [QMC.jl documentation](https://qmcsoftware.github.io/qmcju.jl/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
+See the [QMC.jl documentation](https://qmcsoftware.github.io/QMC.jl/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
 
 ```julia
 using QMC
@@ -169,7 +169,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
   title  = {{QMC.jl}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
-  url    = {https://github.com/QMCSoftware/qmcju.jl}
+  url    = {https://github.com/QMCSoftware/QMC.jl}
 }
 ```
 
