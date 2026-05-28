@@ -1,4 +1,4 @@
-.PHONY: test docs format format-check lint clean
+.PHONY: test doc format format-check lint clean
 
 FORMATTER_PROJECT=devtools/formatter
 

@@ -79,7 +79,7 @@ function gen_samples(dd::Halton, n::Int)
 
     # halton_qrng writes res[j*n + i] for 0-indexed dim j and point i.
     # This is identical to Julia column-major layout for an n×d matrix.
-    return copy(reshape(res, n, d))
+    return reshape(res, n, d)
 end
 
 function Base.show(io::IO, dd::Halton)
