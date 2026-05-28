@@ -35,3 +35,7 @@ The mathematical and algorithmic foundations used by QMCJu.jl are documented in 
 - Owen, Art B. *Monte Carlo Book: The Quasi-Monte Carlo Parts.* Self-published, 2024. <https://ziangniu6.github.io/files/qmcstuff.pdf>
 
 - Sanz-Alonso, Daniel, and Omar Al-Ghattas. *A First Course in Monte Carlo Methods.* Preprint, 2024. <https://arxiv.org/pdf/2405.16359>
+
+### Julia Learning Materials
+
+See [https://julialang.org/learning/](https://julialang.org/learning/).
