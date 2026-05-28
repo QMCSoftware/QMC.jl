@@ -15,8 +15,8 @@ const _QMCTOOLSCL_LAST_SEARCH = Ref("none")
 function _python_candidates()
     candidates = String[]
 
-    # Allow callers to point QMCJu at a specific Python interpreter.
-    for key in ("QMCJU_PYTHON", "CONDA_PYTHON_EXE", "PYTHON")
+    # Allow callers to point QMC at a specific Python interpreter.
+    for key in ("QMC_PYTHON", "CONDA_PYTHON_EXE", "PYTHON")
         if haskey(ENV, key) && !isempty(strip(ENV[key]))
             push!(candidates, strip(ENV[key]))
         end
@@ -93,7 +93,7 @@ except Exception:
         @warn """QMCToolsCL C library not found.
 Lattice, DigitalNetB2, and Halton generation require it.
 Install `qmctoolscl` into a Python visible to Julia, or set
-ENV["QMCJU_PYTHON"] to the interpreter that has it installed.
+ENV["QMC_PYTHON"] to the interpreter that has it installed.
 Searched Python interpreters: $searched_str
 Then restart Julia."""
     end
@@ -107,15 +107,15 @@ Return the cached path to the QMCToolsCL shared library, raising an informative
 error if the library was not successfully loaded.
 """
 function _qmctoolscl_lib_path()
-    # Retry discovery on demand so users can set ENV["QMCJU_PYTHON"]
-    # after importing QMCJu but before first use of QMCToolsCL-backed generators.
+    # Retry discovery on demand so users can set ENV["QMC_PYTHON"]
+    # after importing QMC but before first use of QMCToolsCL-backed generators.
     isempty(_QMCTOOLSCL_LIB_PATH[]) &&
         _init_qmctoolscl!(; warn_on_failure = false, force = true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) &&
         error("QMCToolsCL C library not loaded. " *
               "Lattice, DigitalNetB2, and Halton require it. " *
               "Install `qmctoolscl` into a Python visible to Julia, or set " *
-              "ENV[\"QMCJU_PYTHON\"] to that interpreter before first use. " *
+              "ENV[\"QMC_PYTHON\"] to that interpreter before first use. " *
               "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).")
     return _QMCTOOLSCL_LIB_PATH[]
 end

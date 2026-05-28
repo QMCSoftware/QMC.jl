@@ -7,8 +7,8 @@ Generates Sobol' points using the published Joe-Kuo direction numbers,
 supporting up to 1024 dimensions and 2^32 points.
 
 This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QMCJU_PYTHON"]`
-before `using QMCJu`.
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
+before `using QMC`.
 
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).

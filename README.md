@@ -1,10 +1,10 @@
-# QMCJu.jl: Quasi-Monte Carlo Community Software in Julia
+# QMC.jl: Quasi-Monte Carlo Community Software in Julia
 
-> QMCJu.jl is a Julia translation of the original QMCJu package, with quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
+> QMC.jl is a Julia translation of the original QMC package, with quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 ## Overview
 
-QMCJu.jl provides four building blocks that snap together to solve integration problems:
+QMC.jl provides four building blocks that snap together to solve integration problems:
 
 | Component | Purpose | Available types |
 |---|---|---|
@@ -71,17 +71,17 @@ python3 -m pip install qmctoolscl
 If Julia should use a specific Python interpreter, set this before first use of those generators:
 
 ```julia
-ENV["QMCJU_PYTHON"] = "/path/to/python"
+ENV["QMC_PYTHON"] = "/path/to/python"
 ```
 
-### 5. Optional: install IJulia and register the `QMCJu` notebook kernel
+### 5. Optional: install IJulia and register the `QMC` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
-julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 ```
 
-Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so notebooks can load the `QMCJu` module, `Plots`, and the rest of the project dependencies. This step is only needed if you plan to run the demo notebooks.
+Run those commands from the repository root. This installs IJulia and creates a `QMC` kernel pinned to this repository's Julia environment, so notebooks can load the `QMC` module, `Plots`, and the rest of the project dependencies. This step is only needed if you plan to run the demo notebooks.
 
 ### 6. Verify the installation
 
@@ -102,7 +102,7 @@ julia
 In Julia, run the following commands:
 
 ```julia
-using QMCJu
+using QMC
 
 # Integrate the Keister function over a 3D Gaussian measure
 dd = Lattice(3; randomize=true, seed=7)
@@ -117,7 +117,7 @@ println("Exact:    $(keister_exact(3))")
 
 ## Demos
 
-Demo notebooks live in `demos/`. They contain Julia code and should run on the `QMCJu` Julia kernel.
+Demo notebooks live in `demos/`. They contain Julia code and should run on the `QMC` Julia kernel.
 Most of them use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl`
 to be installed in a Python visible to Julia.
 
@@ -130,31 +130,31 @@ julia -e 'using IJulia; notebook(dir="demos")'
 If you have not created the project-bound kernel yet, run this once from the repository root:
 
 ```bash
-julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 ```
 
-Then select the `QMCJu` kernel in Jupyter or VS Code once.
+Then select the `QMC` kernel in Jupyter or VS Code once.
 
-If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMCJu` Julia kernel.
+If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMC` Julia kernel.
 
 To run a notebook in VS Code:
 
 1. Install the VS Code `Julia` and `Jupyter` extensions.
 2. Open this repository in VS Code and open a notebook from `demos/`.
 3. Click the notebook kernel picker in the top-right corner.
-4. Select `QMCJu`.
+4. Select `QMC`.
 5. Restart the notebook kernel if the notebook was previously attached to another kernel.
 
-If VS Code selects `qmcju (Python 3.12.x)`, `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMCJu` kernel, switch it before running cells. Julia code such as `using QMCJu` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
+If VS Code selects `qmcju (Python 3.12.x)`, `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Julia code such as `using QMC` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
 
 See [`demos/README.md`](demos/README.md) for the notebook list and topic summaries.
 
 ## Documentation
 
-See the [QMCJu.jl documentation](https://qmcsoftware.github.io/qmcju.jl/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
+See the [QMC.jl documentation](https://qmcsoftware.github.io/qmcju.jl/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
 
 ```julia
-using QMCJu
+using QMC
 @doc Lattice
 @doc CubQMCBayesLatticeG
 ```
@@ -166,7 +166,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
 ```bibtex
 @misc{qmcju2026,
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
-  title  = {{QMCJu.jl}: Quasi-Monte Carlo Community Software in Julia},
+  title  = {{QMC.jl}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
   url    = {https://github.com/QMCSoftware/qmcju.jl}
 }

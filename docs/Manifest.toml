@@ -2,7 +2,7 @@
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "c778f9d3c74916b30274c0b51c7ecba74b121850"
+project_hash = "9778583d7b88958bbcb7d5f05299649eb5c611e8"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -191,9 +191,9 @@ version = "0.1.11"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "8f05e9a2e7c2e3eb524102bb2926c5743c07fbe1"
+git-tree-sha1 = "c307cd83373868391f3ac30b41530bc5d5d05d08"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
-version = "2.8.0+0"
+version = "2.8.1+0"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -778,7 +778,7 @@ git-tree-sha1 = "4fbbafbc6251b883f4d2705356f3641f3652a7fe"
 uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
 version = "1.4.0"
 
-[[deps.QMCJu]]
+[[deps.QMC]]
 deps = ["Distributions", "FFTW", "Libdl", "LinearAlgebra", "NBInclude", "Plots", "Printf", "Random", "SpecialFunctions", "Statistics"]
 path = ".."
 uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"

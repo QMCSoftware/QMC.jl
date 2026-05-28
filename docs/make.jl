@@ -1,10 +1,10 @@
 using Documenter
-using QMCJu
+using QMC
 
 makedocs(
-    sitename = "QMCJu.jl",
+    sitename = "QMC.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
-    modules = [QMCJu],
+    modules = [QMC],
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",

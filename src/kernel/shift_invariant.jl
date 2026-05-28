@@ -32,7 +32,7 @@ end
 
 Evaluate the 1D shift-invariant kernel component at fractional part of `t`.
 
-Following QMCJu, this uses cancellation-avoiding forms of the Bernoulli polynomial
+Following QMC, this uses cancellation-avoiding forms of the Bernoulli polynomial
 without the (2π)^{2r}/(2r)! scaling (which is absorbed into the MLE parameter θ).
 The kernel component is: 1 + const_mult * bern_poly({t}), where
   const_mult = -(-1)^r  (r = order, b_order = 2r)

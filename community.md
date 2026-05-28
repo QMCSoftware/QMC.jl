@@ -1,4 +1,4 @@
-# QMCJu.jl Community
+# QMC.jl Community
 
 ## Steering Council
 
@@ -8,7 +8,7 @@
 
 ## Contributors
 
-We gratefully acknowledge all contributors to the broader QMCJu project and to QMCJu.jl.
+We gratefully acknowledge all contributors to the broader QMC project and to QMC.jl.
 See the full list at the [QMCSoftware community page](https://qmcsoftware.github.io/QMCSoftware/community/).
 
 ## Julia Community Resources
@@ -20,8 +20,8 @@ See the full list at the [QMCSoftware community page](https://qmcsoftware.github
 
 ## Select References
 
-The mathematical and algorithmic foundations used by QMCJu.jl are documented in the
-[QMCJu publications page](https://qmcju.org/publications/) and the
+The mathematical and algorithmic foundations used by QMC.jl are documented in the
+[QMC publications page](https://qmcju.org/publications/) and the
 [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
 
 ### (Q)MC Courses

@@ -12,8 +12,8 @@ When `generalize=true`, a per-dimension permutation of digits is applied
 higher dimensions.
 
 This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QMCJU_PYTHON"]`
-before `using QMCJu`.
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
+before `using QMC`.
 
 # Arguments
 - `dimension::Int`: number of dimensions (up to 250).

@@ -1,6 +1,6 @@
-# QMCJu.jl: Quasi-Monte Carlo Software in Julia
+# QMC.jl: Quasi-Monte Carlo Software in Julia
 
-QMCJu.jl is a Julia translation of the original QMCJu package for Quasi-Monte Carlo (QMC) numerical integration.
+QMC.jl is a Julia translation of the original QMC package for Quasi-Monte Carlo (QMC) numerical integration.
 
 `IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`,
 `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library,
@@ -21,7 +21,7 @@ This example uses `Lattice`, so `qmctoolscl` must be installed in a Python
 visible to Julia.
 
 ```julia
-using QMCJu
+using QMC
 
 # Set up a 3D integration using a lattice rule
 dd = Lattice(3; randomize=true)
@@ -49,8 +49,8 @@ visible to Julia:
 python3 -m pip install qmctoolscl
 ```
 
-If Julia should use a specific Python interpreter, set `ENV["QMCJU_PYTHON"]`
-before `using QMCJu`.
+If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"]`
+before `using QMC`.
 
 ## Contents
 

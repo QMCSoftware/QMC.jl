@@ -1,6 +1,6 @@
-# Contributing to QMCJu.jl
+# Contributing to QMC.jl
 
-Thank you for your interest in contributing to QMCJu.jl. This guide walks through the full developer setup, project conventions, and how to add new components.
+Thank you for your interest in contributing to QMC.jl. This guide walks through the full developer setup, project conventions, and how to add new components.
 
 Please submit **pull requests** to the `develop` branch and **issues** using a template from `.github/ISSUE_TEMPLATE/`.
 
@@ -46,17 +46,17 @@ python3 -m pip install qmctoolscl
 If Julia should use a specific Python interpreter, set this before first use of those generators:
 
 ```julia
-ENV["QMCJU_PYTHON"] = "/path/to/python"
+ENV["QMC_PYTHON"] = "/path/to/python"
 ```
 
-### 4. Optional: install IJulia and register the `QMCJu` notebook kernel
+### 4. Optional: install IJulia and register the `QMC` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
-julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 ```
 
-Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI. This step is only needed if you plan to run notebooks.
+Run those commands from the repository root. This installs IJulia and creates a `QMC` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI. This step is only needed if you plan to run notebooks.
 
 ### 5. Verify everything works
 
@@ -85,8 +85,8 @@ include("test/runtests.jl")
 Individual test groups:
 
 ```julia
-using QMCJu, Test, Statistics, LinearAlgebra, Distributions
-import QMCJu: Uniform, Kumaraswamy  # resolve name conflicts with Distributions
+using QMC, Test, Statistics, LinearAlgebra, Distributions
+import QMC: Uniform, Kumaraswamy  # resolve name conflicts with Distributions
 
 include("test/test_discrete_distributions.jl")
 include("test/test_true_measures.jl")
@@ -96,7 +96,7 @@ include("test/test_stopping_criteria.jl")
 include("test/test_integration.jl")
 ```
 
-Note: `Uniform` and `Kumaraswamy` are exported by both QMCJu and Distributions.jl. When using both packages, resolve the ambiguity with `import QMCJu: Uniform, Kumaraswamy`.
+Note: `Uniform` and `Kumaraswamy` are exported by both QMC and Distributions.jl. When using both packages, resolve the ambiguity with `import QMC: Uniform, Kumaraswamy`.
 
 ## Project Structure
 
@@ -104,7 +104,7 @@ Note: `Uniform` and `Kumaraswamy` are exported by both QMCJu and Distributions.j
 qmcju/
 ├── Project.toml                # Julia package metadata and dependencies
 ├── src/
-│   ├── QMCJu.jl                # Main module: includes, exports
+│   ├── QMC.jl                # Main module: includes, exports
 │   ├── abstract_types.jl       # Type hierarchy
 │   ├── data/                   # Embedded generating vectors and direction numbers
 │   │   ├── kuo_lattice_gen_vector.jl    # 9125 Kuo lattice generating vectors
@@ -133,12 +133,12 @@ julia -e 'using IJulia; notebook(dir="demos")'
 If you have not created the project-bound kernel yet, run this once from the repository root:
 
 ```bash
-julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 ```
 
-Then select the `QMCJu` kernel in Jupyter or VS Code once.
+Then select the `QMC` kernel in Jupyter or VS Code once.
 
-If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMCJu` Julia kernel.
+If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMC` Julia kernel.
 
 Most demos use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl`
 to be installed in a Python visible to Julia.
@@ -148,10 +148,10 @@ To run a notebook in VS Code:
 1. Install the `Julia` and `Jupyter` extensions.
 2. Open this repository folder in VS Code.
 3. Open a notebook from `demos/`.
-4. Click the notebook kernel picker and select `QMCJu`.
+4. Click the notebook kernel picker and select `QMC`.
 5. Restart the notebook kernel if it was previously attached to another interpreter.
 
-Do not use the Python `qmcju`, `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
+Do not use the Python `qmcju`, `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QMC` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
 
 ## Code Style
 
@@ -173,14 +173,14 @@ Please format your code before submitting a pull request.
 
 ## Adding a New Component
 
-QMCJu.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new component:
+QMC.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new component:
 
 ### Discrete Distribution
 
 1. Create `src/discrete_distribution/my_dist.jl`
 2. Define a struct that subtypes `AbstractDiscreteDistribution`
 3. Implement `gen_samples(dd::MyDist, n::Int)` → `Matrix{Float64}` (n × d)
-4. Add `include` and `export` in `src/QMCJu.jl`
+4. Add `include` and `export` in `src/QMC.jl`
 5. Add tests in `test/test_discrete_distributions.jl`
 
 ### True Measure
@@ -217,7 +217,7 @@ QMCJu.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a n
 - A `Base.show` method for REPL display
 - Unit tests covering construction, basic operation, and edge cases
 - A demo notebook if the component is user-facing
-- `include` and `export` entries in `src/QMCJu.jl`
+- `include` and `export` entries in `src/QMC.jl`
 
 ## IDE Tips (VS Code)
 

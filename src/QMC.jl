@@ -1,4 +1,4 @@
-module QMCJu
+module QMC
 
 using LinearAlgebra, Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
 
