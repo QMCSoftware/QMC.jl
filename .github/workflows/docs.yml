@@ -35,12 +35,20 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install qmctoolscl
+        run: pip install qmctoolscl
+
       - name: Install dependencies
         run: |
           julia --project=docs -e '
             using Pkg
             Pkg.develop(PackageSpec(path="."))
             Pkg.instantiate()
+            Pkg.resolve()
           '
 
       - name: Build and deploy docs
