@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
+    branches: [develop, master]
   pull_request:
+    branches: [develop, master]
   workflow_dispatch:
 
 jobs:
@@ -12,13 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.10', '1.11', 'nightly']
+        julia-version: ['1.10', '1.11']
         os: [ubuntu-latest, macos-latest, windows-latest]
-        exclude:
-          - julia-version: 'nightly'
-            os: macos-latest
-          - julia-version: 'nightly'
-            os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
