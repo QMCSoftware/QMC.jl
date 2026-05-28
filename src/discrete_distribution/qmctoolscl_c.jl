@@ -193,31 +193,58 @@ end
 # ──────────────────────────────────────────────────────────────────────────────
 # DigitalNetB2 C wrapper
 #
-# Signature:
-#   dnb2_gen_gray_float(r, n, d, bs_r, bs_n, bs_d,
-#                       n_start, mmax, r_x, apply_shift,
-#                       *lshifts, *shiftsb, *tmaxes, *C, *x)
+# Signatures:
+#   dnb2_gen_gray(r, n, d, bs_r, bs_n, bs_d, n_start, mmax, *C, *xb)
+#   dnb2_gen_natural(r, n, d, bs_r, bs_n, bs_d, n_start, mmax, *C, *xb)
+#   dnb2_digital_shift(r, n, d, bs_r, bs_n, bs_d, r_x, *lshifts, *xb, *shiftsb, *xrb)
+#   dnb2_integer_to_float(r, n, d, bs_r, bs_n, bs_d, *tmaxes, *xb, *x)
 #
 # C: r_x*d*mmax UInt64, row-major as C[l_x*d*mmax + j*mmax + b].
-# lshifts: r_x UInt64  (left-shift per matrix replication before digital shift).
+# xb/xrb: binary digital net points stored as UInt64 values in row-major R×n×d order.
+# lshifts: r_x UInt64  (left shift per matrix replication before digital shift).
 # shiftsb: r*d  UInt64  (digital shift per output replication × dimension).
 # tmaxes:  r    UInt64  (bit width for float scaling: x = val * 2^{-tmaxes[l]}).
-# apply_shift: 0 = none, 1 = apply digital shift.
 # ──────────────────────────────────────────────────────────────────────────────
 
-function _c_dnb2_gen_gray_float!(R::Int, n::Int, d::Int, n_start::Int,
-        mmax::Int, r_x::Int, apply_shift::UInt8,
-        lshifts::Vector{UInt64}, shiftsb::Vector{UInt64},
-        tmaxes::Vector{UInt64}, C::Vector{UInt64},
-        x_buf::Vector{Float64})
-    ccall((:dnb2_gen_gray_float, _qmctoolscl_lib_path()), Cvoid,
+function _c_dnb2_gen_gray!(R::Int, n::Int, d::Int, n_start::Int,
+        mmax::Int, C::Vector{UInt64}, xb_buf::Vector{UInt64})
+    ccall((:dnb2_gen_gray, _qmctoolscl_lib_path()), Cvoid,
+        (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
+         Ptr{UInt64}, Ptr{UInt64}),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(n_start), UInt64(mmax), C, xb_buf)
+end
+
+function _c_dnb2_gen_natural!(R::Int, n::Int, d::Int, n_start::Int,
+        mmax::Int, C::Vector{UInt64}, xb_buf::Vector{UInt64})
+    ccall((:dnb2_gen_natural, _qmctoolscl_lib_path()), Cvoid,
+        (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
+         Ptr{UInt64}, Ptr{UInt64}),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(n_start), UInt64(mmax), C, xb_buf)
+end
+
+function _c_dnb2_digital_shift!(R::Int, n::Int, d::Int, r_x::Int,
+        lshifts::Vector{UInt64}, xb_buf::Vector{UInt64},
+        shiftsb::Vector{UInt64}, xrb_buf::Vector{UInt64})
+    ccall((:dnb2_digital_shift, _qmctoolscl_lib_path()), Cvoid,
+        (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
+         Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(r_x), lshifts, xb_buf, shiftsb, xrb_buf)
+end
+
+function _c_dnb2_integer_to_float!(R::Int, n::Int, d::Int,
+        tmaxes::Vector{UInt64}, xb_buf::Vector{UInt64}, x_buf::Vector{Float64})
+    ccall((:dnb2_integer_to_float, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         UInt64, UInt64, UInt64, UInt8,
-         Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{Float64}),
+         Ptr{UInt64}, Ptr{UInt64}, Ptr{Float64}),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(R), UInt64(n), UInt64(d),
-        UInt64(n_start), UInt64(mmax), UInt64(r_x), apply_shift,
-        lshifts, shiftsb, tmaxes, C, x_buf)
+        tmaxes, xb_buf, x_buf)
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
