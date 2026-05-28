@@ -2,7 +2,8 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-Manifest.toml
+/Manifest.toml
+/devtools/formatter/Manifest.toml
 
 # Documentation build
 docs/build/
