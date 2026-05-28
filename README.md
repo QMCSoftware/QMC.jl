@@ -35,8 +35,7 @@ an optional Jupyter frontend.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/QMCSoftware/qmcju.jl.git
-cd QMCSoftware/qmcju.jl
+git [clone https://github.com/QMCSoftware/qmcju.jl.git](https://github.com/QMCSoftware/QMC.jl.git)
 ```
 
 ### 2. Install Julia (if not already installed)
