@@ -117,7 +117,7 @@ println("Exact:    $(keister_exact(3))")
 
 ## Demos
 
-Nine demo notebooks live in `demos/`. They contain Julia code and should run on the `QMCJu` Julia kernel.
+Demo notebooks live in `demos/`. They contain Julia code and should run on the `QMCJu` Julia kernel.
 Most of them use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl`
 to be installed in a Python visible to Julia.
 
