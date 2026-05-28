@@ -2,6 +2,8 @@
 
 > QMC.jl is a Julia translation of the original QMC package, with quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
+> Status: Experimental work in progress. Collaborators are welcome.
+
 ## Overview
 
 QMC.jl provides four building blocks that snap together to solve integration problems:
