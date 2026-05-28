@@ -56,6 +56,6 @@ When Jupyter opens, choose the `QMC` Julia kernel for the notebook. The Python e
 | `lebesgue_integration.ipynb` | Lebesgue measure integration |
 | `some_true_measures.ipynb` | All 10 true measures demonstrated |
 | `gbm_demo.ipynb` | Geometric Brownian Motion for finance |
-| `qmcju_intro.ipynb` | Package tour: building blocks explained |
+| `qmc.jl_intro.ipynb` | Package tour: building blocks explained |
 | `sample_scatter_plots.ipynb` | Point set visualizations and statistics |
 | `elliptic_pde.ipynb` | 1D elliptic PDE uncertainty quantification with MC and lattice QMC |

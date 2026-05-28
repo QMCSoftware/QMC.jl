@@ -8,8 +8,8 @@ makedocs(
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://qmcsoftware.github.io/qmcju.jl/",
-        repolink = "https://github.com/QMCSoftware/qmcju.jl",
+        canonical = "https://qmcsoftware.github.io/QMC.jl/",
+        repolink = "https://github.com/QMCSoftware/QMC.jl",
         edit_link = nothing,
         assets = String[],
     ),
@@ -34,7 +34,7 @@ makedocs(
 # Only deploy from CI
 if get(ENV, "CI", nothing) == "true"
     deploydocs(
-        repo = "github.com/QMCSoftware/qmcju.jl.git",
+        repo = "github.com/QMCSoftware/QMC.jl.git",
         devbranch = "develop",
         push_preview = true,
     )
