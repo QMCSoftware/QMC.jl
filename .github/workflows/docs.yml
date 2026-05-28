@@ -31,9 +31,7 @@ jobs:
 
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
-
-      - uses: julia-actions/cache@v2
+          version: '1.12'
 
       - uses: actions/setup-python@v5
         with:
@@ -44,11 +42,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path="."))
+          julia --startup-file=no --project=docs -e '
+            import Pkg
             Pkg.instantiate()
-            Pkg.resolve()
+            Pkg.precompile()
           '
 
       - name: Build and deploy docs
