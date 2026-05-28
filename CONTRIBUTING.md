@@ -12,9 +12,10 @@ Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@
 
 | Tool | Version | Notes |
 |---|---|---|
-| [Conda](https://docs.conda.io/en/latest/miniconda.html) | any recent | manages the Python environment |
 | [Julia](https://julialang.org/downloads/) | ≥ 1.10 | `brew install julia` on macOS, or download from julialang.org |
 | Git | any recent | to clone the repo |
+
+Python/Conda is optional. Use it only if you want Jupyter as an external notebook frontend.
 
 ### 1. Clone and enter the project
 
@@ -23,31 +24,22 @@ git clone https://github.com/QMCSoftware/qmcju.jl.git
 cd QMCSoftware/qmcju.jl
 ```
 
-### 2. Create the Conda environment
-
-If you also work on the Python QMCJu package, reuse its environment. Otherwise:
-
-```bash
-conda create -n qmcju python=3.12 -y
-conda activate qmcju
-```
-
-### 3. Install Julia dependencies
+### 2. Install Julia dependencies
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-### 4. Install IJulia and register the `QMCJu` notebook kernel
+### 3. Optional: install IJulia and register the `QMCJu` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
 julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 ```
 
-Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI.
+Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI. This step is only needed if you plan to run notebooks.
 
-### 5. Verify everything works
+### 4. Verify everything works
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'
@@ -113,10 +105,9 @@ qmcju/
 
 ## Running Demos
 
-Launch the Jupyter notebook server:
+If you want the simplest path and do not need a separate Python environment, launch the notebook server from Julia:
 
 ```bash
-conda activate qmcju
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
@@ -128,6 +119,8 @@ julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
 
 Then select the `QMCJu` kernel in Jupyter or VS Code once.
 
+If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMCJu` Julia kernel.
+
 To run a notebook in VS Code:
 
 1. Install the `Julia` and `Jupyter` extensions.
@@ -136,7 +129,7 @@ To run a notebook in VS Code:
 4. Click the notebook kernel picker and select `QMCJu`.
 5. Restart the notebook kernel if it was previously attached to another interpreter.
 
-Do not use the Python `qmcju` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
+Do not use the Python `qmcju`, `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QMCJu` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
 
 ## Code Style
 
