@@ -24,6 +24,10 @@ The mathematical and algorithmic foundations of QMCJu are documented in the
 [QMCJu publications page](https://qmcju.org/publications/) and the
 [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
 
+### (Q)MC Courses
+
+- Hickernell, Fred J. *MATH 565 Monte Carlo Methods.* Illinois Institute of Technology, 2025. <https://github.com/QMCSoftware/MATH565Fall2025>.
+
 ### (Q)MC Reference Books (in Chicago style)
 
 - Owen, Art B. *Monte Carlo Theory, Methods and Examples.* Self-published, 2013. <https://artowen.su.domains/mc/>
