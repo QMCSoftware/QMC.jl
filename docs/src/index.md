@@ -1,6 +1,6 @@
 # QMCJu: Quasi-Monte Carlo Software in Julia
 
-QMCJu is the Julia implementation of the [QMCJu](https://github.com/QMCSoftware/QMCSoftware) framework for Quasi-Monte Carlo (QMC) numerical integration.
+QMCJu is the Julia implementation of the [QMCJu](https://github.com/QMCSoftware/qmcju.jl) framework for Quasi-Monte Carlo (QMC) numerical integration.
 
 ## Overview
 
@@ -32,7 +32,7 @@ println("Error bound: $(result.data[:error_bound])")
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/QMCSoftware", subdir="qmcju")
+Pkg.add(url="https://github.com/QMCSoftware/qmcju.jl")
 ```
 
 ## Contents

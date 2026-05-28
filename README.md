@@ -1,6 +1,6 @@
 # QMCJu: Quasi-Monte Carlo Community Software in Julia
 
-> A Julia translation of [QMCJu](https://github.com/QMCSoftware/QMCSoftware) (v2.3) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
+> A Julia translation of [QMCJu](https://github.com/QMCSoftware/qmcju.jl) (v2.3) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 ## Overview
 
@@ -28,8 +28,8 @@ Additional modules provide shift-invariant and Matérn kernels (`KernelShiftInva
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/QMCSoftware/QMCSoftware.git
-cd QMCSoftware/qmcju_software
+git clone https://github.com/QMCSoftware/qmcju.jl.git
+cd QMCSoftware/qmcju.jl
 ```
 
 ### 2. Create and activate a Conda environment
@@ -151,7 +151,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
   title  = {{QMCJu}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
-  url    = {https://github.com/QMCSoftware/QMCSoftware}
+  url    = {https://github.com/QMCSoftware/qmcju.jl}
 }
 ```
 
