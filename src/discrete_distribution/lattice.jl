@@ -58,92 +58,35 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
         dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
 end
 
-"""
-    _radical_inverse(i::Int, n::Int)
-
-Map integer i in 0..n-1 to its radical-inverse (bit-reversal) index.
-`n` must be a power of 2.
-"""
-function _radical_inverse(i::Int, n::Int)
-    m = trailing_zeros(n)
-    rev = 0
-    val = i
-    for _ in 1:m
-        rev = (rev << 1) | (val & 1)
-        val >>= 1
-    end
-    return rev
-end
-
-"""
-    _gray_code(i::Int)
-
-Map integer i to its Gray code.
-"""
-_gray_code(i::Int) = i ⊻ (i >> 1)
-
 function gen_samples(dd::Lattice, n::Int)
     n > 0 || throw(ArgumentError("n must be positive"))
     d = dd.dimension
     R = isnothing(dd.replications) ? 1 : dd.replications
-    z = dd.gen_vector
+    g = dd.gen_vector  # Vector{UInt64}, length d
 
-    # Regenerate shift each call when randomized
+    # Regenerate shift on each call when randomized
     if dd.randomize
         dd.shift .= rand(dd.rng, R, d)
     end
 
-    # Generate base (unshifted) points for one generating vector
-    x_base = Matrix{Float64}(undef, n, d)
-
+    # Generate unshifted base lattice (1 replication, n points, d dims)
+    x_buf = Vector{Float64}(undef, n * d)
     if dd.order == "linear"
-        @inbounds for j in 1:d
-            zj = Float64(z[j])
-            for i in 0:(n - 1)
-                x_base[i + 1, j] = mod(i * zj / n, 1.0)
-            end
-        end
-    elseif dd.order == "radical_inverse" || dd.order == "natural"
-        # Radical-inverse (bit-reversal) ordering
-        @inbounds for j in 1:d
-            zj = Float64(z[j])
-            for i in 0:(n - 1)
-                ri = ispow2(n) ? _radical_inverse(i, n) : i
-                x_base[ri + 1, j] = mod(i * zj / n, 1.0)
-            end
-        end
-    elseif dd.order == "gray"
-        @inbounds for j in 1:d
-            zj = Float64(z[j])
-            for i in 0:(n - 1)
-                gi = _gray_code(i)
-                x_base[i + 1, j] = mod(gi * zj / n, 1.0)
-            end
-        end
+        _c_lat_gen_linear!(n, d, g, x_buf)
+    elseif dd.order == "natural" || dd.order == "radical_inverse"
+        _c_lat_gen_natural!(n, d, 0, g, x_buf)
+    else  # "gray"
+        _c_lat_gen_gray!(n, d, 0, g, x_buf)
     end
 
-    if R == 1
-        # Single replication: return n × d
-        @inbounds for j in 1:d
-            sj = dd.shift[1, j]
-            for i in 1:n
-                x_base[i, j] = mod(x_base[i, j] + sj, 1.0)
-            end
-        end
-        return x_base
-    else
-        # Multiple replications: return R × n × d
-        result = Array{Float64}(undef, R, n, d)
-        @inbounds for r in 1:R
-            for j in 1:d
-                sj = dd.shift[r, j]
-                for i in 1:n
-                    result[r, i, j] = mod(x_base[i, j] + sj, 1.0)
-                end
-            end
-        end
-        return result
-    end
+    # Build a row-major R×d shifts buffer: shifts_buf[l*d + j] = dd.shift[l+1, j+1]
+    shifts_buf = Float64[dd.shift[l, j] for l in 1:R for j in 1:d]
+
+    # Apply R independent shifts via the C fused shift-mod-1 function
+    xr_buf = Vector{Float64}(undef, R * n * d)
+    _c_lat_shift_mod_1!(R, n, d, 1, x_buf, shifts_buf, xr_buf)
+
+    return R == 1 ? _rowmaj_to_nxd(xr_buf, n, d) : _rowmaj_to_Rnxd(xr_buf, R, n, d)
 end
 
 function Base.show(io::IO, dd::Lattice)

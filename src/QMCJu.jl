@@ -1,6 +1,6 @@
 module QMCJu
 
-using LinearAlgebra, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
+using LinearAlgebra, Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
 
 # Utilities
 include("util/bernoulli.jl")
@@ -16,6 +16,7 @@ include("data/kuo_lattice_gen_vector.jl")
 include("data/joe_kuo_direction_numbers.jl")
 
 # Discrete Distributions
+include("discrete_distribution/qmctoolscl_c.jl")
 include("discrete_distribution/iid_std_uniform.jl")
 include("discrete_distribution/lattice.jl")
 include("discrete_distribution/digital_net_b2.jl")
@@ -58,6 +59,10 @@ include("stopping_criterion/cub_qmc_lattice_g.jl")
 include("stopping_criterion/cub_qmc_net_g.jl")
 include("stopping_criterion/cub_qmc_bayes_lattice_g.jl")
 include("stopping_criterion/cub_qmc_bayes_net_g.jl")
+
+function __init__()
+    _init_qmctoolscl!()
+end
 
 # Exports — abstract types
 export AbstractDiscreteDistribution, AbstractTrueMeasure, AbstractIntegrand

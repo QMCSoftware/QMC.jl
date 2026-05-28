@@ -12,6 +12,7 @@ test-%:
 
 # Build documentation
 doc:
+	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
 	julia --project=docs docs/make.jl
 
 # Format code with JuliaFormatter

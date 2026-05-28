@@ -98,125 +98,97 @@ function DigitalNetB2(dimension::Int; randomize::String = "LMS_DS", seed = nothi
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Digital shift: XOR each column with a random UInt32
+# Matrix-space linear matrix scramble (LMS) over GF(2)
+#
+# Applies a random lower-triangular 32×32 matrix L (independent per dimension)
+# to each column of the generating matrix V, producing a scrambled copy in
+# which each direction number V[j,b] is replaced by L_j * V[j,b] over GF(2).
+#
+# This is mathematically equivalent to applying the same L_j to every Sobol'
+# point in dimension j, but operates in matrix space so the result can be
+# passed directly to dnb2_gen_gray_float.
+#
+# Returns a d × mmax Matrix{UInt64}.
 # ──────────────────────────────────────────────────────────────────────────────
-function _digital_shift!(pts::Matrix{UInt32}, rng::AbstractRNG)
-    d = size(pts, 2)
-    shifts = rand(rng, UInt32, d)
-    @inbounds for j in 1:d
-        sj = shifts[j]
-        for i in axes(pts, 1)
-            pts[i, j] = xor(pts[i, j], sj)
-        end
-    end
-end
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Linear matrix scramble
-# ──────────────────────────────────────────────────────────────────────────────
-function _linear_matrix_scramble!(pts::Matrix{UInt32}, rng::AbstractRNG)
-    B = _SOBOL_BITS
-    n, d = size(pts)
+function _lms_direction_matrix(V::Matrix{UInt32}, d::Int, rng::AbstractRNG)
+    mmax = size(V, 2)
+    V_scr = Matrix{UInt64}(undef, d, mmax)
     for j in 1:d
-        L = Vector{UInt32}(undef, B)
-        for k in 1:B
-            diag_bit = UInt32(1) << (B - k)
+        # Random lower-triangular matrix L over GF(2): L[k] is row k,
+        # with the diagonal bit at position (mmax-k) and random bits below it.
+        L = Vector{UInt32}(undef, mmax)
+        for k in 1:mmax
+            diag_bit = UInt32(1) << (mmax - k)
             below_mask = diag_bit - UInt32(1)
             L[k] = diag_bit | (rand(rng, UInt32) & below_mask)
         end
-
-        @inbounds for i in 1:n
-            v = pts[i, j]
+        for b in 1:mmax
+            v = V[j, b]
             newv = UInt32(0)
-            for k in 1:B
-                t = v & L[k]
+            for k in 1:mmax
+                # Bit k of L*v = parity(L[k] & v)
+                t = L[k] & v
                 t = xor(t, t >> 16)
                 t = xor(t, t >> 8)
                 t = xor(t, t >> 4)
                 t = xor(t, t >> 2)
                 t = xor(t, t >> 1)
                 if t & UInt32(1) == UInt32(1)
-                    newv |= UInt32(1) << (B - k)
+                    newv |= UInt32(1) << (mmax - k)
                 end
             end
-            pts[i, j] = newv
+            V_scr[j, b] = UInt64(newv)
         end
     end
+    return V_scr
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Generate Sobol points in integer form
+# Build the flat C-array for dnb2_gen_gray_float from a d×mmax direction matrix.
+# Layout: C_flat[l_x*d*mmax + j*mmax + b + 1] = V_mat[j+1, b+1] (row-major).
 # ──────────────────────────────────────────────────────────────────────────────
-function _sobol_points_uint(dd::DigitalNetB2, n::Int)
-    B = _SOBOL_BITS
-    d = dd.dimension
-    V = dd.direction_nums
-    pts = zeros(UInt32, n, d)
-
-    if dd.graycode
-        @inbounds for i in 1:(n - 1)
-            c = trailing_zeros(~UInt32(i - 1)) + 1
-            c = min(c, B)
-            for j in 1:d
-                pts[i + 1, j] = xor(pts[i, j], V[j, c])
-            end
-        end
-    else
-        @inbounds for i in 1:(n - 1)
-            gray_idx = UInt32(i)
-            for j in 1:d
-                val = UInt32(0)
-                gi = gray_idx
-                k = 1
-                while gi != 0 && k <= B
-                    if gi & UInt32(1) == UInt32(1)
-                        val = xor(val, V[j, k])
-                    end
-                    gi >>= 1
-                    k += 1
-                end
-                pts[i + 1, j] = val
-            end
-        end
+function _direction_matrix_to_C(V_mat::AbstractMatrix{T}, d::Int) where {T}
+    mmax = size(V_mat, 2)
+    C_flat = Vector{UInt64}(undef, d * mmax)
+    for j in 1:d, b in 1:mmax
+        C_flat[(j - 1) * mmax + (b - 1) + 1] = UInt64(V_mat[j, b])
     end
-
-    return pts
+    return C_flat
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Convert UInt32 points to Float64 in [0,1)
-# ──────────────────────────────────────────────────────────────────────────────
-function _uint_to_float(pts::Matrix{UInt32}, d::Int)
-    n = size(pts, 1)
-    scale = 1.0 / (Float64(UInt32(1) << 16) * Float64(UInt32(1) << 16))  # 1/2^32
-    x = Matrix{Float64}(undef, n, d)
-    @inbounds for j in 1:d
-        for i in 1:n
-            x[i, j] = Float64(pts[i, j]) * scale
-        end
-    end
-    return x
-end
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Single-replication sample generation
+# Single-replication and multi-replication generation via dnb2_gen_gray_float
 # ──────────────────────────────────────────────────────────────────────────────
 function _gen_single_replication(dd::DigitalNetB2, n::Int)
-    pts = _sobol_points_uint(dd, n)
+    d = dd.dimension
+    mmax = _SOBOL_BITS
+    V = dd.direction_nums
 
     if dd.randomize == "LMS_DS"
-        _linear_matrix_scramble!(pts, dd.rng)
-        _digital_shift!(pts, dd.rng)
+        V_scr = _lms_direction_matrix(V, d, dd.rng)
+        C_flat = _direction_matrix_to_C(V_scr, d)
+        lshifts = zeros(UInt64, 1)
+        shiftsb = UInt64.(rand(dd.rng, UInt32, d))
+        apply_shift = 0x01
     elseif dd.randomize == "DS"
-        _digital_shift!(pts, dd.rng)
+        C_flat = _direction_matrix_to_C(V, d)
+        lshifts = zeros(UInt64, 1)
+        shiftsb = UInt64.(rand(dd.rng, UInt32, d))
+        apply_shift = 0x01
+    else  # "none"
+        C_flat = _direction_matrix_to_C(V, d)
+        lshifts = zeros(UInt64, 1)
+        shiftsb = zeros(UInt64, d)
+        apply_shift = 0x00
     end
 
-    return _uint_to_float(pts, dd.dimension)
+    tmaxes = fill(UInt64(mmax), 1)
+    x_buf = Vector{Float64}(undef, n * d)
+    _c_dnb2_gen_gray_float!(1, n, d, 0, mmax, 1, apply_shift,
+        lshifts, shiftsb, tmaxes, C_flat, x_buf)
+    return _rowmaj_to_nxd(x_buf, n, d)
 end
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Public gen_samples
-# ──────────────────────────────────────────────────────────────────────────────
 """
     gen_samples(dd::DigitalNetB2, n::Int)
 
@@ -229,14 +201,46 @@ function gen_samples(dd::DigitalNetB2, n::Int)
 
     if isnothing(dd.replications)
         return _gen_single_replication(dd, n)
-    else
-        R = dd.replications
-        result = Array{Float64, 3}(undef, R, n, dd.dimension)
-        for r in 1:R
-            result[r, :, :] = _gen_single_replication(dd, n)
-        end
-        return result
     end
+
+    R = dd.replications
+    d = dd.dimension
+    mmax = _SOBOL_BITS
+    V = dd.direction_nums
+
+    if dd.randomize == "LMS_DS"
+        # Build R independently scrambled generating matrices (r_x = R)
+        C_flat = Vector{UInt64}(undef, R * d * mmax)
+        for r in 1:R
+            V_scr = _lms_direction_matrix(V, d, dd.rng)
+            base = (r - 1) * d * mmax
+            for j in 1:d, b in 1:mmax
+                C_flat[base + (j - 1) * mmax + (b - 1) + 1] = UInt64(V_scr[j, b])
+            end
+        end
+        r_x = R
+        lshifts = zeros(UInt64, R)
+        shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
+        apply_shift = 0x01
+    elseif dd.randomize == "DS"
+        C_flat = _direction_matrix_to_C(V, d)
+        r_x = 1
+        lshifts = zeros(UInt64, 1)
+        shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
+        apply_shift = 0x01
+    else  # "none"
+        C_flat = _direction_matrix_to_C(V, d)
+        r_x = 1
+        lshifts = zeros(UInt64, 1)
+        shiftsb = zeros(UInt64, R * d)
+        apply_shift = 0x00
+    end
+
+    tmaxes = fill(UInt64(mmax), R)
+    x_buf = Vector{Float64}(undef, R * n * d)
+    _c_dnb2_gen_gray_float!(R, n, d, 0, mmax, r_x, apply_shift,
+        lshifts, shiftsb, tmaxes, C_flat, x_buf)
+    return _rowmaj_to_Rnxd(x_buf, R, n, d)
 end
 
 function Base.show(io::IO, dd::DigitalNetB2)
