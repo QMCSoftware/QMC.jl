@@ -48,6 +48,9 @@ include("integrand/hartmann6d.jl")
 include("integrand/multimodal2d.jl")
 include("integrand/four_branch2d.jl")
 
+# Multilevel Integrand Interface
+include("integrand/ml_integrand.jl")
+
 # Kernels
 include("kernel/shift_invariant.jl")
 include("kernel/dig_shift_invariant.jl")
@@ -59,6 +62,9 @@ include("stopping_criterion/cub_qmc_lattice_g.jl")
 include("stopping_criterion/cub_qmc_net_g.jl")
 include("stopping_criterion/cub_qmc_bayes_lattice_g.jl")
 include("stopping_criterion/cub_qmc_bayes_net_g.jl")
+include("stopping_criterion/cub_mlmc.jl")
+include("stopping_criterion/cub_mlmc_cont.jl")
+include("stopping_criterion/cub_mlqmc_cont.jl")
 
 function __init__()
     _init_qmctoolscl!(; warn_on_failure = false)
@@ -67,6 +73,7 @@ end
 # Exports — abstract types
 export AbstractDiscreteDistribution, AbstractTrueMeasure, AbstractIntegrand
 export AbstractStoppingCriterion, AbstractKernel, AbstractStationaryKernel
+export AbstractMLIntegrand
 
 # Exports — discrete distributions
 export IIDStdUniform, Lattice, DigitalNetB2, Halton
@@ -89,10 +96,14 @@ export SumKernel, ProductKernel, kernel_eval, kernel_matrix
 # Exports — stopping criteria
 export CubMCCLT, CubQMCLatticeG, CubQMCNetG
 export CubQMCBayesLatticeG, CubQMCBayesNetG
+export CubMLMC, CubMLMCCont, CubMLQMCCont
 
 # Exports — interface functions
 export integrate, gen_samples, transform, evaluate, sample_and_evaluate
 export QMCResult, compute_kernel_eigenvalues
+export ml_evaluate, dimension_at_level, cost_at_level
+export spawn_dd, spawn_tm, spawn_integrand
+export ml_sample_and_evaluate, ml_sample_and_evaluate_reps
 
 # Exports — utilities
 export bernoulli_poly, to_bin, to_float, fwht!, fwht, ifwht!

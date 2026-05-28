@@ -23,4 +23,8 @@ Halton
 
 ```@docs
 gen_samples
+spawn_dd(::IIDStdUniform, ::Int)
+spawn_dd(::Lattice, ::Int)
+spawn_dd(::DigitalNetB2, ::Int)
+spawn_dd(::Halton, ::Int)
 ```

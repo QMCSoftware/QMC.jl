@@ -14,6 +14,9 @@ CubQMCLatticeG
 CubQMCNetG
 CubQMCBayesLatticeG
 CubQMCBayesNetG
+CubMLMC
+CubMLMCCont
+CubMLQMCCont
 ```
 
 ## Integration

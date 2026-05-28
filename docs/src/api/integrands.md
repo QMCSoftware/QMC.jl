@@ -4,6 +4,7 @@
 
 ```@docs
 AbstractIntegrand
+AbstractMLIntegrand
 ```
 
 ## Test Functions
@@ -28,6 +29,12 @@ FourBranch2D
 ```@docs
 evaluate
 sample_and_evaluate
+ml_evaluate
+dimension_at_level(::AbstractMLIntegrand, ::Int)
+cost_at_level(::AbstractMLIntegrand, ::Int)
+spawn_integrand(::AbstractMLIntegrand, ::Int)
+ml_sample_and_evaluate(::AbstractMLIntegrand, ::AbstractDiscreteDistribution, ::AbstractTrueMeasure, ::Int, ::Int)
+ml_sample_and_evaluate_reps(::AbstractMLIntegrand, ::AbstractDiscreteDistribution, ::AbstractTrueMeasure, ::Int, ::Int, ::Int)
 ```
 
 ## Exact Values
