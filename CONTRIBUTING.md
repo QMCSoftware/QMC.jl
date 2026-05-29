@@ -103,7 +103,7 @@ Note: `Uniform` and `Kumaraswamy` are exported by both QMC and Distributions.jl.
 QMC.jl/
 ├── Project.toml                # Julia package metadata and dependencies
 ├── src/
-│   ├── QMC.jl                # Main module: includes, exports
+│   ├── QMC.jl                  # Main module: includes, exports
 │   ├── abstract_types.jl       # Type hierarchy
 │   ├── data/                   # Embedded generating vectors and direction numbers
 │   │   ├── kuo_lattice_gen_vector.jl    # 9125 Kuo lattice generating vectors
