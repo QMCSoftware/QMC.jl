@@ -126,7 +126,9 @@ end
 Create a new BrownianMotion true measure wrapping `dd_new`.
 """
 function spawn_tm(tm::BrownianMotion, dd_new::AbstractDiscreteDistribution)
-    return BrownianMotion(dd_new)
+    t_final = tm.time_vector[end]
+    tv_new = collect(range(t_final / dd_new.dimension, t_final; length = dd_new.dimension))
+    return BrownianMotion(dd_new; time_vector=tv_new, drift=tm.drift)
 end
 
 """
@@ -136,7 +138,10 @@ Create a new GeometricBrownianMotion true measure wrapping `dd_new`.
 """
 function spawn_tm(tm::GeometricBrownianMotion, dd_new::AbstractDiscreteDistribution)
     return GeometricBrownianMotion(dd_new;
-        drift=tm.drift, diffusion=tm.diffusion, mean_gbm=tm.mean_gbm)
+        t_final=tm.time_vector[end],
+        initial_value=tm.initial_value,
+        drift=tm.drift,
+        diffusion=tm.diffusion)
 end
 
 # ── Spawning a Multilevel Integrand at a Specific Level ──

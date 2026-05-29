@@ -13,6 +13,7 @@ before `using QMC`.
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).
 - `"DS"`: digital shift only (XOR with random integers).
+- `"NUS"`: nested uniform scrambling (Owen scrambling).
 - `"none"`: no randomization (deterministic Sobol' points).
 
 # Arguments
@@ -91,8 +92,8 @@ function DigitalNetB2(dimension::Int; randomize::String = "LMS_DS", seed = nothi
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     dimension <= _JK_DIRECTION_MATRIX_DIMS || throw(ArgumentError(
         "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)"))
-    randomize in ("LMS_DS", "DS", "none") || throw(ArgumentError(
-        "randomize must be \"LMS_DS\", \"DS\", or \"none\", got \"$randomize\""))
+    randomize in ("LMS_DS", "DS", "NUS", "none") || throw(ArgumentError(
+        "randomize must be \"LMS_DS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\""))
     if !isnothing(replications)
         replications > 0 || throw(ArgumentError("replications must be positive"))
     end
@@ -166,7 +167,7 @@ end
 # Single-replication and multi-replication generation via qmctoolscl binary net
 # generation, optional digital shifts, and integer-to-float conversion.
 # ──────────────────────────────────────────────────────────────────────────────
-function _gen_single_replication(dd::DigitalNetB2, n::Int)
+function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     d = dd.dimension
     mmax = _SOBOL_BITS
     V = dd.direction_nums
@@ -182,6 +183,25 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int)
         lshifts = zeros(UInt64, 1)
         shiftsb = UInt64.(rand(dd.rng, UInt32, d))
         apply_shift = 0x01
+    elseif dd.randomize == "NUS"
+        C_flat = _direction_matrix_to_C(V, d)
+        # Generate per-dimension seeds for Owen scrambling
+        dim_seeds = UInt64.(rand(dd.rng, UInt64, d))
+
+        xb_buf = Vector{UInt64}(undef, n * d)
+        if dd.graycode
+            _c_dnb2_gen_gray!(1, n, d, n_start, mmax, C_flat, xb_buf)
+        else
+            _c_dnb2_gen_natural!(1, n, d, n_start, mmax, C_flat, xb_buf)
+        end
+
+        # Apply Owen scrambling in-place
+        _owen_scramble_points!(xb_buf, n, d, mmax, dim_seeds)
+
+        tmaxes = fill(UInt64(mmax), 1)
+        x_buf = Vector{Float64}(undef, n * d)
+        _c_dnb2_integer_to_float!(1, n, d, tmaxes, xb_buf, x_buf)
+        return _rowmaj_to_nxd(x_buf, n, d)
     else  # "none"
         C_flat = _direction_matrix_to_C(V, d)
         lshifts = zeros(UInt64, 1)
@@ -191,9 +211,9 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int)
 
     xb_buf = Vector{UInt64}(undef, n * d)
     if dd.graycode
-        _c_dnb2_gen_gray!(1, n, d, 0, mmax, C_flat, xb_buf)
+        _c_dnb2_gen_gray!(1, n, d, n_start, mmax, C_flat, xb_buf)
     else
-        _c_dnb2_gen_natural!(1, n, d, 0, mmax, C_flat, xb_buf)
+        _c_dnb2_gen_natural!(1, n, d, n_start, mmax, C_flat, xb_buf)
     end
 
     xrb_buf = Vector{UInt64}(undef, n * d)
@@ -212,11 +232,12 @@ Generate `n` Sobol' points in `d` dimensions.  Returns an `n × d` matrix
 with values in [0, 1).  If `replications` was set, returns an `R × n × d` array.
 `n` should be a power of 2 for optimal equidistribution.
 """
-function gen_samples(dd::DigitalNetB2, n::Int)
+function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))
+    n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
 
     if isnothing(dd.replications)
-        return _gen_single_replication(dd, n)
+        return _gen_single_replication(dd, n; n_start=n_start)
     end
 
     R = dd.replications
@@ -244,6 +265,28 @@ function gen_samples(dd::DigitalNetB2, n::Int)
         lshifts = zeros(UInt64, 1)
         shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
         apply_shift = 0x01
+    elseif dd.randomize == "NUS"
+        C_flat = _direction_matrix_to_C(V, d)
+        # Generate unscrambled binary points (single set)
+        xb_base = Vector{UInt64}(undef, n * d)
+        if dd.graycode
+            _c_dnb2_gen_gray!(1, n, d, n_start, mmax, C_flat, xb_base)
+        else
+            _c_dnb2_gen_natural!(1, n, d, n_start, mmax, C_flat, xb_base)
+        end
+        # Apply R independent Owen scramblings
+        x_buf = Vector{Float64}(undef, R * n * d)
+        tmaxes_one = fill(UInt64(mmax), 1)
+        for r in 1:R
+            xb_copy = copy(xb_base)
+            dim_seeds = UInt64.(rand(dd.rng, UInt64, d))
+            _owen_scramble_points!(xb_copy, n, d, mmax, dim_seeds)
+            x_r = Vector{Float64}(undef, n * d)
+            _c_dnb2_integer_to_float!(1, n, d, tmaxes_one, xb_copy, x_r)
+            base = (r - 1) * n * d
+            x_buf[base+1:base+n*d] .= x_r
+        end
+        return _rowmaj_to_Rnxd(x_buf, R, n, d)
     else  # "none"
         C_flat = _direction_matrix_to_C(V, d)
         r_x = 1
@@ -254,9 +297,9 @@ function gen_samples(dd::DigitalNetB2, n::Int)
 
     xb_buf = Vector{UInt64}(undef, r_x * n * d)
     if dd.graycode
-        _c_dnb2_gen_gray!(r_x, n, d, 0, mmax, C_flat, xb_buf)
+        _c_dnb2_gen_gray!(r_x, n, d, n_start, mmax, C_flat, xb_buf)
     else
-        _c_dnb2_gen_natural!(r_x, n, d, 0, mmax, C_flat, xb_buf)
+        _c_dnb2_gen_natural!(r_x, n, d, n_start, mmax, C_flat, xb_buf)
     end
 
     xrb_buf = Vector{UInt64}(undef, R * n * d)
@@ -272,4 +315,57 @@ function Base.show(io::IO, dd::DigitalNetB2)
     rep_str = isnothing(dd.replications) ? "" : ", R=$(dd.replications)"
     print(io,
         "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)")
+end
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Owen / Nested Uniform Scrambling (NUS)
+#
+# Implements Owen (1995) scrambling using a hash-based approach: the random
+# bit flip at each node of the scrambling tree is determined by hashing
+# (dim_seed, depth, prefix). This is mathematically equivalent to generating
+# a full random tree but uses O(1) memory per dimension.
+# ──────────────────────────────────────────────────────────────────────────────
+
+"""
+    _owen_scramble_value(x::UInt64, dim_seed::UInt64, mmax::Int) -> UInt64
+
+Apply Owen scrambling to a single UInt64 digital net point value in one
+dimension. The point is stored with digit 1 at bit position `mmax-1` (MSB).
+
+The scrambling uses Julia's `hash` as a pseudo-random function, keyed by
+`dim_seed`, to determine the random bit flip at each node of the binary
+tree. This is the Matousek-style hash-based construction.
+"""
+function _owen_scramble_value(x::UInt64, dim_seed::UInt64, mmax::Int)
+    result = UInt64(0)
+    prefix = UInt64(0)
+    @inbounds for k in 0:(mmax - 1)
+        bit_pos = mmax - 1 - k
+        digit = (x >> bit_pos) & UInt64(1)
+        # Hash-based flip: deterministic from (dim_seed, depth, prefix)
+        h = hash((dim_seed, UInt64(k), prefix))
+        flip = h & UInt64(1)
+        new_digit = xor(digit, flip)
+        result |= (new_digit << bit_pos)
+        prefix = (prefix << 1) | new_digit
+    end
+    return result
+end
+
+"""
+    _owen_scramble_points!(xb::Vector{UInt64}, n::Int, d::Int, mmax::Int,
+                           dim_seeds::Vector{UInt64})
+
+Apply Owen scrambling in-place to binary digital net points stored in
+row-major order: `xb[i*d + j + 1]` (0-indexed i=point, j=dimension).
+`dim_seeds` has length `d`, one per dimension.
+"""
+function _owen_scramble_points!(xb::Vector{UInt64}, n::Int, d::Int,
+        mmax::Int, dim_seeds::Vector{UInt64})
+    @inbounds for i in 0:(n - 1)
+        for j in 0:(d - 1)
+            idx = i * d + j + 1
+            xb[idx] = _owen_scramble_value(xb[idx], dim_seeds[j + 1], mmax)
+        end
+    end
 end

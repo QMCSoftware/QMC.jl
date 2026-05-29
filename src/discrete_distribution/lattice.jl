@@ -62,8 +62,9 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
         dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
 end
 
-function gen_samples(dd::Lattice, n::Int)
+function gen_samples(dd::Lattice, n::Int; n_start::Int = 0)
     n > 0 || throw(ArgumentError("n must be positive"))
+    n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
     d = dd.dimension
     R = isnothing(dd.replications) ? 1 : dd.replications
     g = dd.gen_vector  # Vector{UInt64}, length d
@@ -76,11 +77,14 @@ function gen_samples(dd::Lattice, n::Int)
     # Generate unshifted base lattice (1 replication, n points, d dims)
     x_buf = Vector{Float64}(undef, n * d)
     if dd.order == "linear"
+        if n_start != 0
+            @warn "Lattice linear order ignores n_start; generating from index 0"
+        end
         _c_lat_gen_linear!(n, d, g, x_buf)
     elseif dd.order == "natural" || dd.order == "radical_inverse"
-        _c_lat_gen_natural!(n, d, 0, g, x_buf)
+        _c_lat_gen_natural!(n, d, n_start, g, x_buf)
     else  # "gray"
-        _c_lat_gen_gray!(n, d, 0, g, x_buf)
+        _c_lat_gen_gray!(n, d, n_start, g, x_buf)
     end
 
     # Build a row-major R×d shifts buffer: shifts_buf[l*d + j] = dd.shift[l+1, j+1]

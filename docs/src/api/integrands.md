@@ -15,6 +15,7 @@ Keister
 Genz
 AsianOption
 FinancialOption
+FinancialOptionML
 BoxIntegral
 Linear0
 Sin1D
@@ -22,6 +23,9 @@ Ishigami
 Hartmann6D
 Multimodal2D
 FourBranch2D
+SensitivityIndices
+BayesianLRCoeffs
+UMBridgeWrapper
 ```
 
 ## Evaluation
@@ -35,6 +39,7 @@ cost_at_level(::AbstractMLIntegrand, ::Int)
 spawn_integrand(::AbstractMLIntegrand, ::Int)
 ml_sample_and_evaluate(::AbstractMLIntegrand, ::AbstractDiscreteDistribution, ::AbstractTrueMeasure, ::Int, ::Int)
 ml_sample_and_evaluate_reps(::AbstractMLIntegrand, ::AbstractDiscreteDistribution, ::AbstractTrueMeasure, ::Int, ::Int, ::Int)
+compute_sensitivity_indices(::SensitivityIndices, ::AbstractMatrix)
 ```
 
 ## Exact Values
@@ -42,4 +47,5 @@ ml_sample_and_evaluate_reps(::AbstractMLIntegrand, ::AbstractDiscreteDistributio
 ```@docs
 keister_exact
 genz_exact
+get_exact_value(::FinancialOption)
 ```

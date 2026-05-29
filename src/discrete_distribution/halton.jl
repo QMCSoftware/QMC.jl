@@ -65,7 +65,7 @@ end
 Generate the first `n` points of the (generalized, shifted) Halton sequence.
 Returns an `n × d` matrix with values in [0, 1).
 """
-function gen_samples(dd::Halton, n::Int)
+function gen_samples(dd::Halton, n::Int; n_start::Int = 0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))
     d = dd.dimension
 
@@ -75,7 +75,7 @@ function gen_samples(dd::Halton, n::Int)
     randu_d_32 = dd.randomize ? rand(dd.rng, d * 32) : zeros(d * 32)
     dvec = Int32[i for i in 0:(d - 1)]
 
-    _c_halton_qrng!(n, d, 0, dd.generalize ? 1 : 0, res, randu_d_32, dvec)
+    _c_halton_qrng!(n, d, n_start, dd.generalize ? 1 : 0, res, randu_d_32, dvec)
 
     # halton_qrng writes res[j*n + i] for 0-indexed dim j and point i.
     # This is identical to Julia column-major layout for an n×d matrix.

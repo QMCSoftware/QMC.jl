@@ -284,7 +284,7 @@ end
 
 # ── Main integrate ──
 
-function integrate(sc::CubMLQMCCont)
+function integrate(sc::CubMLQMCCont; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
     t_start = time()
     state = _init_mlqmc_state(sc)
 

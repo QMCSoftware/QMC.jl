@@ -17,6 +17,9 @@ IIDStdUniform
 Lattice
 DigitalNetB2
 Halton
+Kronecker
+DigitalNetAnyBases
+Faure
 ```
 
 ## Sampling

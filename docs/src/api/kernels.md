@@ -28,6 +28,7 @@ KernelGaussian
 ```@docs
 SumKernel
 ProductKernel
+KernelMultiTask
 ```
 
 ## Kernel Operations

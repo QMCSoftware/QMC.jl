@@ -176,8 +176,12 @@ end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
-function integrate(sc::CubQMCBayesLatticeG)
-    n = sc.n_init
+function integrate(sc::CubQMCBayesLatticeG; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+    if resume !== nothing
+        n = 2 * Int(resume[:n])
+    else
+        n = sc.n_init
+    end
     mu_hat = 0.0;
     err = Inf;
     n_iter = 0

@@ -219,7 +219,7 @@ end
 
 # ── Main integrate method ──
 
-function integrate(sc::CubMLMC)
+function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
     t_start = time()
     state = _init_mlmc_state(sc)
 

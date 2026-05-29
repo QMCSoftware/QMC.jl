@@ -19,6 +19,11 @@ Triangular
 Kumaraswamy
 JohnsonsSU
 BernoulliCont
+AcceptanceRejection
+DistributionsWrapper
+MaternGP
+UniformTriangle
+ZeroInflatedExpUniform
 ```
 
 ## Transform

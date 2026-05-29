@@ -6,6 +6,13 @@
 bernoulli_poly
 ```
 
+## Diagnostics
+
+```@docs
+IterationLog
+iterations(::IterationLog)
+```
+
 ## Periodization
 
 ```@docs
@@ -25,4 +32,19 @@ to_float
 fwht!
 fwht
 ifwht!
+gpu_fwht!(::Vector{Float64})
+bro_fft(::Vector{Float64})
+bro_ifft(::Vector{ComplexF64})
+```
+
+## Construction Helpers
+
+```@docs
+latnetbuilder_linker(::String)
+```
+
+## Multilevel Utilities
+
+```@docs
+mlmc_test(::AbstractMLIntegrand)
 ```

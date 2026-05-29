@@ -44,7 +44,7 @@ function CubMCCLT(integrand::AbstractIntegrand;
     return CubMCCLT(integrand, abs_tol, rel_tol, n_init, n_max, alpha, inflate)
 end
 
-function integrate(sc::CubMCCLT)
+function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
     z_star = quantile(Normal(), 1.0 - sc.alpha / 2.0)
 
     # ── Stage 1: Pilot sample to estimate variance ──
