@@ -14,5 +14,5 @@ import QMC: Uniform, Kumaraswamy
     include("test_stopping_criteria.jl")
     include("test_integration.jl")
     include("test_multilevel.jl")
-    include("test_phase1_3.jl")
+    include("test_aqua.jl")
 end

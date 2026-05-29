@@ -26,6 +26,7 @@ makedocs(
             "Internals" => "api/internals.md",
         ],
         "Demos" => "demos.md",
+        "CI/CD Testing" => "ci-testing.md",
         "Contributing" => "contributing.md",
         "Community" => "community.md",
     ],

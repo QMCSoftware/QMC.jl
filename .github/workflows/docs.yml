@@ -2,21 +2,23 @@ name: Docs
 
 on:
   push:
-    branches: [master]
+    branches: [develop, master]
     paths:
       - 'docs/**'
       - 'src/**'
       - 'Project.toml'
-      - 'Manifest.toml'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
       - 'src/**'
       - 'Project.toml'
-      - 'Manifest.toml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -31,7 +33,9 @@ jobs:
 
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.12'
+          version: '1.11'
+
+      - uses: julia-actions/cache@v2
 
       - uses: actions/setup-python@v5
         with:
@@ -42,8 +46,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          julia --startup-file=no --project=docs -e '
+          julia --project=docs -e '
             import Pkg
+            Pkg.develop(Pkg.PackageSpec(path="."))
             Pkg.instantiate()
             Pkg.precompile()
           '
@@ -51,4 +56,5 @@ jobs:
       - name: Build and deploy docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: "true"
         run: julia --project=docs docs/make.jl

@@ -98,4 +98,47 @@
         @test size(xr) == (128, 2)
         @test all(0.0 .<= xr .< 1.0)
     end
+
+    @testset "Owen/NUS Scrambling" begin
+        dd = DigitalNetB2(3; randomize="NUS", seed=42)
+        x = gen_samples(dd, 256)
+        @test size(x) == (256, 3)
+        @test all(0.0 .<= x .< 1.0)
+        dd_none = DigitalNetB2(3; randomize="none")
+        x_none = gen_samples(dd_none, 256)
+        @test x != x_none
+        # Replicated NUS
+        dd_rep = DigitalNetB2(3; randomize="NUS", seed=42, replications=4)
+        xr = gen_samples(dd_rep, 64)
+        @test size(xr) == (4, 64, 3)
+        @test all(0.0 .<= xr .< 1.0)
+        @test xr[1, :, :] != xr[2, :, :]
+    end
+
+    @testset "Kronecker" begin
+        kr = Kronecker(3; seed=42)
+        x = gen_samples(kr, 1000)
+        @test size(x) == (1000, 3)
+        @test all(0.0 .<= x .< 1.0)
+        @test abs(mean(x) - 0.5) < 0.05
+        x2 = gen_samples(kr, 500; n_start=500)
+        @test size(x2) == (500, 3)
+    end
+
+    @testset "n_start windowed sampling" begin
+        # Lattice
+        dd = Lattice(2; randomize=false, order="natural")
+        x1 = gen_samples(dd, 64)
+        x2 = gen_samples(dd, 32; n_start=32)
+        @test size(x2) == (32, 2)
+        # DigitalNetB2
+        dd2 = DigitalNetB2(2; randomize="none")
+        x3 = gen_samples(dd2, 32; n_start=0)
+        @test size(x3) == (32, 2)
+        # Kronecker
+        kr = Kronecker(2; seed=1)
+        x4 = gen_samples(kr, 50; n_start=100)
+        @test size(x4) == (50, 2)
+        @test all(0.0 .<= x4 .< 1.0)
+    end
 end
