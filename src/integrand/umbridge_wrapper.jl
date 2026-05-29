@@ -45,14 +45,14 @@ struct UMBridgeWrapper <: AbstractIntegrand
     true_measure::AbstractTrueMeasure
     url::String
     model_name::String
-    config::Dict{String,Any}
+    config::Dict{String, Any}
     _model::Any   # UMBridge.HTTPModel (lazy, Any to avoid hard dep)
 end
 
 function UMBridgeWrapper(true_measure::AbstractTrueMeasure;
-        url::String = "http://localhost:4243",
-        model_name::String = "forward",
-        config::Dict{String,Any} = Dict{String,Any}())
+    url::String = "http://localhost:4243",
+    model_name::String = "forward",
+    config::Dict{String, Any} = Dict{String, Any}())
     # Try to load UMBridge
     model = _load_umbridge_model(url, model_name)
     return UMBridgeWrapper(true_measure, url, model_name, config, model)
@@ -61,7 +61,9 @@ end
 """Load UMBridge.HTTPModel, or nothing if UMBridge is not installed."""
 function _load_umbridge_model(url::String, model_name::String)
     try
-        UMB = Base.require(Base.PkgId(Base.UUID("0a9a1a31-3e76-4660-84e1-f39fcdc3920b"), "UMBridge"))
+        UMB = Base.require(
+            Base.PkgId(Base.UUID("0a9a1a31-3e76-4660-84e1-f39fcdc3920b"), "UMBridge"),
+        )
         return UMB.HTTPModel(model_name, url)
     catch e
         @warn "UMBridge.jl not found. Install with: import Pkg; Pkg.add(\"UMBridge\")"

@@ -112,11 +112,13 @@ function _qmctoolscl_lib_path()
     isempty(_QMCTOOLSCL_LIB_PATH[]) &&
         _init_qmctoolscl!(; warn_on_failure = false, force = true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) &&
-        error("QMCToolsCL C library not loaded. " *
-              "Lattice, DigitalNetB2, and Halton require it. " *
-              "Install `qmctoolscl` into a Python visible to Julia, or set " *
-              "ENV[\"QMC_PYTHON\"] to that interpreter before first use. " *
-              "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).")
+        error(
+            "QMCToolsCL C library not loaded. " *
+            "Lattice, DigitalNetB2, and Halton require it. " *
+            "Install `qmctoolscl` into a Python visible to Julia, or set " *
+            "ENV[\"QMC_PYTHON\"] to that interpreter before first use. " *
+            "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).",
+        )
     return _QMCTOOLSCL_LIB_PATH[]
 end
 
@@ -155,37 +157,37 @@ end
 # ──────────────────────────────────────────────────────────────────────────────
 
 function _c_lat_gen_linear!(n::Int, d::Int, g::Vector{UInt64},
-        x_buf::Vector{Float64})
+    x_buf::Vector{Float64})
     ccall((:lat_gen_linear, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{Float64}),
+            Ptr{UInt64}, Ptr{Float64}),
         UInt64(1), UInt64(n), UInt64(d), UInt64(1), UInt64(n), UInt64(d),
         g, x_buf)
 end
 
 function _c_lat_gen_natural!(n::Int, d::Int, n_start::Int, g::Vector{UInt64},
-        x_buf::Vector{Float64})
+    x_buf::Vector{Float64})
     ccall((:lat_gen_natural, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{Float64}),
+            Ptr{UInt64}, Ptr{Float64}),
         UInt64(1), UInt64(n), UInt64(d), UInt64(1), UInt64(n), UInt64(d),
         UInt64(n_start), g, x_buf)
 end
 
 function _c_lat_gen_gray!(n::Int, d::Int, n_start::Int, g::Vector{UInt64},
-        x_buf::Vector{Float64})
+    x_buf::Vector{Float64})
     ccall((:lat_gen_gray, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{Float64}),
+            Ptr{UInt64}, Ptr{Float64}),
         UInt64(1), UInt64(n), UInt64(d), UInt64(1), UInt64(n), UInt64(d),
         UInt64(n_start), g, x_buf)
 end
 
 function _c_lat_shift_mod_1!(R::Int, n::Int, d::Int, r_x::Int,
-        x::Vector{Float64}, shifts::Vector{Float64}, xr::Vector{Float64})
+    x::Vector{Float64}, shifts::Vector{Float64}, xr::Vector{Float64})
     ccall((:lat_shift_mod_1, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{Float64}, Ptr{Float64}, Ptr{Float64}),
+            Ptr{Float64}, Ptr{Float64}, Ptr{Float64}),
         UInt64(R), UInt64(n), UInt64(d), UInt64(R), UInt64(n), UInt64(d),
         UInt64(r_x), x, shifts, xr)
 end
@@ -207,41 +209,41 @@ end
 # ──────────────────────────────────────────────────────────────────────────────
 
 function _c_dnb2_gen_gray!(R::Int, n::Int, d::Int, n_start::Int,
-        mmax::Int, C::Vector{UInt64}, xb_buf::Vector{UInt64})
+    mmax::Int, C::Vector{UInt64}, xb_buf::Vector{UInt64})
     ccall((:dnb2_gen_gray, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{UInt64}),
+            Ptr{UInt64}, Ptr{UInt64}),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(n_start), UInt64(mmax), C, xb_buf)
 end
 
 function _c_dnb2_gen_natural!(R::Int, n::Int, d::Int, n_start::Int,
-        mmax::Int, C::Vector{UInt64}, xb_buf::Vector{UInt64})
+    mmax::Int, C::Vector{UInt64}, xb_buf::Vector{UInt64})
     ccall((:dnb2_gen_natural, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{UInt64}),
+            Ptr{UInt64}, Ptr{UInt64}),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(n_start), UInt64(mmax), C, xb_buf)
 end
 
 function _c_dnb2_digital_shift!(R::Int, n::Int, d::Int, r_x::Int,
-        lshifts::Vector{UInt64}, xb_buf::Vector{UInt64},
-        shiftsb::Vector{UInt64}, xrb_buf::Vector{UInt64})
+    lshifts::Vector{UInt64}, xb_buf::Vector{UInt64},
+    shiftsb::Vector{UInt64}, xrb_buf::Vector{UInt64})
     ccall((:dnb2_digital_shift, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}),
+            Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(r_x), lshifts, xb_buf, shiftsb, xrb_buf)
 end
 
 function _c_dnb2_integer_to_float!(R::Int, n::Int, d::Int,
-        tmaxes::Vector{UInt64}, xb_buf::Vector{UInt64}, x_buf::Vector{Float64})
+    tmaxes::Vector{UInt64}, xb_buf::Vector{UInt64}, x_buf::Vector{Float64})
     ccall((:dnb2_integer_to_float, _qmctoolscl_lib_path()), Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-         Ptr{UInt64}, Ptr{UInt64}, Ptr{Float64}),
+            Ptr{UInt64}, Ptr{UInt64}, Ptr{Float64}),
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(R), UInt64(n), UInt64(d),
         tmaxes, xb_buf, x_buf)
@@ -263,11 +265,11 @@ end
 # ──────────────────────────────────────────────────────────────────────────────
 
 function _c_halton_qrng!(n::Int, d::Int, n0::Int, generalized::Int,
-        res::Vector{Float64}, randu_d_32::Vector{Float64},
-        dvec::Vector{Int32})
+    res::Vector{Float64}, randu_d_32::Vector{Float64},
+    dvec::Vector{Int32})
     ccall((:halton_qrng, _qmctoolscl_lib_path()), Cvoid,
         (Cint, Cint, Cint, Cint,
-         Ptr{Float64}, Ptr{Float64}, Ptr{Cint}),
+            Ptr{Float64}, Ptr{Float64}, Ptr{Cint}),
         Cint(n), Cint(d), Cint(n0), Cint(generalized),
         res, randu_d_32, dvec)
 end

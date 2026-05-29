@@ -51,16 +51,16 @@ mutable struct CubMLMC <: AbstractStoppingCriterion
 end
 
 function CubMLMC(integrand::AbstractMLIntegrand;
-                  abs_tol::Float64 = 0.05,
-                  rmse_tol::Union{Nothing, Float64} = nothing,
-                  n_init::Int = 256,
-                  n_limit::Int = 10_000_000_000,
-                  alpha_ci::Float64 = 0.01,
-                  levels_min::Int = 2,
-                  levels_max::Int = 10,
-                  alpha0::Float64 = -1.0,
-                  beta0::Float64 = -1.0,
-                  gamma0::Float64 = -1.0)
+    abs_tol::Float64 = 0.05,
+    rmse_tol::Union{Nothing, Float64} = nothing,
+    n_init::Int = 256,
+    n_limit::Int = 10_000_000_000,
+    alpha_ci::Float64 = 0.01,
+    levels_min::Int = 2,
+    levels_max::Int = 10,
+    alpha0::Float64 = -1.0,
+    beta0::Float64 = -1.0,
+    gamma0::Float64 = -1.0)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -72,7 +72,7 @@ function CubMLMC(integrand::AbstractMLIntegrand;
     end
 
     return CubMLMC(integrand, rmse_tol, n_init, n_limit, levels_min, levels_max,
-                    0.5, alpha0, beta0, gamma0)
+        0.5, alpha0, beta0, gamma0)
 end
 
 # ── Internal MLMC State ──
@@ -108,7 +108,7 @@ function _init_mlmc_state(sc::CubMLMC)
         max(0.0, sc.beta0),
         max(0.0, sc.gamma0),
         AbstractDiscreteDistribution[],
-        AbstractTrueMeasure[]
+        AbstractTrueMeasure[],
     )
 end
 
@@ -144,17 +144,17 @@ end
 
 function _update_samples!(sc::CubMLMC, state::_MLMCState, diff_n::Vector{Int})
     for l in 0:state.levels
-        if diff_n[l+1] <= 0
+        if diff_n[l + 1] <= 0
             continue
         end
         _ensure_level_spawned!(sc, state, l)
-        n = diff_n[l+1]
-        dp, cost = ml_sample_and_evaluate(sc.integrand, state.level_dd[l+1],
-                                           state.level_tm[l+1], n, l)
-        state.n_level[l+1] += n
-        state.sum_level[1, l+1] += sum(dp)
-        state.sum_level[2, l+1] += sum(dp .^ 2)
-        state.cost_level[l+1] += cost
+        n = diff_n[l + 1]
+        dp, cost = ml_sample_and_evaluate(sc.integrand, state.level_dd[l + 1],
+            state.level_tm[l + 1], n, l)
+        state.n_level[l + 1] += n
+        state.sum_level[1, l + 1] += sum(dp)
+        state.sum_level[2, l + 1] += sum(dp .^ 2)
+        state.cost_level[l + 1] += cost
     end
     _refresh_statistics!(sc, state)
 end
@@ -164,20 +164,20 @@ end
 function _refresh_statistics!(sc::CubMLMC, state::_MLMCState)
     L = state.levels
     for l in 0:L
-        nl = state.n_level[l+1]
+        nl = state.n_level[l + 1]
         if nl > 0
-            state.mean_level[l+1] = abs(state.sum_level[1, l+1] / nl)
-            state.var_level[l+1] = max(0.0,
-                state.sum_level[2, l+1] / nl - state.mean_level[l+1]^2)
-            state.cost_per_sample[l+1] = state.cost_level[l+1] / nl
+            state.mean_level[l + 1] = abs(state.sum_level[1, l + 1] / nl)
+            state.var_level[l + 1] = max(0.0,
+                state.sum_level[2, l + 1] / nl - state.mean_level[l + 1]^2)
+            state.cost_per_sample[l + 1] = state.cost_level[l + 1] / nl
         end
     end
 
     # Fix zero values by extrapolation
     for l in 2:L
-        state.mean_level[l+1] = max(state.mean_level[l+1],
+        state.mean_level[l + 1] = max(state.mean_level[l + 1],
             0.5 * state.mean_level[l] / 2^state.alpha)
-        state.var_level[l+1] = max(state.var_level[l+1],
+        state.var_level[l + 1] = max(state.var_level[l + 1],
             0.5 * state.var_level[l] / 2^state.beta)
     end
 
@@ -187,17 +187,17 @@ function _refresh_statistics!(sc::CubMLMC, state::_MLMCState)
         a_mat[:, 1] = 1:L
 
         if sc.alpha0 <= 0
-            y = log2.(max.(state.mean_level[2:L+1], 1e-300))
+            y = log2.(max.(state.mean_level[2:(L + 1)], 1e-300))
             x = a_mat \ y
             state.alpha = max(0.5, -x[1])
         end
         if sc.beta0 <= 0
-            y = log2.(max.(state.var_level[2:L+1], 1e-300))
+            y = log2.(max.(state.var_level[2:(L + 1)], 1e-300))
             x = a_mat \ y
             state.beta = max(0.5, -x[1])
         end
         if sc.gamma0 <= 0
-            y = log2.(max.(state.cost_per_sample[2:L+1], 1e-300))
+            y = log2.(max.(state.cost_per_sample[2:(L + 1)], 1e-300))
             x = a_mat \ y
             state.gamma = max(0.5, x[1])
         end
@@ -208,8 +208,8 @@ end
 
 function _get_optimal_samples(sc::CubMLMC, state::_MLMCState)
     L = state.levels
-    vl = state.var_level[1:L+1]
-    cl = state.cost_per_sample[1:L+1]
+    vl = state.var_level[1:(L + 1)]
+    cl = state.cost_per_sample[1:(L + 1)]
     # Optimal allocation: n_l ∝ sqrt(V_l / C_l) * sum(sqrt(V_l * C_l)) / ((1-θ) * ε²)
     sqrt_vc = sqrt.(vl .* cl)
     sqrt_v_over_c = sqrt.(vl ./ max.(cl, 1e-300))
@@ -219,7 +219,7 @@ end
 
 # ── Main integrate method ──
 
-function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
     t_start = time()
     state = _init_mlmc_state(sc)
 
@@ -231,7 +231,7 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothi
     while true
         # Compute optimal number of samples
         n_opt = _get_optimal_samples(sc, state)
-        diff_n = max.(0, n_opt .- state.n_level[1:state.levels+1])
+        diff_n = max.(0, n_opt .- state.n_level[1:(state.levels + 1)])
 
         # Check sample budget
         n_total = sum(state.n_level)
@@ -244,14 +244,14 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothi
         _update_samples!(sc, state, diff_n)
 
         # Check if (almost) converged
-        if all(diff_n .<= ceil.(Int, 0.01 .* state.n_level[1:state.levels+1]))
+        if all(diff_n .<= ceil.(Int, 0.01 .* state.n_level[1:(state.levels + 1)]))
             # Estimate remaining bias
             L = state.levels
             range_check = min(2, L - 1)
             rem = 0.0
             for k in 0:range_check
                 idx = L - k  # 0-based level
-                rem = max(rem, state.mean_level[idx+1] / 2.0^(k * state.alpha))
+                rem = max(rem, state.mean_level[idx + 1] / 2.0^(k * state.alpha))
             end
             rem /= (2.0^state.alpha - 1)
 
@@ -264,7 +264,7 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothi
                     _add_level!(sc, state)
                     # Recompute optimal samples with new level
                     n_opt = _get_optimal_samples(sc, state)
-                    diff_n = max.(0, n_opt .- state.n_level[1:state.levels+1])
+                    diff_n = max.(0, n_opt .- state.n_level[1:(state.levels + 1)])
                     continue
                 end
             else
@@ -275,18 +275,20 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothi
     end
 
     # Compute final solution
-    solution = sum(state.sum_level[1, l+1] / state.n_level[l+1]
-                   for l in 0:state.levels if state.n_level[l+1] > 0)
+    solution = sum(
+        state.sum_level[1, l + 1] / state.n_level[l + 1]
+        for l in 0:state.levels if state.n_level[l + 1] > 0
+    )
     n_total = sum(state.n_level)
     t_elapsed = time() - t_start
 
     data = Dict{Symbol, Any}(
         :n_total => n_total,
         :levels => state.levels + 1,  # number of levels (1-based for display)
-        :n_level => state.n_level[1:state.levels+1],
-        :mean_level => state.mean_level[1:state.levels+1],
-        :var_level => state.var_level[1:state.levels+1],
-        :cost_per_sample => state.cost_per_sample[1:state.levels+1],
+        :n_level => state.n_level[1:(state.levels + 1)],
+        :mean_level => state.mean_level[1:(state.levels + 1)],
+        :var_level => state.var_level[1:(state.levels + 1)],
+        :cost_per_sample => state.cost_per_sample[1:(state.levels + 1)],
         :alpha => state.alpha,
         :beta => state.beta,
         :gamma => state.gamma,
@@ -299,5 +301,5 @@ end
 
 function Base.show(io::IO, sc::CubMLMC)
     @printf(io, "CubMLMC(rmse_tol=%.2e, n_init=%d, levels_min=%d, levels_max=%d)",
-            sc.rmse_tol, sc.n_init, sc.levels_min, sc.levels_max)
+        sc.rmse_tol, sc.n_init, sc.levels_min, sc.levels_max)
 end

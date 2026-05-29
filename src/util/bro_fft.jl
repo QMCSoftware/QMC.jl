@@ -34,13 +34,13 @@ function bro_ifft(X::Vector{ComplexF64})
     return _bitrev_permute(x)
 end
 
-function _bitrev_permute(x::Vector{T}) where T
+function _bitrev_permute(x::Vector{T}) where {T}
     n = length(x)
     m = trailing_zeros(n)
     out = similar(x)
-    for i in 0:n-1
+    for i in 0:(n - 1)
         j = _bitrev(i, m)
-        out[j+1] = x[i+1]
+        out[j + 1] = x[i + 1]
     end
     return out
 end

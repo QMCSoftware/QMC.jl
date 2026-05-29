@@ -31,14 +31,18 @@ struct BrownianMotion <: AbstractTrueMeasure
 end
 
 function BrownianMotion(dd::AbstractDiscreteDistribution;
-        time_vector = nothing, drift = 0.0)
+    time_vector = nothing, drift = 0.0)
     d = dd.dimension
     if isnothing(time_vector)
         tv = collect(range(1.0 / d, 1.0; length = d))
     else
         tv = Float64.(collect(time_vector))
         length(tv) == d ||
-            throw(ArgumentError("time_vector length ($(length(tv))) must match dimension ($d)"))
+            throw(
+                ArgumentError(
+                    "time_vector length ($(length(tv))) must match dimension ($d)",
+                ),
+            )
         issorted(tv; lt = <=) ||
             throw(ArgumentError("time_vector must be strictly increasing"))
         all(tv .> 0) || throw(ArgumentError("time_vector entries must be positive"))
@@ -74,5 +78,6 @@ end
 
 function Base.show(io::IO, tm::BrownianMotion)
     print(io,
-        "BrownianMotion(d=$(tm.dimension), drift=$(tm.drift), t=[$(tm.time_vector[1]),…,$(tm.time_vector[end])])")
+        "BrownianMotion(d=$(tm.dimension), drift=$(tm.drift), t=[$(tm.time_vector[1]),…,$(tm.time_vector[end])])",
+    )
 end

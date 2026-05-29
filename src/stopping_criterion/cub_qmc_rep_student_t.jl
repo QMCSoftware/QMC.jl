@@ -55,22 +55,23 @@ mutable struct CubQMCRepStudentT <: AbstractStoppingCriterion
 end
 
 function CubQMCRepStudentT(integrand::AbstractIntegrand;
-        abs_tol::Float64 = 0.01,
-        rel_tol::Float64 = 0.0,
-        n_init::Int = 256,
-        n_limit::Int = 2^30,
-        alpha::Float64 = 0.01,
-        inflate::Float64 = 1.0,
-        error_fun::Symbol = :either,
-        trace_iterations::Bool = false)
+    abs_tol::Float64 = 0.01,
+    rel_tol::Float64 = 0.0,
+    n_init::Int = 256,
+    n_limit::Int = 2^30,
+    alpha::Float64 = 0.01,
+    inflate::Float64 = 1.0,
+    error_fun::Symbol = :either,
+    trace_iterations::Bool = false)
     # Input validation
     ispow2(n_init) || (@warn "n_init must be a power of 2; using 2^5=32"; n_init = 32)
     ispow2(n_limit) || (@warn "n_limit must be a power of 2; using 2^30"; n_limit = 2^30)
     inflate >= 1.0 || throw(ArgumentError("inflate must be >= 1.0"))
     0 < alpha < 1 || throw(ArgumentError("alpha must be in (0,1)"))
-    error_fun in (:either, :both) || throw(ArgumentError("error_fun must be :either or :both"))
+    error_fun in (:either, :both) ||
+        throw(ArgumentError("error_fun must be :either or :both"))
     return CubQMCRepStudentT(integrand, abs_tol, rel_tol, n_init, n_limit,
-                              alpha, inflate, error_fun, trace_iterations)
+        alpha, inflate, error_fun, trace_iterations)
 end
 
 """Compute combined tolerance from solution value, abs_tol, rel_tol."""
@@ -82,7 +83,10 @@ function _error_bound_tol(efun::Symbol, sv::Float64, abs_tol::Float64, rel_tol::
     end
 end
 
-function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(
+    sc::CubQMCRepStudentT;
+    resume::Union{Nothing, Dict{Symbol, Any}} = nothing,
+)
     dd = sc.integrand.true_measure.discrete_distrib
     R = dd.replications
     R > 1 || throw(ArgumentError("CubQMCRepStudentT requires replications > 1"))
@@ -128,8 +132,8 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol,Any
 
         if sc.trace_iterations
             push!(log; n = n_rep * R, solution = mu_hat,
-                  error_bound = ci_half, tol = tol,
-                  elapsed = time() - t_start)
+                error_bound = ci_half, tol = tol,
+                elapsed = time() - t_start)
         end
 
         if ci_half <= tol
@@ -152,16 +156,16 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol,Any
     mu_hat = mean(ysums ./ n_so_far)
 
     data = Dict{Symbol, Any}(
-        :n            => n_so_far * R,
-        :n_rep        => n_so_far,
+        :n => n_so_far * R,
+        :n_rep => n_so_far,
         :replications => R,
-        :error_bound  => ci_half,
-        :bound_low    => mu_hat - ci_half,
-        :bound_high   => mu_hat + ci_half,
+        :error_bound => ci_half,
+        :bound_low => mu_hat - ci_half,
+        :bound_high => mu_hat + ci_half,
         :n_iterations => n_iter,
-        :converged    => converged,
+        :converged => converged,
         :time_integrate => prev_time + t_elapsed,
-        :_ysums       => ysums,          # for resume
+        :_ysums => ysums,          # for resume
     )
     if sc.trace_iterations
         data[:iteration_log] = log
@@ -170,5 +174,8 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol,Any
 end
 
 function Base.show(io::IO, sc::CubQMCRepStudentT)
-    print(io, "CubQMCRepStudentT(abs_tol=$(sc.abs_tol), alpha=$(sc.alpha), inflate=$(sc.inflate))")
+    print(
+        io,
+        "CubQMCRepStudentT(abs_tol=$(sc.abs_tol), alpha=$(sc.alpha), inflate=$(sc.inflate))",
+    )
 end

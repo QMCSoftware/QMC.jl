@@ -34,12 +34,12 @@ mutable struct AsianOption <: AbstractIntegrand
 end
 
 function AsianOption(tm::AbstractTrueMeasure;
-        volatility::Float64 = 0.5,
-        start_price::Float64 = 30.0,
-        strike_price::Float64 = 25.0,
-        interest_rate::Float64 = 0.0,
-        call_put::Symbol = :call,
-        mean_type::Symbol = :arithmetic)
+    volatility::Float64 = 0.5,
+    start_price::Float64 = 30.0,
+    strike_price::Float64 = 25.0,
+    interest_rate::Float64 = 0.0,
+    call_put::Symbol = :call,
+    mean_type::Symbol = :arithmetic)
     @assert call_put in (:call, :put) "call_put must be :call or :put"
     @assert mean_type in (:arithmetic, :geometric) "mean_type must be :arithmetic or :geometric"
     d = tm.dimension

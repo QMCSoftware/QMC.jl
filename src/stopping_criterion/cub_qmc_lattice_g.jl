@@ -28,17 +28,26 @@ mutable struct CubQMCLatticeG <: AbstractStoppingCriterion
 end
 
 function CubQMCLatticeG(integrand::AbstractIntegrand;
-        abs_tol::Float64 = 0.01,
-        rel_tol::Float64 = 0.0,
-        n_init::Int = 2^10,
-        n_max::Int = 2^30,
-        n_reps::Int = 16,
-        alpha::Float64 = 0.01,
-        trace_iterations::Bool = false)
-    return CubQMCLatticeG(integrand, abs_tol, rel_tol, n_init, n_max, n_reps, alpha, trace_iterations)
+    abs_tol::Float64 = 0.01,
+    rel_tol::Float64 = 0.0,
+    n_init::Int = 2^10,
+    n_max::Int = 2^30,
+    n_reps::Int = 16,
+    alpha::Float64 = 0.01,
+    trace_iterations::Bool = false)
+    return CubQMCLatticeG(
+        integrand,
+        abs_tol,
+        rel_tol,
+        n_init,
+        n_max,
+        n_reps,
+        alpha,
+        trace_iterations,
+    )
 end
 
-function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
     R = sc.n_reps
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
 
@@ -71,8 +80,8 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol,Any}} 
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
 
         if sc.trace_iterations
-            push!(log; n=n*R, solution=mu_hat, error_bound=err,
-                  tol=tol, elapsed=time() - t_start)
+            push!(log; n = n*R, solution = mu_hat, error_bound = err,
+                tol = tol, elapsed = time() - t_start)
         end
 
         err <= tol && break

@@ -43,30 +43,42 @@ struct AcceptanceRejection <: AbstractTrueMeasure
 end
 
 function AcceptanceRejection(dd::AbstractDiscreteDistribution;
-        pdf_func::Function,
-        proposal_pdf_func::Union{Nothing, Function} = nothing,
-        proposal_sample_func::Union{Nothing, Function} = nothing,
-        envelope_multiplier::Union{Nothing, Float64} = nothing,
-        proposal_pdf::Union{Nothing, Function} = nothing,
-        proposal_sample::Union{Nothing, Function} = nothing,
-        M::Union{Nothing, Float64} = nothing)
+    pdf_func::Function,
+    proposal_pdf_func::Union{Nothing, Function} = nothing,
+    proposal_sample_func::Union{Nothing, Function} = nothing,
+    envelope_multiplier::Union{Nothing, Float64} = nothing,
+    proposal_pdf::Union{Nothing, Function} = nothing,
+    proposal_sample::Union{Nothing, Function} = nothing,
+    M::Union{Nothing, Float64} = nothing)
     if !isnothing(proposal_pdf_func) && !isnothing(proposal_pdf)
-        throw(ArgumentError("proposal_pdf_func and proposal_pdf are aliases; provide only one"))
+        throw(
+            ArgumentError(
+                "proposal_pdf_func and proposal_pdf are aliases; provide only one",
+            ),
+        )
     end
     if !isnothing(proposal_sample_func) && !isnothing(proposal_sample)
-        throw(ArgumentError("proposal_sample_func and proposal_sample are aliases; provide only one"))
+        throw(
+            ArgumentError(
+                "proposal_sample_func and proposal_sample are aliases; provide only one",
+            ),
+        )
     end
     if !isnothing(envelope_multiplier) && !isnothing(M) && envelope_multiplier != M
         throw(ArgumentError("envelope_multiplier and M must match when both are provided"))
     end
 
     d = dd.dimension - 1
-    d > 0 || throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
+    d > 0 ||
+        throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
     envelope_multiplier = Float64(something(envelope_multiplier, M, 1.0))
     envelope_multiplier > 0 || throw(ArgumentError("envelope_multiplier must be > 0"))
 
-    ppf = isnothing(proposal_pdf_func) ? something(proposal_pdf, x -> 1.0) : proposal_pdf_func
-    psf = isnothing(proposal_sample_func) ? something(proposal_sample, x -> x) : proposal_sample_func
+    ppf =
+        isnothing(proposal_pdf_func) ? something(proposal_pdf, x -> 1.0) : proposal_pdf_func
+    psf =
+        isnothing(proposal_sample_func) ? something(proposal_sample, x -> x) :
+        proposal_sample_func
 
     return AcceptanceRejection(dd, d, pdf_func, ppf, psf, envelope_multiplier)
 end

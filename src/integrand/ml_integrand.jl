@@ -73,7 +73,7 @@ and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::Lattice, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return Lattice(dimension; randomize=dd.randomize, replications=R)
+    return Lattice(dimension; randomize = dd.randomize, replications = R)
 end
 
 """
@@ -84,7 +84,7 @@ randomize and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::DigitalNetB2, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return DigitalNetB2(dimension; randomize=dd.randomize, replications=R)
+    return DigitalNetB2(dimension; randomize = dd.randomize, replications = R)
 end
 
 """
@@ -93,7 +93,7 @@ end
 Create a new Halton sampler with the given dimension and fresh seed.
 """
 function spawn_dd(dd::Halton, dimension::Int)
-    return Halton(dimension; randomize=dd.randomize)
+    return Halton(dimension; randomize = dd.randomize)
 end
 
 # ── True Measure Spawning ──
@@ -117,7 +117,7 @@ function spawn_tm(tm::Uniform, dd_new::AbstractDiscreteDistribution)
     d_new = dd_new.dimension
     lb = length(tm.lower_bound) == 1 ? tm.lower_bound[1] : tm.lower_bound[1]
     ub = length(tm.upper_bound) == 1 ? tm.upper_bound[1] : tm.upper_bound[1]
-    return Uniform(dd_new; lower_bound=lb, upper_bound=ub)
+    return Uniform(dd_new; lower_bound = lb, upper_bound = ub)
 end
 
 """
@@ -128,7 +128,7 @@ Create a new BrownianMotion true measure wrapping `dd_new`.
 function spawn_tm(tm::BrownianMotion, dd_new::AbstractDiscreteDistribution)
     t_final = tm.time_vector[end]
     tv_new = collect(range(t_final / dd_new.dimension, t_final; length = dd_new.dimension))
-    return BrownianMotion(dd_new; time_vector=tv_new, drift=tm.drift)
+    return BrownianMotion(dd_new; time_vector = tv_new, drift = tm.drift)
 end
 
 """
@@ -138,10 +138,10 @@ Create a new GeometricBrownianMotion true measure wrapping `dd_new`.
 """
 function spawn_tm(tm::GeometricBrownianMotion, dd_new::AbstractDiscreteDistribution)
     return GeometricBrownianMotion(dd_new;
-        t_final=tm.time_vector[end],
-        initial_value=tm.initial_value,
-        drift=tm.drift,
-        diffusion=tm.diffusion)
+        t_final = tm.time_vector[end],
+        initial_value = tm.initial_value,
+        drift = tm.drift,
+        diffusion = tm.diffusion)
 end
 
 # ── Spawning a Multilevel Integrand at a Specific Level ──
@@ -173,9 +173,9 @@ multilevel integrand at the given level. Returns `(dp, cost)` where
 and `cost` is the total cost for this batch.
 """
 function ml_sample_and_evaluate(f::AbstractMLIntegrand,
-                                 dd::AbstractDiscreteDistribution,
-                                 tm::AbstractTrueMeasure,
-                                 n::Int, level::Int)
+    dd::AbstractDiscreteDistribution,
+    tm::AbstractTrueMeasure,
+    n::Int, level::Int)
     x_uniform = gen_samples(dd, n)
     if ndims(x_uniform) == 3
         R, m, d = size(x_uniform)
@@ -200,9 +200,9 @@ evaluate the multilevel integrand. Returns `(rep_means, cost)` where
 and `cost` is the total cost.
 """
 function ml_sample_and_evaluate_reps(f::AbstractMLIntegrand,
-                                      dd::AbstractDiscreteDistribution,
-                                      tm::AbstractTrueMeasure,
-                                      n::Int, level::Int, R::Int)
+    dd::AbstractDiscreteDistribution,
+    tm::AbstractTrueMeasure,
+    n::Int, level::Int, R::Int)
     rep_means = zeros(R)
     total_cost = 0.0
     for r in 1:R

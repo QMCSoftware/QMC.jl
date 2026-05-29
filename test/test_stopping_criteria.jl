@@ -55,65 +55,65 @@
     end
 
     @testset "rel_tol in stopping criteria" begin
-        dd = IIDStdUniform(3; seed=7)
+        dd = IIDStdUniform(3; seed = 7)
         tm = Gaussian(dd)
         f = Keister(tm)
-        sc = CubMCCLT(f; abs_tol=1.0, rel_tol=0.01)
+        sc = CubMCCLT(f; abs_tol = 1.0, rel_tol = 0.01)
         @test sc.rel_tol == 0.01
     end
 
     @testset "CubMLQMC" begin
-        dd = DigitalNetB2(16; randomize="LMS_DS", seed=7)
-        tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-                                      interest_rate=0.05, t_final=1.0)
-        fml = FinancialOptionML(tm; d_coarsest=4)
-        sc = CubMLQMC(fml; rmse_tol=0.5, n_init=64, levels_min=2, levels_max=4)
+        dd = DigitalNetB2(16; randomize = "LMS_DS", seed = 7)
+        tm = GeometricBrownianMotion(dd; volatility = 0.2, start_price = 100.0,
+            interest_rate = 0.05, t_final = 1.0)
+        fml = FinancialOptionML(tm; d_coarsest = 4)
+        sc = CubMLQMC(fml; rmse_tol = 0.5, n_init = 64, levels_min = 2, levels_max = 4)
         @test sc.rmse_tol == 0.5
     end
 
     @testset "CubMCG" begin
-        dd = IIDStdUniform(3; seed=7)
+        dd = IIDStdUniform(3; seed = 7)
         tm = Gaussian(dd)
         f = Keister(tm)
-        sc = CubMCG(f; abs_tol=0.1)
+        sc = CubMCG(f; abs_tol = 0.1)
         @test sc.abs_tol == 0.1
         @test sc.kurtmax > 0
     end
 
     @testset "CubMCCLTVec" begin
-        dd = IIDStdUniform(3; seed=7)
+        dd = IIDStdUniform(3; seed = 7)
         tm = Gaussian(dd)
         f = Keister(tm)
-        sc = CubMCCLTVec(f; abs_tol=0.05)
+        sc = CubMCCLTVec(f; abs_tol = 0.05)
         @test sc.n_init == 256
     end
 
     @testset "Resume/Checkpoint" begin
-        dd = IIDStdUniform(3; seed=7)
+        dd = IIDStdUniform(3; seed = 7)
         tm = Gaussian(dd)
         f = Keister(tm)
-        sc1 = CubMCCLTVec(f; abs_tol=0.1)
+        sc1 = CubMCCLTVec(f; abs_tol = 0.1)
         r1 = integrate(sc1)
         @test haskey(r1.data, :_running_sum)
-        sc2 = CubMCCLTVec(f; abs_tol=0.01)
-        r2 = integrate(sc2; resume=r1.data)
+        sc2 = CubMCCLTVec(f; abs_tol = 0.01)
+        r2 = integrate(sc2; resume = r1.data)
         @test r2.data[:n_total] >= r1.data[:n_total]
     end
 
     @testset "IterationLog" begin
         log = IterationLog()
         @test isempty(log)
-        push!(log; n=100, solution=1.5, error_bound=0.1, tol=0.01, elapsed=0.5)
-        push!(log; n=200, solution=1.48, error_bound=0.05, tol=0.01, elapsed=1.0)
+        push!(log; n = 100, solution = 1.5, error_bound = 0.1, tol = 0.01, elapsed = 0.5)
+        push!(log; n = 200, solution = 1.48, error_bound = 0.05, tol = 0.01, elapsed = 1.0)
         @test length(log) == 2
         rows = iterations(log)
         @test rows[1].n == 100
         @test rows[2].solution ≈ 1.48
 
-        dd = IIDStdUniform(3; seed=7)
+        dd = IIDStdUniform(3; seed = 7)
         tm = Gaussian(dd)
         f = Keister(tm)
-        sc = CubMCCLTVec(f; abs_tol=0.05, trace_iterations=true)
+        sc = CubMCCLTVec(f; abs_tol = 0.05, trace_iterations = true)
         r = integrate(sc)
         @test haskey(r.data, :iteration_log)
         @test length(r.data[:iteration_log]) >= 1

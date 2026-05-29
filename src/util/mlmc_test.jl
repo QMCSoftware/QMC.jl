@@ -31,11 +31,11 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
     var2 = Float64[]   # Var[Pf]
     kur1 = Float64[]   # kurtosis
     chk1 = Float64[]   # telescoping check
-    cst  = Float64[]   # cost per sample
+    cst = Float64[]   # cost per sample
 
     @printf("Convergence tests using N = %d samples\n", n)
     @printf("  %4s  %12s  %12s  %12s  %12s  %12s  %12s\n",
-            "l", "ave(Pf-Pc)", "ave(Pf)", "var(Pf-Pc)", "var(Pf)", "kurtosis", "check")
+        "l", "ave(Pf-Pc)", "ave(Pf)", "var(Pf-Pc)", "var(Pf)", "kurtosis", "check")
 
     for ll in 0:L
         d_l = dimension_at_level(integrand, ll)
@@ -66,7 +66,8 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
         end
         sums ./= n
 
-        kurt = ll == 0 ? 0.0 :
+        kurt =
+            ll == 0 ? 0.0 :
             (sums[4] - 4sums[3]*sums[1] + 6sums[2]*sums[1]^2 - 3sums[1]^4) /
             max((sums[2] - sums[1]^2)^2, 1e-30)
 
@@ -80,13 +81,17 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
         check = if ll == 0
             0.0
         else
-            abs(del1[end] + del2[end-1] - del2[end]) /
-            (3 * (sqrt(abs(var1[end])) + sqrt(abs(var2[end-1])) + sqrt(abs(var2[end]))) / sqrt(n))
+            abs(del1[end] + del2[end - 1] - del2[end]) /
+            (
+                3 * (
+                    sqrt(abs(var1[end])) + sqrt(abs(var2[end - 1])) + sqrt(abs(var2[end]))
+                ) / sqrt(n)
+            )
         end
         push!(chk1, check)
 
         @printf("  %4d  %12.4e  %12.4e  %12.3e  %12.3e  %12.2e  %12.2e\n",
-                ll, del1[end], del2[end], var1[end], var2[end], kur1[end], chk1[end])
+            ll, del1[end], del2[end], var1[end], var2[end], kur1[end], chk1[end])
     end
 
     # Warnings
@@ -101,10 +106,10 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
     l1 = 3  # skip first 2 levels (1-indexed)
     l2 = L + 1
     npts = l2 - l1 + 1
-    X = hcat(ones(npts), collect(l1-1:l2-1))  # [ones, level_index]
+    X = hcat(ones(npts), collect((l1 - 1):(l2 - 1)))  # [ones, level_index]
 
     y_alpha = log2.(abs.(del1[l1:l2]) .+ 1e-300)
-    y_beta  = log2.(abs.(var1[l1:l2]) .+ 1e-300)
+    y_beta = log2.(abs.(var1[l1:l2]) .+ 1e-300)
     y_gamma = log2.(abs.(cst[l1:l2]) .+ 1e-300)
 
     pa = X \ y_alpha
@@ -112,8 +117,8 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
     pg = X \ y_gamma
 
     alpha = -pa[2]
-    beta  = -pb[2]
-    gamma =  pg[2]
+    beta = -pb[2]
+    gamma = pg[2]
 
     @printf("\nLinear regression estimates of MLMC parameters\n")
     @printf("    alpha = %f  (exponent for MLMC weak convergence)\n", alpha)

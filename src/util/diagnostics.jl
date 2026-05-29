@@ -24,19 +24,21 @@ rows  = iterations(result.data[:iteration_log])  # Vector{NamedTuple}
 ```
 """
 mutable struct IterationLog
-    records::Vector{NamedTuple{(:iter, :n, :solution, :error_bound, :tol, :elapsed),
-                               Tuple{Int, Int, Float64, Float64, Float64, Float64}}}
+    records::Vector{
+        NamedTuple{(:iter, :n, :solution, :error_bound, :tol, :elapsed),
+            Tuple{Int, Int, Float64, Float64, Float64, Float64}},
+    }
     count::Int
 end
 
 IterationLog() = IterationLog([], 0)
 
 function Base.push!(log::IterationLog;
-        n::Int, solution::Float64, error_bound::Float64,
-        tol::Float64 = NaN, elapsed::Float64 = NaN)
+    n::Int, solution::Float64, error_bound::Float64,
+    tol::Float64 = NaN, elapsed::Float64 = NaN)
     log.count += 1
-    row = (iter=log.count, n=n, solution=solution,
-           error_bound=error_bound, tol=tol, elapsed=elapsed)
+    row = (iter = log.count, n = n, solution = solution,
+        error_bound = error_bound, tol = tol, elapsed = elapsed)
     push!(log.records, row)
     return log
 end
@@ -59,13 +61,13 @@ function Base.show(io::IO, log::IterationLog)
     # Header
     @printf(io, "IterationLog (%d iterations)\n", length(log.records))
     @printf(io, " %5s  %10s  %14s  %10s  %10s  %8s\n",
-            "iter", "n", "solution", "err_bound", "tol", "time(s)")
+        "iter", "n", "solution", "err_bound", "tol", "time(s)")
     @printf(io, " %5s  %10s  %14s  %10s  %10s  %8s\n",
-            "-----", "----------", "--------------", "----------", "----------", "--------")
+        "-----", "----------", "--------------", "----------", "----------", "--------")
     for r in log.records
         tol_str = isnan(r.tol) ? "     —" : @sprintf("%.4e", r.tol)
-        t_str   = isnan(r.elapsed) ? "    —" : @sprintf("%.3f", r.elapsed)
+        t_str = isnan(r.elapsed) ? "    —" : @sprintf("%.3f", r.elapsed)
         @printf(io, " %5d  %10d  %14.8e  %10.4e  %10s  %8s\n",
-                r.iter, r.n, r.solution, r.error_bound, tol_str, t_str)
+            r.iter, r.n, r.solution, r.error_bound, tol_str, t_str)
     end
 end

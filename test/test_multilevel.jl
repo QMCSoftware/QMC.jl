@@ -17,14 +17,22 @@ struct TestMLIntegrand <: AbstractMLIntegrand
 end
 
 function TestMLIntegrand(dd::AbstractDiscreteDistribution;
-                          d_coarsest::Int = 1,
-                          volatility::Float64 = 0.5,
-                          start_price::Float64 = 30.0,
-                          strike_price::Float64 = 35.0,
-                          interest_rate::Float64 = 0.0)
+    d_coarsest::Int = 1,
+    volatility::Float64 = 0.5,
+    start_price::Float64 = 30.0,
+    strike_price::Float64 = 35.0,
+    interest_rate::Float64 = 0.0)
     # The dimension of the base DD determines max level
     tm = Gaussian(dd)
-    return TestMLIntegrand(tm, dd.dimension, d_coarsest, volatility, start_price, strike_price, interest_rate)
+    return TestMLIntegrand(
+        tm,
+        dd.dimension,
+        d_coarsest,
+        volatility,
+        start_price,
+        strike_price,
+        interest_rate,
+    )
 end
 
 function QMC.dimension_at_level(f::TestMLIntegrand, level::Int)
@@ -46,7 +54,7 @@ function _gbm_payoff(f::TestMLIntegrand, x::AbstractVector)
     S = zeros(d)
     S[1] = S0 * exp((r - σ^2/2) * dt + σ * sqrt(dt) * x[1])
     for j in 2:d
-        S[j] = S[j-1] * exp((r - σ^2/2) * dt + σ * sqrt(dt) * x[j])
+        S[j] = S[j - 1] * exp((r - σ^2/2) * dt + σ * sqrt(dt) * x[j])
     end
     # Asian arithmetic call payoff
     avg = mean(S)
@@ -71,7 +79,7 @@ function QMC.ml_evaluate(f::TestMLIntegrand, x::AbstractMatrix, level::Int)
             x_coarse = zeros(d_coarse)
             for j in 1:d_coarse
                 # Average the two fine-grid increments to get coarse-grid increment
-                x_coarse[j] = (x_fine[2j-1] + x_fine[2j]) / sqrt(2.0)
+                x_coarse[j] = (x_fine[2j - 1] + x_fine[2j]) / sqrt(2.0)
             end
             Qc[i] = _gbm_payoff(f, x_coarse)
         end
@@ -87,12 +95,12 @@ end
         dd2 = spawn_dd(dd, 8)
         @test dd2.dimension == 8
 
-        dd_lat = Lattice(4; replications=8)
+        dd_lat = Lattice(4; replications = 8)
         dd_lat2 = spawn_dd(dd_lat, 16)
         @test dd_lat2.dimension == 16
         @test dd_lat2.replications == 8
 
-        dd_dn = DigitalNetB2(4; replications=8)
+        dd_dn = DigitalNetB2(4; replications = 8)
         dd_dn2 = spawn_dd(dd_dn, 16)
         @test dd_dn2.dimension == 16
     end
@@ -107,7 +115,7 @@ end
 
     @testset "dimension_at_level" begin
         dd = IIDStdUniform(32)
-        f = TestMLIntegrand(dd; d_coarsest=1)
+        f = TestMLIntegrand(dd; d_coarsest = 1)
         @test dimension_at_level(f, 0) == 1
         @test dimension_at_level(f, 1) == 2
         @test dimension_at_level(f, 2) == 4
@@ -117,43 +125,81 @@ end
 
 @testset "CubMLMC" begin
     dd = IIDStdUniform(32)
-    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
-    sc = CubMLMC(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6)
+    f = TestMLIntegrand(
+        dd;
+        d_coarsest = 1,
+        volatility = 0.5,
+        start_price = 30.0,
+        strike_price = 35.0,
+    )
+    sc = CubMLMC(f; abs_tol = 0.5, n_init = 256, levels_min = 2, levels_max = 6)
     result = integrate(sc)
 
     @test result.solution isa Float64
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:levels] >= 3  # levels_min + 1
-    println("CubMLMC: solution=$(round(result.solution; digits=3)), " *
-            "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])")
+    println(
+        "CubMLMC: solution=$(round(result.solution; digits=3)), " *
+        "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])",
+    )
 end
 
 @testset "CubMLMCCont" begin
     dd = IIDStdUniform(32)
-    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
-    sc = CubMLMCCont(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6, n_tols=5)
+    f = TestMLIntegrand(
+        dd;
+        d_coarsest = 1,
+        volatility = 0.5,
+        start_price = 30.0,
+        strike_price = 35.0,
+    )
+    sc = CubMLMCCont(
+        f;
+        abs_tol = 0.5,
+        n_init = 256,
+        levels_min = 2,
+        levels_max = 6,
+        n_tols = 5,
+    )
     result = integrate(sc)
 
     @test result.solution isa Float64
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
-    println("CubMLMCCont: solution=$(round(result.solution; digits=3)), " *
-            "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])")
+    println(
+        "CubMLMCCont: solution=$(round(result.solution; digits=3)), " *
+        "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])",
+    )
 end
 
 @testset "CubMLQMCCont" begin
-    dd = Lattice(32; replications=8)
-    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
-    sc = CubMLQMCCont(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6, n_tols=5)
+    dd = Lattice(32; replications = 8)
+    f = TestMLIntegrand(
+        dd;
+        d_coarsest = 1,
+        volatility = 0.5,
+        start_price = 30.0,
+        strike_price = 35.0,
+    )
+    sc = CubMLQMCCont(
+        f;
+        abs_tol = 0.5,
+        n_init = 64,
+        levels_min = 2,
+        levels_max = 6,
+        n_tols = 5,
+    )
     result = integrate(sc)
 
     @test result.solution isa Float64
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:replications] == 8
-    println("CubMLQMCCont: solution=$(round(result.solution; digits=3)), " *
-            "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])")
+    println(
+        "CubMLQMCCont: solution=$(round(result.solution; digits=3)), " *
+        "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])",
+    )
 end
 
 println("\nAll multilevel tests passed!")

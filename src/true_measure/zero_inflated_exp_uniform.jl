@@ -26,10 +26,10 @@ struct ZeroInflatedExpUniform <: AbstractTrueMeasure
 end
 
 function ZeroInflatedExpUniform(dd::AbstractDiscreteDistribution;
-        p_zero::Float64 = 0.3,
-        rate::Float64 = 1.0,
-        low::Float64 = 0.0,
-        high::Float64 = 1.0)
+    p_zero::Float64 = 0.3,
+    rate::Float64 = 1.0,
+    low::Float64 = 0.0,
+    high::Float64 = 1.0)
     dd.dimension == 2 || throw(ArgumentError("ZeroInflatedExpUniform requires dimension=2"))
     0 <= p_zero <= 1 || throw(ArgumentError("p_zero must be in [0,1]"))
     rate > 0 || throw(ArgumentError("rate must be > 0"))

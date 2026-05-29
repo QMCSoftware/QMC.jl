@@ -53,7 +53,7 @@ function latnetbuilder_linker(lnb_dir::String)
         end
 
         # Parse generating matrices
-        pows2 = UInt64[UInt64(1) << (nb_rows - 1 - k) for k in 0:nb_rows-1]
+        pows2 = UInt64[UInt64(1) << (nb_rows - 1 - k) for k in 0:(nb_rows - 1)]
         mint = Matrix{UInt64}(undef, dim, nb_cols)
 
         for c in 1:dim

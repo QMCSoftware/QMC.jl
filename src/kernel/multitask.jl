@@ -33,8 +33,8 @@ struct KernelMultiTask <: AbstractKernel
 end
 
 function KernelMultiTask(base_kernel::AbstractKernel, num_tasks::Int;
-        factor::Matrix{Float64} = zeros(num_tasks, 1),
-        diag::Vector{Float64} = ones(num_tasks))
+    factor::Matrix{Float64} = zeros(num_tasks, 1),
+    diag::Vector{Float64} = ones(num_tasks))
     num_tasks > 0 || throw(ArgumentError("num_tasks must be > 0"))
     size(factor, 1) == num_tasks || throw(ArgumentError(
         "factor must have $num_tasks rows, got $(size(factor, 1))"))
@@ -52,7 +52,7 @@ Evaluate K((task_i, x), (task_j, z)) = taskmat[task_i, task_j] * K_base(x, z).
 Task indices are 1-based.
 """
 function kernel_eval(kmt::KernelMultiTask, task_i::Int, task_j::Int,
-        x::AbstractVector, z::AbstractVector)
+    x::AbstractVector, z::AbstractVector)
     return kmt.taskmat[task_i, task_j] * kernel_eval(kmt.base_kernel, x, z)
 end
 
@@ -63,7 +63,7 @@ Build the full (T·n) × (T·n) kernel matrix for tasks ∈ 1:T and data X (n ×
 Rows/columns are ordered as (task_1, x_1), (task_1, x_2), ..., (task_T, x_n).
 """
 function kernel_matrix(kmt::KernelMultiTask, tasks::AbstractVector{Int},
-        X::AbstractMatrix)
+    X::AbstractMatrix)
     T = length(tasks)
     n = size(X, 1)
     N = T * n
@@ -76,7 +76,7 @@ function kernel_matrix(kmt::KernelMultiTask, tasks::AbstractVector{Int},
     for (ti, i) in enumerate(tasks), (tj, j) in enumerate(tasks)
         tval = kmt.taskmat[i, j]
         for a in 1:n, b in 1:n
-            K_full[(ti-1)*n + a, (tj-1)*n + b] = tval * K_base[a, b]
+            K_full[(ti - 1) * n + a, (tj - 1) * n + b] = tval * K_base[a, b]
         end
     end
 

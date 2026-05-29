@@ -88,12 +88,18 @@ mutable struct DigitalNetB2 <: AbstractDiscreteDistribution
 end
 
 function DigitalNetB2(dimension::Int; randomize::String = "LMS_DS", seed = nothing,
-        graycode::Bool = true, replications::Union{Nothing, Int} = nothing)
+    graycode::Bool = true, replications::Union{Nothing, Int} = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
-    dimension <= _JK_DIRECTION_MATRIX_DIMS || throw(ArgumentError(
-        "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)"))
-    randomize in ("LMS_DS", "DS", "NUS", "none") || throw(ArgumentError(
-        "randomize must be \"LMS_DS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\""))
+    dimension <= _JK_DIRECTION_MATRIX_DIMS || throw(
+        ArgumentError(
+            "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)",
+        ),
+    )
+    randomize in ("LMS_DS", "DS", "NUS", "none") || throw(
+        ArgumentError(
+            "randomize must be \"LMS_DS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\"",
+        ),
+    )
     if !isnothing(replications)
         replications > 0 || throw(ArgumentError("replications must be positive"))
     end
@@ -237,7 +243,7 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
 
     if isnothing(dd.replications)
-        return _gen_single_replication(dd, n; n_start=n_start)
+        return _gen_single_replication(dd, n; n_start = n_start)
     end
 
     R = dd.replications
@@ -284,7 +290,7 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
             x_r = Vector{Float64}(undef, n * d)
             _c_dnb2_integer_to_float!(1, n, d, tmaxes_one, xb_copy, x_r)
             base = (r - 1) * n * d
-            x_buf[base+1:base+n*d] .= x_r
+            x_buf[(base + 1):(base + n * d)] .= x_r
         end
         return _rowmaj_to_Rnxd(x_buf, R, n, d)
     else  # "none"
@@ -314,7 +320,8 @@ end
 function Base.show(io::IO, dd::DigitalNetB2)
     rep_str = isnothing(dd.replications) ? "" : ", R=$(dd.replications)"
     print(io,
-        "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)")
+        "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)",
+    )
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -361,7 +368,7 @@ row-major order: `xb[i*d + j + 1]` (0-indexed i=point, j=dimension).
 `dim_seeds` has length `d`, one per dimension.
 """
 function _owen_scramble_points!(xb::Vector{UInt64}, n::Int, d::Int,
-        mmax::Int, dim_seeds::Vector{UInt64})
+    mmax::Int, dim_seeds::Vector{UInt64})
     @inbounds for i in 0:(n - 1)
         for j in 0:(d - 1)
             idx = i * d + j + 1

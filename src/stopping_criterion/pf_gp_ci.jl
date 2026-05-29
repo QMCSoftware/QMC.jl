@@ -33,16 +33,16 @@ struct PFGPCI <: AbstractStoppingCriterion
 end
 
 function PFGPCI(integrand::AbstractIntegrand;
-        failure_threshold::Float64 = 0.0,
-        failure_above_threshold::Bool = true,
-        abs_tol::Float64 = 5e-3,
-        alpha::Float64 = 0.01,
-        n_init::Int = 64,
-        n_limit::Int = 1000,
-        n_batch::Int = 4,
-        n_approx::Int = 2^20)
+    failure_threshold::Float64 = 0.0,
+    failure_above_threshold::Bool = true,
+    abs_tol::Float64 = 5e-3,
+    alpha::Float64 = 0.01,
+    n_init::Int = 64,
+    n_limit::Int = 1000,
+    n_batch::Int = 4,
+    n_approx::Int = 2^20)
     return PFGPCI(integrand, failure_threshold, failure_above_threshold,
-                  abs_tol, alpha, n_init, n_limit, n_batch, n_approx)
+        abs_tol, alpha, n_init, n_limit, n_batch, n_approx)
 end
 
 function integrate(sc::PFGPCI; kwargs...)
@@ -51,10 +51,13 @@ function integrate(sc::PFGPCI; kwargs...)
         "The Python version requires GPyTorch/PyTorch for Gaussian process " *
         "regression.  A Julia port would need AbstractGPs.jl or similar. " *
         "Contributions welcome — see the Python source in " *
-        "qmcpy/stopping_criterion/pf_gp_ci.py (741 lines)."
+        "qmcpy/stopping_criterion/pf_gp_ci.py (741 lines).",
     )
 end
 
 function Base.show(io::IO, sc::PFGPCI)
-    print(io, "PFGPCI(abs_tol=$(sc.abs_tol), n_limit=$(sc.n_limit)) [stub — not yet implemented]")
+    print(
+        io,
+        "PFGPCI(abs_tol=$(sc.abs_tol), n_limit=$(sc.n_limit)) [stub — not yet implemented]",
+    )
 end

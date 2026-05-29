@@ -48,7 +48,7 @@ mutable struct Halton <: AbstractDiscreteDistribution
 end
 
 function Halton(dimension::Int; randomize::Bool = true, seed = nothing,
-        generalize::Bool = true)
+    generalize::Bool = true)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     dimension <= 250 ||
         throw(ArgumentError("dimension $dimension exceeds the maximum supported (250)"))
@@ -83,5 +83,8 @@ function gen_samples(dd::Halton, n::Int; n_start::Int = 0)
 end
 
 function Base.show(io::IO, dd::Halton)
-    print(io, "Halton(d=$(dd.dimension), randomize=$(dd.randomize), generalize=$(dd.generalize))")
+    print(
+        io,
+        "Halton(d=$(dd.dimension), randomize=$(dd.randomize), generalize=$(dd.generalize))",
+    )
 end

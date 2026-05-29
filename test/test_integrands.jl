@@ -143,11 +143,11 @@
     end
 
     @testset "Barrier Option" begin
-        dd = IIDStdUniform(50; seed=7)
-        tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-                                      interest_rate=0.05, t_final=1.0)
-        fo = FinancialOption(tm; option_type=:barrier, strike_price=100.0,
-                             barrier_price=120.0, barrier_in_out=:out)
+        dd = IIDStdUniform(50; seed = 7)
+        tm = GeometricBrownianMotion(dd; volatility = 0.2, start_price = 100.0,
+            interest_rate = 0.05, t_final = 1.0)
+        fo = FinancialOption(tm; option_type = :barrier, strike_price = 100.0,
+            barrier_price = 120.0, barrier_in_out = :out)
         x = transform(tm, gen_samples(dd, 1000))
         y = evaluate(fo, x)
         @test length(y) == 1000
@@ -155,25 +155,25 @@
     end
 
     @testset "FinancialOption Exact Values" begin
-        dd = IIDStdUniform(50; seed=7)
-        tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-                                      interest_rate=0.05, t_final=1.0)
-        fo_euro = FinancialOption(tm; option_type=:european, strike_price=100.0)
+        dd = IIDStdUniform(50; seed = 7)
+        tm = GeometricBrownianMotion(dd; volatility = 0.2, start_price = 100.0,
+            interest_rate = 0.05, t_final = 1.0)
+        fo_euro = FinancialOption(tm; option_type = :european, strike_price = 100.0)
         ev = get_exact_value(fo_euro)
         @test ev > 0.0
         @test ev < 20.0
 
-        fo_asian = FinancialOption(tm; option_type=:asian, strike_price=100.0,
-                                    asian_mean=:geometric)
+        fo_asian = FinancialOption(tm; option_type = :asian, strike_price = 100.0,
+            asian_mean = :geometric)
         ev_asian = get_exact_value(fo_asian)
         @test ev_asian > 0.0
     end
 
     @testset "FinancialOptionML" begin
-        dd = IIDStdUniform(16; seed=7)
-        tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-                                      interest_rate=0.05, t_final=1.0)
-        fml = FinancialOptionML(tm; d_coarsest=4)
+        dd = IIDStdUniform(16; seed = 7)
+        tm = GeometricBrownianMotion(dd; volatility = 0.2, start_price = 100.0,
+            interest_rate = 0.05, t_final = 1.0)
+        fml = FinancialOptionML(tm; d_coarsest = 4)
         @test dimension_at_level(fml, 0) == 4
         @test dimension_at_level(fml, 1) == 8
         @test dimension_at_level(fml, 2) == 16
@@ -185,7 +185,7 @@
     end
 
     @testset "SensitivityIndices" begin
-        dd = IIDStdUniform(6; seed=7)
+        dd = IIDStdUniform(6; seed = 7)
         tm = Uniform(dd)
         base = Ishigami(tm)
         si = SensitivityIndices(base)
@@ -200,9 +200,13 @@
     @testset "BayesianLRCoeffs" begin
         features = randn(50, 3)
         response = rand(0:1, 50)
-        dd = IIDStdUniform(3; seed=7)
+        dd = IIDStdUniform(3; seed = 7)
         tm = Gaussian(dd)
-        blr = BayesianLRCoeffs(tm; feature_array=features, response_vector=Float64.(response))
+        blr = BayesianLRCoeffs(
+            tm;
+            feature_array = features,
+            response_vector = Float64.(response),
+        )
         x = transform(tm, gen_samples(dd, 100))
         y = evaluate(blr, x)
         @test length(y) == 100

@@ -20,7 +20,7 @@ struct Triangular <: AbstractTrueMeasure
 end
 
 function Triangular(dd::AbstractDiscreteDistribution;
-        lower = 0.0, upper = 1.0, mode = 0.5)
+    lower = 0.0, upper = 1.0, mode = 0.5)
     d = dd.dimension
     lo = lower isa Number ? fill(Float64(lower), d) : Float64.(collect(lower))
     hi = upper isa Number ? fill(Float64(upper), d) : Float64.(collect(upper))

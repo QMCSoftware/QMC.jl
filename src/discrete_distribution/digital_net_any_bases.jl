@@ -44,12 +44,12 @@ mutable struct DigitalNetAnyBases <: AbstractDiscreteDistribution
 end
 
 function DigitalNetAnyBases(dimension::Int;
-        bases::Union{Int, Vector{Int}},
-        generating_matrices::Array{Int, 3},
-        randomize::String = "none",
-        alpha::Int = 1,
-        seed = nothing,
-        replications = nothing)
+    bases::Union{Int, Vector{Int}},
+    generating_matrices::Array{Int, 3},
+    randomize::String = "none",
+    alpha::Int = 1,
+    seed = nothing,
+    replications = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
     alpha >= 1 || throw(ArgumentError("alpha must be >= 1"))
     randomize in ("none", "DS", "NUS") || throw(ArgumentError(
@@ -107,7 +107,7 @@ function _interlace(vals::Vector{Float64}, alpha::Int, bases::Vector{Int})
     d_out = div(length(vals), alpha)
     result = zeros(Float64, d_out)
     for j in 1:d_out
-        base = bases[(j-1)*alpha + 1]  # all bases should be same for interlacing
+        base = bases[(j - 1) * alpha + 1]  # all bases should be same for interlacing
         val = 0.0
         for a in 1:alpha
             src_idx = (j-1)*alpha + a
@@ -201,7 +201,7 @@ x = gen_samples(dd, 125)  # 125 = 5^3 points in base 5
 ```
 """
 function Faure(dimension::Int; seed = nothing, randomize::String = "none",
-               replications = nothing)
+    replications = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
 
     # Find smallest prime >= dimension
@@ -225,9 +225,9 @@ function Faure(dimension::Int; seed = nothing, randomize::String = "none",
         end
     end
 
-    return DigitalNetAnyBases(dimension; bases=base,
-        generating_matrices=C, randomize=randomize, seed=seed,
-        replications=replications)
+    return DigitalNetAnyBases(dimension; bases = base,
+        generating_matrices = C, randomize = randomize, seed = seed,
+        replications = replications)
 end
 
 function _is_prime(n::Int)

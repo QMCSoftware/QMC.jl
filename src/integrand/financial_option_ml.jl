@@ -44,20 +44,23 @@ end
 function _ml_nb_of_levels(dim::Int, d_coarsest::Int)
     d_coarsest > 0 || throw(ArgumentError("d_coarsest must be positive"))
     ratio, remainder = divrem(dim, d_coarsest)
-    remainder == 0 && ratio > 0 && ispow2(ratio) || throw(ArgumentError(
-        "dimension ($dim) must be d_coarsest ($d_coarsest) × 2^k for some integer k ≥ 0"))
+    remainder == 0 && ratio > 0 && ispow2(ratio) || throw(
+        ArgumentError(
+            "dimension ($dim) must be d_coarsest ($d_coarsest) × 2^k for some integer k ≥ 0",
+        ),
+    )
     return Int(log2(ratio)) + 1
 end
 
 function FinancialOptionML(dd::AbstractDiscreteDistribution;
-        d_coarsest::Int = 2,
-        option_type::Symbol = :asian,
-        mean_type::Symbol = :arithmetic,
-        volatility::Float64 = 0.5,
-        start_price::Float64 = 30.0,
-        strike_price::Float64 = 25.0,
-        interest_rate::Float64 = 0.0,
-        call_put::Symbol = :call)
+    d_coarsest::Int = 2,
+    option_type::Symbol = :asian,
+    mean_type::Symbol = :arithmetic,
+    volatility::Float64 = 0.5,
+    start_price::Float64 = 30.0,
+    strike_price::Float64 = 25.0,
+    interest_rate::Float64 = 0.0,
+    call_put::Symbol = :call)
     dim = dd.dimension
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     tm = Gaussian(dd)
@@ -67,14 +70,14 @@ function FinancialOptionML(dd::AbstractDiscreteDistribution;
 end
 
 function FinancialOptionML(tm::BrownianMotion;
-        d_coarsest::Int = 2,
-        option_type::Symbol = :asian,
-        mean_type::Symbol = :arithmetic,
-        volatility::Float64 = 0.5,
-        start_price::Float64 = 30.0,
-        strike_price::Float64 = 25.0,
-        interest_rate::Float64 = 0.0,
-        call_put::Symbol = :call)
+    d_coarsest::Int = 2,
+    option_type::Symbol = :asian,
+    mean_type::Symbol = :arithmetic,
+    volatility::Float64 = 0.5,
+    start_price::Float64 = 30.0,
+    strike_price::Float64 = 25.0,
+    interest_rate::Float64 = 0.0,
+    call_put::Symbol = :call)
     dim = tm.dimension
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     return FinancialOptionML(tm, dim, d_coarsest, nb_of_levels,
@@ -83,14 +86,14 @@ function FinancialOptionML(tm::BrownianMotion;
 end
 
 function FinancialOptionML(tm::GeometricBrownianMotion;
-        d_coarsest::Int = 2,
-        option_type::Symbol = :asian,
-        mean_type::Symbol = :arithmetic,
-        volatility::Union{Nothing, Float64} = nothing,
-        start_price::Union{Nothing, Float64} = nothing,
-        strike_price::Float64 = 25.0,
-        interest_rate::Union{Nothing, Float64} = nothing,
-        call_put::Symbol = :call)
+    d_coarsest::Int = 2,
+    option_type::Symbol = :asian,
+    mean_type::Symbol = :arithmetic,
+    volatility::Union{Nothing, Float64} = nothing,
+    start_price::Union{Nothing, Float64} = nothing,
+    strike_price::Float64 = 25.0,
+    interest_rate::Union{Nothing, Float64} = nothing,
+    call_put::Symbol = :call)
     dim = tm.dimension
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     volatility = isnothing(volatility) ? sqrt(tm.diffusion) : volatility
@@ -125,13 +128,13 @@ function _build_stock_path(f::FinancialOptionML, z::AbstractVector, d::Int)
     S = Vector{Float64}(undef, d)
     S[1] = S0 * exp((r - σ^2/2) * dt + σ * sqrt(dt) * z[1])
     @inbounds for j in 2:d
-        S[j] = S[j-1] * exp((r - σ^2/2) * dt + σ * sqrt(dt) * z[j])
+        S[j] = S[j - 1] * exp((r - σ^2/2) * dt + σ * sqrt(dt) * z[j])
     end
     return S
 end
 
 function _stock_path_from_brownian(f::FinancialOptionML,
-        w::AbstractVector, tv::AbstractVector)
+    w::AbstractVector, tv::AbstractVector)
     σ = f.volatility
     S0 = f.start_price
     r = f.interest_rate
@@ -167,7 +170,7 @@ function _coupled_stock_paths(f::FinancialOptionML, x_fine::AbstractVector, leve
     d_coarse = div(d_fine, 2)
     z_coarse = Vector{Float64}(undef, d_coarse)
     @inbounds for j in 1:d_coarse
-        z_coarse[j] = (x_fine[2j-1] + x_fine[2j]) / sqrt(2.0)
+        z_coarse[j] = (x_fine[2j - 1] + x_fine[2j]) / sqrt(2.0)
     end
     S_coarse = _build_stock_path(f, z_coarse, d_coarse)
     return S_coarse, S_fine

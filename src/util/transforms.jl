@@ -38,7 +38,6 @@ function to_bin_matrix(x::AbstractMatrix, m::Int)
     n, d = size(x)
     bits = zeros(Int, n, d, m)
     for j in 1:d, i in 1:n
-
         bits[i, j, :] .= to_bin(x[i, j], m)
     end
     return bits
@@ -54,7 +53,6 @@ function cranley_patterson_shift!(x::AbstractMatrix, shift::AbstractVector)
     n, d = size(x)
     @assert length(shift) == d
     @inbounds for j in 1:d, i in 1:n
-
         x[i, j] = mod(x[i, j] + shift[j], 1.0)
     end
     return x

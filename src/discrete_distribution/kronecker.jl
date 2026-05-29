@@ -58,8 +58,11 @@ function Kronecker(dimension::Int; seed = nothing, generator = :default)
         primes = _first_primes(dimension)
         alpha = sqrt.(Float64.(primes))
     elseif generator isa Vector{Float64}
-        length(generator) == dimension || throw(ArgumentError(
-            "generator length ($(length(generator))) must match dimension ($dimension)"))
+        length(generator) == dimension || throw(
+            ArgumentError(
+                "generator length ($(length(generator))) must match dimension ($dimension)",
+            ),
+        )
         alpha = generator
     else
         throw(ArgumentError("generator must be :default or a Vector{Float64}"))

@@ -36,12 +36,12 @@ mutable struct CubMCG <: AbstractStoppingCriterion
 end
 
 function CubMCG(integrand::AbstractIntegrand;
-        abs_tol::Float64 = 0.01,
-        rel_tol::Float64 = 0.0,
-        n_init::Int = 1024,
-        n_max::Int = 2^30,
-        alpha::Float64 = 0.01,
-        inflate::Float64 = 1.2)
+    abs_tol::Float64 = 0.01,
+    rel_tol::Float64 = 0.0,
+    n_init::Int = 1024,
+    n_max::Int = 2^30,
+    alpha::Float64 = 0.01,
+    inflate::Float64 = 1.2)
     abs_tol > 0 || throw(ArgumentError("abs_tol must be > 0"))
     rel_tol >= 0 || throw(ArgumentError("rel_tol must be ≥ 0"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -49,15 +49,16 @@ function CubMCG(integrand::AbstractIntegrand;
     inflate >= 1 || throw(ArgumentError("inflate must be ≥ 1"))
 
     alpha_sigma = alpha / 2.0
-    kurtmax = (n_init - 3) / (n_init - 1) +
-              (alpha_sigma * n_init) / (1 - alpha_sigma) * (1 - 1 / inflate^2)^2
+    kurtmax =
+        (n_init - 3) / (n_init - 1) +
+        (alpha_sigma * n_init) / (1 - alpha_sigma) * (1 - 1 / inflate^2)^2
 
     return CubMCG(integrand, abs_tol, rel_tol, n_init, n_max,
-                   alpha, inflate, alpha_sigma, kurtmax)
+        alpha, inflate, alpha_sigma, kurtmax)
 end
 
 # Berry-Esseen constants
-const _BE_A  = 18.1139
+const _BE_A = 18.1139
 const _BE_A1 = 0.3328
 const _BE_A2 = 0.429
 
@@ -67,7 +68,7 @@ const _BE_A2 = 0.429
 Compute sample size and error bound using Berry-Esseen + Chebyshev.
 """
 function _nchebe(toloversig::Float64, alpha::Float64, kurtmax::Float64,
-                  n_budget::Int, sigma_up::Float64)
+    n_budget::Int, sigma_up::Float64)
     d = Distributions.Normal()
     M3upper = kurtmax^0.75
 
@@ -81,7 +82,7 @@ function _nchebe(toloversig::Float64, alpha::Float64, kurtmax::Float64,
         sqrtn = exp(logsqrtn)
         Distributions.cdf(d, -sqrtn * toloversig) +
         exp(-logsqrtn) * min(_BE_A1 * (M3upper + _BE_A2),
-                              _BE_A * M3upper / (1 + (sqrtn * toloversig)^3)) -
+            _BE_A * M3upper / (1 + (sqrtn * toloversig)^3)) -
         alpha / 2.0
     end
 
@@ -106,7 +107,7 @@ function _nchebe(toloversig::Float64, alpha::Float64, kurtmax::Float64,
     function BEfun3(t)
         Distributions.cdf(d, -sqrtn * t) +
         exp(-logsqrtn) * min(_BE_A1 * (M3upper + _BE_A2),
-                              _BE_A * M3upper / (1 + (sqrtn * t)^3)) -
+            _BE_A * M3upper / (1 + (sqrtn * t)^3)) -
         alpha / 2.0
     end
 
@@ -157,7 +158,7 @@ function _ncbinv(n1::Int, alpha1::Float64, kurtmax::Float64)
     return min(NCheb_inv, NBE_inv)
 end
 
-function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
     t_start = time()
     f = sc.integrand
     tm = f.true_measure
@@ -167,7 +168,7 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol,Any}} = nothin
     x0 = transform(tm, gen_samples(dd, sc.n_init))
     y0 = evaluate(f, x0)
     mu0 = mean(y0)
-    sig0 = std(y0; corrected=true)
+    sig0 = std(y0; corrected = true)
     sigma_up = sc.inflate * sig0
 
     if sc.rel_tol == 0.0
@@ -206,7 +207,8 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol,Any}} = nothin
 
             toloversig = bound_hw / max(sigma_up, 1e-300)
             alphai = 2^tau * (sc.alpha - sc.alpha_sigma) / (1 - sc.alpha_sigma)
-            n_new, _ = _nchebe(toloversig, min(alphai, 0.99), sc.kurtmax, sc.n_max, sigma_up)
+            n_new, _ =
+                _nchebe(toloversig, min(alphai, 0.99), sc.kurtmax, sc.n_max, sigma_up)
             n_new = min(n_new, sc.n_max - n_total)
             if n_new <= 0
                 break
@@ -233,5 +235,5 @@ end
 
 function Base.show(io::IO, sc::CubMCG)
     @printf(io, "CubMCG(abs_tol=%.2e, rel_tol=%.2e, n_init=%d, inflate=%.2f)",
-            sc.abs_tol, sc.rel_tol, sc.n_init, sc.inflate)
+        sc.abs_tol, sc.rel_tol, sc.n_init, sc.inflate)
 end

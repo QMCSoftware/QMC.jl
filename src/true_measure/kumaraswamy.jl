@@ -21,7 +21,7 @@ struct Kumaraswamy <: AbstractTrueMeasure
 end
 
 function Kumaraswamy(dd::AbstractDiscreteDistribution;
-        alpha = 2.0, beta = 5.0)
+    alpha = 2.0, beta = 5.0)
     d = dd.dimension
     a = alpha isa Number ? fill(Float64(alpha), d) : Float64.(collect(alpha))
     b = beta isa Number ? fill(Float64(beta), d) : Float64.(collect(beta))

@@ -65,15 +65,17 @@ function SensitivityIndices(integrand::AbstractIntegrand; indices = :singletons)
         n_subsets = (1 << d_base) - 2
         idx_mat = Matrix{Bool}(undef, n_subsets, d_base)
         row = 1
-        for i in 1:(1 << d_base) - 2
+        for i in 1:((1 << d_base) - 2)
             for j in 1:d_base
                 idx_mat[row, j] = ((i >> (j - 1)) & 1) == 1
             end
             row += 1
         end
     elseif indices isa Matrix{Bool}
-        size(indices, 2) == d_base || throw(ArgumentError(
-            "indices must have $(d_base) columns, got $(size(indices, 2))"))
+        size(indices, 2) == d_base || throw(
+            ArgumentError(
+                "indices must have $(d_base) columns, got $(size(indices, 2))"),
+        )
         idx_mat = indices
     else
         throw(ArgumentError("indices must be :singletons, :all, or a Matrix{Bool}"))
@@ -91,7 +93,7 @@ function evaluate(si::SensitivityIndices, x::AbstractMatrix)
 
     # Split into X (first d dims) and Z (last d dims)
     X = x[:, 1:d]
-    Z = x[:, d+1:2d]
+    Z = x[:, (d + 1):2d]
 
     # Evaluate f(X) and f(Z)
     f_X = evaluate(si.base_integrand, X)
@@ -151,6 +153,9 @@ end
 
 function Base.show(io::IO, si::SensitivityIndices)
     k = size(si.indices, 1)
-    print(io, "SensitivityIndices(d=$(si.d_base), subsets=$k, " *
-          "base=$(typeof(si.base_integrand).name.name))")
+    print(
+        io,
+        "SensitivityIndices(d=$(si.d_base), subsets=$k, " *
+        "base=$(typeof(si.base_integrand).name.name))",
+    )
 end

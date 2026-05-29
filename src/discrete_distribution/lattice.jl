@@ -43,10 +43,12 @@ mutable struct Lattice <: AbstractDiscreteDistribution
 end
 
 function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
-        order::String = "natural", replications = nothing)
+    order::String = "natural", replications = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
-    dimension <= _KUO_LATTICE_MAX_DIM || throw(ArgumentError(
-        "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)"))
+    dimension <= _KUO_LATTICE_MAX_DIM || throw(
+        ArgumentError(
+            "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)"),
+    )
     order_lc = lowercase(strip(order))
     order_lc in ("natural", "linear", "radical_inverse", "gray") ||
         throw(ArgumentError("order must be natural/linear/radical_inverse/gray"))
@@ -99,5 +101,8 @@ end
 
 function Base.show(io::IO, dd::Lattice)
     reps = isnothing(dd.replications) ? "" : ", reps=$(dd.replications)"
-    print(io, "Lattice(d=$(dd.dimension), randomize=$(dd.randomize), order=\"$(dd.order)\"$reps)")
+    print(
+        io,
+        "Lattice(d=$(dd.dimension), randomize=$(dd.randomize), order=\"$(dd.order)\"$reps)",
+    )
 end

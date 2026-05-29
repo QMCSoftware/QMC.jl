@@ -52,16 +52,16 @@ mutable struct FinancialOption <: AbstractIntegrand
 end
 
 function FinancialOption(tm::AbstractTrueMeasure;
-        volatility::Union{Nothing, Float64} = nothing,
-        start_price::Union{Nothing, Float64} = nothing,
-        strike_price::Float64 = 25.0,
-        interest_rate::Union{Nothing, Float64} = nothing,
-        call_put::Symbol = :call,
-        option_type::Symbol = :european,
-        mean_type::Union{Nothing, Symbol} = nothing,
-        asian_mean::Union{Nothing, Symbol} = nothing,
-        barrier_price::Float64 = NaN,
-        barrier_in_out::Symbol = :in)
+    volatility::Union{Nothing, Float64} = nothing,
+    start_price::Union{Nothing, Float64} = nothing,
+    strike_price::Float64 = 25.0,
+    interest_rate::Union{Nothing, Float64} = nothing,
+    call_put::Symbol = :call,
+    option_type::Symbol = :european,
+    mean_type::Union{Nothing, Symbol} = nothing,
+    asian_mean::Union{Nothing, Symbol} = nothing,
+    barrier_price::Float64 = NaN,
+    barrier_in_out::Symbol = :in)
     if !isnothing(mean_type) && !isnothing(asian_mean) && mean_type != asian_mean
         throw(ArgumentError("mean_type and asian_mean must match when both are provided"))
     end
@@ -79,12 +79,18 @@ function FinancialOption(tm::AbstractTrueMeasure;
 
     call_put in (:call, :put) || throw(ArgumentError("call_put must be :call or :put"))
     option_type in (:european, :asian, :lookback, :digital, :barrier) ||
-        throw(ArgumentError("option_type must be :european, :asian, :lookback, :digital, or :barrier"))
+        throw(
+            ArgumentError(
+                "option_type must be :european, :asian, :lookback, :digital, or :barrier",
+            ),
+        )
     mean_type in (:arithmetic, :geometric) ||
         throw(ArgumentError("mean_type must be :arithmetic or :geometric"))
     if option_type == :barrier
-        isnan(barrier_price) && throw(ArgumentError("barrier_price must be set for barrier options"))
-        barrier_in_out in (:in, :out) || throw(ArgumentError("barrier_in_out must be :in or :out"))
+        isnan(barrier_price) &&
+            throw(ArgumentError("barrier_price must be set for barrier options"))
+        barrier_in_out in (:in, :out) ||
+            throw(ArgumentError("barrier_in_out must be :in or :out"))
     end
 
     d = tm.dimension
@@ -235,14 +241,16 @@ function get_exact_value(f::FinancialOption)
         factor = exp(rbar * Tbar - r * T)
         return f.call_put == :call ? gc * factor : gp * factor
     else
-        error("Exact value not supported for option_type=:$(f.option_type)" *
-              (f.option_type == :asian ? " with mean_type=:$(f.mean_type)" : ""))
+        error(
+            "Exact value not supported for option_type=:$(f.option_type)" *
+            (f.option_type == :asian ? " with mean_type=:$(f.mean_type)" : ""),
+        )
     end
 end
 
 function Base.show(io::IO, f::FinancialOption)
     extra = f.option_type == :barrier ?
-        ", B=$(f.barrier_price), $(f.barrier_in_out)" : ""
+            ", B=$(f.barrier_price), $(f.barrier_in_out)" : ""
     print(io,
         "FinancialOption(:$(f.option_type), :$(f.call_put), d=$(f.dimension), " *
         "S₀=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility)$extra)")

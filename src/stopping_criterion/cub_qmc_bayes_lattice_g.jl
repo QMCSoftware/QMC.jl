@@ -31,10 +31,10 @@ mutable struct CubQMCBayesLatticeG <: AbstractStoppingCriterion
 end
 
 function CubQMCBayesLatticeG(integrand::AbstractIntegrand;
-        abs_tol::Float64 = 0.01, rel_tol::Float64 = 0.0,
-        n_init::Int = 2^8, n_max::Int = 2^22, order::Int = 2,
-        ptransform::Symbol = :C1SIN, errbd_type::Symbol = :MLE,
-        alpha::Float64 = 0.01)
+    abs_tol::Float64 = 0.01, rel_tol::Float64 = 0.0,
+    n_init::Int = 2^8, n_max::Int = 2^22, order::Int = 2,
+    ptransform::Symbol = :C1SIN, errbd_type::Symbol = :MLE,
+    alpha::Float64 = 0.01)
     @assert ispow2(n_init) "n_init must be a power of 2"
     @assert ispow2(n_max) "n_max must be a power of 2"
     @assert order in (1, 2, 3) "order must be 1, 2, or 3"
@@ -70,7 +70,6 @@ function _si_kernel_eigenvalues(xun::AbstractMatrix, order::Int, theta::Float64)
     # Evaluate Bernoulli on each coordinate
     bvals = Matrix{Float64}(undef, n, d)
     @inbounds for j in 1:d, i in 1:n
-
         bvals[i, j] = bern(mod(xun[i, j], 1.0))
     end
 
@@ -97,8 +96,8 @@ end
 # ── MLE / GCV objective ─────────────────────────────────────────────────────
 
 function _mle_objective(theta::Float64, xun::AbstractMatrix,
-        ftilde::Vector{Float64}, order::Int,
-        errbd_type::Symbol)
+    ftilde::Vector{Float64}, order::Int,
+    errbd_type::Symbol)
     n = length(ftilde)
     fudge = 100eps(Float64)
 
@@ -118,8 +117,9 @@ function _mle_objective(theta::Float64, xun::AbstractMatrix,
             lam[k] > fudge && (temp_gcv[k] = (ftilde[k] / lam[k])^2)
         end
         RKHS_norm = sum(@view temp_gcv[2:end]) / (lf * n)
-        loss = log(max(sum(@view temp_gcv[2:end]), eps(Float64))) -
-               2log(max(sum(1.0/l for l in lam if l > fudge), eps(Float64)))
+        loss =
+            log(max(sum(@view temp_gcv[2:end]), eps(Float64))) -
+            2log(max(sum(1.0/l for l in lam if l > fudge), eps(Float64)))
     else  # MLE (default)
         RKHS_norm = sum(@view temp[2:end]) / (lf * n)
         temp_1 = sum(@view temp[2:end]) / lf
@@ -134,9 +134,10 @@ end
 # ── Stopping criterion ───────────────────────────────────────────────────────
 
 function _bayes_lattice_stop(xun, ftilde, n, order, errbd_type, alpha)
-    uncert = errbd_type == :FULL ?
-             -quantile(TDist(n-1), alpha/2) :
-             -quantile(Normal(), alpha/2)
+    uncert =
+        errbd_type == :FULL ?
+        -quantile(TDist(n-1), alpha/2) :
+        -quantile(Normal(), alpha/2)
 
     # Grid search for optimal log(θ) in [-5, 0]
     best_lna, best_loss = -5.0, Inf
@@ -176,7 +177,10 @@ end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
-function integrate(sc::CubQMCBayesLatticeG; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(
+    sc::CubQMCBayesLatticeG;
+    resume::Union{Nothing, Dict{Symbol, Any}} = nothing,
+)
     if resume !== nothing
         n = 2 * Int(resume[:n])
     else
@@ -219,5 +223,8 @@ function integrate(sc::CubQMCBayesLatticeG; resume::Union{Nothing, Dict{Symbol,A
 end
 
 function Base.show(io::IO, sc::CubQMCBayesLatticeG)
-    print(io, "CubQMCBayesLatticeG(abs_tol=$(sc.abs_tol), order=$(sc.order), ptransform=$(sc.ptransform))")
+    print(
+        io,
+        "CubQMCBayesLatticeG(abs_tol=$(sc.abs_tol), order=$(sc.order), ptransform=$(sc.ptransform))",
+    )
 end

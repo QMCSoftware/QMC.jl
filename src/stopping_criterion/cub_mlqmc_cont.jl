@@ -53,16 +53,16 @@ mutable struct CubMLQMCCont <: AbstractStoppingCriterion
 end
 
 function CubMLQMCCont(integrand::AbstractMLIntegrand;
-                       abs_tol::Float64 = 0.05,
-                       rmse_tol::Union{Nothing, Float64} = nothing,
-                       n_init::Int = 256,
-                       n_limit::Int = 10_000_000_000,
-                       alpha_ci::Float64 = 0.01,
-                       levels_min::Int = 2,
-                       levels_max::Int = 10,
-                       n_tols::Int = 10,
-                       inflate::Float64 = 100.0^(1/9),
-                       theta_init::Float64 = 0.5)
+    abs_tol::Float64 = 0.05,
+    rmse_tol::Union{Nothing, Float64} = nothing,
+    n_init::Int = 256,
+    n_limit::Int = 10_000_000_000,
+    alpha_ci::Float64 = 0.01,
+    levels_min::Int = 2,
+    levels_max::Int = 10,
+    n_tols::Int = 10,
+    inflate::Float64 = 100.0^(1/9),
+    theta_init::Float64 = 0.5)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -81,8 +81,8 @@ function CubMLQMCCont(integrand::AbstractMLIntegrand;
     end
 
     return CubMLQMCCont(integrand, target_tol, n_init, n_limit, R,
-                         levels_min, levels_max, n_tols, inflate,
-                         theta_init, theta_init)
+        levels_min, levels_max, n_tols, inflate,
+        theta_init, theta_init)
 end
 
 # ── MLQMC internal state ──
@@ -115,7 +115,7 @@ function _init_mlqmc_state(sc::CubMLQMCCont)
         fill(Inf, L),
         Inf,
         AbstractDiscreteDistribution[],
-        AbstractTrueMeasure[]
+        AbstractTrueMeasure[],
     )
 end
 
@@ -150,17 +150,17 @@ end
 function _update_data_qmc!(sc::CubMLQMCCont, state::_MLQMCState)
     R = sc.replications
     for l in 0:(state.levels - 1)
-        if !state.eval_level[l+1]
+        if !state.eval_level[l + 1]
             continue
         end
         _ensure_level_spawned_qmc!(sc, state, l)
 
         # Determine sample size: double or init
-        n_max = state.n_level[l+1] == 0 ? sc.n_init : 2 * state.n_level[l+1]
-        n_new = n_max - state.n_level[l+1]
+        n_max = state.n_level[l + 1] == 0 ? sc.n_init : 2 * state.n_level[l + 1]
+        n_new = n_max - state.n_level[l + 1]
 
-        dd_l = state.level_dd[l+1]
-        tm_l = state.level_tm[l+1]
+        dd_l = state.level_dd[l + 1]
+        tm_l = state.level_tm[l + 1]
 
         # Evaluate R replications of n_new samples each
         rep_sums = zeros(R)
@@ -176,16 +176,16 @@ function _update_data_qmc!(sc::CubMLQMCCont, state::_MLQMCState)
         end
 
         # Update running means per replication
-        prev_sum = state.mean_level_reps[l+1] .* state.n_level[l+1]
-        state.mean_level_reps[l+1] = (rep_sums .+ prev_sum) ./ n_max
+        prev_sum = state.mean_level_reps[l + 1] .* state.n_level[l + 1]
+        state.mean_level_reps[l + 1] = (rep_sums .+ prev_sum) ./ n_max
 
         cost_per = cost_at_level(sc.integrand, l)
-        state.cost_level[l+1] += R * n_new * cost_per
-        state.n_level[l+1] = n_max
-        state.mean_level[l+1] = mean(state.mean_level_reps[l+1])
-        state.var_level[l+1] = var(state.mean_level_reps[l+1]; corrected=false)
-        cps = state.cost_level[l+1] / state.n_level[l+1] / R
-        state.var_cost_ratio[l+1] = state.var_level[l+1] / max(cps, 1e-300)
+        state.cost_level[l + 1] += R * n_new * cost_per
+        state.n_level[l + 1] = n_max
+        state.mean_level[l + 1] = mean(state.mean_level_reps[l + 1])
+        state.var_level[l + 1] = var(state.mean_level_reps[l + 1]; corrected = false)
+        cps = state.cost_level[l + 1] / state.n_level[l + 1] / R
+        state.var_cost_ratio[l + 1] = state.var_level[l + 1] / max(cps, 1e-300)
     end
 
     # Update bias estimate
@@ -203,8 +203,8 @@ function _update_bias_qmc!(state::_MLQMCState)
     end
     l0 = L - 2  # 0-based
     l1 = L - 1
-    y0 = log2(max(abs(mean(state.mean_level_reps[l0+1])), 1e-300))
-    y1 = log2(max(abs(mean(state.mean_level_reps[l1+1])), 1e-300))
+    y0 = log2(max(abs(mean(state.mean_level_reps[l0 + 1])), 1e-300))
+    y1 = log2(max(abs(mean(state.mean_level_reps[l1 + 1])), 1e-300))
     A = [Float64(l0) 1.0; Float64(l1) 1.0]
     y = [y0, y1]
     x = A \ y
@@ -220,8 +220,8 @@ function _update_theta_qmc!(sc::CubMLQMCCont, state::_MLQMCState, step_tol::Floa
     end
     l0 = L - 2
     l1 = L - 1
-    y0 = log2(max(abs(mean(state.mean_level_reps[l0+1])), 1e-300))
-    y1 = log2(max(abs(mean(state.mean_level_reps[l1+1])), 1e-300))
+    y0 = log2(max(abs(mean(state.mean_level_reps[l0 + 1])), 1e-300))
+    y1 = log2(max(abs(mean(state.mean_level_reps[l1 + 1])), 1e-300))
     A = [Float64(l0) 1.0; Float64(l1) 1.0]
     y = [y0, y1]
     x = A \ y
@@ -258,7 +258,10 @@ function _integrate_step_qmc!(sc::CubMLQMCCont, state::_MLQMCState, step_tol::Fl
             state.eval_level[efficient_l] = true
 
             # Check budget
-            total_next = sum(sc.replications .* state.eval_level[1:state.levels] .* state.n_level[1:state.levels] .* 2)
+            total_next = sum(
+                sc.replications .* state.eval_level[1:state.levels] .*
+                state.n_level[1:state.levels] .* 2,
+            )
             n_total = sc.replications * sum(state.n_level)
             if n_total + total_next > sc.n_limit
                 @warn "CubMLQMCCont: would exceed n_limit=$(sc.n_limit). Stopping."
@@ -284,7 +287,7 @@ end
 
 # ── Main integrate ──
 
-function integrate(sc::CubMLQMCCont; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(sc::CubMLQMCCont; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
     t_start = time()
     state = _init_mlqmc_state(sc)
 
@@ -316,5 +319,5 @@ end
 
 function Base.show(io::IO, sc::CubMLQMCCont)
     @printf(io, "CubMLQMCCont(rmse_tol=%.2e, n_init=%d, reps=%d, n_tols=%d)",
-            sc.target_tol, sc.n_init, sc.replications, sc.n_tols)
+        sc.target_tol, sc.n_init, sc.replications, sc.n_tols)
 end

@@ -49,13 +49,13 @@ function Base.getproperty(sc::CubMLQMC, name::Symbol)
 end
 
 function CubMLQMC(integrand::AbstractMLIntegrand;
-                   abs_tol::Float64 = 0.05,
-                   rmse_tol::Union{Nothing, Float64} = nothing,
-                   n_init::Int = 256,
-                   n_limit::Int = 10_000_000_000,
-                   alpha_ci::Float64 = 0.01,
-                   levels_min::Int = 2,
-                   levels_max::Int = 10)
+    abs_tol::Float64 = 0.05,
+    rmse_tol::Union{Nothing, Float64} = nothing,
+    n_init::Int = 256,
+    n_limit::Int = 10_000_000_000,
+    alpha_ci::Float64 = 0.01,
+    levels_min::Int = 2,
+    levels_max::Int = 10)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -74,7 +74,7 @@ function CubMLQMC(integrand::AbstractMLIntegrand;
     end
 
     return CubMLQMC(integrand, target_tol, n_init, n_limit, R,
-                     levels_min, levels_max, 0.5)
+        levels_min, levels_max, 0.5)
 end
 
 # Reuse _MLQMCState from cub_mlqmc_cont.jl
@@ -93,7 +93,7 @@ function _init_mlqmc_direct_state(sc::CubMLQMC)
         fill(Inf, L),
         Inf,
         AbstractDiscreteDistribution[],
-        AbstractTrueMeasure[]
+        AbstractTrueMeasure[],
     )
 end
 
@@ -126,16 +126,16 @@ end
 function _update_data_mlqmc!(sc::CubMLQMC, state::_MLQMCState)
     R = sc.replications
     for l in 0:(state.levels - 1)
-        if !state.eval_level[l+1]
+        if !state.eval_level[l + 1]
             continue
         end
         _ensure_level_spawned_mlqmc!(sc, state, l)
 
-        n_max = state.n_level[l+1] == 0 ? sc.n_init : 2 * state.n_level[l+1]
-        n_new = n_max - state.n_level[l+1]
+        n_max = state.n_level[l + 1] == 0 ? sc.n_init : 2 * state.n_level[l + 1]
+        n_new = n_max - state.n_level[l + 1]
 
-        dd_l = state.level_dd[l+1]
-        tm_l = state.level_tm[l+1]
+        dd_l = state.level_dd[l + 1]
+        tm_l = state.level_tm[l + 1]
 
         rep_sums = zeros(R)
         for r in 1:R
@@ -148,16 +148,16 @@ function _update_data_mlqmc!(sc::CubMLQMC, state::_MLQMCState)
             rep_sums[r] = sum(Qf .- Qc)
         end
 
-        prev_sum = state.mean_level_reps[l+1] .* state.n_level[l+1]
-        state.mean_level_reps[l+1] = (rep_sums .+ prev_sum) ./ n_max
+        prev_sum = state.mean_level_reps[l + 1] .* state.n_level[l + 1]
+        state.mean_level_reps[l + 1] = (rep_sums .+ prev_sum) ./ n_max
 
         cost_per = cost_at_level(sc.integrand, l)
-        state.cost_level[l+1] += R * n_new * cost_per
-        state.n_level[l+1] = n_max
-        state.mean_level[l+1] = mean(state.mean_level_reps[l+1])
-        state.var_level[l+1] = var(state.mean_level_reps[l+1]; corrected=false)
-        cps = state.cost_level[l+1] / state.n_level[l+1] / R
-        state.var_cost_ratio[l+1] = state.var_level[l+1] / max(cps, 1e-300)
+        state.cost_level[l + 1] += R * n_new * cost_per
+        state.n_level[l + 1] = n_max
+        state.mean_level[l + 1] = mean(state.mean_level_reps[l + 1])
+        state.var_level[l + 1] = var(state.mean_level_reps[l + 1]; corrected = false)
+        cps = state.cost_level[l + 1] / state.n_level[l + 1] / R
+        state.var_cost_ratio[l + 1] = state.var_level[l + 1] / max(cps, 1e-300)
     end
 
     # Update bias estimate (same as CubMLQMCCont)
@@ -173,8 +173,8 @@ function _update_bias_mlqmc!(state::_MLQMCState)
     end
     l0 = L - 2
     l1 = L - 1
-    y0 = log2(max(abs(mean(state.mean_level_reps[l0+1])), 1e-300))
-    y1 = log2(max(abs(mean(state.mean_level_reps[l1+1])), 1e-300))
+    y0 = log2(max(abs(mean(state.mean_level_reps[l0 + 1])), 1e-300))
+    y1 = log2(max(abs(mean(state.mean_level_reps[l1 + 1])), 1e-300))
     A = [Float64(l0) 1.0; Float64(l1) 1.0]
     y = [y0, y1]
     x = A \ y
@@ -182,7 +182,7 @@ function _update_bias_mlqmc!(state::_MLQMCState)
     state.bias_estimate = abs(2^(x[2] + L * x[1]) / (2^alpha_est - 1))
 end
 
-function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol,Any}} = nothing)
+function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
     t_start = time()
     state = _init_mlqmc_direct_state(sc)
     target_tol = sc.target_tol
@@ -203,7 +203,10 @@ function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol,Any}} = noth
             state.eval_level[efficient_l] = true
 
             n_total = sc.replications * sum(state.n_level)
-            total_next = sum(sc.replications .* state.eval_level[1:state.levels] .* state.n_level[1:state.levels] .* 2)
+            total_next = sum(
+                sc.replications .* state.eval_level[1:state.levels] .*
+                state.n_level[1:state.levels] .* 2,
+            )
             if n_total + total_next > sc.n_limit
                 @warn "CubMLQMC: would exceed n_limit=$(sc.n_limit). Stopping."
                 converged = true
@@ -255,5 +258,5 @@ end
 
 function Base.show(io::IO, sc::CubMLQMC)
     @printf(io, "CubMLQMC(rmse_tol=%.2e, n_init=%d, reps=%d)",
-            sc.target_tol, sc.n_init, sc.replications)
+        sc.target_tol, sc.n_init, sc.replications)
 end
