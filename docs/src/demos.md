@@ -45,7 +45,7 @@ Interactive Jupyter notebooks are available in the `demos/` directory:
 | Notebook | Description |
 |----------|-------------|
 | `quickstart.ipynb` | Getting started with QMC.jl |
-| `qmcju_intro.ipynb` | Introduction to the QMC framework |
+| `qmc.jl_intro.ipynb` | Introduction to the QMC framework |
 | `lebesgue_integration.ipynb` | Lebesgue integration examples |
 | `lattice.ipynb` | Lattice rule demonstrations |
 | `digital_net_b2.ipynb` | Digital net (Sobol') demonstrations |

@@ -4,7 +4,7 @@ Thank you for your interest in contributing to QMC.jl. This guide walks through 
 
 Please submit **pull requests** to the `develop` branch and **issues** using a template from `.github/ISSUE_TEMPLATE/`.
 
-Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@googlegroups.com). If you develop a new component, consider writing a blog for [qmcju.org](https://qmcju.org).
+Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@googlegroups.com). If you develop a new component, consider writing a blog for [qmcpy.org](https://qmcpy.org).
 
 ## Developer Setup
 
@@ -100,7 +100,7 @@ Note: `Uniform` and `Kumaraswamy` are exported by both QMC and Distributions.jl.
 ## Project Structure
 
 ```
-qmcju/
+QMC.jl/
 ├── Project.toml                # Julia package metadata and dependencies
 ├── src/
 │   ├── QMC.jl                # Main module: includes, exports
@@ -150,7 +150,7 @@ To run a notebook in VS Code:
 4. Click the notebook kernel picker and select `QMC`.
 5. Restart the notebook kernel if it was previously attached to another interpreter.
 
-Do not use the Python `qmcju`, `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QMC` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
+Do not use the Python `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QMC` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
 
 ## Code Style
 

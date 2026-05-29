@@ -35,12 +35,12 @@ Then open a demo notebook and select the `QMC` kernel once. Jupyter usually reme
 **Option 2 — Use VS Code:**
 Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, click the notebook kernel picker, and select `QMC` before running cells.
 
-If VS Code selects `qmcju (Python 3.12.x)`, `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Otherwise Julia code such as `using QMC` will fail with a Python `SyntaxError`, or a generic Julia kernel may not see this repository's dependencies.
+If VS Code selects `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Otherwise Julia code such as `using QMC` will fail with a Python `SyntaxError`, or a generic Julia kernel may not see this repository's dependencies.
 
 **Option 3 — Use Conda + Jupyter explicitly as the frontend only:**
 ```bash
-conda create -n qmcju-notebooks python=3.12 -y
-conda activate qmcju-notebooks
+conda create -n qmcpy python=3.12 -y
+conda activate qmcpy
 conda install jupyter
 jupyter notebook demos/quickstart.ipynb
 ```

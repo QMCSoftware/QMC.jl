@@ -4,13 +4,6 @@
 
 > Status: Experimental work in progress. Collaborators are welcome.
 
-## Why Julia?
-
-Julia is a strong fit for this project because it combines high performance with rapid development:
-
-- Faster than typical pure-Python implementations for numerical kernels and large simulation workloads.
-- Easier to implement and maintain than C/C++ for scientific algorithms, while still delivering compiled-language performance.
-
 ## Overview
 
 QMC.jl provides four building blocks that snap together to solve integration problems:
@@ -153,7 +146,7 @@ To run a notebook in VS Code:
 4. Select `QMC`.
 5. Restart the notebook kernel if the notebook was previously attached to another kernel.
 
-If VS Code selects `qmcju (Python 3.12.x)`, `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Julia code such as `using QMC` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
+If VS Code selects `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Julia code such as `using QMC` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
 
 See [`demos/README.md`](demos/README.md) for the notebook list and topic summaries.
 
@@ -172,7 +165,7 @@ In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice`
 ## Citation
 
 ```bibtex
-@misc{qmcju2026,
+@misc{qmcjl2026,
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
   title  = {{QMC.jl}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
