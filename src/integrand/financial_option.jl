@@ -181,12 +181,25 @@ function _barrier_payoff(f::FinancialOption, S::AbstractVector)
 end
 
 function evaluate(f::FinancialOption, x::AbstractMatrix)
-    n = size(x, 1)
     r = f.interest_rate
     T = f._time_vector[end]
     discount = exp(-r * T)
-    y = Vector{Float64}(undef, n)
 
+    # Fast path: European option with GBM transform already applied.
+    # Only the terminal price S(T) = x[:, end] is needed; skip the row loop
+    # and the per-row _stock_prices / _payoff calls entirely.
+    if f.option_type == :european && f._use_gbm_transform
+        S_T = @view x[:, end]
+        K = f.strike_price
+        return if f.call_put == :call
+            @. discount * max(S_T - K, 0.0)
+        else
+            @. discount * max(K - S_T, 0.0)
+        end
+    end
+
+    n = size(x, 1)
+    y = Vector{Float64}(undef, n)
     @inbounds for i in 1:n
         S = _stock_prices(f, @view(x[i, :]))
         y[i] = discount * _payoff(f, S)

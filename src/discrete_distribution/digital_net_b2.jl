@@ -215,19 +215,27 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int = 0)
         apply_shift = 0x00
     end
 
-    xb_buf = Vector{UInt64}(undef, n * d)
-    if dd.graycode
-        _c_dnb2_gen_gray!(1, n, d, n_start, mmax, C_flat, xb_buf)
-    else
-        _c_dnb2_gen_natural!(1, n, d, n_start, mmax, C_flat, xb_buf)
-    end
-
-    xrb_buf = Vector{UInt64}(undef, n * d)
-    _c_dnb2_digital_shift!(1, n, d, 1, lshifts, xb_buf, shiftsb, xrb_buf)
-
     tmaxes = fill(UInt64(mmax), 1)
     x_buf = Vector{Float64}(undef, n * d)
-    _c_dnb2_integer_to_float!(1, n, d, tmaxes, xrb_buf, x_buf)
+    if _HAS_DNB2_FUSED[]
+        if dd.graycode
+            _c_dnb2_gen_gray_float!(1, n, d, n_start, mmax, 1,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+        else
+            _c_dnb2_gen_natural_float!(1, n, d, n_start, mmax, 1,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+        end
+    else
+        xb_buf = Vector{UInt64}(undef, n * d)
+        if dd.graycode
+            _c_dnb2_gen_gray!(1, n, d, n_start, mmax, C_flat, xb_buf)
+        else
+            _c_dnb2_gen_natural!(1, n, d, n_start, mmax, C_flat, xb_buf)
+        end
+        xrb_buf = Vector{UInt64}(undef, n * d)
+        _c_dnb2_digital_shift!(1, n, d, 1, lshifts, xb_buf, shiftsb, xrb_buf)
+        _c_dnb2_integer_to_float!(1, n, d, tmaxes, xrb_buf, x_buf)
+    end
     return _rowmaj_to_nxd(x_buf, n, d)
 end
 
@@ -301,19 +309,27 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
         apply_shift = 0x00
     end
 
-    xb_buf = Vector{UInt64}(undef, r_x * n * d)
-    if dd.graycode
-        _c_dnb2_gen_gray!(r_x, n, d, n_start, mmax, C_flat, xb_buf)
-    else
-        _c_dnb2_gen_natural!(r_x, n, d, n_start, mmax, C_flat, xb_buf)
-    end
-
-    xrb_buf = Vector{UInt64}(undef, R * n * d)
-    _c_dnb2_digital_shift!(R, n, d, r_x, lshifts, xb_buf, shiftsb, xrb_buf)
-
     tmaxes = fill(UInt64(mmax), R)
     x_buf = Vector{Float64}(undef, R * n * d)
-    _c_dnb2_integer_to_float!(R, n, d, tmaxes, xrb_buf, x_buf)
+    if _HAS_DNB2_FUSED[]
+        if dd.graycode
+            _c_dnb2_gen_gray_float!(R, n, d, n_start, mmax, r_x,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+        else
+            _c_dnb2_gen_natural_float!(R, n, d, n_start, mmax, r_x,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+        end
+    else
+        xb_buf = Vector{UInt64}(undef, r_x * n * d)
+        if dd.graycode
+            _c_dnb2_gen_gray!(r_x, n, d, n_start, mmax, C_flat, xb_buf)
+        else
+            _c_dnb2_gen_natural!(r_x, n, d, n_start, mmax, C_flat, xb_buf)
+        end
+        xrb_buf = Vector{UInt64}(undef, R * n * d)
+        _c_dnb2_digital_shift!(R, n, d, r_x, lshifts, xb_buf, shiftsb, xrb_buf)
+        _c_dnb2_integer_to_float!(R, n, d, tmaxes, xrb_buf, x_buf)
+    end
     return _rowmaj_to_Rnxd(x_buf, R, n, d)
 end
 

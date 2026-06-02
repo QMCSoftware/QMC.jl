@@ -12,6 +12,10 @@ const _QMCTOOLSCL_LIB_PATH = Ref{String}("")
 const _QMCTOOLSCL_INIT_ATTEMPTED = Ref(false)
 const _QMCTOOLSCL_LAST_SEARCH = Ref("none")
 
+# True when the loaded library exports the fused gen+shift+float functions
+# (available since qmctoolscl 1.2.3; probe once at init time).
+const _HAS_DNB2_FUSED = Ref(false)
+
 function _python_candidates()
     candidates = String[]
 
@@ -81,7 +85,9 @@ except Exception:
             path = strip(read(`$exe -c $py_script`, String))
             if !isempty(path) && isfile(path)
                 _QMCTOOLSCL_LIB_PATH[] = path
-                Libdl.dlopen(path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
+                hdl = Libdl.dlopen(path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
+                _HAS_DNB2_FUSED[] =
+                    Libdl.dlsym_e(hdl, :dnb2_gen_gray_float) != C_NULL
                 return true
             end
         catch
@@ -247,6 +253,50 @@ function _c_dnb2_integer_to_float!(R::Int, n::Int, d::Int,
         UInt64(R), UInt64(n), UInt64(d),
         UInt64(R), UInt64(n), UInt64(d),
         tmaxes, xb_buf, x_buf)
+end
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Fused generation + optional digital shift + integer-to-float
+#
+# Signatures (from qmctoolscl/c_funcs/):
+#   dnb2_gen_gray_float(r, n, d, bs_r, bs_n, bs_d, n_start, mmax, r_x,
+#                       apply_shift, *lshifts, *shiftsb, *tmaxes, *C, *x)
+#   dnb2_gen_natural_float(...)  — same signature, non-Gray ordering
+#
+# These fuse generate + digital shift + float conversion into a single C pass,
+# eliminating the intermediate xb (UInt64) and xrb (UInt64) buffers.
+#
+# lshifts:  size r_x  UInt64  (left shift per matrix replication; use zeros)
+# shiftsb:  size r*d  UInt64  (digital shifts; ignored when apply_shift=0x00)
+# tmaxes:   size r    UInt64  (bit width for scaling: x = val * 2^{-tmaxes[l]})
+# C:        size r_x*d*mmax UInt64 (generating matrices, row-major)
+# x:        size r*n*d Float64 (output, row-major)
+# ──────────────────────────────────────────────────────────────────────────────
+
+function _c_dnb2_gen_gray_float!(R::Int, n::Int, d::Int, n_start::Int,
+    mmax::Int, r_x::Int, apply_shift::UInt8,
+    lshifts::Vector{UInt64}, shiftsb::Vector{UInt64}, tmaxes::Vector{UInt64},
+    C::Vector{UInt64}, x_buf::Vector{Float64})
+    ccall((:dnb2_gen_gray_float, _qmctoolscl_lib_path()), Cvoid,
+        (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
+            UInt8, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{Float64}),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(n_start), UInt64(mmax), UInt64(r_x),
+        apply_shift, lshifts, shiftsb, tmaxes, C, x_buf)
+end
+
+function _c_dnb2_gen_natural_float!(R::Int, n::Int, d::Int, n_start::Int,
+    mmax::Int, r_x::Int, apply_shift::UInt8,
+    lshifts::Vector{UInt64}, shiftsb::Vector{UInt64}, tmaxes::Vector{UInt64},
+    C::Vector{UInt64}, x_buf::Vector{Float64})
+    ccall((:dnb2_gen_natural_float, _qmctoolscl_lib_path()), Cvoid,
+        (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
+            UInt8, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{UInt64}, Ptr{Float64}),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(R), UInt64(n), UInt64(d),
+        UInt64(n_start), UInt64(mmax), UInt64(r_x),
+        apply_shift, lshifts, shiftsb, tmaxes, C, x_buf)
 end
 
 # ──────────────────────────────────────────────────────────────────────────────

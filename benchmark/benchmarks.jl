@@ -43,7 +43,7 @@ const SUITE = BenchmarkGroup()
 # 1. Discrete Distribution sampling
 #    NOTE: Lattice / DigitalNetB2 / Halton call the qmctoolscl C library for
 #    point generation (same library QMCPy uses), so these measure the C kernel +
-#    FFI binding, NOT Julia-vs-Python. IIDStdUniform and Kronecker are pure Julia.
+#     (foreign function interface (FFI)binding, NOT Julia-vs-Python. IIDStdUniform and Kronecker are pure Julia.
 SUITE["gen_samples"] = BenchmarkGroup()
 for dim in DIMS, n in SAMPLES
     SUITE["gen_samples"]["IIDStdUniform d=$dim n=$n"] =
