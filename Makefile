@@ -1,4 +1,4 @@
-.PHONY: test doc format format-check lint clean bench
+.PHONY: test doc format format-check lint clean bench bench-compare
 
 FORMATTER_PROJECT=devtools/formatter
 
@@ -50,4 +50,10 @@ notebook-%:
 
 # Run the benchmark suite (uses its own environment in benchmark/, set up on first run)
 bench:
-	julia benchmark/benchmarks.jl
+	julia benchmark/runbenchmarks.jl
+
+# Compare the working tree against a baseline git revision (default: HEAD, i.e.
+# the effect of your uncommitted changes). Override with: make bench-compare REV=master
+REV ?= HEAD
+bench-compare:
+	julia benchmark/compare.jl $(REV)
