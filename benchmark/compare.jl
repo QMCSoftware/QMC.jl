@@ -7,7 +7,7 @@
 #   julia benchmark/compare.jl HEAD main        # judge one committed revision against another
 #
 # Dirty-tree friendly: a baseline/target *revision* is benchmarked inside a
-# temporary `git worktree`, so your uncommitted changes are never stashed or
+# temporary `git worktree`, so uncommitted changes are never stashed or
 # checked out. The literal "current working tree" is benchmarked in place and may
 # be dirty. (Both revisions must still post-date the `SUITE` refactor, since
 # PkgBenchmark runs each revision's own benchmarks.jl.)

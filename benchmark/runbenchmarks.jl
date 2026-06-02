@@ -6,7 +6,7 @@
 #
 # Bootstraps the benchmark environment on first run (activate benchmark/, develop
 # the parent QMC package, install deps), then runs SUITE (defined in benchmarks.jl)
-# and writes a BenchmarkTools result file you can `judge` against another run:
+# and writes a BenchmarkTools result file that can be `judged` against another run:
 #
 #   using BenchmarkTools
 #   base = BenchmarkTools.load("benchmark/results/baseline.json")[1]

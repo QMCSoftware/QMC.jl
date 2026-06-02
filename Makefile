@@ -53,7 +53,7 @@ bench:
 	julia benchmark/runbenchmarks.jl
 
 # Compare the working tree against a baseline git revision (default: HEAD, i.e.
-# the effect of your uncommitted changes). Override with: make bench-compare REV=master
+# the effect of uncommitted changes). Override with: make bench-compare REV=master
 REV ?= HEAD
 bench-compare:
 	julia benchmark/compare.jl $(REV)
