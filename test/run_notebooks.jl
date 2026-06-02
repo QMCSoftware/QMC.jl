@@ -39,6 +39,16 @@ function Logging.handle_message(
         cl.inner, level, message, _module, group, id, file, line; kwargs...)
 end
 
+# Format a duration in seconds as a short string.
+function fmt_duration(s::Real)
+    if s >= 60
+        m = floor(Int, s / 60)
+        return "$(m)m $(round(s - 60m; digits = 1))s"
+    else
+        return "$(round(s; digits = 2))s"
+    end
+end
+
 # ── Main ─────────────────────────────────────────────────
 demos_dir = joinpath(@__DIR__, "..", "demos")
 notebooks = sort(filter(f -> endswith(f, ".ipynb"), readdir(demos_dir)))
@@ -53,6 +63,7 @@ if !isempty(ARGS)
 end
 
 errors = String[]
+times = Dict{String, Float64}()   # notebook name → wall-clock seconds
 clogger = CountingLogger()
 
 for nb in notebooks
@@ -60,7 +71,7 @@ for nb in notebooks
     println("Running: ", nb)
     println("="^60)
     clogger.current_nb[] = nb
-    try
+    elapsed = @elapsed try
         with_logger(clogger) do
             @nbinclude(joinpath(demos_dir, nb))
         end
@@ -70,28 +81,32 @@ for nb in notebooks
         showerror(stdout, e, catch_backtrace())
         println()
     end
+    times[nb] = elapsed
+    println("  ⏱  elapsed: ", fmt_duration(elapsed))
 end
 
 # ── Summary ──────────────────────────────────────────────
 total_warnings = sum(values(clogger.counts); init = 0)
+total_time = sum(values(times); init = 0.0)
 n_pass = length(notebooks) - length(errors)
 
 println("\n", "="^60)
+println("Summary")
+println("="^60)
+for nb in notebooks
+    status = nb in errors ? "✗ FAILED" : "✓ ok"
+    w = get(clogger.counts, nb, 0)
+    t = get(times, nb, 0.0)
+    wtxt = w > 0 ? ", $w warning(s)" : ""
+    println("  $status  $nb  [$(fmt_duration(t))]$wtxt")
+end
+println("-"^60)
 println(
-    "Ran $(length(notebooks)) notebook(s): $(n_pass) passed, $(length(errors)) failed, $(total_warnings) warning(s).",
+    "Ran $(length(notebooks)) notebook(s): $(n_pass) passed, $(length(errors)) failed, " *
+    "$(total_warnings) warning(s) in $(fmt_duration(total_time)).",
 )
 
-if total_warnings > 0
-    for nb in notebooks
-        w = get(clogger.counts, nb, 0)
-        w > 0 && println("  ⚠  $nb: $w warning(s)")
-    end
-end
-
 if !isempty(errors)
-    for nb in errors
-        println("  ✗  $nb: FAILED")
-    end
     exit(1)
 else
     println("All notebooks passed.")
