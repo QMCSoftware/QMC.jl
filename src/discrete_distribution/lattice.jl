@@ -20,6 +20,8 @@ before `using QMC`.
 - `randomize`: if true, apply a random shift.
 - `seed`: optional RNG seed.
 - `order`: `"natural"`, `"linear"`, `"radical_inverse"`, or `"gray"`.
+  Natural and radical-inverse order require `n_start` and `n + n_start`
+  to be powers of 2 when calling `gen_samples`.
 - `replications`: number of independent shifts (nothing = 1, no extra dim).
 
 # Examples
@@ -64,9 +66,26 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
         dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
 end
 
+function _validate_lattice_window(order::String, n::Int, n_start::Int)
+    if order in ("natural", "radical_inverse")
+        n_stop = Base.checked_add(n, n_start)
+        (n_start == 0 || ispow2(n_start)) || throw(
+            ArgumentError(
+                "Lattice order \"$order\" requires n_start to be 0 or a power of 2, got $n_start",
+            ),
+        )
+        (n_stop == 0 || ispow2(n_stop)) || throw(
+            ArgumentError(
+                "Lattice order \"$order\" requires n + n_start to be a power of 2, got n=$n and n_start=$n_start",
+            ),
+        )
+    end
+end
+
 function gen_samples(dd::Lattice, n::Int; n_start::Int = 0)
     n > 0 || throw(ArgumentError("n must be positive"))
     n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
+    _validate_lattice_window(dd.order, n, n_start)
     d = dd.dimension
     R = isnothing(dd.replications) ? 1 : dd.replications
     g = dd.gen_vector  # Vector{UInt64}, length d

@@ -48,6 +48,15 @@
             @test size(xo) == (32, 2)
             @test all(0.0 .<= xo .< 1.0)
         end
+
+        dd_gray = Lattice(2; randomize = true, seed = 42, order = "gray")
+        x_gray = gen_samples(dd_gray, 200)
+        @test size(x_gray) == (200, 2)
+        @test all(0.0 .<= x_gray .< 1.0)
+
+        dd_nat = Lattice(2; randomize = true, seed = 42, order = "natural")
+        @test_throws ArgumentError gen_samples(dd_nat, 200)
+        @test_throws ArgumentError gen_samples(dd_nat, 40; n_start = 8)
     end
 
     @testset "DigitalNetB2" begin
