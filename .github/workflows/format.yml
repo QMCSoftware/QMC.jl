@@ -2,6 +2,7 @@ name: Format Check
 
 on:
   pull_request:
+    branches: [develop, master]
   workflow_dispatch:
 
 concurrency:
@@ -17,7 +18,7 @@ jobs:
 
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
+          version: '1.12'
 
       - uses: julia-actions/cache@v2
 

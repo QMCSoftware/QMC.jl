@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.10', '1.11']
+        julia-version: ['1.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install qmctoolscl
         run: pip install qmctoolscl
@@ -76,7 +76,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         if: steps.changes.outputs.run == 'true'
         with:
-          version: '1.11'
+          version: '1.12'
 
       - uses: julia-actions/cache@v2
         if: steps.changes.outputs.run == 'true'
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/setup-python@v5
         if: steps.changes.outputs.run == 'true'
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install qmctoolscl
         if: steps.changes.outputs.run == 'true'
