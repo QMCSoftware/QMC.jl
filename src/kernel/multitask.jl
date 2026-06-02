@@ -24,8 +24,8 @@ kmt = KernelMultiTask(base, 3; diag=[1.0, 2.0, 3.0])
 # Task correlation matrix is I + diag([1,2,3])
 ```
 """
-struct KernelMultiTask <: AbstractKernel
-    base_kernel::AbstractKernel
+struct KernelMultiTask{K <: AbstractKernel} <: AbstractKernel
+    base_kernel::K
     num_tasks::Int
     factor::Matrix{Float64}
     diag_vec::Vector{Float64}

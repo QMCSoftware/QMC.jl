@@ -42,8 +42,8 @@ result = integrate(sc)
 2. Pierre l'Ecuyer et al. "Confidence intervals for randomized quasi-Monte
    Carlo estimators." 2023 Winter Simulation Conference.
 """
-mutable struct CubQMCRepStudentT <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubQMCRepStudentT{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int

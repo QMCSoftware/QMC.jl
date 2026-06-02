@@ -77,11 +77,11 @@ See the outer constructor for full documentation.
 
 QMCToolsCL is required for sample generation.
 """
-mutable struct DigitalNetB2 <: AbstractDiscreteDistribution
+mutable struct DigitalNetB2{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
     randomize::String
     graycode::Bool
-    rng::AbstractRNG
+    rng::R
     direction_nums::Matrix{UInt32}   # ndim × BITS
     mimics::String
     replications::Union{Nothing, Int}

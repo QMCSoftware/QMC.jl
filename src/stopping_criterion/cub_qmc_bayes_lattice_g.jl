@@ -18,8 +18,8 @@ sc = CubQMCBayesLatticeG(f; abs_tol=1e-4)
 result = integrate(sc)
 ```
 """
-mutable struct CubQMCBayesLatticeG <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubQMCBayesLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int

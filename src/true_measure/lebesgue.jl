@@ -20,8 +20,8 @@ y = transform(tm, x)        # 100×2 matrix in [0, 2]^2
 tm.volume                   # 4.0
 ```
 """
-struct Lebesgue <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Lebesgue{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     lower_bound::Vector{Float64}
     upper_bound::Vector{Float64}

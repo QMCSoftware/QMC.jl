@@ -27,8 +27,8 @@ sc = CubMLMC(f; abs_tol=0.05)
 result = integrate(sc)
 ```
 """
-struct FinancialOptionML <: AbstractMLIntegrand
-    true_measure::AbstractTrueMeasure
+struct FinancialOptionML{TM <: AbstractTrueMeasure} <: AbstractMLIntegrand
+    true_measure::TM
     dimension::Int
     d_coarsest::Int
     nb_of_levels::Int

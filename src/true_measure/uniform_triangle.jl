@@ -16,11 +16,11 @@ x = transform(tm, gen_samples(dd, 1000))
 # x[:,1] >= x[:,2] and both in [0,1]
 ```
 """
-struct UniformTriangle <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
-    function UniformTriangle(dd::AbstractDiscreteDistribution)
+struct UniformTriangle{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
+    function UniformTriangle(dd::D) where {D <: AbstractDiscreteDistribution}
         dd.dimension == 2 || throw(ArgumentError("UniformTriangle requires dimension=2"))
-        return new(dd)
+        return new{D}(dd)
     end
 end
 

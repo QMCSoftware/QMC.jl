@@ -13,8 +13,8 @@ inverse CDF, making it efficient for QMC.
 - `alpha`: shape parameter α > 0 (scalar or d-vector).
 - `beta`: shape parameter β > 0 (scalar or d-vector).
 """
-struct Kumaraswamy <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Kumaraswamy{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     alpha::Vector{Float64}
     beta::Vector{Float64}

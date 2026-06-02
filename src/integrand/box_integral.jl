@@ -11,8 +11,8 @@ is smooth; for `s < 0` it has an integrable singularity at the origin.
 The exact integral is known for certain values of s and d (see BoxIntegral
 tables by Bailey, Borwein, and Crandall).
 """
-struct BoxIntegral <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct BoxIntegral{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     s::Float64
 end

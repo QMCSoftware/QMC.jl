@@ -8,8 +8,8 @@
 where x ∈ [0,1]⁶. The global minimum is approximately -3.3224 at
 x* ≈ (0.2017, 0.1500, 0.4769, 0.2753, 0.3117, 0.6573).
 """
-struct Hartmann6D <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Hartmann6D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
 end
 

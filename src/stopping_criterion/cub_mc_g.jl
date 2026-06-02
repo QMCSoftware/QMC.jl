@@ -23,8 +23,8 @@ functions with bounded kurtosis.
 1. Hickernell, Jiang, Liu, Owen. "Guaranteed conservative fixed width
    confidence intervals via Monte Carlo sampling." MCQMC 2012.
 """
-mutable struct CubMCG <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubMCG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int

@@ -12,8 +12,8 @@ applied to the uniform samples.
 - `loc`: location (scalar or d-vector).
 - `scale`: scale (scalar or d-vector, positive).
 """
-struct StudentT <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct StudentT{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     df::Float64
     loc::Vector{Float64}

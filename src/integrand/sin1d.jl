@@ -6,8 +6,8 @@ One-dimensional sinusoidal test function: f(t) = sin(t) on U[0, 2πk].
 The true measure should map uniform [0,1] samples to [0, 2πk].
 Exact integral = 0 for integer k.
 """
-struct Sin1D <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Sin1D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     k::Int
 end

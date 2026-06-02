@@ -17,8 +17,8 @@ tm = ZeroInflatedExpUniform(dd; p_zero=0.3, rate=2.0)
 x = transform(tm, gen_samples(dd, 1000))
 ```
 """
-struct ZeroInflatedExpUniform <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct ZeroInflatedExpUniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     p_zero::Float64
     rate::Float64
     low::Float64

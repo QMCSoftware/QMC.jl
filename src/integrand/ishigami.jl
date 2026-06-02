@@ -13,8 +13,8 @@ The true measure should map uniform [0,1]³ samples to (-π, π)³.
 The exact mean, variance, and Sobol' indices are computable in closed form
 for given a, b.
 """
-struct Ishigami <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Ishigami{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     a::Float64
     b::Float64

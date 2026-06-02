@@ -35,8 +35,8 @@ tm = BrownianMotion(dd)
 f = FinancialOption(tm; option_type=:european, volatility=0.2, strike_price=100.0, start_price=100.0)
 ```
 """
-mutable struct FinancialOption <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+mutable struct FinancialOption{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     volatility::Float64
     start_price::Float64

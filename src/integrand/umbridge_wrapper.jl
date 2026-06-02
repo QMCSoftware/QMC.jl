@@ -41,8 +41,8 @@ sc = CubQMCNetG(f; abs_tol=2.5e-2)
 result = integrate(sc)
 ```
 """
-struct UMBridgeWrapper <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct UMBridgeWrapper{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     url::String
     model_name::String
     config::Dict{String, Any}

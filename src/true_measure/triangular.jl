@@ -11,8 +11,8 @@ Each dimension is independently transformed through the triangular PPF.
 - `upper`: upper bound (scalar or d-vector).
 - `mode`: peak/mode (scalar or d-vector), must satisfy lower ≤ mode ≤ upper.
 """
-struct Triangular <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Triangular{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     lower::Vector{Float64}
     upper::Vector{Float64}

@@ -14,8 +14,8 @@ where Φ⁻¹ is the standard normal quantile function.
 - `gamma`: shape parameter γ (scalar or d-vector).
 - `delta`: shape parameter δ > 0 (scalar or d-vector).
 """
-struct JohnsonsSU <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     xi::Vector{Float64}
     lambda::Vector{Float64}

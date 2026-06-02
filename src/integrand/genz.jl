@@ -20,8 +20,8 @@ tm = Uniform(dd)
 f = Genz(tm; kind=:oscillatory)
 ```
 """
-struct Genz <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Genz{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     kind::Symbol
     a::Vector{Float64}

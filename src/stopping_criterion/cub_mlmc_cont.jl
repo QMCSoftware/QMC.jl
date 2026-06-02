@@ -35,8 +35,8 @@ result = integrate(sc)
 # References
 1. [MultilevelEstimators.jl](https://github.com/PieterjanRobbe/MultilevelEstimators.jl)
 """
-mutable struct CubMLMCCont <: AbstractStoppingCriterion
-    integrand::AbstractMLIntegrand
+mutable struct CubMLMCCont{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     target_tol::Float64
     n_init::Int
     n_limit::Int

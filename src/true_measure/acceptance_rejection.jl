@@ -33,12 +33,13 @@ tm = AcceptanceRejection(dd; pdf_func=pdf_func, envelope_multiplier=6.0)
 1. Zhu, H. and Dick, J. "A discrepancy bound for deterministic acceptance-rejection
    samplers beyond N^{-1/2}." 2014.
 """
-struct AcceptanceRejection <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct AcceptanceRejection{D <: AbstractDiscreteDistribution, F1, F2, F3} <:
+       AbstractTrueMeasure
+    dd::D
     dimension::Int          # target dimension (d = dd.dimension - 1)
-    pdf_func::Function
-    proposal_pdf_func::Function
-    proposal_sample_func::Function
+    pdf_func::F1
+    proposal_pdf_func::F2
+    proposal_sample_func::F3
     envelope_multiplier::Float64
 end
 

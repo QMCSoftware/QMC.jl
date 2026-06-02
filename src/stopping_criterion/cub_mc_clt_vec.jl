@@ -20,8 +20,8 @@ result = integrate(sc)
 show(result.data[:iteration_log])
 ```
 """
-mutable struct CubMCCLTVec <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubMCCLTVec{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int

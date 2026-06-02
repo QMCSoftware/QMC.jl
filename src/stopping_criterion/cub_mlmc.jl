@@ -37,8 +37,8 @@ result = integrate(sc)
 1. M.B. Giles. "Multi-level Monte Carlo path simulation."
    Operations Research, 56(3):607–617, 2008.
 """
-mutable struct CubMLMC <: AbstractStoppingCriterion
-    integrand::AbstractMLIntegrand
+mutable struct CubMLMC{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     rmse_tol::Float64
     n_init::Int
     n_limit::Int
