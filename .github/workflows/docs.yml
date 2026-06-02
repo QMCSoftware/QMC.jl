@@ -9,6 +9,7 @@ on:
       - 'Project.toml'
       - '.github/workflows/docs.yml'
   pull_request:
+    branches: [develop, master]
     paths:
       - 'docs/**'
       - 'src/**'

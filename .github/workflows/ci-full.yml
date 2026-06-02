@@ -2,7 +2,7 @@ name: CI Full
 
 on:
   pull_request:
-    branches: [develop, master]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
