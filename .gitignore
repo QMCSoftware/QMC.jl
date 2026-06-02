@@ -30,5 +30,10 @@ Thumbs.db
 *.ji
 deps/build.log
 
+# Benchmark outputs — machine-specific
+benchmark/Manifest.toml
+benchmark/tune.json
+benchmark/results/
+
 # Developer-specific files
 sc_*

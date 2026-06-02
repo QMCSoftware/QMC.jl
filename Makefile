@@ -1,4 +1,4 @@
-.PHONY: test doc format format-check lint clean bench bench-compare
+.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py
 
 FORMATTER_PROJECT=devtools/formatter
 
@@ -57,3 +57,11 @@ bench:
 REV ?= HEAD
 bench-compare:
 	julia benchmark/compare.jl $(REV)
+
+# Side-by-side Julia vs QMCPy comparison (requires both result files to exist).
+# Run `make bench` and `python benchmark/benchmark_qmcpy.py` first.
+# Override label with: make bench-compare-py JL_LABEL=foo PY_LABEL=bar
+JL_LABEL ?= latest
+PY_LABEL ?= $(JL_LABEL)
+bench-compare-py: bench bench-compare
+	julia benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL)
