@@ -8,7 +8,7 @@ update:
 
 # Run all tests
 test: 
-	julia --project=. -e 'using Pkg; Pkg.test()'
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 
 # Run specific test file
 test-%:
