@@ -2,7 +2,7 @@ name: CI Full
 
 on:
   pull_request:
-    branches: [master]
+    branches: [develop, master]
   workflow_dispatch:
 
 concurrency:
@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install qmctoolscl
         run: pip install qmctoolscl
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/setup-python@v5
         if: steps.changes.outputs.run == 'true'
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install qmctoolscl
         if: steps.changes.outputs.run == 'true'
