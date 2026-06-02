@@ -59,12 +59,6 @@ Run those commands from the repository root. This installs IJulia and creates a 
 
 ### 5. Verify everything works
 
-```bash
-julia --project=. -e 'using Pkg; Pkg.test()'
-```
-
-All tests should pass with zero failures.
-
 ## Running Tests
 
 Full test suite:
@@ -72,6 +66,8 @@ Full test suite:
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
+
+All tests should pass with zero failures.
 
 Interactive testing (useful during development):
 
