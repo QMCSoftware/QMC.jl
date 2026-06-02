@@ -1,14 +1,26 @@
 # QMC.jl Benchmark Suite
 #
-# Usage:
-#   julia --project=. benchmark/benchmarks.jl
+# Usage (from the repository root):
+#   julia benchmark/benchmarks.jl
 #
-# Requires BenchmarkTools.jl (add to your environment if not present).
+# The script uses its own environment in `benchmark/` (see benchmark/Project.toml)
+# so BenchmarkTools is not pulled into the main package deps. It bootstraps that
+# environment on first run: activating it, developing the parent QMC package, and
+# installing BenchmarkTools. No `--project` flag or manual `Pkg.add` is needed.
+
+using Pkg
+Pkg.activate(@__DIR__)
+let deps = keys(Pkg.project().dependencies)
+    "QMC" in deps || Pkg.develop(; path = dirname(@__DIR__))
+    "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
+end
+Pkg.instantiate()
 
 using QMC
 using BenchmarkTools
 using Statistics
 using Printf
+using Logging
 import QMC: Uniform
 
 # ── Configuration ─────────────────────────────────────────────────────────
@@ -24,7 +36,7 @@ function bench_gen_samples(dd_constructor, dim, n; kwargs...)
 end
 
 function bench_integrate(make_sc; kwargs...)
-    @benchmarkable integrate($sc) evals=1 samples=3 setup=(sc = $make_sc())
+    @benchmarkable integrate(sc) evals=1 samples=3 setup=(sc = $make_sc())
 end
 
 # ── Benchmark Groups ─────────────────────────────────────────────────────
@@ -41,7 +53,7 @@ for dim in DIMS, n in SAMPLES
     suite["gen_samples"]["DigitalNetB2 d=$dim n=$n"] =
         bench_gen_samples(DigitalNetB2, dim, n; randomize="LMS_DS")
     suite["gen_samples"]["Halton d=$dim n=$n"] =
-        bench_gen_samples(Halton, dim, n; randomize="OWEN")
+        bench_gen_samples(Halton, dim, n; randomize=true)
     suite["gen_samples"]["Kronecker d=$dim n=$n"] =
         bench_gen_samples(Kronecker, dim, n)
 end
@@ -117,7 +129,14 @@ end
 println("QMC.jl Benchmarks")
 println("=" ^ 70)
 
-results = run(suite; verbose=true)
+# CubMCCLT is a faithful single-pass two-stage estimator: its realized error can
+# land just above the requested tolerance whenever the main-stage variance
+# exceeds the pilot estimate, which correctly emits a non-convergence warning.
+# That is expected and irrelevant here — we are timing, not checking accuracy —
+# so warnings are silenced for the duration of the run to keep output readable.
+results = with_logger(ConsoleLogger(stderr, Logging.Error)) do
+    run(suite; verbose=true)
+end
 
 # ── Summary ──────────────────────────────────────────────────────────────
 

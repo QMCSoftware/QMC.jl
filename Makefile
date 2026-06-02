@@ -1,4 +1,4 @@
-.PHONY: test doc format format-check lint clean
+.PHONY: test doc format format-check lint clean bench
 
 FORMATTER_PROJECT=devtools/formatter
 
@@ -47,3 +47,7 @@ notebook:
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
 	julia --project=. test/run_notebooks.jl $*
+
+# Run the benchmark suite (uses its own environment in benchmark/, set up on first run)
+bench:
+	julia benchmark/benchmarks.jl
