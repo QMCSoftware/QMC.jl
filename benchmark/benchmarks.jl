@@ -7,6 +7,16 @@
 # so BenchmarkTools is not pulled into the main package deps. It bootstraps that
 # environment on first run: activating it, developing the parent QMC package, and
 # installing BenchmarkTools. No `--project` flag or manual `Pkg.add` is needed.
+#
+# Remarks:
+#   `allocs` is the number of heap allocations Julia performed during a benchmarked call. 
+#   Fewer `allocs`  means less garbage collection.
+#   For example, `16 allocs` means 16 separate memory allocations.
+#
+#   `KiB` is the total amount of memory allocated, in kibibytes, where `1 KiB = 1024 bytes`. 
+#   Lower `KiB` means less total temporary memory was created.
+#   So `240.9  KiB` means about `240.9 * 1024 ≈ 246,682` bytes were allocated during the call.
+
 
 using Pkg
 Pkg.activate(@__DIR__)
