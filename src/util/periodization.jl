@@ -33,8 +33,10 @@ function periodize(x::AbstractMatrix, ptransform::Symbol)
     elseif ptransform == :BAKER
         return clamp.(_baker.(x), 0.0, 1.0)
     else
-        error("Unknown periodization transform: :$ptransform. " *
-              "Use :C1SIN, :C1, :C2SIN, :C3, :BAKER, or :NONE.")
+        error(
+            "Unknown periodization transform: :$ptransform. " *
+            "Use :C1SIN, :C1, :C2SIN, :C3, :BAKER, or :NONE.",
+        )
     end
 end
 

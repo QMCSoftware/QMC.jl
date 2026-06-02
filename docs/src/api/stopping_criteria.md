@@ -10,10 +10,18 @@ AbstractStoppingCriterion
 
 ```@docs
 CubMCCLT
+CubMCCLTVec
+CubMCG
 CubQMCLatticeG
 CubQMCNetG
 CubQMCBayesLatticeG
 CubQMCBayesNetG
+CubQMCRepStudentT
+CubMLMC
+CubMLMCCont
+CubMLQMC
+CubMLQMCCont
+PFGPCI
 ```
 
 ## Integration

@@ -2,8 +2,12 @@
 
 FORMATTER_PROJECT=devtools/formatter
 
+# Update packages and resolve dependencies
+update:
+	julia --project=. -e 'using Pkg; Pkg.update(); Pkg.resolve'
+
 # Run all tests
-test:
+test: 
 	julia --project=. -e 'using Pkg; Pkg.test()'
 
 # Run specific test file
@@ -28,14 +32,13 @@ clean:
 	rm -rf docs/build
 	rm -rf *.jl.cov *.jl.*.cov *.jl.mem
 
-# Instantiate project dependencies (includes Plots and all other deps)
+# Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
 setup:
 	julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # Run a quick smoke test
 smoke:
 	julia --project=. -e 'using QMC; dd = Lattice(3; randomize=true); tm = Uniform(dd); f = Genz(tm; kind=:continuous); sc = CubQMCLatticeG(f; abs_tol=0.01); r = integrate(sc); println(r)'
-
 
 # Run all demo notebooks (like Python's booktest)
 notebook:

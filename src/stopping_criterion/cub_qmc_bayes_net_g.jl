@@ -28,10 +28,10 @@ mutable struct CubQMCBayesNetG <: AbstractStoppingCriterion
 end
 
 function CubQMCBayesNetG(integrand::AbstractIntegrand;
-        abs_tol::Float64 = 0.01, rel_tol::Float64 = 0.0,
-        n_init::Int = 2^8, n_max::Int = 2^22, order::Int = 2,
-        ptransform::Symbol = :NONE, errbd_type::Symbol = :MLE,
-        alpha::Float64 = 0.01)
+    abs_tol::Float64 = 0.01, rel_tol::Float64 = 0.0,
+    n_init::Int = 2^8, n_max::Int = 2^22, order::Int = 2,
+    ptransform::Symbol = :NONE, errbd_type::Symbol = :MLE,
+    alpha::Float64 = 0.01)
     @assert ispow2(n_init) "n_init must be a power of 2"
     @assert ispow2(n_max) "n_max must be a power of 2"
     @assert order in (1, 2, 3)
@@ -98,8 +98,8 @@ end
 # ── MLE objective (same structure as lattice, different kernel) ──────────────
 
 function _mle_objective_net(theta::Float64, xun::AbstractMatrix,
-        ftilde::Vector{Float64}, order::Int,
-        errbd_type::Symbol)
+    ftilde::Vector{Float64}, order::Int,
+    errbd_type::Symbol)
     n = length(ftilde)
     fudge = 100eps(Float64)
 
@@ -116,8 +116,9 @@ function _mle_objective_net(theta::Float64, xun::AbstractMatrix,
             lam[k] > fudge && (temp_gcv[k] = (ftilde[k] / lam[k])^2)
         end
         RKHS_norm = sum(@view temp_gcv[2:end]) / (lf * n)
-        loss = log(max(sum(@view temp_gcv[2:end]), eps(Float64))) -
-               2log(max(sum(1.0/l for l in lam if l > fudge), eps(Float64)))
+        loss =
+            log(max(sum(@view temp_gcv[2:end]), eps(Float64))) -
+            2log(max(sum(1.0/l for l in lam if l > fudge), eps(Float64)))
     else
         RKHS_norm = sum(@view temp[2:end]) / (lf * n)
         temp_1 = sum(@view temp[2:end]) / lf
@@ -132,9 +133,10 @@ end
 # ── Stopping criterion ───────────────────────────────────────────────────────
 
 function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
-    uncert = errbd_type == :FULL ?
-             -quantile(TDist(n-1), alpha/2) :
-             -quantile(Normal(), alpha/2)
+    uncert =
+        errbd_type == :FULL ?
+        -quantile(TDist(n-1), alpha/2) :
+        -quantile(Normal(), alpha/2)
 
     best_lna, best_loss = -5.0, Inf
     for lna in range(-5.0, 0.0; length = 21)
@@ -154,17 +156,22 @@ function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
           abs(lam_ring[1] / n) :
           abs(lam_ring[1] / (n + lam_ring[1]))
 
-    err_bd = errbd_type == :FULL ?
-             uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
-             uncert * sqrt(abs(DSC * rkhs / n))
+    err_bd =
+        errbd_type == :FULL ?
+        uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
+        uncert * sqrt(abs(DSC * rkhs / n))
 
     return abs(ftilde[1] / n), err_bd
 end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
-function integrate(sc::CubQMCBayesNetG)
-    n = sc.n_init
+function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+    if resume !== nothing
+        n = 2 * Int(resume[:n])
+    else
+        n = sc.n_init
+    end
     mu_hat = 0.0;
     err = Inf;
     n_iter = 0
@@ -201,5 +208,8 @@ function integrate(sc::CubQMCBayesNetG)
 end
 
 function Base.show(io::IO, sc::CubQMCBayesNetG)
-    print(io, "CubQMCBayesNetG(abs_tol=$(sc.abs_tol), order=$(sc.order), ptransform=$(sc.ptransform))")
+    print(
+        io,
+        "CubQMCBayesNetG(abs_tol=$(sc.abs_tol), order=$(sc.order), ptransform=$(sc.ptransform))",
+    )
 end

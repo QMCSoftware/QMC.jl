@@ -1,15 +1,11 @@
 """
-    CubQMCLatticeG(integrand::AbstractIntegrand; abs_tol=0.01, rel_tol=0.0,
-                   n_init=2^10, n_max=2^30, n_reps=16, alpha=0.01)
+    CubQMCLatticeG(integrand; abs_tol=0.01, rel_tol=0.0,
+                   n_init=2^10, n_max=2^30, n_reps=16, alpha=0.01,
+                   trace_iterations=false)
 
 Guaranteed QMC cubature using replicated randomized lattice rules.
 
-**Algorithm:**
-1. For each of `R` replications, generate an independently shifted lattice of size `n`
-2. Evaluate the integrand for each replication → `R` independent estimates ``\\hat{\\mu}_r``
-3. Overall estimate: ``\\bar{\\mu} = \\mathrm{mean}(\\hat{\\mu}_r)``
-4. Error bound: ``t_{R-1, 1-\\alpha/2} \\cdot \\mathrm{std}(\\hat{\\mu}_r) / \\sqrt{R}``
-5. If error < tolerance, stop; otherwise double `n`
+Supports **resume** and optional **iteration logging** (`trace_iterations=true`).
 
 # Example
 ```julia
@@ -28,25 +24,46 @@ mutable struct CubQMCLatticeG <: AbstractStoppingCriterion
     n_max::Int
     n_reps::Int
     alpha::Float64
+    trace_iterations::Bool
 end
 
 function CubQMCLatticeG(integrand::AbstractIntegrand;
-        abs_tol::Float64 = 0.01,
-        rel_tol::Float64 = 0.0,
-        n_init::Int = 2^10,
-        n_max::Int = 2^30,
-        n_reps::Int = 16,
-        alpha::Float64 = 0.01)
-    return CubQMCLatticeG(integrand, abs_tol, rel_tol, n_init, n_max, n_reps, alpha)
+    abs_tol::Float64 = 0.01,
+    rel_tol::Float64 = 0.0,
+    n_init::Int = 2^10,
+    n_max::Int = 2^30,
+    n_reps::Int = 16,
+    alpha::Float64 = 0.01,
+    trace_iterations::Bool = false)
+    return CubQMCLatticeG(
+        integrand,
+        abs_tol,
+        rel_tol,
+        n_init,
+        n_max,
+        n_reps,
+        alpha,
+        trace_iterations,
+    )
 end
 
-function integrate(sc::CubQMCLatticeG)
+function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
     R = sc.n_reps
-    n = sc.n_init
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
+
+    if resume !== nothing
+        n = 2 * Int(resume[:n])
+        prev_time = Float64(get(resume, :time_integrate, 0.0))
+    else
+        n = sc.n_init
+        prev_time = 0.0
+    end
+
+    t_start = time()
     mu_hat = 0.0
     err = Inf
     n_iter = 0
+    log = IterationLog()
 
     while n <= sc.n_max
         n_iter += 1
@@ -62,11 +79,12 @@ function integrate(sc::CubQMCLatticeG)
         err = t_crit * sigma_reps / sqrt(R)
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
 
-        if err <= tol
-            break
+        if sc.trace_iterations
+            push!(log; n = n*R, solution = mu_hat, error_bound = err,
+                tol = tol, elapsed = time() - t_start)
         end
 
-        # Double n
+        err <= tol && break
         n = min(2n, sc.n_max + 1)
     end
 
@@ -75,13 +93,18 @@ function integrate(sc::CubQMCLatticeG)
         @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
     end
 
+    t_elapsed = time() - t_start
     data = Dict{Symbol, Any}(
-        :n => n,
+        :n => n > sc.n_max ? sc.n_max : n,
         :n_reps => R,
         :error_bound => err,
         :n_iterations => n_iter,
-        :converged => converged
+        :converged => converged,
+        :time_integrate => prev_time + t_elapsed,
     )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
     return QMCResult(mu_hat, data)
 end
 

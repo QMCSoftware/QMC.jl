@@ -34,11 +34,41 @@ struct GeometricBrownianMotion <: AbstractTrueMeasure
 end
 
 function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
-        t_final::Float64 = 1.0,
-        initial_value::Float64 = 1.0,
-        drift::Float64 = 0.0,
-        diffusion::Float64 = 1.0,
-        decomp_type::Symbol = :PCA)
+    t_final::Float64 = 1.0,
+    initial_value::Union{Nothing, Float64} = nothing,
+    drift::Union{Nothing, Float64} = nothing,
+    diffusion::Union{Nothing, Float64} = nothing,
+    volatility::Union{Nothing, Float64} = nothing,
+    start_price::Union{Nothing, Float64} = nothing,
+    interest_rate::Union{Nothing, Float64} = nothing,
+    decomp_type::Symbol = :PCA)
+    if !isnothing(initial_value) && !isnothing(start_price) && initial_value != start_price
+        throw(
+            ArgumentError(
+                "initial_value and start_price must match when both are provided",
+            ),
+        )
+    end
+    if !isnothing(drift) && !isnothing(interest_rate) && drift != interest_rate
+        throw(ArgumentError("drift and interest_rate must match when both are provided"))
+    end
+    if !isnothing(volatility) && volatility < 0.0
+        throw(ArgumentError("volatility must be non-negative, got $volatility"))
+    end
+    if !isnothing(diffusion) && !isnothing(volatility) && diffusion != volatility^2
+        throw(
+            ArgumentError("diffusion and volatility must satisfy diffusion = volatility^2"),
+        )
+    end
+
+    initial_value = Float64(something(initial_value, start_price, 1.0))
+    drift = Float64(something(drift, interest_rate, 0.0))
+    diffusion = Float64(
+        isnothing(diffusion) ?
+        (isnothing(volatility) ? 1.0 : volatility^2) :
+        diffusion,
+    )
+
     t_final >= 0.0 || throw(ArgumentError("t_final must be non-negative, got $t_final"))
     initial_value > 0.0 ||
         throw(ArgumentError("initial_value must be positive, got $initial_value"))
@@ -50,7 +80,6 @@ function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
     # Build BM covariance: C[i,j] = diffusion * min(t[i], t[j])
     cov = Matrix{Float64}(undef, d, d)
     @inbounds for j in 1:d, i in 1:d
-
         cov[i, j] = diffusion * min(tv[i], tv[j])
     end
 
@@ -78,5 +107,6 @@ end
 
 function Base.show(io::IO, tm::GeometricBrownianMotion)
     print(io,
-        "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))")
+        "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))",
+    )
 end

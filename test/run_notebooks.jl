@@ -21,7 +21,7 @@ function CountingLogger()
     CountingLogger(
         ConsoleLogger(stderr, Logging.Warn),
         Dict{String, Int}(),
-        Ref("")
+        Ref(""),
     )
 end
 
@@ -30,7 +30,7 @@ Logging.shouldlog(cl::CountingLogger, args...) = Logging.shouldlog(cl.inner, arg
 Logging.catch_exceptions(cl::CountingLogger) = Logging.catch_exceptions(cl.inner)
 
 function Logging.handle_message(
-        cl::CountingLogger, level, message, _module, group, id, file, line; kwargs...)
+    cl::CountingLogger, level, message, _module, group, id, file, line; kwargs...)
     if level >= Logging.Warn
         nb = cl.current_nb[]
         cl.counts[nb] = get(cl.counts, nb, 0) + 1
@@ -75,7 +75,9 @@ total_warnings = sum(values(clogger.counts); init = 0)
 n_pass = length(notebooks) - length(errors)
 
 println("\n", "="^60)
-println("Ran $(length(notebooks)) notebook(s): $(n_pass) passed, $(length(errors)) failed, $(total_warnings) warning(s).")
+println(
+    "Ran $(length(notebooks)) notebook(s): $(n_pass) passed, $(length(errors)) failed, $(total_warnings) warning(s).",
+)
 
 if total_warnings > 0
     for nb in notebooks

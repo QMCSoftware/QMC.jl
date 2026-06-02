@@ -19,10 +19,19 @@ Triangular
 Kumaraswamy
 JohnsonsSU
 BernoulliCont
+AcceptanceRejection
+DistributionsWrapper
+MaternGP
+UniformTriangle
+ZeroInflatedExpUniform
 ```
 
 ## Transform
 
 ```@docs
 transform
+spawn_tm(::Gaussian, ::AbstractDiscreteDistribution)
+spawn_tm(::Uniform, ::AbstractDiscreteDistribution)
+spawn_tm(::BrownianMotion, ::AbstractDiscreteDistribution)
+spawn_tm(::GeometricBrownianMotion, ::AbstractDiscreteDistribution)
 ```

@@ -115,4 +115,24 @@
         xt2 = transform(tm05, x2)
         @test xt2 ≈ x2 atol=1e-10
     end
+
+    @testset "AcceptanceRejection" begin
+        dd = IIDStdUniform(2; seed = 7)
+        ar = AcceptanceRejection(dd; pdf_func = x -> exp(-x[1]^2/2) / sqrt(2π),
+            proposal_pdf = x -> 1.0, M = 1.0 / sqrt(2π) + 0.01)
+        @test ar isa AcceptanceRejection
+    end
+
+    @testset "DistributionsWrapper" begin
+        dd = IIDStdUniform(2; seed = 7)
+        dw = DistributionsWrapper(
+            dd;
+            marginals = [Distributions.Normal(0, 1),
+                Distributions.Exponential(1.0)],
+        )
+        x = gen_samples(dd, 100)
+        y = transform(dw, x)
+        @test size(y) == (100, 2)
+        @test abs(mean(y[:, 1])) < 0.5
+    end
 end

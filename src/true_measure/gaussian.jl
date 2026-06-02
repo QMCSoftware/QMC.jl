@@ -35,7 +35,7 @@ struct Gaussian <: AbstractTrueMeasure
 end
 
 function Gaussian(dd::AbstractDiscreteDistribution;
-        mean = 0.0, covariance = 1.0, decomp_type::Symbol = :PCA)
+    mean = 0.0, covariance = 1.0, decomp_type::Symbol = :PCA)
     d = dd.dimension
     mu = _expand_mean(mean, d)
     cov = _expand_covariance(covariance, d)
@@ -50,7 +50,11 @@ function _expand_mean(val, d::Int)
         return fill(Float64(val), d)
     else
         length(val) == d ||
-            throw(ArgumentError("mean vector length ($(length(val))) must match dimension ($d)"))
+            throw(
+                ArgumentError(
+                    "mean vector length ($(length(val))) must match dimension ($d)",
+                ),
+            )
         return Float64.(collect(val))
     end
 end
@@ -60,7 +64,11 @@ function _expand_covariance(val, d::Int)
         return Float64(val) * Matrix{Float64}(I, d, d)
     elseif val isa AbstractVector
         length(val) == d ||
-            throw(ArgumentError("covariance diagonal length ($(length(val))) must match dimension ($d)"))
+            throw(
+                ArgumentError(
+                    "covariance diagonal length ($(length(val))) must match dimension ($d)",
+                ),
+            )
         return diagm(Float64.(collect(val)))
     elseif val isa AbstractMatrix
         size(val) == (d, d) ||

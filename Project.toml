@@ -5,28 +5,36 @@ version = "0.1.0"
 authors = ["Sou-Cheng T. Choi", "Fred J. Hickernell", "QMC Contributors"]
 
 [deps]
+NBInclude = "0db19996-df87-5ea3-a455-e3a50d440464"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-NBInclude = "0db19996-df87-5ea3-a455-e3a50d440464"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
+Aqua = "0.8"
 Distributions = "0.25"
 FFTW = "1"
-NBInclude = "2.4.0"
+Libdl = "1.10"
+LinearAlgebra = "1.10"
+NBInclude = "2.4"
 Plots = "1"
+Printf = "1.10"
+Random = "1.10"
 SpecialFunctions = "2"
+Statistics = "1.10"
+Test = "1.10"
 julia = "1.10"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 NBInclude = "0db19996-df87-5ea3-a455-e3a50d440464"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["NBInclude", "Test"]
+test = ["Aqua", "NBInclude", "Plots", "Test"]

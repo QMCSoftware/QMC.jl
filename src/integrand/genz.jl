@@ -32,9 +32,9 @@ const GENZ_KINDS = (:oscillatory, :product_peak, :corner_peak,
     :gaussian_peak, :continuous, :discontinuous)
 
 function Genz(tm::AbstractTrueMeasure;
-        kind::Symbol = :oscillatory,
-        a::Union{Nothing, Vector{Float64}} = nothing,
-        u::Union{Nothing, Vector{Float64}} = nothing)
+    kind::Symbol = :oscillatory,
+    a::Union{Nothing, Vector{Float64}} = nothing,
+    u::Union{Nothing, Vector{Float64}} = nothing)
     @assert kind in GENZ_KINDS "kind must be one of $GENZ_KINDS, got :$kind"
     d = tm.dimension
     a_vec = isnothing(a) ? ones(d) : a

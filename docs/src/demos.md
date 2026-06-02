@@ -38,13 +38,29 @@ result = integrate(sc)
 println("Asian call price: $(result.solution)")
 ```
 
-## Pluto Notebooks
+## Jupyter Notebooks
 
-Interactive Pluto notebooks are available in the `demos/` directory:
+Interactive Jupyter notebooks are available in the `demos/` directory:
 
-```julia
-using Pkg; Pkg.add("Pluto")
-using Pluto
-Pluto.run()
-# Then open demos/qmcju_intro.jl
+| Notebook | Description |
+|----------|-------------|
+| `quickstart.ipynb` | Getting started with QMC.jl |
+| `qmc.jl_intro.ipynb` | Introduction to the QMC framework |
+| `lebesgue_integration.ipynb` | Lebesgue integration examples |
+| `lattice.ipynb` | Lattice rule demonstrations |
+| `digital_net_b2.ipynb` | Digital net (Sobol') demonstrations |
+| `some_true_measures.ipynb` | True measure transforms |
+| `pricing_options.ipynb` | Financial option pricing (European, Asian, lookback) |
+| `gbm_demo.ipynb` | Geometric Brownian motion and volatility analysis |
+| `sample_scatter_plots.ipynb` | Scatter plots of QMC point sets |
+| `elliptic_pde.ipynb` | Elliptic PDE with multilevel MC/QMC methods |
+
+To run a notebook:
+```bash
+jupyter notebook demos/quickstart.ipynb
+```
+
+To run all notebooks non-interactively (as a test):
+```bash
+julia --project=. test/run_notebooks.jl
 ```
