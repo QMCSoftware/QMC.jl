@@ -67,6 +67,8 @@ for nb in notebooks
     catch e
         push!(errors, nb)
         println("  ✗ FAILED: ", sprint(showerror, e))
+        showerror(stdout, e, catch_backtrace())
+        println()
     end
 end
 
