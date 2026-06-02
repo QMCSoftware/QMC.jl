@@ -34,13 +34,13 @@ jobs:
 
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
+          version: '1.12'
 
       - uses: julia-actions/cache@v2
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install qmctoolscl
         run: pip install qmctoolscl
