@@ -76,7 +76,7 @@ jobs:
       - uses: actions/setup-python@v5
         if: steps.changes.outputs.run == 'true'
         with:
-          python-12'
+          python-version: '3.13'
 
       - name: Install qmctoolscl
         if: steps.changes.outputs.run == 'true'
