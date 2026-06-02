@@ -25,8 +25,8 @@ x = gen_samples(dd, 256)
 y = transform(tm, x)  # 256×2 Gaussian samples
 ```
 """
-struct Gaussian <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Gaussian{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     mean::Vector{Float64}
     covariance::Matrix{Float64}
@@ -105,12 +105,13 @@ function _compute_decomp(cov::Matrix{Float64}, decomp_type::Symbol)
 end
 
 function transform(tm::Gaussian, x::AbstractMatrix)
-    # x is n×d with entries in [0,1)
-    # Step 1: inverse CDF of standard normal, componentwise
-    z = quantile.(Distributions.Normal(), x)
-    # Step 2: apply decomposition and add mean
-    #   y[i,:] = A * z[i,:] + μ  <=>  Y = Z * Aᵀ .+ μᵀ
-    return z * tm._decomp' .+ tm.mean'
+    # x is n×d with entries in [0,1); compute  y = Φ⁻¹(x) * Aᵀ .+ μᵀ
+    # Numerics are identical to the original (same standard-normal quantile);
+    # the mean shift is done in place to avoid an extra n×d allocation.
+    z = quantile.(Distributions.Normal(), x)   # one n×d temporary
+    y = z * transpose(tm._decomp)              # BLAS gemm (handles diagonal A too)
+    y .+= transpose(tm.mean)                   # in-place mean shift, no allocation
+    return y
 end
 
 function Base.show(io::IO, tm::Gaussian)

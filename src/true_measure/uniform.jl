@@ -19,8 +19,8 @@ x = gen_samples(dd, 100)
 y = transform(tm, x)  # 100×3 matrix in [-2, 2]^3
 ```
 """
-struct Uniform <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Uniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     lower_bound::Vector{Float64}
     upper_bound::Vector{Float64}

@@ -16,8 +16,8 @@ tm = Gaussian(dd; covariance=0.5)
 f = Keister(tm)
 ```
 """
-struct Keister <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Keister{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
 end
 
@@ -29,7 +29,7 @@ function evaluate(f::Keister, x::AbstractMatrix)
     n, d = size(x)
     y = Vector{Float64}(undef, n)
     coeff = π^(d / 2)
-    for i in 1:n
+    @inbounds for i in 1:n
         norm_xi = sqrt(sum(x[i, j]^2 for j in 1:d))
         y[i] = coeff * cos(norm_xi)
     end

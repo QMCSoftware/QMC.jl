@@ -21,8 +21,8 @@ sc = CubMCCLT(f; abs_tol=1e-3)
 result = integrate(sc)
 ```
 """
-mutable struct CubMCCLT <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubMCCLT{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int

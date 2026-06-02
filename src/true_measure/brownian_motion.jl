@@ -22,12 +22,13 @@ x = gen_samples(dd, 256)
 paths = transform(bm, x)  # 256×64 Brownian motion paths
 ```
 """
-struct BrownianMotion <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <:
+       AbstractTrueMeasure
+    dd::D
     dimension::Int
     time_vector::Vector{Float64}
     drift::Float64
-    _gaussian::Gaussian
+    _gaussian::G
 end
 
 function BrownianMotion(dd::AbstractDiscreteDistribution;

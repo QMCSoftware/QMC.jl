@@ -33,14 +33,14 @@ dd_r = Lattice(3; seed=7, replications=16)
 x = gen_samples(dd_r, 1024)  # 16×1024×3 array
 ```
 """
-mutable struct Lattice <: AbstractDiscreteDistribution
+mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
     randomize::Bool
     order::String
     replications::Union{Nothing, Int}
     gen_vector::Vector{UInt64}
     shift::Matrix{Float64}   # R × d
-    rng::AbstractRNG
+    rng::R
     mimics::String
 end
 

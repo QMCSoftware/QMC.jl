@@ -23,14 +23,15 @@ x = gen_samples(dd, 256)
 paths = transform(gbm, x)  # 256×4 stock price paths
 ```
 """
-struct GeometricBrownianMotion <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct GeometricBrownianMotion{D <: AbstractDiscreteDistribution, B <: BrownianMotion} <:
+       AbstractTrueMeasure
+    dd::D
     dimension::Int
     time_vector::Vector{Float64}
     initial_value::Float64
     drift::Float64
     diffusion::Float64
-    _bm::BrownianMotion
+    _bm::B
 end
 
 function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
