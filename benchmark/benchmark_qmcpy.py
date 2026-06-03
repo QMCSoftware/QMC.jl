@@ -334,13 +334,13 @@ def main():
          False),
         ("CubQMCLatticeG Genz(continuous)",
          lambda: qp.CubQMCLatticeG(
-             _uniform_custom_integrand(qp.Lattice(2, seed=SEED, replications=16), genz_continuous),
+             _uniform_custom_integrand(qp.Lattice(2, seed=SEED), genz_continuous),
              abs_tol=0.01, n_init=2**10),
          False),
         ("CubQMCNetG Genz(gaussian_peak)",
          lambda: qp.CubQMCNetG(
              _uniform_custom_integrand(
-                 qp.DigitalNetB2(2, seed=SEED, replications=16), genz_gaussian_peak
+                 qp.DigitalNetB2(2, seed=SEED), genz_gaussian_peak
              ),
              abs_tol=0.01, n_init=2**10),
          False),
