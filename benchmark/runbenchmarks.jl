@@ -38,11 +38,15 @@ end
 function measure_rss_delta_kib(bench::BenchmarkTools.Benchmark)
     # Warm once so retained-memory deltas reflect steady-state behavior rather
     # than first-call compilation/cache effects inside the benchmarkable body.
-    run(bench; samples = 1, evals = 1, seconds = 0.0)
+    # NOTE: `seconds` is a per-benchmark time limit and BenchmarkTools requires it
+    # to be > 0 (seconds = 0.0 throws "time limit must be greater than 0.0"). With
+    # samples = 1 the run stops after a single sample regardless, so any positive
+    # limit works; 1.0 is a comfortable cap.
+    run(bench; samples = 1, evals = 1, seconds = 1.0)
     GC.gc()
     GC.gc()
     rss_before = current_rss_kib()
-    run(bench; samples = 1, evals = 1, seconds = 0.0)
+    run(bench; samples = 1, evals = 1, seconds = 1.0)
     GC.gc()
     GC.gc()
     rss_after = current_rss_kib()
@@ -91,9 +95,13 @@ mkpath(resdir)
 outfile = joinpath(resdir, "$(label).json")
 BenchmarkTools.save(outfile, results)
 memfile = joinpath(resdir, "$(label)_memory.json")
-write(memfile, JSON3.pretty(JSON3.write(Dict(
-    "julia_version" => string(VERSION),
-    "results" => julia_memory,
-))))
+# JSON3.pretty(str) prints to stdout and returns `nothing`; pass an IO target so the
+# pretty-printed JSON is written to the file instead.
+open(memfile, "w") do io
+    JSON3.pretty(io, JSON3.write(Dict(
+        "julia_version" => string(VERSION),
+        "results" => julia_memory,
+    )))
+end
 println("\nResults saved to benchmark/results/$(label).json")
 println("Julia memory sidecar saved to benchmark/results/$(label)_memory.json")
