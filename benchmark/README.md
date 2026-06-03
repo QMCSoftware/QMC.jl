@@ -43,6 +43,7 @@ This writes:
 
 ```text
 benchmark/results/base.json
+benchmark/results/base_memory.json
 ```
 
 ## Julia-Only Comparison
@@ -134,21 +135,32 @@ and writes:
 
 ```text
 benchmark/results/base.json
+benchmark/results/base_memory.json
 benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
 
-The Python benchmark JSON now records two approximate memory metrics per row:
+The Julia runner now also writes a sidecar memory file per label:
+
+- `<label>_memory.json`: per-row Julia `rss_delta_kib` from one warmed call
+
+The Python benchmark JSON records two approximate memory metrics per row:
 
 - `tracemalloc_peak_kib`: Python-managed peak memory during one warmed call
 - `rss_delta_kib`: retained process RSS delta after one warmed call
 
-These are useful for comparison, but they are not directly equivalent to Julia's
-`KiB` allocation metric from `BenchmarkTools`.
+Together with Julia's `KiB` allocation metric from `BenchmarkTools`, this gives
+three distinct memory signals:
+
+- Julia `alloc KiB`: bytes allocated during the call
+- Julia `rss_delta_kib`: retained process RSS delta after the call
+- Python `tracemalloc_peak_kib`: Python-managed peak memory during the call
+- Python `rss_delta_kib`: retained process RSS delta after the call
 
 Briefly:
 
 - `tracemalloc_peak_kib` is temporary Python-level memory pressure during the call
+- Julia `rss_delta_kib` is temporary-to-retained process memory on the Julia side
 - `rss_delta_kib` is net process memory retained after the call
 - Julia `KiB` is bytes allocated during the call, not retained RSS
 
@@ -164,7 +176,11 @@ memory even though its traced Python-level peak was modest. Use:
 
 - time ratio as the cleanest cross-language comparison
 - `tracemalloc` as a temporary-allocation signal
-- `RSS delta` as a retained-footprint signal
+- `Julia RSS delta` / `Python RSS delta` as retained-footprint signals
+
+If `<label>_memory.json` is missing because the Julia benchmarks were generated
+before this feature was added, `compare_python*.md` will show Julia RSS delta as
+`n/a` until that label is rerun with `make bench` or `make bench-compare-py`.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
@@ -247,6 +263,7 @@ and writes:
 ```text
 benchmark/results/compare_base.md
 benchmark/results/base.json
+benchmark/results/base_memory.json
 benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
@@ -256,6 +273,7 @@ benchmark/results/compare_python_base.md
 Common generated files:
 
 - `results/<label>.json`: Julia benchmark data
+- `results/<label>_memory.json`: Julia RSS-delta sidecar data
 - `results/qmcpy_<label>.json`: QMCPy benchmark data
 - `results/compare_<label>.md`: Julia-vs-Julia comparison report
 - `results/compare_labels_<a>_vs_<b>.md`: saved-label comparison report

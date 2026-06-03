@@ -15,10 +15,10 @@
 #   ratio < 1  →  local is SLOWER than Python  ❌
 #   ratio > 1  →  local is FASTER than Python  ✅
 #
-# NOTE: `ms` is directly cross-comparable. Julia `KiB` is allocated bytes from
-# BenchmarkTools, while Python reports `tracemalloc_peak_kib` and a coarse retained
-# `rss_delta_kib` from one warmed call; those memory metrics are informative but
-# are not directly equivalent to Julia allocations.
+# NOTE: `ms` is directly cross-comparable. Julia reports both `alloc KiB` from
+# BenchmarkTools and, when available, a coarse retained `rss_delta_kib` sidecar
+# captured by `runbenchmarks.jl`. Python reports `tracemalloc_peak_kib` and a
+# coarse retained `rss_delta_kib` from one warmed call.
 # C-kernel rows (Lattice, DigitalNetB2, Halton gen_samples) measure the same C
 # library on both sides; they are NOT a language comparison (see benchmark_qmcpy.py).
 
@@ -49,13 +49,21 @@ function lookup_py_entry(py_results, group, name)
     return get(py_group, name, get(py_group, replace(name, r" d=\d+" => s -> " [C]" * s), nothing))
 end
 
-function collect_comparison_rows(jl_results, py_results)
+function lookup_jl_memory_entry(jl_memory_results, group, name)
+    jl_memory_results === nothing && return nothing
+    jl_group = get(jl_memory_results, Symbol(group), nothing)
+    jl_group === nothing && return nothing
+    return get(jl_group, name, nothing)
+end
+
+function collect_comparison_rows(jl_results, jl_memory_results, py_results)
     rows = NamedTuple[]
     for group in sort(collect(keys(jl_results)))
         for name in sort(collect(keys(jl_results[group])))
             jl_trial = median(jl_results[group][name])
             jl_ms = jl_trial.time / 1e6
             jl_kib = jl_trial.memory / 1024
+            jl_mem_entry = lookup_jl_memory_entry(jl_memory_results, group, name)
             py_entry = lookup_py_entry(py_results, group, name)
             if py_entry !== nothing && !haskey(py_entry, "error")
                 push!(rows, (
@@ -63,6 +71,8 @@ function collect_comparison_rows(jl_results, py_results)
                     name = name,
                     jl_ms = jl_ms,
                     jl_kib = jl_kib,
+                    jl_rss_delta_kib = jl_mem_entry !== nothing && haskey(jl_mem_entry, "rss_delta_kib") ?
+                        Float64(jl_mem_entry["rss_delta_kib"]) : nothing,
                     py_ms = Float64(py_entry["median_ms"]),
                     py_peak_kib = haskey(py_entry, "tracemalloc_peak_kib") ?
                         Float64(py_entry["tracemalloc_peak_kib"]) : nothing,
@@ -77,6 +87,8 @@ function collect_comparison_rows(jl_results, py_results)
                     name = name,
                     jl_ms = jl_ms,
                     jl_kib = jl_kib,
+                    jl_rss_delta_kib = jl_mem_entry !== nothing && haskey(jl_mem_entry, "rss_delta_kib") ?
+                        Float64(jl_mem_entry["rss_delta_kib"]) : nothing,
                     py_ms = nothing,
                     py_peak_kib = nothing,
                     py_rss_delta_kib = nothing,
@@ -94,10 +106,10 @@ function summary_metrics(rows)
     total_jl_ms = sum((row.jl_ms for row in matched); init = 0.0)
     total_py_ms = sum((row.py_ms for row in matched); init = 0.0)
     peak_rows = filter(row -> row.py_peak_kib !== nothing, matched)
-    rss_rows = filter(row -> row.py_rss_delta_kib !== nothing, matched)
+    rss_rows = filter(row -> row.py_rss_delta_kib !== nothing && row.jl_rss_delta_kib !== nothing, matched)
     total_jl_peak_kib = sum((row.jl_kib for row in peak_rows); init = 0.0)
     total_py_peak_kib = sum((row.py_peak_kib for row in peak_rows); init = 0.0)
-    total_jl_rss_kib = sum((row.jl_kib for row in rss_rows); init = 0.0)
+    total_jl_rss_kib = sum((row.jl_rss_delta_kib for row in rss_rows); init = 0.0)
     total_py_rss_delta_kib = sum((row.py_rss_delta_kib for row in rss_rows); init = 0.0)
     return (
         matched = length(matched),
@@ -121,6 +133,7 @@ py_label = length(ARGS) >= 2 ? ARGS[2] : jl_label
 out_label = length(ARGS) >= 3 ? ARGS[3] : ""
 
 jl_file = joinpath(resdir, "$(jl_label).json")
+jl_mem_file = joinpath(resdir, "$(jl_label)_memory.json")
 py_file = joinpath(resdir, "qmcpy_$(py_label).json")
 
 isfile(jl_file) || error("Julia results not found: $jl_file\nRun: make bench" *
@@ -129,11 +142,13 @@ isfile(py_file) || error("QMCPy results not found: $py_file\n" *
                          "Run: python benchmark/benchmark_qmcpy.py $py_label")
 
 jl_results = BenchmarkTools.load(jl_file)[1]
+jl_mem_data = isfile(jl_mem_file) ? JSON3.read(read(jl_mem_file, String)) : nothing
 py_data    = JSON3.read(read(py_file, String))
 
+jl_memory_results = jl_mem_data === nothing ? nothing : jl_mem_data["results"]
 py_results = py_data["results"]
 py_version = get(py_data, "qmcpy_version", "?")
-rows = collect_comparison_rows(jl_results, py_results)
+rows = collect_comparison_rows(jl_results, jl_memory_results, py_results)
 summary = summary_metrics(rows)
 
 println("Julia vs QMCPy benchmark comparison")
@@ -156,7 +171,7 @@ for group in sort(unique(row.group for row in rows))
             ratio = row.py_ms / row.jl_ms
             tag = row.c_kernel ? " [C]" : "    "
             @printf("  %s %-44s  %11.3f  %11.3f  %6.2fx\n", tag, row.name, row.jl_ms, row.py_ms, ratio)
-        else
+        else  # missing/unavailable Python data
             @printf("  ??? %-44s  %11.3f  %11s  %7s\n", row.name, row.jl_ms, "n/a", "n/a")
         end
     end
@@ -174,10 +189,10 @@ else
     println("weighted tracemalloc ratio = n/a  (QMCPy results do not record Python memory metrics)")
 end
 if summary.rss_rows > 0
-    @printf("weighted RSS delta ratio   = %.3f  (Python RSS Δ total %.1f KiB vs Julia alloc total %.1f KiB across %d/%d rows)\n",
+    @printf("weighted RSS delta ratio   = %.3f  (Python RSS Δ total %.1f KiB vs Julia RSS Δ total %.1f KiB across %d/%d rows)\n",
             summary.rss_ratio, summary.py_rss_delta_kib, summary.jl_rss_kib, summary.rss_rows, summary.total)
 else
-    println("weighted RSS delta ratio   = n/a  (QMCPy results do not record Python RSS delta)")
+    println("weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)")
 end
 
 # ── Save markdown file ──────────────────────────────────────────────────────────
@@ -195,9 +210,9 @@ open(outfile, "w") do io
     println(io, "")
     println(io, "> ⚠️ C-kernel rows `[C]` (Lattice/DigitalNetB2/Halton `gen_samples`) call the same")
     println(io, "> `qmctoolscl` library on both sides and are **not** a Julia vs Python comparison.")
-    println(io, "> Julia `KiB` is allocated bytes from BenchmarkTools. Python reports `tracemalloc` peak")
-    println(io, "> and a coarse retained RSS delta from one warmed call; those memory metrics are useful")
-    println(io, "> but are **not** directly equivalent to Julia allocations.")
+    println(io, "> Julia `alloc KiB` is allocated bytes from BenchmarkTools. Julia `RSS Δ` and Python")
+    println(io, "> `RSS Δ` are coarse retained-memory signals from one warmed call. Python `tracemalloc`")
+    println(io, "> peak is Python-managed temporary memory. These are related but not interchangeable.")
     println(io, "")
     println(io, "## Aggregate Summary\n")
     println(io, "| metric | ratio | Julia total | Python total | rows |")
@@ -218,21 +233,23 @@ open(outfile, "w") do io
         println(io, "| weighted RSS delta ratio | n/a | n/a | n/a | 0 |\n")
     end
     println(io, "")
-    println(io, "| benchmark | time ratio | verdict | Julia (ms) | Python (ms) | Julia alloc (KiB) | Python peak (KiB) | Python RSS Δ (KiB) |")
-    println(io, "|:----------|-----------:|:-------:|----------:|------------:|-------------------:|------------------:|-------------------:|")
+    println(io, "| benchmark | time ratio | verdict | Julia (ms) | Python (ms) | Julia alloc (KiB) | Julia RSS Δ (KiB) | Python peak (KiB) | Python RSS Δ (KiB) |")
+    println(io, "|:----------|-----------:|:-------:|----------:|------------:|-------------------:|------------------:|------------------:|-------------------:|")
     for row in rows
         c_note = row.c_kernel ? " `[C]`" : ""
         if row.py_ms !== nothing
                 ratio   = row.py_ms / row.jl_ms
                 verdict = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
+                jl_rss_txt = row.jl_rss_delta_kib === nothing ? "n/a" : @sprintf("%.1f", row.jl_rss_delta_kib)
                 peak_txt = row.py_peak_kib === nothing ? "n/a" : @sprintf("%.1f", row.py_peak_kib)
                 rss_txt = row.py_rss_delta_kib === nothing ? "n/a" : @sprintf("%.1f", row.py_rss_delta_kib)
-                @printf(io, "| `[\"%s\", \"%s\"]`%s | %.3f | %s | %.3f | %.3f | %.1f | %s | %s |\n",
+                @printf(io, "| `[\"%s\", \"%s\"]`%s | %.3f | %s | %.3f | %.3f | %.1f | %s | %s | %s |\n",
                         row.group, row.name, c_note, ratio, verdict, row.jl_ms, row.py_ms,
-                        row.jl_kib, peak_txt, rss_txt)
+                        row.jl_kib, jl_rss_txt, peak_txt, rss_txt)
         else
-            @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a | %.1f | n/a | n/a |\n",
-                    row.group, row.name, row.jl_ms, row.jl_kib)
+            jl_rss_txt = row.jl_rss_delta_kib === nothing ? "n/a" : @sprintf("%.1f", row.jl_rss_delta_kib)
+            @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a | %.1f | %s | n/a | n/a |\n",
+                    row.group, row.name, row.jl_ms, row.jl_kib, jl_rss_txt)
         end
     end
 end
