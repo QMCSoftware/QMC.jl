@@ -299,15 +299,6 @@ def main():
     def _uniform_custom_integrand(discrete_distrib, func):
         return qp.CustomFun(qp.Uniform(discrete_distrib), func)
 
-    def _vectorized_keister(discrete_distrib):
-        scalar_keister = qp.Keister(discrete_distrib)
-        return qp.CustomFun(
-            scalar_keister.true_measure,
-            lambda x, scalar_keister=scalar_keister: np.expand_dims(
-                scalar_keister.g(x), axis=-1
-            ),
-        )
-
     def _make_with_sample_cap(ctor, integrand, *, abs_tol, n_init, sample_cap):
         kwargs = {"abs_tol": abs_tol, "n_init": n_init}
         try:
@@ -339,17 +330,19 @@ def main():
          lambda: qp.CubMCG(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
          False),
         ("CubMCCLTVec Keister",
-         lambda: qp.CubMCCLTVec(_vectorized_keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
+         lambda: qp.CubMCCLTVec(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
          False),
         ("CubQMCLatticeG Genz(continuous)",
          lambda: qp.CubQMCLatticeG(
-             _uniform_custom_integrand(qp.Lattice(2, seed=SEED), genz_continuous),
-             abs_tol=0.01, n_init=2**10, n_reps=16),
+             _uniform_custom_integrand(qp.Lattice(2, seed=SEED, replications=16), genz_continuous),
+             abs_tol=0.01, n_init=2**10),
          False),
         ("CubQMCNetG Genz(gaussian_peak)",
          lambda: qp.CubQMCNetG(
-             _uniform_custom_integrand(qp.DigitalNetB2(2, seed=SEED), genz_gaussian_peak),
-             abs_tol=0.01, n_init=2**10, n_reps=16),
+             _uniform_custom_integrand(
+                 qp.DigitalNetB2(2, seed=SEED, replications=16), genz_gaussian_peak
+             ),
+             abs_tol=0.01, n_init=2**10),
          False),
         ("CubQMCBayesLatticeG Genz(continuous)",
          lambda: _make_with_sample_cap(

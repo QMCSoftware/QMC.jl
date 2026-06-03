@@ -171,7 +171,9 @@ function _bayes_lattice_stop(xun, ftilde, n, order, errbd_type, alpha)
         uncert * sqrt(abs(DSC * rkhs / n))
     end
 
-    muhat = abs(ftilde[1] / n)
+    # `ftilde` is normalized as fft(y) / sqrt(n), so the zero-frequency term is
+    # sum(y) / sqrt(n). Divide by sqrt(n) again to recover the sample mean.
+    muhat = real(ftilde[1]) / sqrt(n)
     return muhat, err_bd
 end
 

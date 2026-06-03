@@ -36,10 +36,12 @@
         dd = Lattice(2; randomize = true, seed = 800)
         tm = Uniform(dd)
         f = Genz(tm; kind = :continuous, a = [1.0, 1.0], u = [0.5, 0.5])
+        exact = genz_exact(f)
         sc = CubQMCBayesLatticeG(f; abs_tol = 0.1, n_init = 2^8, n_max = 2^12)
         result = integrate(sc)
         @test result.solution isa Float64
         @test !isnan(result.solution)
+        @test abs(result.solution - exact) < 0.15
         @test result.data[:n] >= 2^8
     end
 
@@ -47,10 +49,12 @@
         dd = DigitalNetB2(2; randomize = "LMS_DS", seed = 900)
         tm = Uniform(dd)
         f = Genz(tm; kind = :continuous, a = [1.0, 1.0], u = [0.5, 0.5])
+        exact = genz_exact(f)
         sc = CubQMCBayesNetG(f; abs_tol = 0.1, n_init = 2^8, n_max = 2^12)
         result = integrate(sc)
         @test result.solution isa Float64
         @test !isnan(result.solution)
+        @test abs(result.solution - exact) < 0.1
         @test result.data[:n] >= 2^8
     end
 

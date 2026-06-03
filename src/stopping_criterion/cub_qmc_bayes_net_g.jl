@@ -161,7 +161,9 @@ function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
         uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
         uncert * sqrt(abs(DSC * rkhs / n))
 
-    return abs(ftilde[1] / n), err_bd
+    # `ftilde` is normalized as fwht(y) / sqrt(n), so the first coefficient is
+    # sum(y) / sqrt(n). Divide by sqrt(n) again to recover the sample mean.
+    return real(ftilde[1]) / sqrt(n), err_bd
 end
 
 # ── integrate ────────────────────────────────────────────────────────────────
