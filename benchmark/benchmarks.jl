@@ -176,12 +176,28 @@ end
 # anonymous function in a vector literal fails to parse. The same builders drive
 # both the timing benchmark and the accuracy check (runbenchmarks.jl runs
 # `integrate(make_sc())` once to record the solution value + tolerances), so both
-# measure exactly the same problem setup.
+# measure exactly the same problem setup. Most cases below intentionally use
+# integrands with exact values so the benchmark runner can act as a lightweight
+# correctness smoke test in addition to a timing harness.
 function _int_cubmcclt_keister()
     dd = IIDStdUniform(3; seed=42)
     tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
     f = Keister(tm)
     CubMCCLT(f; abs_tol=0.01)
+end
+
+function _int_cubmcg_keister()
+    dd = IIDStdUniform(3; seed=42)
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
+    f = Keister(tm)
+    CubMCG(f; abs_tol=0.01)
+end
+
+function _int_cubmccltvec_keister()
+    dd = IIDStdUniform(3; seed=42)
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
+    f = Keister(tm)
+    CubMCCLTVec(f; abs_tol=0.01)
 end
 
 function _int_cubqmclatticeg_keister()
@@ -198,12 +214,48 @@ function _int_cubqmcnetg_keister()
     CubQMCNetG(f; abs_tol=0.01)
 end
 
+function _int_cubqmclatticeg_genz_continuous()
+    dd = Lattice(2; seed=42, randomize=true)
+    tm = Uniform(dd)
+    f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+    CubQMCLatticeG(f; abs_tol=0.01, n_init=2^10, n_reps=16)
+end
+
+function _int_cubqmcnetg_genz_gaussian_peak()
+    dd = DigitalNetB2(2; seed=42, randomize="LMS_DS")
+    tm = Uniform(dd)
+    f = Genz(tm; kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+    CubQMCNetG(f; abs_tol=0.01, n_init=2^10, n_reps=16)
+end
+
+function _int_cubqmcbayeslatticeg_genz_continuous()
+    dd = Lattice(2; seed=42, randomize=true)
+    tm = Uniform(dd)
+    f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+    CubQMCBayesLatticeG(f; abs_tol=0.01, n_init=2^8, n_max=2^14)
+end
+
+function _int_cubqmcbayesnetg_genz_continuous()
+    dd = DigitalNetB2(2; seed=42, randomize="LMS_DS")
+    tm = Uniform(dd)
+    f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+    CubQMCBayesNetG(f; abs_tol=0.01, n_init=2^8, n_max=2^14)
+end
+
 function _int_cubmcclt_asian()
     dd = IIDStdUniform(50; seed=42)
     tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
                                   interest_rate=0.05, t_final=1.0)
     f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
     CubMCCLT(f; abs_tol=0.5)
+end
+
+function _int_cubmcclt_geometric_asian()
+    dd = IIDStdUniform(50; seed=42)
+    tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
+                                  interest_rate=0.05, t_final=1.0)
+    f = FinancialOption(tm; option_type=:asian, mean_type=:geometric, strike_price=100.0)
+    CubMCCLT(f; abs_tol=0.25)
 end
 
 function _int_cubqmcnetg_european()
@@ -216,9 +268,16 @@ end
 
 const INTEGRATE_CASES = Pair{String,Function}[
     "CubMCCLT Keister"          => _int_cubmcclt_keister,
+    "CubMCG Keister"            => _int_cubmcg_keister,
+    "CubMCCLTVec Keister"       => _int_cubmccltvec_keister,
     "CubQMCLatticeG Keister"    => _int_cubqmclatticeg_keister,
     "CubQMCNetG Keister"        => _int_cubqmcnetg_keister,
+    "CubQMCLatticeG Genz(continuous)" => _int_cubqmclatticeg_genz_continuous,
+    "CubQMCNetG Genz(gaussian_peak)" => _int_cubqmcnetg_genz_gaussian_peak,
+    "CubQMCBayesLatticeG Genz(continuous)" => _int_cubqmcbayeslatticeg_genz_continuous,
+    "CubQMCBayesNetG Genz(continuous)" => _int_cubqmcbayesnetg_genz_continuous,
     "CubMCCLT AsianOption"      => _int_cubmcclt_asian,
+    "CubMCCLT GeometricAsianOption" => _int_cubmcclt_geometric_asian,
     "CubQMCNetG EuropeanOption" => _int_cubqmcnetg_european,
 ]
 
