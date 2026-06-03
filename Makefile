@@ -1,6 +1,7 @@
-.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py
+.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label
 
 FORMATTER_PROJECT=devtools/formatter
+PYTHON ?= python
 
 # Allow `make bench gaus` / `make bench-compare gaus` / `make bench-compare-py gaus`
 # as shorthand for `LABEL=gaus`. `make` treats `gaus` as an extra goal, so consume
@@ -78,7 +79,7 @@ bench-compare:
 	julia benchmark/compare.jl $(REV) $(LABEL)
 
 # Side-by-side Julia vs QMCPy comparison.
-# Prerequisites: run `make bench` then `python benchmark/benchmark_qmcpy.py [label]`.
+# Runs both the Julia and QMCPy benchmark harnesses for the requested labels.
 # Override output label with: make bench-compare-py LABEL=gaus or make bench-compare-py gaus
 # Output: benchmark/results/compare_python.md (default) or compare_python_<LABEL>.md
 # Ratio = Python time ÷ Julia time  →  < 1: local (Julia) slower  |  > 1: local (Julia) faster
@@ -87,4 +88,12 @@ bench-compare:
 JL_LABEL ?= $(if $(LABEL),$(LABEL),latest)
 PY_LABEL ?= $(JL_LABEL)
 bench-compare-py: bench
+	$(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL)
 	julia benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL)
+
+# Explicit labeled Julia-vs-QMCPy comparison flow.
+# Usage: make bench-compare-py-label LABEL=base
+bench-compare-py-label:
+	julia benchmark/runbenchmarks.jl $(LABEL)
+	$(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL)
+	julia benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL)
