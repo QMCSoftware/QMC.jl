@@ -20,6 +20,8 @@
         # Verify exact value
         exact = keister_exact(2)
         @test exact > 0
+        @test keister_exact(1) ≈ sqrt(π) * exp(-0.25) rtol = 1e-14
+        @test keister_exact(3) ≈ (π^(3 / 2) / 2) * exp(-0.25) rtol = 1e-14
     end
 
     @testset "Genz" begin

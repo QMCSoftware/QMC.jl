@@ -183,9 +183,9 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
         dd = sc.integrand.true_measure.dd
         x_uniform = gen_samples(dd, n)
 
-        x_period = periodize(x_uniform, sc.ptransform)
+        x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
         x_trans = transform(sc.integrand.true_measure, x_period)
-        y = evaluate(sc.integrand, x_trans)
+        y = evaluate(sc.integrand, x_trans) .* weight
 
         # WHT of function values (normalized)
         ftilde = fwht(y) ./ sqrt(n)

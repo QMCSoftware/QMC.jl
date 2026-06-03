@@ -41,7 +41,7 @@
         result = integrate(sc)
         @test result.solution isa Float64
         @test !isnan(result.solution)
-        @test abs(result.solution - exact) < 0.15
+        @test abs(result.solution - exact) < 0.02
         @test result.data[:n] >= 2^8
     end
 
@@ -54,7 +54,7 @@
         result = integrate(sc)
         @test result.solution isa Float64
         @test !isnan(result.solution)
-        @test abs(result.solution - exact) < 0.1
+        @test abs(result.solution - exact) < 0.02
         @test result.data[:n] >= 2^8
     end
 

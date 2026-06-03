@@ -37,26 +37,31 @@ end
     keister_exact(d::Int)
 
 Compute the exact value of the Keister integral in `d` dimensions.
-Uses the formula involving the modified Bessel function of the first kind.
 
-``I_d = \\pi^{d/2} \\cdot 2^{1-d/2} \\cdot e^{-1/2} \\cdot I_{d/2-1}(1/2)``
+For the standard Keister setup used here, the true measure is `N(0, I/2)`, so
 
-where ``I_\\nu`` is the modified Bessel function (besselI).
-For d=1: I₁ ≈ 1.3803884470431430
+``I_d = \\int_{\\mathbb{R}^d} e^{-\\|x\\|^2} \\cos(\\|x\\|)\\,dx
+     = \\pi^{d/2} \\, {}_1F_1\\!\\left(\\frac{d}{2}; \\frac{1}{2}; -\\frac{1}{4}\\right).``
+
+The hypergeometric argument is small and fixed (`-1/4`), so a direct series is
+simple and stable.
 """
 function keister_exact(d::Int)
-    nu = d / 2.0 - 1.0
-    # The exact integral for Keister with covariance I/2:
-    # π^(d/2) * (2π)^(-d/2) * ∫ cos(||x||) * exp(-||x||^2/2) dx
-    # = exp(-1/2) * besseli(nu, 1/2) * 2^(1 - d/2) * π^(d/2)
-    # Simplified using the known closed form:
-    val = π^(d / 2) * exp(-0.5)
-    if d == 1
-        val *= besseli(nu, 0.5) * sqrt(2)
-    else
-        val *= besseli(nu, 0.5) * 2.0^(1.0 - d / 2.0)
+    d > 0 || throw(ArgumentError("dimension must be positive"))
+    a = d / 2.0
+    b = 0.5
+    z = -0.25
+    term = 1.0
+    total = 1.0
+    for k in 1:10_000
+        term *= ((a + k - 1.0) / (b + k - 1.0)) * (z / k)
+        total_new = total + term
+        if abs(term) <= eps(Float64) * abs(total_new)
+            return π^(d / 2) * total_new
+        end
+        total = total_new
     end
-    return val
+    error("keister_exact failed to converge for d=$d")
 end
 
 function Base.show(io::IO, f::Keister)

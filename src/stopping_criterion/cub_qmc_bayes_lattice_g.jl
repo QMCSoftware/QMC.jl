@@ -197,10 +197,11 @@ function integrate(
         dd = sc.integrand.true_measure.dd
         x_uniform = gen_samples(dd, n)
 
-        # Periodize uniform points, then transform through the measure
-        x_period = periodize(x_uniform, sc.ptransform)
+        # Periodization changes variables in the unit cube, so preserve the
+        # original integral by multiplying the integrand by the product Jacobian.
+        x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
         x_trans = transform(sc.integrand.true_measure, x_period)
-        y = evaluate(sc.integrand, x_trans)
+        y = evaluate(sc.integrand, x_trans) .* weight
 
         ftilde = real.(FFTW.fft(y)) ./ sqrt(n)
 
