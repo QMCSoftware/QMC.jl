@@ -32,6 +32,9 @@ struct Gaussian{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     covariance::Matrix{Float64}
     decomp_type::Symbol
     _decomp::Matrix{Float64}
+    # Diagonal of `_decomp` when that factor is diagonal, else `nothing`. Enables an
+    # O(n·d) column-scaling fast path in `transform` (see the deviation note there).
+    _decomp_diag::Union{Nothing, Vector{Float64}}
 end
 
 function Gaussian(dd::AbstractDiscreteDistribution;
@@ -42,7 +45,11 @@ function Gaussian(dd::AbstractDiscreteDistribution;
     decomp_type in (:PCA, :Cholesky) ||
         throw(ArgumentError("decomp_type must be :PCA or :Cholesky, got :$decomp_type"))
     A = _compute_decomp(cov, decomp_type)
-    return Gaussian(dd, d, mu, cov, decomp_type, A)
+    # Capture the diagonal only when the *computed* factor A is genuinely diagonal
+    # (e.g. Cholesky of a diagonal/scalar Σ). This keeps the exact same A — and thus
+    # bit-identical samples — while letting `transform` skip the dense multiply.
+    diagA = isdiag(A) ? diag(A) : nothing
+    return Gaussian(dd, d, mu, cov, decomp_type, A, diagA)
 end
 
 function _expand_mean(val, d::Int)
@@ -105,14 +112,28 @@ function _compute_decomp(cov::Matrix{Float64}, decomp_type::Symbol)
 end
 
 function transform(tm::Gaussian, x::AbstractMatrix)
-    # x is n×d with entries in [0,1); compute  y = Φ⁻¹(x) * Aᵀ .+ μᵀ
-    # Use erfinv directly: Φ⁻¹(u) = √2 · erfinv(2u-1).
-    # This avoids Distributions.Normal() dispatch overhead per element and is
-    # ~15–20% faster than quantile.(Normal(), x) at large n×d.
-    z = @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * x - 1.0)
-    y = z * transpose(tm._decomp)              # BLAS gemm (handles diagonal A too)
-    y .+= transpose(tm.mean)                   # in-place mean shift, no allocation
-    return y
+    # x is n×d with entries in [0,1); compute  y = Φ⁻¹(x) * Aᵀ .+ μᵀ.
+    # Φ⁻¹(u) = √2·erfinv(2u-1) — avoids per-element Distributions.Normal() dispatch.
+    dvec = tm._decomp_diag
+    if dvec === nothing
+        # General (dense) case: BLAS GEMM, O(n·d²).
+        z = @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * x - 1.0)   # one n×d temporary
+        y = z * transpose(tm._decomp)
+        y .+= transpose(tm.mean)                                    # in-place mean shift
+        return y
+    else
+        # Diagonal-covariance fast path: A is diagonal, so y[:,j] = √2·erfinv(2x[:,j]-1)·A[j,j] + μ[j].
+        # This is O(n·d) column scaling instead of the O(n·d²) dense multiply, and the whole
+        # transform fuses into a single allocation.
+        #
+        # DEVIATION FROM QMCPy: QMCPy's Gaussian._transform always does the dense factor
+        # multiply (`self.mu + np.einsum("...ij,kj->...ik", norm.ppf(x), self.a)`), with no
+        # diagonal special case. Results here are numerically identical to that dense form
+        # (column scaling equals multiplying by a diagonal A); only the cost differs.
+        dvec_t = transpose(dvec)        # 1×d row (computed outside @. so it isn't dotted)
+        mean_t = transpose(tm.mean)
+        return @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * x - 1.0) * dvec_t + mean_t
+    end
 end
 
 function Base.show(io::IO, tm::Gaussian)
