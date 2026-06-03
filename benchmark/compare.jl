@@ -146,6 +146,21 @@ end
 "Benchmark the current working tree in place (uncommitted changes included)."
 bench_worktree() = benchmarkpkg(PKG; verbose = false)
 
+"Run `f()` with `project_dir` active and `pkgdir` developed as `QMC`."
+function with_benchmark_env(project_dir::AbstractString, pkgdir::AbstractString, f::Function)
+    original_project = Base.active_project()
+    try
+        Pkg.activate(project_dir; io = devnull)
+        Pkg.develop(; path = pkgdir, io = devnull)
+        Pkg.instantiate(; io = devnull)
+        return f()
+    finally
+        if original_project !== nothing
+            Pkg.activate(dirname(original_project); io = devnull)
+        end
+    end
+end
+
 "Benchmark a committed `rev` in a throwaway git worktree, leaving PKG untouched.
 The current benchmark/benchmarks.jl is copied into the worktree first, so the
 revision's own (possibly old or broken) benchmarks.jl is never used — both sides
@@ -165,7 +180,11 @@ function bench_revision(rev::AbstractString)
         # both sides measure the same suite.
         cp(joinpath(PKG, "benchmark", "benchmarks.jl"),
            joinpath(wt, "benchmark", "benchmarks.jl"); force = true)
-        return benchmarkpkg(wt; verbose = false)
+        return with_benchmark_env(
+            joinpath(wt, "benchmark"),
+            wt,
+            () -> benchmarkpkg(wt; verbose = false),
+        )
     finally
         try
             run(`git -C $PKG worktree remove --force $wt`)
