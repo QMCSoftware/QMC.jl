@@ -6,7 +6,7 @@
 #                                               #   changes) against `main`
 #   julia benchmark/compare.jl HEAD main        # compare one committed revision against another
 #
-# Output: benchmark/results/compare_head.md
+# Output: benchmark/results/compare_head.md by default, or compare_<label>.md
 #
 # Ratio convention (same as compare_py.jl):
 #   ratio = reference time ÷ local time
@@ -35,6 +35,10 @@ using Printf
 const PKG = dirname(@__DIR__)
 const RESDIR = joinpath(@__DIR__, "results")
 mkpath(RESDIR)
+
+comparison_outfile(label::AbstractString) =
+    isempty(label) ? joinpath(RESDIR, "compare_head.md") :
+    joinpath(RESDIR, "compare_$(label).md")
 
 "Return comparable per-benchmark rows extracted from two benchmark results."
 function collect_comparison_rows(target_result, baseline_result)
@@ -197,24 +201,38 @@ elseif length(ARGS) == 1
     baseline_rev = ARGS[1]
     target   = bench_worktree()              # current tree (dirty OK)
     baseline = bench_revision(baseline_rev)
-    outfile  = joinpath(RESDIR, "compare_head.md")
+    outfile  = comparison_outfile("")
     summary = write_comparison_md(outfile, target, baseline, "local", baseline_rev)
-    println("\nWrote benchmark/results/compare_head.md (local vs $(baseline_rev))")
+    println("\nWrote benchmark/results/$(basename(outfile)) (local vs $(baseline_rev))")
     println("  ratio = $(baseline_rev) ÷ local  →  < 1: local slower  |  > 1: local faster")
     @printf("  weighted time ratio   = %.3f  (%s total %.3f ms vs %s total %.3f ms)\n",
             summary.time_ratio, baseline_rev, summary.ref_ms, "local", summary.local_ms)
     @printf("  weighted memory ratio = %.3f  (%s total %.1f KiB vs %s total %.1f KiB)\n",
             summary.memory_ratio, baseline_rev, summary.ref_kib, "local", summary.local_kib)
-else
+elseif length(ARGS) == 2
+    baseline_rev, out_label = ARGS[1], ARGS[2]
+    target   = bench_worktree()              # current tree (dirty OK)
+    baseline = bench_revision(baseline_rev)
+    outfile  = comparison_outfile(out_label)
+    summary = write_comparison_md(outfile, target, baseline, "local", baseline_rev)
+    println("\nWrote benchmark/results/$(basename(outfile)) (local vs $(baseline_rev))")
+    println("  ratio = $(baseline_rev) ÷ local  →  < 1: local slower  |  > 1: local faster")
+    @printf("  weighted time ratio   = %.3f  (%s total %.3f ms vs %s total %.3f ms)\n",
+            summary.time_ratio, baseline_rev, summary.ref_ms, "local", summary.local_ms)
+    @printf("  weighted memory ratio = %.3f  (%s total %.1f KiB vs %s total %.1f KiB)\n",
+            summary.memory_ratio, baseline_rev, summary.ref_kib, "local", summary.local_kib)
+elseif length(ARGS) == 3
     target_rev, baseline_rev = ARGS[1], ARGS[2]
     target   = bench_revision(target_rev)
     baseline = bench_revision(baseline_rev)
-    outfile  = joinpath(RESDIR, "compare_head.md")
+    outfile  = comparison_outfile(ARGS[3])
     summary = write_comparison_md(outfile, target, baseline, target_rev, baseline_rev)
-    println("\nWrote benchmark/results/compare_head.md ($(target_rev) vs $(baseline_rev))")
+    println("\nWrote benchmark/results/$(basename(outfile)) ($(target_rev) vs $(baseline_rev))")
     println("  ratio = $(baseline_rev) ÷ $(target_rev)  →  < 1: $(target_rev) slower  |  > 1: $(target_rev) faster")
     @printf("  weighted time ratio   = %.3f  (%s total %.3f ms vs %s total %.3f ms)\n",
             summary.time_ratio, baseline_rev, summary.ref_ms, target_rev, summary.local_ms)
     @printf("  weighted memory ratio = %.3f  (%s total %.1f KiB vs %s total %.1f KiB)\n",
             summary.memory_ratio, baseline_rev, summary.ref_kib, target_rev, summary.local_kib)
+else
+    error("Usage: julia benchmark/compare.jl [baseline_rev [output_label]] or julia benchmark/compare.jl target_rev baseline_rev output_label")
 end

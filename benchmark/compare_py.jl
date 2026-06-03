@@ -8,7 +8,7 @@
 # Both files must exist in benchmark/results/ — run `make bench` then
 # `python benchmark/benchmark_qmcpy.py [label]` first.
 #
-# Output: benchmark/results/compare_python.md
+# Output: benchmark/results/compare_python.md by default, or compare_python_<label>.md
 #
 # Ratio convention (same as compare.jl):
 #   ratio = reference (Python) time ÷ local (Julia) time
@@ -34,6 +34,9 @@ using Statistics
 using Printf
 
 resdir = joinpath(@__DIR__, "results")
+compare_py_outfile(label::AbstractString) =
+    isempty(label) ? joinpath(resdir, "compare_python.md") :
+    joinpath(resdir, "compare_python_$(label).md")
 
 is_c_kernel_row(name::AbstractString) = occursin(r"Lattice|DigitalNetB2|Halton", name)
 
@@ -94,6 +97,7 @@ end
 
 jl_label = length(ARGS) >= 1 ? ARGS[1] : "latest"
 py_label = length(ARGS) >= 2 ? ARGS[2] : jl_label
+out_label = length(ARGS) >= 3 ? ARGS[3] : ""
 
 jl_file = joinpath(resdir, "$(jl_label).json")
 py_file = joinpath(resdir, "qmcpy_$(py_label).json")
@@ -145,7 +149,7 @@ println("ratio > 1: local (Julia) faster than Python  |  ratio < 1: local (Julia
 println("weighted memory ratio = n/a  (QMCPy results do not record comparable Python memory)")
 
 # ── Save markdown file ──────────────────────────────────────────────────────────
-outfile = joinpath(resdir, "compare_python.md")
+outfile = compare_py_outfile(out_label)
 open(outfile, "w") do io
     println(io, "# Benchmark: Julia (local) vs QMCPy (Python)\n")
     println(io, "| | Julia (local) | Python (QMCPy) |")
@@ -186,5 +190,5 @@ open(outfile, "w") do io
         end
     end
 end
-println("\nWrote benchmark/results/compare_python.md")
+println("\nWrote benchmark/results/$(basename(outfile))")
 println("  ratio = Python ÷ Julia  →  < 1: local slower  |  > 1: local faster")
