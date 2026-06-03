@@ -51,13 +51,10 @@ function evaluate(f::Genz, x::AbstractMatrix)
     y = Vector{Float64}(undef, n)
 
     if f.kind == :oscillatory
-        for i in 1:n
-            s = 2π * u[1]
-            for j in 1:d
-                s += a[j] * x[i, j]
-            end
-            y[i] = cos(s)
-        end
+        # x * a is BLAS GEMV (O(n·d) but vectorised): much faster than a row loop
+        # for large n; @. fuses cos into one broadcast pass.
+        s = x * a
+        @. y = cos(2π * u[1] + s)
 
     elseif f.kind == :product_peak
         for i in 1:n
