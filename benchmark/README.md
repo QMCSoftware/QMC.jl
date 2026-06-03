@@ -1,0 +1,165 @@
+# Benchmarking QMC.jl
+
+This directory contains the standalone benchmark suite, the git-revision
+comparison tooling, and the Julia-vs-QMCPy comparison tooling.
+
+The benchmark scripts use the local `benchmark/Project.toml` environment, so
+benchmark-only dependencies do not need to be added to the main package
+environment.
+
+## Files
+
+- `benchmarks.jl`: defines the benchmark suite (`SUITE`)
+- `runbenchmarks.jl`: runs the Julia suite and saves `*.json` results
+- `compare.jl`: compares Julia benchmark results across revisions
+- `benchmark_qmcpy.py`: runs the QMCPy counterpart suite and saves `qmcpy_*.json`
+- `compare_py.jl`: compares Julia results against QMCPy results
+- `results/`: generated benchmark result files and Markdown reports
+
+## Quick Start
+
+From the repository root:
+
+```bash
+make bench
+```
+
+This writes:
+
+```text
+benchmark/results/latest.json
+```
+
+To save to a labeled file instead:
+
+```bash
+make bench base
+# or
+make bench LABEL=base
+```
+
+This writes:
+
+```text
+benchmark/results/base.json
+```
+
+## Julia-Only Comparison
+
+Compare the current working tree against `HEAD`:
+
+```bash
+make bench-compare
+```
+
+This writes:
+
+```text
+benchmark/results/compare_head.md
+```
+
+Compare the current working tree against another revision:
+
+```bash
+make bench-compare REV=master
+```
+
+Write the comparison report to a labeled file:
+
+```bash
+make bench-compare gaus
+# or
+make bench-compare LABEL=gaus
+```
+
+This writes:
+
+```text
+benchmark/results/compare_gaus.md
+```
+
+## Julia vs QMCPy Comparison
+
+Run the full Julia-vs-QMCPy flow with the default `latest` label:
+
+```bash
+make bench-compare-py
+```
+
+Run the full flow with a label:
+
+```bash
+make bench-compare-py base
+# or
+make bench-compare-py LABEL=base
+```
+
+This runs:
+
+```bash
+julia benchmark/runbenchmarks.jl base
+python benchmark/benchmark_qmcpy.py base
+julia benchmark/compare_py.jl base base base
+```
+
+and writes:
+
+```text
+benchmark/results/base.json
+benchmark/results/qmcpy_base.json
+benchmark/results/compare_python_base.md
+```
+
+If the Python interpreter should be overridden:
+
+```bash
+make bench-compare-py base PYTHON=python3
+```
+
+If the Julia and QMCPy input labels should differ:
+
+```bash
+make bench-compare-py JL_LABEL=julia_run PY_LABEL=python_run LABEL=ab_test
+```
+
+This writes:
+
+```text
+benchmark/results/compare_python_ab_test.md
+```
+
+## Explicit Labeled QMCPy Comparison Target
+
+There is also an explicit target for the three-step labeled Julia-vs-QMCPy flow:
+
+```bash
+make bench-compare-py-label LABEL=base
+```
+
+This is equivalent to:
+
+```bash
+julia benchmark/runbenchmarks.jl base
+python benchmark/benchmark_qmcpy.py base
+julia benchmark/compare_py.jl base base base
+```
+
+## Output Files
+
+Common generated files:
+
+- `results/<label>.json`: Julia benchmark data
+- `results/qmcpy_<label>.json`: QMCPy benchmark data
+- `results/compare_<label>.md`: Julia-vs-Julia comparison report
+- `results/compare_python_<label>.md`: Julia-vs-QMCPy comparison report
+- `results/compare_head.md`: default Julia-vs-Julia report
+- `results/compare_python.md`: default Julia-vs-QMCPy report
+- `results/bench_local.md`: single-run Julia benchmark summary
+
+## Notes
+
+- `bench-compare` uses `PkgBenchmark` and may benchmark git revisions in a
+  temporary worktree.
+- `bench-compare-py` requires a Python environment where `qmcpy` is installed.
+- Current benchmark reports are written in a sanitized form and avoid embedding
+  host-specific system details or absolute local paths.
