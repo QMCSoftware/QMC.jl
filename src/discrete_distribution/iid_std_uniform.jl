@@ -12,9 +12,9 @@ dd = IIDStdUniform(3; seed=42)
 x = gen_samples(dd, 1024)  # 1024×3 matrix of uniform samples
 ```
 """
-mutable struct IIDStdUniform <: AbstractDiscreteDistribution
+mutable struct IIDStdUniform{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
-    rng::AbstractRNG
+    rng::R
     mimics::String
 end
 

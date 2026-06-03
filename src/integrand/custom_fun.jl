@@ -11,9 +11,9 @@ tm = Uniform(dd; lower_bound=0.0, upper_bound=1.0)
 f = CustomFun(tm, x -> sum(x .^ 2, dims=2)[:])
 ```
 """
-struct CustomFun <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
-    g::Function
+struct CustomFun{TM <: AbstractTrueMeasure, G} <: AbstractIntegrand
+    true_measure::TM
+    g::G
     dimension::Int
 end
 

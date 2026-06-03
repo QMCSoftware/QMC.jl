@@ -16,8 +16,8 @@ reliability analysis.
 
 The true measure should be a `Gaussian` with mean 0 and appropriate covariance.
 """
-struct FourBranch2D <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct FourBranch2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     k::Float64
 end

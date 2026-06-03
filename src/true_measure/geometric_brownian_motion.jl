@@ -23,14 +23,15 @@ x = gen_samples(dd, 256)
 paths = transform(gbm, x)  # 256×4 stock price paths
 ```
 """
-struct GeometricBrownianMotion <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct GeometricBrownianMotion{D <: AbstractDiscreteDistribution, B <: BrownianMotion} <:
+       AbstractTrueMeasure
+    dd::D
     dimension::Int
     time_vector::Vector{Float64}
     initial_value::Float64
     drift::Float64
     diffusion::Float64
-    _bm::BrownianMotion
+    _bm::B
 end
 
 function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
@@ -94,15 +95,9 @@ function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
     bm_samples = transform(tm._bm, x)
     # S(t) = S₀ exp[(γ - σ²/2) t + BM(t)]
     # where BM(t) already has variance σ² t from the covariance
-    n, d = size(bm_samples)
-    result = Matrix{Float64}(undef, n, d)
-    @inbounds for j in 1:d
-        exponent_drift = (tm.drift - 0.5 * tm.diffusion) * tm.time_vector[j]
-        for i in 1:n
-            result[i, j] = tm.initial_value * exp(exponent_drift + bm_samples[i, j])
-        end
-    end
-    return result
+    # offsets is 1×d; broadcast fuses + and exp into one SIMD pass over the n×d array.
+    offsets = transpose((tm.drift - 0.5 * tm.diffusion) .* tm.time_vector)
+    return @. tm.initial_value * exp(offsets + bm_samples)
 end
 
 function Base.show(io::IO, tm::GeometricBrownianMotion)

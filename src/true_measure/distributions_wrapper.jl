@@ -30,8 +30,8 @@ tm = DistributionsWrapper(dd; marginals=[
 ])
 ```
 """
-struct DistributionsWrapper <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct DistributionsWrapper{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     marginals::Vector{Distributions.UnivariateDistribution}
 end

@@ -17,6 +17,7 @@ See the full list at the [QMCSoftware community page](https://qmcsoftware.github
 - [Julia Slack — #math channel](https://julialang.slack.com/)
 - [JuliaStats](https://github.com/JuliaStats) — statistics ecosystem
 - [JuliaMath](https://github.com/JuliaMath) — mathematics ecosystem
+- [https://julialang.org/learning/](https://julialang.org/learning/)
 
 ## Select References
 
@@ -36,6 +37,8 @@ The mathematical and algorithmic foundations used by QMC.jl are documented in th
 
 - Sanz-Alonso, Daniel, and Omar Al-Ghattas. *A First Course in Monte Carlo Methods.* Preprint, 2024. <https://arxiv.org/pdf/2405.16359>
 
-### Julia Learning Materials
+### Probability and Statistics Background
 
-See [https://julialang.org/learning/](https://julialang.org/learning/).
+- Ross, Sheldon. *A First Course in Probability*. 9th ed. Boston: Pearson, 2014.
+
+- Wasserman, Larry. *All of Statistics: A Concise Course in Statistical Inference*. New York: Springer, 2004.

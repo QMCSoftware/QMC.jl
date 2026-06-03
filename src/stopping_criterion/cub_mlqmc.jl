@@ -30,8 +30,8 @@ sc = CubMLQMC(f; abs_tol=0.05)
 result = integrate(sc)
 ```
 """
-mutable struct CubMLQMC <: AbstractStoppingCriterion
-    integrand::AbstractMLIntegrand
+mutable struct CubMLQMC{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     target_tol::Float64
     n_init::Int
     n_limit::Int

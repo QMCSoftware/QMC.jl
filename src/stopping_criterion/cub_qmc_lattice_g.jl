@@ -16,8 +16,8 @@ sc = CubQMCLatticeG(f; abs_tol=1e-4)
 result = integrate(sc)
 ```
 """
-mutable struct CubQMCLatticeG <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int

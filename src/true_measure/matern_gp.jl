@@ -18,8 +18,8 @@ tm = MaternGP(dd; nu=2.5, lengthscale=0.3)
 x = transform(tm, gen_samples(dd, 100))  # 100 GP sample paths
 ```
 """
-struct MaternGP <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct MaternGP{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     nu::Float64
     lengthscale::Float64
     variance::Float64

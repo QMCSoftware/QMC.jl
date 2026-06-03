@@ -8,8 +8,8 @@
 where x ∈ [0,1]². This is useful for testing QMC on functions with
 multiple local features.
 """
-struct Multimodal2D <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Multimodal2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
 end
 

@@ -29,8 +29,8 @@ sc = CubMCCLT(f; abs_tol=0.05)
 result = integrate(sc)
 ```
 """
-struct BayesianLRCoeffs <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct BayesianLRCoeffs{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     feature_array::Matrix{Float64}   # m × p
     response_vector::Vector{Float64} # m

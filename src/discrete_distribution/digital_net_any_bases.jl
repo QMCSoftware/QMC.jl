@@ -30,7 +30,7 @@ dd = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none")
 x = gen_samples(dd, 9)
 ```
 """
-mutable struct DigitalNetAnyBases <: AbstractDiscreteDistribution
+mutable struct DigitalNetAnyBases{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
     d_gen::Int               # dimension of generating matrices (may differ from dimension if alpha > 1)
     bases::Vector{Int}       # base per gen-dimension
@@ -39,7 +39,7 @@ mutable struct DigitalNetAnyBases <: AbstractDiscreteDistribution
     randomize::String
     alpha::Int
     replications::Union{Nothing, Int}
-    rng::AbstractRNG
+    rng::R
     mimics::String
 end
 

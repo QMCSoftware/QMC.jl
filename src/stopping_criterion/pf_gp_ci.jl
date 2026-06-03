@@ -20,8 +20,8 @@ construction and credible intervals.
 1. Sorokin, Aleksei G., and Vishwas Rao. "Credible Intervals for Probability
    of Failure with Gaussian Processes." arXiv:2311.07733 (2023).
 """
-struct PFGPCI <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+struct PFGPCI{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     failure_threshold::Float64
     failure_above_threshold::Bool
     abs_tol::Float64

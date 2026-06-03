@@ -39,11 +39,11 @@ Supports up to 250 dimensions.  See the outer constructor for full documentation
 
 QMCToolsCL is required for sample generation.
 """
-mutable struct Halton <: AbstractDiscreteDistribution
+mutable struct Halton{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
     randomize::Bool
     generalize::Bool
-    rng::AbstractRNG
+    rng::R
     mimics::String
 end
 

@@ -14,8 +14,8 @@ where C(λ) is the normalizing constant. The inverse CDF is:
 - `dd`: discrete distribution.
 - `lam`: parameter λ ∈ (0,1), scalar or d-vector.
 """
-struct BernoulliCont <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct BernoulliCont{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     lam::Vector{Float64}
 end

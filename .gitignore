@@ -26,9 +26,18 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
+# Python bytecode caches
+__pycache__/
+*.pyc
+
 # Julia compilation artifacts
 *.ji
 deps/build.log
+
+# Benchmark outputs — machine-specific
+benchmark/Manifest.toml
+benchmark/tune.json
+benchmark/results/
 
 # Developer-specific files
 sc_*

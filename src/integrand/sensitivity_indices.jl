@@ -39,10 +39,11 @@ closed_indices = mu ./ var_est
 2. Sorokin, Rathinavel. "On Bounding and Approximating Functions of Multiple
    Expectations Using Quasi-Monte Carlo." MCQMC 2022.
 """
-struct SensitivityIndices <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct SensitivityIndices{TM <: AbstractTrueMeasure, BI <: AbstractIntegrand} <:
+       AbstractIntegrand
+    true_measure::TM
     dimension::Int        # 2 * d_base
-    base_integrand::AbstractIntegrand
+    base_integrand::BI
     d_base::Int           # original integrand dimension
     indices::Matrix{Bool} # k × d_base, each row is a subset indicator
 end

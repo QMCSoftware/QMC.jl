@@ -8,8 +8,8 @@ The true measure should map uniform samples to [-0.5, 0.5]^d (i.e., a
 
 Exact integral = 0 by symmetry.
 """
-struct Linear0 <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Linear0{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
 end
 

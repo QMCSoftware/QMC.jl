@@ -21,8 +21,8 @@ tm = BrownianMotion(dd)
 f = AsianOption(tm; volatility=0.5, start_price=30.0, strike_price=25.0)
 ```
 """
-mutable struct AsianOption <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+mutable struct AsianOption{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     volatility::Float64
     start_price::Float64

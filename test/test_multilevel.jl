@@ -139,10 +139,6 @@ end
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:levels] >= 3  # levels_min + 1
-    println(
-        "CubMLMC: solution=$(round(result.solution; digits=3)), " *
-        "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])",
-    )
 end
 
 @testset "CubMLMCCont" begin
@@ -167,10 +163,6 @@ end
     @test result.solution isa Float64
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
-    println(
-        "CubMLMCCont: solution=$(round(result.solution; digits=3)), " *
-        "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])",
-    )
 end
 
 @testset "CubMLQMCCont" begin
@@ -196,10 +188,4 @@ end
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:replications] == 8
-    println(
-        "CubMLQMCCont: solution=$(round(result.solution; digits=3)), " *
-        "n_total=$(result.data[:n_total]), levels=$(result.data[:levels])",
-    )
 end
-
-println("\nAll multilevel tests passed!")
