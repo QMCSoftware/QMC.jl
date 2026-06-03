@@ -68,10 +68,35 @@ function collect_rss_deltas(group::BenchmarkTools.BenchmarkGroup)
     return out
 end
 
+"""
+    run_suite(suite) -> BenchmarkGroup
+
+Run every leaf of `suite`, printing rounded per-benchmark progress. Replaces
+`run(suite; verbose=true)`, whose progress line prints full-precision seconds
+(`done (took 0.211567875 seconds)`) with no formatting hook.
+"""
+function run_suite(suite)
+    results = BenchmarkGroup()
+    groups = sort(collect(keys(suite)))
+    total = sum(length(keys(suite[g])) for g in groups)
+    i = 0
+    for g in groups
+        results[g] = BenchmarkGroup()
+        for name in sort(collect(keys(suite[g])))
+            i += 1
+            @printf("(%d/%d) benchmarking %s / %s ...\n", i, total, g, name)
+            t0 = time()
+            results[g][name] = run(suite[g][name])
+            @printf("  done (took %.3f seconds)\n", time() - t0)
+        end
+    end
+    return results
+end
+
 println("QMC.jl Benchmarks")
 println("="^70)
 
-results = run(SUITE; verbose = true)
+results = run_suite(SUITE)
 julia_memory = collect_rss_deltas(SUITE)
 
 # ── Summary ──────────────────────────────────────────────────────────────
