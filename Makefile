@@ -49,19 +49,24 @@ notebook-%:
 	julia --project=. test/run_notebooks.jl $*
 
 # Run the benchmark suite (uses its own environment in benchmark/, set up on first run)
+# Saves results to benchmark/results/latest.json
 bench:
 	julia benchmark/runbenchmarks.jl
 
 # Compare the working tree against a baseline git revision (default: HEAD, i.e.
 # the effect of uncommitted changes). Override with: make bench-compare REV=master
+# Output: benchmark/results/compare_head.md
+# Ratio = reference (REV) time ÷ local time  →  < 1: local slower  |  > 1: local faster
 REV ?= HEAD
 bench-compare:
 	julia benchmark/compare.jl $(REV)
 
-# Side-by-side Julia vs QMCPy comparison (requires both result files to exist).
-# Run `make bench` and `python benchmark/benchmark_qmcpy.py` first.
+# Side-by-side Julia vs QMCPy comparison.
+# Prerequisites: run `make bench` then `python benchmark/benchmark_qmcpy.py [label]`.
+# Output: benchmark/results/compare_python.md
+# Ratio = Python time ÷ Julia time  →  < 1: local (Julia) slower  |  > 1: local (Julia) faster
 # Override label with: make bench-compare-py JL_LABEL=foo PY_LABEL=bar
 JL_LABEL ?= latest
 PY_LABEL ?= $(JL_LABEL)
-bench-compare-py: bench bench-compare
+bench-compare-py: bench
 	julia benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL)

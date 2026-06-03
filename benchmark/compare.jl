@@ -2,9 +2,16 @@
 #
 # Usage (from the repository root):
 #   julia benchmark/compare.jl                  # benchmark the current working tree only
-#   julia benchmark/compare.jl main             # judge working tree (incl. uncommitted
+#   julia benchmark/compare.jl main             # compare working tree (incl. uncommitted
 #                                               #   changes) against `main`
-#   julia benchmark/compare.jl HEAD main        # judge one committed revision against another
+#   julia benchmark/compare.jl HEAD main        # compare one committed revision against another
+#
+# Output: benchmark/results/compare_head.md
+#
+# Ratio convention (same as compare_py.jl):
+#   ratio = reference time ÷ local time
+#   ratio < 1  →  local is SLOWER than reference  ❌
+#   ratio > 1  →  local is FASTER than reference  ✅
 #
 # Dirty-tree friendly: a baseline/target *revision* is benchmarked inside a
 # temporary `git worktree`, so uncommitted changes are never stashed or
@@ -21,10 +28,51 @@ end
 Pkg.instantiate()
 
 using PkgBenchmark
+using Printf
 
 const PKG = dirname(@__DIR__)
 const RESDIR = joinpath(@__DIR__, "results")
 mkpath(RESDIR)
+
+"""
+    write_comparison_md(outfile, target_result, baseline_result, target_label, baseline_label)
+
+Write a Markdown comparison table to `outfile`.
+
+Ratio = reference (`baseline_label`) time ÷ local (`target_label`) time.
+  - ratio < 1  →  local is **slower** than reference  ❌
+  - ratio > 1  →  local is **faster** than reference  ✅
+"""
+function write_comparison_md(outfile, target_result, baseline_result,
+                             target_label, baseline_label)
+    tg = target_result.benchmarkgroup
+    bg = baseline_result.benchmarkgroup
+    open(outfile, "w") do io
+        println(io, "# Benchmark: `$(target_label)` vs `$(baseline_label)`\n")
+        println(io, "| | local (`$(target_label)`) | reference (`$(baseline_label)`) |")
+        println(io, "|---|---|---|")
+        println(io, "| commit | $(target_result.commit) | $(baseline_result.commit) |")
+        println(io, "| date | $(target_result.date) | $(baseline_result.date) |")
+        println(io, "")
+        println(io, "**`ratio = reference time ÷ local time`**  ")
+        println(io, "ratio `< 1` → local is **slower** ❌  |  ratio `> 1` → local is **faster** ✅")
+        println(io, "")
+        println(io, "| benchmark | ratio | verdict | local (ms) | reference (ms) |")
+        println(io, "|:----------|------:|:-------:|----------:|---------------:|")
+        for group in sort(collect(keys(tg)))
+            haskey(bg, group) || continue
+            for name in sort(collect(keys(tg[group])))
+                haskey(bg[group], name) || continue
+                local_ms = median(tg[group][name]).time / 1e6
+                ref_ms   = median(bg[group][name]).time / 1e6
+                ratio    = ref_ms / local_ms
+                verdict  = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
+                @printf(io, "| `[\"%s\", \"%s\"]` | %.3f | %s | %.3f | %.3f |\n",
+                        group, name, ratio, verdict, local_ms, ref_ms)
+            end
+        end
+    end
+end
 
 "Benchmark the current working tree in place (uncommitted changes included)."
 bench_worktree() = benchmarkpkg(PKG)
@@ -79,18 +127,23 @@ end
 
 if length(ARGS) == 0
     result = bench_worktree()
-    export_markdown(joinpath(RESDIR, "current.md"), result)
-    println("\nWrote benchmark/results/current.md")
+    outfile = joinpath(RESDIR, "bench_local.md")
+    export_markdown(outfile, result)
+    println("\nWrote benchmark/results/bench_local.md (single-run summary, no comparison)")
 elseif length(ARGS) == 1
     baseline_rev = ARGS[1]
-    target = bench_worktree()              # current tree (dirty OK)
+    target   = bench_worktree()              # current tree (dirty OK)
     baseline = bench_revision(baseline_rev)
-    export_markdown(joinpath(RESDIR, "judgement.md"), judge(target, baseline))
-    println("\nWrote benchmark/results/judgement.md (working tree vs $(baseline_rev))")
+    outfile  = joinpath(RESDIR, "compare_head.md")
+    write_comparison_md(outfile, target, baseline, "local", baseline_rev)
+    println("\nWrote benchmark/results/compare_head.md (local vs $(baseline_rev))")
+    println("  ratio = $(baseline_rev) ÷ local  →  < 1: local slower  |  > 1: local faster")
 else
     target_rev, baseline_rev = ARGS[1], ARGS[2]
-    target = bench_revision(target_rev)
+    target   = bench_revision(target_rev)
     baseline = bench_revision(baseline_rev)
-    export_markdown(joinpath(RESDIR, "judgement.md"), judge(target, baseline))
-    println("\nWrote benchmark/results/judgement.md ($(target_rev) vs $(baseline_rev))")
+    outfile  = joinpath(RESDIR, "compare_head.md")
+    write_comparison_md(outfile, target, baseline, target_rev, baseline_rev)
+    println("\nWrote benchmark/results/compare_head.md ($(target_rev) vs $(baseline_rev))")
+    println("  ratio = $(baseline_rev) ÷ $(target_rev)  →  < 1: $(target_rev) slower  |  > 1: $(target_rev) faster")
 end

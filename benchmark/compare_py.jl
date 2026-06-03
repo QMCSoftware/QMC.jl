@@ -8,6 +8,13 @@
 # Both files must exist in benchmark/results/ — run `make bench` then
 # `python benchmark/benchmark_qmcpy.py [label]` first.
 #
+# Output: benchmark/results/compare_python.md
+#
+# Ratio convention (same as compare.jl):
+#   ratio = reference (Python) time ÷ local (Julia) time
+#   ratio < 1  →  local is SLOWER than Python  ❌
+#   ratio > 1  →  local is FASTER than Python  ✅
+#
 # NOTE: only the `ms` column is cross-comparable. `allocs`/`KiB` are Julia-only.
 # C-kernel rows (Lattice, DigitalNetB2, Halton gen_samples) measure the same C
 # library on both sides; they are NOT a language comparison (see benchmark_qmcpy.py).
@@ -77,7 +84,6 @@ for group in sort(collect(keys(jl_results)))
             tag    = occursin(r"Lattice|DigitalNetB2|Halton", name) ? " [C]" : "    "
             @printf("  %s %-44s  %11.3f  %11.3f  %6.2fx\n", tag, name, jl_ms, py_ms, ratio)
         else
-            err = py_entry !== nothing ? string(py_entry["error"]) : "no Python data"
             @printf("  ??? %-44s  %11.3f  %11s  %7s\n", name, jl_ms, "n/a", "n/a")
         end
     end
@@ -85,4 +91,48 @@ end
 
 println()
 println("="^length(header))
-println("ratio > 1: Python is slower   ratio < 1: Python is faster")
+println("ratio > 1: local (Julia) faster than Python  |  ratio < 1: local (Julia) slower than Python")
+
+# ── Save markdown file ──────────────────────────────────────────────────────────
+outfile = joinpath(resdir, "compare_python.md")
+open(outfile, "w") do io
+    println(io, "# Benchmark: Julia (local) vs QMCPy (Python)\n")
+    println(io, "| | Julia (local) | Python (QMCPy) |")
+    println(io, "|---|---|---|")
+    println(io, "| Julia results | `$(jl_file)` | — |")
+    println(io, "| Python results | — | `$(py_file)` |")
+    println(io, "| qmcpy version | — | $(py_version) |")
+    println(io, "| python | — | $(py_python) |")
+    println(io, "")
+    println(io, "**`ratio = Python time ÷ Julia time`**  ")
+    println(io, "ratio `< 1` → local (Julia) is **slower** ❌  |  ratio `> 1` → local (Julia) is **faster** ✅  ")
+    println(io, "")
+    println(io, "> ⚠️ C-kernel rows `[C]` (Lattice/DigitalNetB2/Halton `gen_samples`) call the same")
+    println(io, "> `qmctoolscl` library on both sides and are **not** a Julia vs Python comparison.")
+    println(io, "")
+    println(io, "| benchmark | ratio | verdict | Julia (ms) | Python (ms) |")
+    println(io, "|:----------|------:|:-------:|----------:|------------:|")
+    for group in sort(collect(keys(jl_results)))
+        py_group = get(py_results, Symbol(group), nothing)
+        for name in sort(collect(keys(jl_results[group])))
+            jl_ms = median(jl_results[group][name]).time / 1e6
+            py_entry = nothing
+            if py_group !== nothing
+                py_entry = get(py_group, name, get(py_group, replace(name, r" d=\d+" => s -> " [C]" * s), nothing))
+            end
+            c_note = occursin(r"Lattice|DigitalNetB2|Halton", name) ? " `[C]`" : ""
+            if py_entry !== nothing && !haskey(py_entry, "error")
+                py_ms   = Float64(py_entry["median_ms"])
+                ratio   = py_ms / jl_ms
+                verdict = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
+                @printf(io, "| `[\"%s\", \"%s\"]`%s | %.3f | %s | %.3f | %.3f |\n",
+                        group, name, c_note, ratio, verdict, jl_ms, py_ms)
+            else
+                @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a |\n",
+                        group, name, jl_ms)
+            end
+        end
+    end
+end
+println("\nWrote benchmark/results/compare_python.md")
+println("  ratio = Python ÷ Julia  →  < 1: local slower  |  > 1: local faster")
