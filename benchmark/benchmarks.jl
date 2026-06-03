@@ -118,6 +118,56 @@ for n in SAMPLES
         @benchmarkable evaluate($f_genz, $x) evals=3 samples=5
 end
 
+# 3b. Allocation-audit coverage (opt2). These are the transform/evaluate bodies the
+# allocation audit actually rewrote (the rest of the suite reuses code that already
+# existed pre-opt2). Read the MEMORY column first in an opt2-vs-baseline A/B —
+# allocation counts are deterministic, so that is the unambiguous signal.
+#   * reductions     : BoxIntegral, Linear0 (sum over columns)        — expect a win
+#   * GEMV broadcasts: Genz(:gaussian_peak), Genz(:continuous)        — expect a win
+#   * per-element ppf: StudentT, JohnsonsSU (quantile broadcast)      — expect ~neutral
+for n in SAMPLES
+    dd = IIDStdUniform(10; seed=42)
+    xu = gen_samples(dd, n)                       # uniform [0,1)^d input
+    tm = Gaussian(dd)
+    f_box = BoxIntegral(tm)
+    f_lin = Linear0(tm)
+    f_gp = Genz(tm; kind=:gaussian_peak)
+    f_cont = Genz(tm; kind=:continuous)
+    tm_t = StudentT(dd)
+    tm_j = JohnsonsSU(dd)
+
+    SUITE["evaluate"]["BoxIntegral d=10 n=$n"] =
+        @benchmarkable evaluate($f_box, $xu) evals=3 samples=5
+    SUITE["evaluate"]["Linear0 d=10 n=$n"] =
+        @benchmarkable evaluate($f_lin, $xu) evals=3 samples=5
+    SUITE["evaluate"]["Genz(gaussian_peak) d=10 n=$n"] =
+        @benchmarkable evaluate($f_gp, $xu) evals=3 samples=5
+    SUITE["evaluate"]["Genz(continuous) d=10 n=$n"] =
+        @benchmarkable evaluate($f_cont, $xu) evals=3 samples=5
+
+    SUITE["transform"]["StudentT d=10 n=$n"] =
+        @benchmarkable transform($tm_t, $xu) evals=3 samples=5
+    SUITE["transform"]["JohnsonsSU d=10 n=$n"] =
+        @benchmarkable transform($tm_j, $xu) evals=3 samples=5
+end
+
+# Large-d variants for the reductions / GEMV kinds, where the cache-friendly
+# column sweep should show the clearest benefit.
+for dim in LARGE_DIMS, n in LARGE_N
+    dd = IIDStdUniform(dim; seed=42)
+    xu = gen_samples(dd, n)
+    tm = Gaussian(dd)
+    f_box = BoxIntegral(tm)
+    f_lin = Linear0(tm)
+    f_gp = Genz(tm; kind=:gaussian_peak)
+    SUITE["evaluate"]["BoxIntegral d=$dim n=$n"] =
+        @benchmarkable evaluate($f_box, $xu) evals=3 samples=5
+    SUITE["evaluate"]["Linear0 d=$dim n=$n"] =
+        @benchmarkable evaluate($f_lin, $xu) evals=3 samples=5
+    SUITE["evaluate"]["Genz(gaussian_peak) d=$dim n=$n"] =
+        @benchmarkable evaluate($f_gp, $xu) evals=3 samples=5
+end
+
 # 4. End-to-end integration (mixed: C-backed generators + pure-Julia compute)
 SUITE["integrate"] = BenchmarkGroup()
 
