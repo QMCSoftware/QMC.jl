@@ -39,6 +39,7 @@ import sys
 import json
 import gc
 import os
+import inspect
 import subprocess
 import timeit
 import tracemalloc
@@ -111,11 +112,11 @@ def dense_covariance(dim):
 
 def genz_gaussian_peak(x):
     shifted = x - 0.5
-    return np.exp(-np.sum(shifted * shifted, axis=1))
+    return np.exp(-np.sum(shifted * shifted, axis=-1))
 
 
 def genz_continuous(x):
-    return np.exp(-np.sum(np.abs(x - 0.5), axis=1))
+    return np.exp(-np.sum(np.abs(x - 0.5), axis=-1))
 
 
 def record(results, group, name, make_call, **kw):
@@ -287,6 +288,41 @@ def main():
         # QMCPy may return solution/tolerances as 0-d or 1-element arrays.
         return float(np.asarray(x).ravel()[0])
 
+    def _resolve_qmcpy_name(*names):
+        for name in names:
+            obj = getattr(qp, name, None)
+            if obj is not None:
+                return obj
+        joined = ", ".join(names)
+        raise AttributeError(f"qmcpy is missing expected names: {joined}")
+
+    def _uniform_custom_integrand(discrete_distrib, func):
+        return qp.CustomFun(qp.Uniform(discrete_distrib), func)
+
+    def _vectorized_keister(discrete_distrib):
+        scalar_keister = qp.Keister(discrete_distrib)
+        return qp.CustomFun(
+            scalar_keister.true_measure,
+            lambda x, scalar_keister=scalar_keister: np.expand_dims(
+                scalar_keister.g(x), axis=-1
+            ),
+        )
+
+    def _make_with_sample_cap(ctor, integrand, *, abs_tol, n_init, sample_cap):
+        kwargs = {"abs_tol": abs_tol, "n_init": n_init}
+        try:
+            params = inspect.signature(ctor).parameters
+        except (TypeError, ValueError):
+            params = {}
+        if "n_limit" in params:
+            kwargs["n_limit"] = sample_cap
+        elif "n_max" in params:
+            kwargs["n_max"] = sample_cap
+        return ctor(integrand, **kwargs)
+
+    CubQMCBayesLatticeG = _resolve_qmcpy_name("CubQMCBayesLatticeG", "CubBayesLatticeG")
+    CubQMCBayesNetG = _resolve_qmcpy_name("CubQMCBayesNetG", "CubBayesNetG")
+
     # (name, make_sc, warmup). make_sc builds a fresh stopping criterion; it is
     # reused both for timing and for the one-shot accuracy measurement below.
     integrate_cases = [
@@ -299,11 +335,46 @@ def main():
         ("CubQMCNetG Keister",
          lambda: qp.CubQMCNetG(qp.Keister(qp.DigitalNetB2(3, seed=SEED)), abs_tol=0.01),
          False),
+        ("CubMCG Keister",
+         lambda: qp.CubMCG(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
+         False),
+        ("CubMCCLTVec Keister",
+         lambda: qp.CubMCCLTVec(_vectorized_keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
+         False),
+        ("CubQMCLatticeG Genz(continuous)",
+         lambda: qp.CubQMCLatticeG(
+             _uniform_custom_integrand(qp.Lattice(2, seed=SEED), genz_continuous),
+             abs_tol=0.01, n_init=2**10, n_reps=16),
+         False),
+        ("CubQMCNetG Genz(gaussian_peak)",
+         lambda: qp.CubQMCNetG(
+             _uniform_custom_integrand(qp.DigitalNetB2(2, seed=SEED), genz_gaussian_peak),
+             abs_tol=0.01, n_init=2**10, n_reps=16),
+         False),
+        ("CubQMCBayesLatticeG Genz(continuous)",
+         lambda: _make_with_sample_cap(
+             CubQMCBayesLatticeG,
+             _uniform_custom_integrand(qp.Lattice(2, seed=SEED), genz_continuous),
+             abs_tol=0.01, n_init=2**8, sample_cap=2**14),
+         False),
+        ("CubQMCBayesNetG Genz(continuous)",
+         lambda: _make_with_sample_cap(
+             CubQMCBayesNetG,
+             _uniform_custom_integrand(qp.DigitalNetB2(2, seed=SEED), genz_continuous),
+             abs_tol=0.01, n_init=2**8, sample_cap=2**14),
+         False),
         ("CubMCCLT AsianOption",
          lambda: qp.CubMCCLT(
              qp.FinancialOption(qp.IIDStdUniform(50, seed=SEED), option="ASIAN",
                                 volatility=0.2, start_price=100, strike_price=100,
                                 interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubMCCLT GeometricAsianOption",
+         lambda: qp.CubMCCLT(
+             qp.FinancialOption(qp.IIDStdUniform(50, seed=SEED), option="ASIAN",
+                                asian_mean="GEOMETRIC", asian_mean_quadrature_rule="RIGHT",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.25),
          False),
         ("CubQMCNetG EuropeanOption",
          lambda: qp.CubQMCNetG(

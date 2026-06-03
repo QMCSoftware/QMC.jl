@@ -129,13 +129,14 @@ end
 """
     collect_integrate_solutions() -> Dict
 
-Run each integrate case once (outside the timing loop) and record its solution
-value and the tolerances it was configured with. Used by the Julia-vs-Python
-accuracy check in `compare_py.jl`. Relies on `INTEGRATE_CASES` from benchmarks.jl.
+Run each integrate accuracy case once (outside the timing loop) and record its
+solution value and the tolerances it was configured with. Used by the
+Julia-vs-Python accuracy check in `compare_py.jl` and by the standalone exact-
+value smoke summary. Relies on `INTEGRATE_ACCURACY_CASES` from benchmarks.jl.
 """
 function collect_integrate_solutions()
     out = Dict{String,Any}()
-    for (name, make_sc) in INTEGRATE_CASES
+    for (name, make_sc) in INTEGRATE_ACCURACY_CASES
         try
             sc = make_sc()
             res = integrate(sc)

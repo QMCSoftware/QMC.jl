@@ -176,9 +176,9 @@ end
 # anonymous function in a vector literal fails to parse. The same builders drive
 # both the timing benchmark and the accuracy check (runbenchmarks.jl runs
 # `integrate(make_sc())` once to record the solution value + tolerances), so both
-# measure exactly the same problem setup. Most cases below intentionally use
-# integrands with exact values so the benchmark runner can act as a lightweight
-# correctness smoke test in addition to a timing harness.
+# measure exactly the same problem setup. The timed suite stays close to the
+# Julia-vs-QMCPy overlap, while `INTEGRATE_ACCURACY_CASES` below extends it with
+# extra exact-value smoke tests for additional Julia algorithms.
 function _int_cubmcclt_keister()
     dd = IIDStdUniform(3; seed=42)
     tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
@@ -268,17 +268,21 @@ end
 
 const INTEGRATE_CASES = Pair{String,Function}[
     "CubMCCLT Keister"          => _int_cubmcclt_keister,
-    "CubMCG Keister"            => _int_cubmcg_keister,
-    "CubMCCLTVec Keister"       => _int_cubmccltvec_keister,
     "CubQMCLatticeG Keister"    => _int_cubqmclatticeg_keister,
     "CubQMCNetG Keister"        => _int_cubqmcnetg_keister,
+    "CubMCCLT AsianOption"      => _int_cubmcclt_asian,
+    "CubQMCNetG EuropeanOption" => _int_cubqmcnetg_european,
+]
+
+const INTEGRATE_ACCURACY_CASES = Pair{String,Function}[
+    INTEGRATE_CASES...,
+    "CubMCG Keister" => _int_cubmcg_keister,
+    "CubMCCLTVec Keister" => _int_cubmccltvec_keister,
     "CubQMCLatticeG Genz(continuous)" => _int_cubqmclatticeg_genz_continuous,
     "CubQMCNetG Genz(gaussian_peak)" => _int_cubqmcnetg_genz_gaussian_peak,
     "CubQMCBayesLatticeG Genz(continuous)" => _int_cubqmcbayeslatticeg_genz_continuous,
     "CubQMCBayesNetG Genz(continuous)" => _int_cubqmcbayesnetg_genz_continuous,
-    "CubMCCLT AsianOption"      => _int_cubmcclt_asian,
     "CubMCCLT GeometricAsianOption" => _int_cubmcclt_geometric_asian,
-    "CubQMCNetG EuropeanOption" => _int_cubqmcnetg_european,
 ]
 
 SUITE["integrate"] = BenchmarkGroup()

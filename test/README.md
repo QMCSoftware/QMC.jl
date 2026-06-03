@@ -1,0 +1,37 @@
+# Test Suite
+
+This directory contains the automated test suite for QMC.jl.
+
+## Entry points
+
+- `runtests.jl`: master test runner used by `Pkg.test()`.
+- `run_notebooks.jl`: executes the demo notebooks as regression tests.
+
+## Test files
+
+- `test_discrete_distributions.jl`
+- `test_true_measures.jl`
+- `test_integrands.jl`
+- `test_kernels.jl`
+- `test_stopping_criteria.jl`
+- `test_integration.jl`
+- `test_multilevel.jl`
+- `test_aqua.jl`
+
+## Local commands
+
+```bash
+# Standard unit tests
+julia --project=. -e 'using Pkg; Pkg.test()'
+
+# Unit tests with coverage instrumentation
+julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
+# or
+make coverage
+
+# Notebook regression tests
+julia --project=. test/run_notebooks.jl
+```
+
+CI turns the coverage-instrumented run into `lcov.info`, uploads it to Codecov,
+and stores the LCOV file as a workflow artifact.

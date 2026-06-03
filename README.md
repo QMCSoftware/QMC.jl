@@ -96,10 +96,23 @@ julia -e 'using IJulia; notebook(dir="demos")'
 Run the benchmark suite:
 
 ```bash
-julia --project=. benchmark/benchmarks.jl
+make bench
+# or
+julia benchmark/runbenchmarks.jl
 ```
 
-This benchmarks sampling, transforms, integrand evaluation, and end-to-end integration across all DD types. Results are saved to `benchmark/results/latest.json`.
+This benchmarks sampling, transforms, integrand evaluation, and end-to-end integration across all DD types. Results are saved under `benchmark/results/`. See [`benchmark/README.md`](benchmark/README.md) for the full workflow, comparison scripts, and the Julia-vs-QMCPy accuracy sidecars.
+
+## Repository Layout
+
+Most top-level and source subdirectories now include a local `README.md` describing
+their purpose and the files they contain. Useful starting points:
+
+- [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and comparison tooling
+- [`demos/README.md`](demos/README.md) — notebook demos and how to run them
+- [`docs/README.md`](docs/README.md) — Documenter build/deploy layout
+- [`src/README.md`](src/README.md) — package source tree and component folders
+- [`test/README.md`](test/README.md) — unit tests, notebook tests, and coverage commands
 
 ## Documentation
 
@@ -119,6 +132,11 @@ using QMC
 # Unit tests
 julia --project=. -e 'using Pkg; Pkg.test()'
 
+# Unit tests with coverage instrumentation
+julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
+# or
+make coverage
+
 # Demo notebooks
 julia --project=. test/run_notebooks.jl
 
@@ -126,7 +144,9 @@ julia --project=. test/run_notebooks.jl
 julia --project=docs docs/make.jl
 ```
 
-See [CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for workflow details.
+CI uploads LCOV coverage reports to Codecov and stores the generated `lcov.info`
+as a workflow artifact. See [`test/README.md`](test/README.md) and
+[CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for details.
 
 ## Citation
 

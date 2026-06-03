@@ -1,4 +1,4 @@
-.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
 QMCPY_PYTHON_AUTO := $(shell \
@@ -45,6 +45,10 @@ update:
 test: 
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 
+# Run tests with Julia coverage instrumentation
+coverage:
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(coverage=true)'
+
 # Run specific test file
 test-%:
 	julia --project=. -e 'include("test/$*.jl")'
@@ -65,7 +69,7 @@ format-check:
 # Clean build artifacts
 clean:
 	rm -rf docs/build
-	rm -rf *.jl.cov *.jl.*.cov *.jl.mem
+	rm -rf *.jl.cov *.jl.*.cov *.jl.mem lcov.info
 
 # Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
 setup:

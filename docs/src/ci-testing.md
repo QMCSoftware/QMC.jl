@@ -7,7 +7,7 @@ live in `.github/workflows/` and serve distinct purposes.
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **CI** | `ci.yml` | Every push & PR | Linux | Unit tests + notebooks |
+| **CI** | `ci.yml` | Feature-branch pushes, PRs, manual | Linux | Unit tests + notebooks + coverage |
 | **CI Full** | `ci-full.yml` | PRs to `develop`/`master` | Linux, macOS, Windows | Unit tests |
 | **Nightly** | `nightly.yml` | Daily at 05:30 UTC | macOS, Windows | Unit tests |
 | **Docs** | `docs.yml` | Push to `develop`/`master` (docs/src paths) | Linux | Documenter build + deploy |
@@ -17,15 +17,17 @@ so that superseded pushes do not waste CI minutes.
 
 ## CI (`ci.yml`)
 
-The primary fast-feedback workflow, triggered on every push to `develop`/`master`
-and on all pull requests.
+The primary fast-feedback workflow, triggered on feature-branch pushes
+(`develop`/`master` are handled by the other workflows), on all pull requests,
+and via manual dispatch.
 
 **Unit tests job:**
 
-- Runs on `ubuntu-latest` with Julia 1.10 and 1.11.
-- Installs Python 3.12 and `qmctoolscl` (required by `DigitalNetB2`, `Lattice`, etc.).
-- Executes `Pkg.test()` which runs `test/runtests.jl`.
-- Uploads code coverage to Codecov on the Julia 1.11 run.
+- Runs on `ubuntu-latest` with Julia 1.12.
+- Installs Python 3.13 and `qmctoolscl` (required by `DigitalNetB2`, `Lattice`, etc.).
+- Executes `Pkg.test(coverage=true)`, which runs `test/runtests.jl` with Julia coverage instrumentation enabled.
+- Processes the resulting coverage data into `lcov.info`.
+- Uploads `lcov.info` both to Codecov and as a GitHub Actions artifact.
 
 **Notebooks job:**
 
@@ -69,6 +71,14 @@ Builds the Documenter.jl documentation and deploys to GitHub Pages.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
+**Unit tests with coverage instrumentation:**
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
+# or
+make coverage
+```
+
 **A single demo notebook:**
 
 ```bash
@@ -86,6 +96,16 @@ julia --project=. test/run_notebooks.jl
 ```bash
 julia --project=docs docs/make.jl
 ```
+
+## Coverage Reports
+
+QMC.jl publishes test coverage through the fast Linux CI workflow.
+
+- The repository README badge points at the Codecov report for the default branch.
+- `ci.yml` converts Julia's `*.cov` outputs into `lcov.info`.
+- The resulting LCOV file is uploaded to Codecov and also attached to the workflow run as an artifact.
+
+The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.
 
 ## Test File Structure
 
@@ -106,8 +126,8 @@ Tests are organized to mirror the Python QMCSoftware test suite:
 
 All CI jobs require:
 
-- **Julia** 1.10+ (pinned versions in matrix)
-- **Python** 3.12 with `qmctoolscl` (`pip install qmctoolscl`)
+- **Julia** 1.10+ (pinned versions in each workflow matrix)
+- **Python** 3.13 with `qmctoolscl` (`pip install qmctoolscl`)
 - Julia package dependencies installed via `Pkg.instantiate()`
 
 ## Adding a New Test
@@ -119,5 +139,5 @@ All CI jobs require:
 
 ## Secrets
 
-- `CODECOV_TOKEN` — required for coverage upload (optional; CI won't fail without it).
+- `CODECOV_TOKEN` — used for Codecov upload when required by the repository configuration; CI is configured not to fail if upload is unavailable.
 - `GITHUB_TOKEN` — provided automatically by GitHub; used for docs deployment.
