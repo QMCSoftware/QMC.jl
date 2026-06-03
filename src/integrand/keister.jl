@@ -29,7 +29,7 @@ function evaluate(f::Keister, x::AbstractMatrix)
     coeff = π^(f.dimension / 2)
     # sum(abs2, x; dims=2) sweeps column-by-column (cache-friendly for column-major
     # Julia arrays), avoiding row-stride cache misses in the original loop.
-    norms = vec(sqrt.(sum(abs2, x; dims=2)))
+    norms = vec(sqrt.(sum(abs2, x; dims = 2)))
     return @. coeff * cos(norms)
 end
 
