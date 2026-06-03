@@ -16,8 +16,10 @@
 # Dirty-tree friendly: a baseline/target *revision* is benchmarked inside a
 # temporary `git worktree`, so uncommitted changes are never stashed or
 # checked out. The literal "current working tree" is benchmarked in place and may
-# be dirty. (Both revisions must still post-date the `SUITE` refactor, since
-# PkgBenchmark runs each revision's own benchmarks.jl.)
+# be dirty. The CURRENT benchmark/benchmarks.jl is copied into the revision's
+# worktree before benchmarking, so both sides run the same suite against their own
+# package source — an old or broken benchmarks.jl committed at the revision does
+# not affect the comparison.
 
 using Pkg
 Pkg.activate(@__DIR__)
@@ -142,47 +144,28 @@ function write_comparison_md(outfile, target_result, baseline_result,
 end
 
 "Benchmark the current working tree in place (uncommitted changes included)."
-bench_worktree() = benchmarkpkg(PKG)
+bench_worktree() = benchmarkpkg(PKG; verbose = false)
 
-"True if `rev` contains a benchmark/benchmarks.jl that defines `SUITE`."
-function revision_has_suite(rev::AbstractString)
-    out = try
-        read(`git -C $PKG show $(rev):benchmark/benchmarks.jl`, String)
-    catch
-        return false   # file absent at that revision
-    end
-    return occursin("SUITE", out)
-end
-
-"Benchmark a committed `rev` in a throwaway git worktree, leaving PKG untouched."
+"Benchmark a committed `rev` in a throwaway git worktree, leaving PKG untouched.
+The current benchmark/benchmarks.jl is copied into the worktree first, so the
+revision's own (possibly old or broken) benchmarks.jl is never used — both sides
+run today's suite against their respective package source."
 function bench_revision(rev::AbstractString)
     if !success(`git -C $PKG rev-parse --verify --quiet $rev`)
         error("git revision \"$rev\" not found in this repository. Pass a valid " *
               "branch/tag/commit, e.g. `make bench-compare REV=HEAD` (compare " *
               "uncommitted changes against the last commit) or `REV=master`.")
     end
-    if !revision_has_suite(rev)
-        error("""
-              Revision "$rev" does not contain the PkgBenchmark `SUITE` harness
-              (a benchmark/benchmarks.jl that defines `const SUITE`). PkgBenchmark
-              runs each revision's own harness, so both sides must already have it —
-              and the benchmark tooling is currently UNCOMMITTED, so it is absent at
-              "$rev". Either:
-                * commit the benchmark tooling first, then compare later revisions; or
-                * for a git-free A/B on the current machine, use the manual flow:
-                    julia benchmark/runbenchmarks.jl a   # state A -> results/a.json
-                    julia benchmark/runbenchmarks.jl b   # state B -> results/b.json
-                  then in Julia:
-                    using BenchmarkTools
-                    judge(median(BenchmarkTools.load("benchmark/results/b.json")[1]),
-                          median(BenchmarkTools.load("benchmark/results/a.json")[1]))
-              """)
-    end
     parent = mktempdir()
     wt = joinpath(parent, "wt")   # must not pre-exist; `git worktree add` creates it
     run(`git -C $PKG worktree add --quiet --detach $wt $rev`)
     try
-        return benchmarkpkg(wt)
+        # Run the CURRENT benchmark suite against the revision's package source, so
+        # an old/broken benchmarks.jl committed at `rev` doesn't break the run and
+        # both sides measure the same suite.
+        cp(joinpath(PKG, "benchmark", "benchmarks.jl"),
+           joinpath(wt, "benchmark", "benchmarks.jl"); force = true)
+        return benchmarkpkg(wt; verbose = false)
     finally
         try
             run(`git -C $PKG worktree remove --force $wt`)
