@@ -82,8 +82,9 @@ bench-compare:
 # Override output label with: make bench-compare-py LABEL=gaus or make bench-compare-py gaus
 # Output: benchmark/results/compare_python.md (default) or compare_python_<LABEL>.md
 # Ratio = Python time ÷ Julia time  →  < 1: local (Julia) slower  |  > 1: local (Julia) faster
-# Override label with: make bench-compare-py JL_LABEL=foo PY_LABEL=bar
-JL_LABEL ?= latest
+# Override compared inputs with: make bench-compare-py JL_LABEL=foo PY_LABEL=bar
+# If LABEL is set, it also becomes the default input label for both sides.
+JL_LABEL ?= $(if $(LABEL),$(LABEL),latest)
 PY_LABEL ?= $(JL_LABEL)
 bench-compare-py: bench
 	julia benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL)
