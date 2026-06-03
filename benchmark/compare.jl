@@ -77,6 +77,23 @@ function summary_metrics(rows)
     )
 end
 
+"Write a sanitized single-run benchmark summary without host or path metadata."
+function write_single_run_md(outfile, result; label = "local")
+    groupdata = result.benchmarkgroup
+    open(outfile, "w") do io
+        println(io, "# Benchmark: `$(label)`\n")
+        println(io, "| benchmark | median time (ms) | allocs | memory (KiB) |")
+        println(io, "|:----------|-----------------:|-------:|-------------:|")
+        for group in sort(collect(keys(groupdata)))
+            for name in sort(collect(keys(groupdata[group])))
+                trial = median(groupdata[group][name])
+                @printf(io, "| `[\"%s\", \"%s\"]` | %.3f | %d | %.1f |\n",
+                        group, name, trial.time / 1e6, trial.allocs, trial.memory / 1024)
+            end
+        end
+    end
+end
+
 """
     write_comparison_md(outfile, target_result, baseline_result, target_label, baseline_label)
 
@@ -174,7 +191,7 @@ end
 if length(ARGS) == 0
     result = bench_worktree()
     outfile = joinpath(RESDIR, "bench_local.md")
-    export_markdown(outfile, result)
+    write_single_run_md(outfile, result)
     println("\nWrote benchmark/results/bench_local.md (single-run summary, no comparison)")
 elseif length(ARGS) == 1
     baseline_rev = ARGS[1]

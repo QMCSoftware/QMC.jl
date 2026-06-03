@@ -35,7 +35,6 @@ so only the time column is cross-comparable with the Julia ms column.
 
 import sys
 import json
-import time
 import timeit
 import warnings
 import statistics
@@ -163,9 +162,6 @@ def main():
     outfile = resdir / f"qmcpy_{label}.json"
     payload = {
         "qmcpy_version": getattr(qp, "__version__", "?"),
-        "python": sys.version.split()[0],
-        "numpy": np.__version__,
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "results": results,
     }
     outfile.write_text(json.dumps(payload, indent=2))
