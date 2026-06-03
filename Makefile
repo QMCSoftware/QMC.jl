@@ -1,4 +1,4 @@
-.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label
+.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label
 
 FORMATTER_PROJECT=devtools/formatter
 PYTHON ?= python
@@ -97,3 +97,9 @@ bench-compare-py-label:
 	julia benchmark/runbenchmarks.jl $(LABEL)
 	$(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL)
 	julia benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL)
+
+# Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
+# Usage: make bench-all-label LABEL=base
+bench-all-label:
+	$(MAKE) bench-compare LABEL=$(LABEL)
+	$(MAKE) bench-compare-py LABEL=$(LABEL)
