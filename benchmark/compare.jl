@@ -23,16 +23,59 @@ using Pkg
 Pkg.activate(@__DIR__)
 let deps = keys(Pkg.project().dependencies)
     "QMC" in deps || Pkg.develop(; path = dirname(@__DIR__))
+    "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
     "PkgBenchmark" in deps || Pkg.add("PkgBenchmark")
 end
 Pkg.instantiate()
 
 using PkgBenchmark
+using BenchmarkTools: median
 using Printf
 
 const PKG = dirname(@__DIR__)
 const RESDIR = joinpath(@__DIR__, "results")
 mkpath(RESDIR)
+
+"Return comparable per-benchmark rows extracted from two benchmark results."
+function collect_comparison_rows(target_result, baseline_result)
+    tg = target_result.benchmarkgroup
+    bg = baseline_result.benchmarkgroup
+    rows = NamedTuple[]
+    for group in sort(collect(keys(tg)))
+        haskey(bg, group) || continue
+        for name in sort(collect(keys(tg[group])))
+            haskey(bg[group], name) || continue
+            local_trial = median(tg[group][name])
+            ref_trial = median(bg[group][name])
+            push!(rows, (
+                group = group,
+                name = name,
+                local_ms = local_trial.time / 1e6,
+                ref_ms = ref_trial.time / 1e6,
+                local_kib = local_trial.memory / 1024,
+                ref_kib = ref_trial.memory / 1024,
+            ))
+        end
+    end
+    return rows
+end
+
+"Weighted summary ratios using local totals as weights."
+function summary_metrics(rows)
+    total_local_ms = sum(row.local_ms for row in rows)
+    total_ref_ms = sum(row.ref_ms for row in rows)
+    total_local_kib = sum(row.local_kib for row in rows)
+    total_ref_kib = sum(row.ref_kib for row in rows)
+    return (
+        matched = length(rows),
+        local_ms = total_local_ms,
+        ref_ms = total_ref_ms,
+        time_ratio = total_local_ms > 0 ? total_ref_ms / total_local_ms : NaN,
+        local_kib = total_local_kib,
+        ref_kib = total_ref_kib,
+        memory_ratio = total_local_kib > 0 ? total_ref_kib / total_local_kib : NaN,
+    )
+end
 
 """
     write_comparison_md(outfile, target_result, baseline_result, target_label, baseline_label)
@@ -45,8 +88,8 @@ Ratio = reference (`baseline_label`) time ÷ local (`target_label`) time.
 """
 function write_comparison_md(outfile, target_result, baseline_result,
                              target_label, baseline_label)
-    tg = target_result.benchmarkgroup
-    bg = baseline_result.benchmarkgroup
+    rows = collect_comparison_rows(target_result, baseline_result)
+    summary = summary_metrics(rows)
     open(outfile, "w") do io
         println(io, "# Benchmark: `$(target_label)` vs `$(baseline_label)`\n")
         println(io, "| | local (`$(target_label)`) | reference (`$(baseline_label)`) |")
@@ -57,21 +100,24 @@ function write_comparison_md(outfile, target_result, baseline_result,
         println(io, "**`ratio = reference time ÷ local time`**  ")
         println(io, "ratio `< 1` → local is **slower** ❌  |  ratio `> 1` → local is **faster** ✅")
         println(io, "")
+        println(io, "## Aggregate Summary\n")
+        println(io, "| metric | ratio | local total | reference total |")
+        println(io, "|:-------|------:|------------:|----------------:|")
+        println(io, "| matched benchmarks | $(summary.matched) | — | — |")
+        @printf(io, "| weighted time ratio | %.3f | %.3f ms | %.3f ms |\n",
+                summary.time_ratio, summary.local_ms, summary.ref_ms)
+        @printf(io, "| weighted memory ratio | %.3f | %.1f KiB | %.1f KiB |\n\n",
+                summary.memory_ratio, summary.local_kib, summary.ref_kib)
         println(io, "| benchmark | ratio | verdict | local (ms) | reference (ms) |")
         println(io, "|:----------|------:|:-------:|----------:|---------------:|")
-        for group in sort(collect(keys(tg)))
-            haskey(bg, group) || continue
-            for name in sort(collect(keys(tg[group])))
-                haskey(bg[group], name) || continue
-                local_ms = median(tg[group][name]).time / 1e6
-                ref_ms   = median(bg[group][name]).time / 1e6
-                ratio    = ref_ms / local_ms
-                verdict  = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
-                @printf(io, "| `[\"%s\", \"%s\"]` | %.3f | %s | %.3f | %.3f |\n",
-                        group, name, ratio, verdict, local_ms, ref_ms)
-            end
+        for row in rows
+            ratio = row.ref_ms / row.local_ms
+            verdict = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
+            @printf(io, "| `[\"%s\", \"%s\"]` | %.3f | %s | %.3f | %.3f |\n",
+                    row.group, row.name, ratio, verdict, row.local_ms, row.ref_ms)
         end
     end
+    return summary
 end
 
 "Benchmark the current working tree in place (uncommitted changes included)."
@@ -135,15 +181,23 @@ elseif length(ARGS) == 1
     target   = bench_worktree()              # current tree (dirty OK)
     baseline = bench_revision(baseline_rev)
     outfile  = joinpath(RESDIR, "compare_head.md")
-    write_comparison_md(outfile, target, baseline, "local", baseline_rev)
+    summary = write_comparison_md(outfile, target, baseline, "local", baseline_rev)
     println("\nWrote benchmark/results/compare_head.md (local vs $(baseline_rev))")
     println("  ratio = $(baseline_rev) ÷ local  →  < 1: local slower  |  > 1: local faster")
+    @printf("  weighted time ratio   = %.3f  (%s total %.3f ms vs %s total %.3f ms)\n",
+            summary.time_ratio, baseline_rev, summary.ref_ms, "local", summary.local_ms)
+    @printf("  weighted memory ratio = %.3f  (%s total %.1f KiB vs %s total %.1f KiB)\n",
+            summary.memory_ratio, baseline_rev, summary.ref_kib, "local", summary.local_kib)
 else
     target_rev, baseline_rev = ARGS[1], ARGS[2]
     target   = bench_revision(target_rev)
     baseline = bench_revision(baseline_rev)
     outfile  = joinpath(RESDIR, "compare_head.md")
-    write_comparison_md(outfile, target, baseline, target_rev, baseline_rev)
+    summary = write_comparison_md(outfile, target, baseline, target_rev, baseline_rev)
     println("\nWrote benchmark/results/compare_head.md ($(target_rev) vs $(baseline_rev))")
     println("  ratio = $(baseline_rev) ÷ $(target_rev)  →  < 1: $(target_rev) slower  |  > 1: $(target_rev) faster")
+    @printf("  weighted time ratio   = %.3f  (%s total %.3f ms vs %s total %.3f ms)\n",
+            summary.time_ratio, baseline_rev, summary.ref_ms, target_rev, summary.local_ms)
+    @printf("  weighted memory ratio = %.3f  (%s total %.1f KiB vs %s total %.1f KiB)\n",
+            summary.memory_ratio, baseline_rev, summary.ref_kib, target_rev, summary.local_kib)
 end

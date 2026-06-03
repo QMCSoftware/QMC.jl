@@ -35,6 +35,63 @@ using Printf
 
 resdir = joinpath(@__DIR__, "results")
 
+is_c_kernel_row(name::AbstractString) = occursin(r"Lattice|DigitalNetB2|Halton", name)
+
+function lookup_py_entry(py_results, group, name)
+    py_group = get(py_results, Symbol(group), nothing)
+    py_group === nothing && return nothing
+    return get(py_group, name, get(py_group, replace(name, r" d=\d+" => s -> " [C]" * s), nothing))
+end
+
+function collect_comparison_rows(jl_results, py_results)
+    rows = NamedTuple[]
+    for group in sort(collect(keys(jl_results)))
+        for name in sort(collect(keys(jl_results[group])))
+            jl_trial = median(jl_results[group][name])
+            jl_ms = jl_trial.time / 1e6
+            jl_kib = jl_trial.memory / 1024
+            py_entry = lookup_py_entry(py_results, group, name)
+            if py_entry !== nothing && !haskey(py_entry, "error")
+                push!(rows, (
+                    group = group,
+                    name = name,
+                    jl_ms = jl_ms,
+                    jl_kib = jl_kib,
+                    py_ms = Float64(py_entry["median_ms"]),
+                    py_error = nothing,
+                    c_kernel = is_c_kernel_row(name),
+                ))
+            else
+                push!(rows, (
+                    group = group,
+                    name = name,
+                    jl_ms = jl_ms,
+                    jl_kib = jl_kib,
+                    py_ms = nothing,
+                    py_error = py_entry === nothing ? "no Python data" : string(py_entry["error"]),
+                    c_kernel = is_c_kernel_row(name),
+                ))
+            end
+        end
+    end
+    return rows
+end
+
+function summary_metrics(rows)
+    matched = filter(row -> row.py_ms !== nothing, rows)
+    total_jl_ms = sum(row.jl_ms for row in matched)
+    total_py_ms = sum(row.py_ms for row in matched)
+    total_jl_kib = sum(row.jl_kib for row in matched)
+    return (
+        matched = length(matched),
+        total = length(rows),
+        jl_ms = total_jl_ms,
+        py_ms = total_py_ms,
+        time_ratio = total_jl_ms > 0 ? total_py_ms / total_jl_ms : NaN,
+        jl_kib = total_jl_kib,
+    )
+end
+
 jl_label = length(ARGS) >= 1 ? ARGS[1] : "latest"
 py_label = length(ARGS) >= 2 ? ARGS[2] : jl_label
 
@@ -52,6 +109,8 @@ py_data    = JSON3.read(read(py_file, String))
 py_results = py_data["results"]
 py_version = get(py_data, "qmcpy_version", "?")
 py_python  = get(py_data, "python", "?")
+rows = collect_comparison_rows(jl_results, py_results)
+summary = summary_metrics(rows)
 
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia results : $jl_file")
@@ -66,25 +125,15 @@ println("="^length(header))
 println(header)
 println("-"^length(header))
 
-for group in sort(collect(keys(jl_results)))
+for group in sort(unique(row.group for row in rows))
     println("\n── $group ──")
-    py_group = get(py_results, Symbol(group), nothing)
-    for name in sort(collect(keys(jl_results[group])))
-        jl_ms = median(jl_results[group][name]).time / 1e6
-
-        # Python key may have " [C]" suffix for C-kernel variants; try both.
-        py_entry = nothing
-        if py_group !== nothing
-            py_entry = get(py_group, name, get(py_group, replace(name, r" d=\d+" => s -> " [C]" * s), nothing))
-        end
-
-        if py_entry !== nothing && !haskey(py_entry, "error")
-            py_ms  = Float64(py_entry["median_ms"])
-            ratio  = py_ms / jl_ms
-            tag    = occursin(r"Lattice|DigitalNetB2|Halton", name) ? " [C]" : "    "
-            @printf("  %s %-44s  %11.3f  %11.3f  %6.2fx\n", tag, name, jl_ms, py_ms, ratio)
+    for row in filter(r -> r.group == group, rows)
+        if row.py_ms !== nothing
+            ratio = row.py_ms / row.jl_ms
+            tag = row.c_kernel ? " [C]" : "    "
+            @printf("  %s %-44s  %11.3f  %11.3f  %6.2fx\n", tag, row.name, row.jl_ms, row.py_ms, ratio)
         else
-            @printf("  ??? %-44s  %11.3f  %11s  %7s\n", name, jl_ms, "n/a", "n/a")
+            @printf("  ??? %-44s  %11.3f  %11s  %7s\n", row.name, row.jl_ms, "n/a", "n/a")
         end
     end
 end
@@ -92,6 +141,9 @@ end
 println()
 println("="^length(header))
 println("ratio > 1: local (Julia) faster than Python  |  ratio < 1: local (Julia) slower than Python")
+@printf("weighted time ratio = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
+        summary.time_ratio, summary.py_ms, summary.jl_ms, summary.matched, summary.total)
+println("weighted memory ratio = n/a  (QMCPy results do not record comparable Python memory)")
 
 # ── Save markdown file ──────────────────────────────────────────────────────────
 outfile = joinpath(resdir, "compare_python.md")
@@ -110,27 +162,29 @@ open(outfile, "w") do io
     println(io, "> ⚠️ C-kernel rows `[C]` (Lattice/DigitalNetB2/Halton `gen_samples`) call the same")
     println(io, "> `qmctoolscl` library on both sides and are **not** a Julia vs Python comparison.")
     println(io, "")
+    println(io, "## Aggregate Summary\n")
+    println(io, "| metric | ratio | Julia total | Python total |")
+    println(io, "|:-------|------:|------------:|-------------:|")
+    println(io, "| matched benchmarks | $(summary.matched)/$(summary.total) | — | — |")
+    @printf(io, "| weighted time ratio | %.3f | %.3f ms | %.3f ms |\n",
+            summary.time_ratio, summary.jl_ms, summary.py_ms)
+    @printf(io, "| weighted memory ratio | %s | %.1f KiB | %s |\n\n",
+            "n/a", summary.jl_kib, "n/a")
+    println(io, "> Python memory is not summarized here because the QMCPy harness currently records")
+    println(io, "> timing only; there is no comparable cross-language allocation/RSS measure in the results.")
+    println(io, "")
     println(io, "| benchmark | ratio | verdict | Julia (ms) | Python (ms) |")
     println(io, "|:----------|------:|:-------:|----------:|------------:|")
-    for group in sort(collect(keys(jl_results)))
-        py_group = get(py_results, Symbol(group), nothing)
-        for name in sort(collect(keys(jl_results[group])))
-            jl_ms = median(jl_results[group][name]).time / 1e6
-            py_entry = nothing
-            if py_group !== nothing
-                py_entry = get(py_group, name, get(py_group, replace(name, r" d=\d+" => s -> " [C]" * s), nothing))
-            end
-            c_note = occursin(r"Lattice|DigitalNetB2|Halton", name) ? " `[C]`" : ""
-            if py_entry !== nothing && !haskey(py_entry, "error")
-                py_ms   = Float64(py_entry["median_ms"])
-                ratio   = py_ms / jl_ms
+    for row in rows
+        c_note = row.c_kernel ? " `[C]`" : ""
+        if row.py_ms !== nothing
+                ratio   = row.py_ms / row.jl_ms
                 verdict = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
                 @printf(io, "| `[\"%s\", \"%s\"]`%s | %.3f | %s | %.3f | %.3f |\n",
-                        group, name, c_note, ratio, verdict, jl_ms, py_ms)
-            else
-                @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a |\n",
-                        group, name, jl_ms)
-            end
+                        row.group, row.name, c_note, ratio, verdict, row.jl_ms, row.py_ms)
+        else
+            @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a |\n",
+                    row.group, row.name, row.jl_ms)
         end
     end
 end
