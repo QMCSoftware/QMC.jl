@@ -128,6 +128,44 @@ function summary_metrics(rows)
     )
 end
 
+# ── Accuracy: Julia vs Python solution values ────────────────────────────────
+# A stopping criterion returns an estimate within `tol` of the true integral,
+# where the effective tolerance is `max(abs_tol, rel_tol*|value|)`. Two independent
+# estimates (Julia, Python) should therefore agree within `2*tol` (triangle
+# inequality). `accuracy_check` flags integrate cases that exceed that bound.
+#   * absolute tol  →  |jl - py|        ≤ 2*abs_tol
+#   * relative tol  →  |jl - py|/|py|   ≤ 2*rel_tol
+function accuracy_check(jl_sol, py_sol, abs_tol, rel_tol)
+    diff = abs(jl_sol - py_sol)
+    eff_tol = max(abs_tol, rel_tol * abs(py_sol))
+    allowed = 2 * eff_tol
+    mode = (rel_tol > 0 && rel_tol * abs(py_sol) >= abs_tol) ? "rel" : "abs"
+    rel_diff = py_sol != 0 ? diff / abs(py_sol) : NaN
+    return (diff = diff, rel_diff = rel_diff, eff_tol = eff_tol,
+            allowed = allowed, mode = mode, flagged = diff > allowed)
+end
+
+function collect_accuracy_rows(jl_solutions, py_results)
+    rows = NamedTuple[]
+    jl_solutions === nothing && return rows
+    py_group = get(py_results, :integrate, nothing)
+    for (name, jl) in pairs(jl_solutions)
+        namestr = string(name)
+        haskey(jl, "error") && continue
+        jl_sol = Float64(jl["solution"])
+        abs_tol = Float64(jl["abs_tol"])
+        rel_tol = Float64(jl["rel_tol"])
+        py_entry = py_group === nothing ? nothing : get(py_group, namestr, nothing)
+        py_sol = (py_entry !== nothing && haskey(py_entry, "solution")) ?
+                 Float64(py_entry["solution"]) : nothing
+        check = py_sol === nothing ? nothing :
+                accuracy_check(jl_sol, py_sol, abs_tol, rel_tol)
+        push!(rows, (name = namestr, jl_sol = jl_sol, py_sol = py_sol,
+                     abs_tol = abs_tol, rel_tol = rel_tol, check = check))
+    end
+    return sort(rows; by = r -> r.name)
+end
+
 jl_label = length(ARGS) >= 1 ? ARGS[1] : "latest"
 py_label = length(ARGS) >= 2 ? ARGS[2] : jl_label
 out_label = length(ARGS) >= 3 ? ARGS[3] : ""
@@ -150,6 +188,12 @@ py_results = py_data["results"]
 py_version = get(py_data, "qmcpy_version", "?")
 rows = collect_comparison_rows(jl_results, jl_memory_results, py_results)
 summary = summary_metrics(rows)
+
+jl_sol_file = joinpath(resdir, "$(jl_label)_solutions.json")
+jl_sol_data = isfile(jl_sol_file) ? JSON3.read(read(jl_sol_file, String)) : nothing
+jl_solutions = jl_sol_data === nothing ? nothing : get(jl_sol_data, :solutions, nothing)
+accuracy_rows = collect_accuracy_rows(jl_solutions, py_results)
+n_flagged = count(r -> r.check !== nothing && r.check.flagged, accuracy_rows)
 
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia label   : $jl_label")
@@ -193,6 +237,30 @@ if summary.rss_rows > 0
             summary.rss_ratio, summary.py_rss_delta_kib, summary.jl_rss_kib, summary.rss_rows, summary.total)
 else
     println("weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)")
+end
+
+# ── Accuracy (integrate): Julia vs Python solution values ───────────────────────
+if isempty(accuracy_rows)
+    println()
+    println("accuracy (integrate): no solution data " *
+            "(need Julia `$(jl_label)_solutions.json` + QMCPy solutions in $(basename(py_file)))")
+else
+    println()
+    println("="^length(header))
+    println("Accuracy (integrate): |Julia − Python| vs 2 × tolerance")
+    println("-"^length(header))
+    for r in accuracy_rows
+        if r.check === nothing
+            @printf("  ???  %-30s  Julia=%- 12.6g  Python=n/a\n", r.name, r.jl_sol)
+        else
+            c = r.check
+            mark = c.flagged ? "❌ DIFF" : "✅ ok  "
+            @printf("  %s %-30s  Julia=%- 12.6g  Python=%- 12.6g  |Δ|=%.3g  allowed(2·%s)=%.3g\n",
+                    mark, r.name, r.jl_sol, r.py_sol, c.diff, c.mode, c.allowed)
+        end
+    end
+    @printf("%d of %d integrate case(s) exceed 2×tolerance\n",
+            n_flagged, count(r -> r.check !== nothing, accuracy_rows))
 end
 
 # ── Save markdown file ──────────────────────────────────────────────────────────
@@ -250,6 +318,34 @@ open(outfile, "w") do io
             jl_rss_txt = row.jl_rss_delta_kib === nothing ? "n/a" : @sprintf("%.1f", row.jl_rss_delta_kib)
             @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a | %.1f | %s | n/a | n/a |\n",
                     row.group, row.name, row.jl_ms, row.jl_kib, jl_rss_txt)
+        end
+    end
+
+    # ── Accuracy (integrate) ────────────────────────────────────────────────
+    println(io, "")
+    println(io, "## Accuracy (integrate): solution agreement\n")
+    println(io, "Each criterion converges to within `tol` of the true value, so the Julia and")
+    println(io, "Python solutions should agree within **`2·tol`** (effective `tol = max(abs_tol,")
+    println(io, "rel_tol·|value|)`). Rows whose `|Julia − Python|` exceeds that bound are flagged ❌.\n")
+    if isempty(accuracy_rows)
+        println(io, "_No solution data found. Re-run `make bench` (writes the Julia ")
+        println(io, "`$(jl_label)_solutions.json` sidecar) and a QMCPy harness recent enough to ")
+        println(io, "record `solution`/`abs_tol`/`rel_tol`._")
+    else
+        @printf(io, "**%d of %d** matched integrate case(s) exceed 2×tolerance.\n\n",
+                n_flagged, count(r -> r.check !== nothing, accuracy_rows))
+        println(io, "| integrate case | Julia | Python | abs Δ | rel Δ | tol mode | allowed 2·tol | verdict |")
+        println(io, "|:---------------|------:|-------:|------:|------:|:--------:|--------------:|:-------:|")
+        for r in accuracy_rows
+            if r.check === nothing
+                @printf(io, "| `%s` | %.6g | n/a | n/a | n/a | n/a | n/a | — |\n", r.name, r.jl_sol)
+            else
+                c = r.check
+                verdict = c.flagged ? "❌" : "✅"
+                reld = isnan(c.rel_diff) ? "n/a" : @sprintf("%.2e", c.rel_diff)
+                @printf(io, "| `%s` | %.6g | %.6g | %.3e | %s | %s | %.3e | %s |\n",
+                        r.name, r.jl_sol, r.py_sol, c.diff, reld, c.mode, c.allowed, verdict)
+            end
         end
     end
 end

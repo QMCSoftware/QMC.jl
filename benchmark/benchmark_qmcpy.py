@@ -283,27 +283,53 @@ def main():
             return run
         return factory
 
-    record(results, "integrate", "CubMCCLT Keister",
-           integrate_call(lambda: qp.CubMCCLT(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01)),
-           repeat=3, warmup=True)
-    record(results, "integrate", "CubQMCLatticeG Keister",
-           integrate_call(lambda: qp.CubQMCLatticeG(qp.Keister(qp.Lattice(3, seed=SEED)), abs_tol=0.01)),
-           repeat=3)
-    record(results, "integrate", "CubQMCNetG Keister",
-           integrate_call(lambda: qp.CubQMCNetG(qp.Keister(qp.DigitalNetB2(3, seed=SEED)), abs_tol=0.01)),
-           repeat=3)
-    record(results, "integrate", "CubMCCLT AsianOption",
-           integrate_call(lambda: qp.CubMCCLT(
-               qp.FinancialOption(qp.IIDStdUniform(50, seed=SEED), option="ASIAN",
-                                  volatility=0.2, start_price=100, strike_price=100,
-                                  interest_rate=0.05, t_final=1), abs_tol=0.5)),
-           repeat=3)
-    record(results, "integrate", "CubQMCNetG EuropeanOption",
-           integrate_call(lambda: qp.CubQMCNetG(
-               qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="EUROPEAN",
-                                  volatility=0.2, start_price=100, strike_price=100,
-                                  interest_rate=0.05, t_final=1), abs_tol=0.5)),
-           repeat=3)
+    def _scalar(x):
+        # QMCPy may return solution/tolerances as 0-d or 1-element arrays.
+        return float(np.asarray(x).ravel()[0])
+
+    # (name, make_sc, warmup). make_sc builds a fresh stopping criterion; it is
+    # reused both for timing and for the one-shot accuracy measurement below.
+    integrate_cases = [
+        ("CubMCCLT Keister",
+         lambda: qp.CubMCCLT(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
+         True),
+        ("CubQMCLatticeG Keister",
+         lambda: qp.CubQMCLatticeG(qp.Keister(qp.Lattice(3, seed=SEED)), abs_tol=0.01),
+         False),
+        ("CubQMCNetG Keister",
+         lambda: qp.CubQMCNetG(qp.Keister(qp.DigitalNetB2(3, seed=SEED)), abs_tol=0.01),
+         False),
+        ("CubMCCLT AsianOption",
+         lambda: qp.CubMCCLT(
+             qp.FinancialOption(qp.IIDStdUniform(50, seed=SEED), option="ASIAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCNetG EuropeanOption",
+         lambda: qp.CubQMCNetG(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+    ]
+
+    for name, make_sc, warm in integrate_cases:
+        record(results, "integrate", name, integrate_call(make_sc),
+               repeat=3, warmup=warm)
+        # One-shot accuracy measurement: solution value + tolerances used. Kept
+        # separate from the timed runs and never aborts the run on failure.
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                sc = make_sc()
+                solution, _ = sc.integrate()
+            entry = results["integrate"].get(name)
+            if isinstance(entry, dict) and "error" not in entry:
+                entry["solution"] = _scalar(solution)
+                entry["abs_tol"] = _scalar(getattr(sc, "abs_tol", 0.0))
+                entry["rel_tol"] = _scalar(getattr(sc, "rel_tol", 0.0))
+        except Exception as e:  # noqa: BLE001
+            print(f"  (accuracy) {name:<35s} skipped: {type(e).__name__}: {e}")
 
     # ── Save ─────────────────────────────────────────────────────────────
     resdir = Path(__file__).resolve().parent / "results"

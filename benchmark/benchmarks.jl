@@ -169,41 +169,46 @@ for dim in LARGE_DIMS, n in LARGE_N
 end
 
 # 4. End-to-end integration (mixed: C-backed generators + pure-Julia compute)
+# Each entry is `name => make_sc`, where `make_sc()` builds a fresh stopping
+# criterion. The same builders drive both the timing benchmark (below) and the
+# accuracy check (runbenchmarks.jl runs `integrate(make_sc())` once to record the
+# solution value + tolerances), so both measure exactly the same problem setup.
+const INTEGRATE_CASES = Pair{String,Function}[
+    "CubMCCLT Keister" => () -> begin
+        dd = IIDStdUniform(3; seed=42)
+        tm = Gaussian(dd)
+        f = Keister(tm)
+        CubMCCLT(f; abs_tol=0.01)
+    end,
+    "CubQMCLatticeG Keister" => () -> begin
+        dd = Lattice(3; seed=42, randomize=true)
+        tm = Gaussian(dd)
+        f = Keister(tm)
+        CubQMCLatticeG(f; abs_tol=0.01)
+    end,
+    "CubQMCNetG Keister" => () -> begin
+        dd = DigitalNetB2(3; seed=42, randomize="LMS_DS")
+        tm = Gaussian(dd)
+        f = Keister(tm)
+        CubQMCNetG(f; abs_tol=0.01)
+    end,
+    "CubMCCLT AsianOption" => () -> begin
+        dd = IIDStdUniform(50; seed=42)
+        tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
+                                      interest_rate=0.05, t_final=1.0)
+        f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
+        CubMCCLT(f; abs_tol=0.5)
+    end,
+    "CubQMCNetG EuropeanOption" => () -> begin
+        dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
+        tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
+                                      interest_rate=0.05, t_final=1.0)
+        f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+        CubQMCNetG(f; abs_tol=0.5)
+    end,
+]
+
 SUITE["integrate"] = BenchmarkGroup()
-
-SUITE["integrate"]["CubMCCLT Keister"] = bench_integrate() do
-    dd = IIDStdUniform(3; seed=42)
-    tm = Gaussian(dd)
-    f = Keister(tm)
-    CubMCCLT(f; abs_tol=0.01)
-end
-
-SUITE["integrate"]["CubQMCLatticeG Keister"] = bench_integrate() do
-    dd = Lattice(3; seed=42, randomize=true)
-    tm = Gaussian(dd)
-    f = Keister(tm)
-    CubQMCLatticeG(f; abs_tol=0.01)
-end
-
-SUITE["integrate"]["CubQMCNetG Keister"] = bench_integrate() do
-    dd = DigitalNetB2(3; seed=42, randomize="LMS_DS")
-    tm = Gaussian(dd)
-    f = Keister(tm)
-    CubQMCNetG(f; abs_tol=0.01)
-end
-
-SUITE["integrate"]["CubMCCLT AsianOption"] = bench_integrate() do
-    dd = IIDStdUniform(50; seed=42)
-    tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-                                  interest_rate=0.05, t_final=1.0)
-    f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
-    CubMCCLT(f; abs_tol=0.5)
-end
-
-SUITE["integrate"]["CubQMCNetG EuropeanOption"] = bench_integrate() do
-    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
-    tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-                                  interest_rate=0.05, t_final=1.0)
-    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
-    CubQMCNetG(f; abs_tol=0.5)
+for (name, make_sc) in INTEGRATE_CASES
+    SUITE["integrate"][name] = bench_integrate(make_sc)
 end

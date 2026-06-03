@@ -93,11 +93,37 @@ function run_suite(suite)
     return results
 end
 
+"""
+    collect_integrate_solutions() -> Dict
+
+Run each integrate case once (outside the timing loop) and record its solution
+value and the tolerances it was configured with. Used by the Julia-vs-Python
+accuracy check in `compare_py.jl`. Relies on `INTEGRATE_CASES` from benchmarks.jl.
+"""
+function collect_integrate_solutions()
+    out = Dict{String,Any}()
+    for (name, make_sc) in INTEGRATE_CASES
+        try
+            sc = make_sc()
+            res = integrate(sc)
+            out[name] = Dict(
+                "solution" => float(res.solution),
+                "abs_tol"  => float(sc.abs_tol),
+                "rel_tol"  => float(sc.rel_tol),
+            )
+        catch err
+            out[name] = Dict("error" => sprint(showerror, err))
+        end
+    end
+    return out
+end
+
 println("QMC.jl Benchmarks")
 println("="^70)
 
 results = run_suite(SUITE)
 julia_memory = collect_rss_deltas(SUITE)
+julia_solutions = collect_integrate_solutions()
 
 # ── Summary ──────────────────────────────────────────────────────────────
 println("\n", "="^70)
@@ -130,3 +156,12 @@ open(memfile, "w") do io
 end
 println("\nResults saved to benchmark/results/$(label).json")
 println("Julia memory sidecar saved to benchmark/results/$(label)_memory.json")
+
+solfile = joinpath(resdir, "$(label)_solutions.json")
+open(solfile, "w") do io
+    JSON3.pretty(io, JSON3.write(Dict(
+        "julia_version" => string(VERSION),
+        "solutions" => julia_solutions,
+    )))
+end
+println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json")
