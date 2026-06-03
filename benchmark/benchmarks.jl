@@ -179,21 +179,21 @@ end
 # measure exactly the same problem setup.
 function _int_cubmcclt_keister()
     dd = IIDStdUniform(3; seed=42)
-    tm = Gaussian(dd)
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
     f = Keister(tm)
     CubMCCLT(f; abs_tol=0.01)
 end
 
 function _int_cubqmclatticeg_keister()
     dd = Lattice(3; seed=42, randomize=true)
-    tm = Gaussian(dd)
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
     f = Keister(tm)
     CubQMCLatticeG(f; abs_tol=0.01)
 end
 
 function _int_cubqmcnetg_keister()
     dd = DigitalNetB2(3; seed=42, randomize="LMS_DS")
-    tm = Gaussian(dd)
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
     f = Keister(tm)
     CubQMCNetG(f; abs_tol=0.01)
 end
