@@ -12,6 +12,7 @@ environment.
 - `benchmarks.jl`: defines the benchmark suite (`SUITE`)
 - `runbenchmarks.jl`: runs the Julia suite and saves `*.json` results
 - `compare.jl`: compares Julia benchmark results across revisions
+- `compare_labels.jl`: compares two saved Julia benchmark labels
 - `benchmark_qmcpy.py`: runs the QMCPy counterpart suite and saves `qmcpy_*.json`
 - `compare_py.jl`: compares Julia results against QMCPy results
 - `results/`: generated benchmark result files and Markdown reports
@@ -77,6 +78,33 @@ This writes:
 ```text
 benchmark/results/compare_gaus.md
 ```
+
+Compare two saved Julia benchmark labels and decide which one is better:
+
+```bash
+make bench-compare-labels base latest
+# or
+make bench-compare-labels LABEL_A=base LABEL_B=latest
+```
+
+This writes:
+
+```text
+benchmark/results/compare_labels_base_vs_latest.md
+```
+
+The report uses:
+
+- `weighted time ratio = latest ÷ base`
+- `weighted memory ratio = latest ÷ base`
+
+So:
+
+- ratio `> 1` means `base` is better
+- ratio `< 1` means `latest` is better
+
+If one label wins both time and memory, it wins overall. If time and memory trade
+off, the script uses a combined score to break the tie and reports that explicitly.
 
 ## Julia vs QMCPy Comparison
 
@@ -144,6 +172,40 @@ python benchmark/benchmark_qmcpy.py base
 julia benchmark/compare_py.jl base base base
 ```
 
+## Combined Labeled Comparison Target
+
+To run both the labeled Julia-only comparison and the labeled Julia-vs-QMCPy
+comparison in one task:
+
+```bash
+make bench-all-label LABEL=base
+```
+
+This runs:
+
+```bash
+make bench-compare LABEL=base
+make bench-compare-py LABEL=base
+```
+
+which expands to:
+
+```bash
+julia benchmark/compare.jl HEAD base
+julia benchmark/runbenchmarks.jl base
+python benchmark/benchmark_qmcpy.py base
+julia benchmark/compare_py.jl base base base
+```
+
+and writes:
+
+```text
+benchmark/results/compare_base.md
+benchmark/results/base.json
+benchmark/results/qmcpy_base.json
+benchmark/results/compare_python_base.md
+```
+
 ## Output Files
 
 Common generated files:
@@ -151,6 +213,7 @@ Common generated files:
 - `results/<label>.json`: Julia benchmark data
 - `results/qmcpy_<label>.json`: QMCPy benchmark data
 - `results/compare_<label>.md`: Julia-vs-Julia comparison report
+- `results/compare_labels_<a>_vs_<b>.md`: saved-label comparison report
 - `results/compare_python_<label>.md`: Julia-vs-QMCPy comparison report
 - `results/compare_head.md`: default Julia-vs-Julia report
 - `results/compare_python.md`: default Julia-vs-QMCPy report

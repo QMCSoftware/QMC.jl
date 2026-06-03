@@ -1,4 +1,4 @@
-.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label
+.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels
 
 FORMATTER_PROJECT=devtools/formatter
 PYTHON ?= python
@@ -12,6 +12,20 @@ ifneq ($(filter bench bench-compare bench-compare-py,$(firstword $(MAKECMDGOALS)
     LABEL ?= $(firstword $(EXTRA_BENCH_GOALS))
     .PHONY: $(EXTRA_BENCH_GOALS)
     $(EXTRA_BENCH_GOALS):
+	@:
+  endif
+endif
+
+# Allow `make bench-compare-labels a b` or `make bench-compare-labels a b out` as
+# shorthand for `LABEL_A=a LABEL_B=b [OUT_LABEL=out]`.
+ifneq ($(filter bench-compare-labels,$(firstword $(MAKECMDGOALS))),)
+  EXTRA_LABEL_COMPARE_GOALS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  ifneq ($(strip $(EXTRA_LABEL_COMPARE_GOALS)),)
+    LABEL_A ?= $(word 1,$(EXTRA_LABEL_COMPARE_GOALS))
+    LABEL_B ?= $(word 2,$(EXTRA_LABEL_COMPARE_GOALS))
+    OUT_LABEL ?= $(word 3,$(EXTRA_LABEL_COMPARE_GOALS))
+    .PHONY: $(EXTRA_LABEL_COMPARE_GOALS)
+    $(EXTRA_LABEL_COMPARE_GOALS):
 	@:
   endif
 endif
@@ -103,3 +117,9 @@ bench-compare-py-label:
 bench-all-label:
 	$(MAKE) bench-compare LABEL=$(LABEL)
 	$(MAKE) bench-compare-py LABEL=$(LABEL)
+
+# Compare two saved Julia benchmark-result labels and decide which one is better.
+# Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]
+#    or: make bench-compare-labels a b [report]
+bench-compare-labels:
+	julia benchmark/compare_labels.jl $(LABEL_A) $(LABEL_B) $(OUT_LABEL)
