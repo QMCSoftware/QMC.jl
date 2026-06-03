@@ -26,6 +26,10 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
+# Python bytecode caches
+__pycache__/
+*.pyc
+
 # Julia compilation artifacts
 *.ji
 deps/build.log

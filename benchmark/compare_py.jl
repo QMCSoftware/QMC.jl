@@ -15,7 +15,10 @@
 #   ratio < 1  →  local is SLOWER than Python  ❌
 #   ratio > 1  →  local is FASTER than Python  ✅
 #
-# NOTE: only the `ms` column is cross-comparable. `allocs`/`KiB` are Julia-only.
+# NOTE: `ms` is directly cross-comparable. Julia `KiB` is allocated bytes from
+# BenchmarkTools, while Python reports `tracemalloc_peak_kib` and a coarse retained
+# `rss_delta_kib` from one warmed call; those memory metrics are informative but
+# are not directly equivalent to Julia allocations.
 # C-kernel rows (Lattice, DigitalNetB2, Halton gen_samples) measure the same C
 # library on both sides; they are NOT a language comparison (see benchmark_qmcpy.py).
 
@@ -61,6 +64,10 @@ function collect_comparison_rows(jl_results, py_results)
                     jl_ms = jl_ms,
                     jl_kib = jl_kib,
                     py_ms = Float64(py_entry["median_ms"]),
+                    py_peak_kib = haskey(py_entry, "tracemalloc_peak_kib") ?
+                        Float64(py_entry["tracemalloc_peak_kib"]) : nothing,
+                    py_rss_delta_kib = haskey(py_entry, "rss_delta_kib") ?
+                        Float64(py_entry["rss_delta_kib"]) : nothing,
                     py_error = nothing,
                     c_kernel = is_c_kernel_row(name),
                 ))
@@ -71,6 +78,8 @@ function collect_comparison_rows(jl_results, py_results)
                     jl_ms = jl_ms,
                     jl_kib = jl_kib,
                     py_ms = nothing,
+                    py_peak_kib = nothing,
+                    py_rss_delta_kib = nothing,
                     py_error = py_entry === nothing ? "no Python data" : string(py_entry["error"]),
                     c_kernel = is_c_kernel_row(name),
                 ))
@@ -82,16 +91,28 @@ end
 
 function summary_metrics(rows)
     matched = filter(row -> row.py_ms !== nothing, rows)
-    total_jl_ms = sum(row.jl_ms for row in matched)
-    total_py_ms = sum(row.py_ms for row in matched)
-    total_jl_kib = sum(row.jl_kib for row in matched)
+    total_jl_ms = sum((row.jl_ms for row in matched); init = 0.0)
+    total_py_ms = sum((row.py_ms for row in matched); init = 0.0)
+    peak_rows = filter(row -> row.py_peak_kib !== nothing, matched)
+    rss_rows = filter(row -> row.py_rss_delta_kib !== nothing, matched)
+    total_jl_peak_kib = sum((row.jl_kib for row in peak_rows); init = 0.0)
+    total_py_peak_kib = sum((row.py_peak_kib for row in peak_rows); init = 0.0)
+    total_jl_rss_kib = sum((row.jl_kib for row in rss_rows); init = 0.0)
+    total_py_rss_delta_kib = sum((row.py_rss_delta_kib for row in rss_rows); init = 0.0)
     return (
         matched = length(matched),
         total = length(rows),
         jl_ms = total_jl_ms,
         py_ms = total_py_ms,
         time_ratio = total_jl_ms > 0 ? total_py_ms / total_jl_ms : NaN,
-        jl_kib = total_jl_kib,
+        peak_rows = length(peak_rows),
+        jl_peak_kib = total_jl_peak_kib,
+        py_peak_kib = total_py_peak_kib,
+        peak_ratio = total_jl_peak_kib > 0 ? total_py_peak_kib / total_jl_peak_kib : NaN,
+        rss_rows = length(rss_rows),
+        jl_rss_kib = total_jl_rss_kib,
+        py_rss_delta_kib = total_py_rss_delta_kib,
+        rss_ratio = total_jl_rss_kib > 0 ? total_py_rss_delta_kib / total_jl_rss_kib : NaN,
     )
 end
 
@@ -146,7 +167,18 @@ println("="^length(header))
 println("ratio > 1: local (Julia) faster than Python  |  ratio < 1: local (Julia) slower than Python")
 @printf("weighted time ratio = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
         summary.time_ratio, summary.py_ms, summary.jl_ms, summary.matched, summary.total)
-println("weighted memory ratio = n/a  (QMCPy results do not record comparable Python memory)")
+if summary.peak_rows > 0
+    @printf("weighted tracemalloc ratio = %.3f  (Python peak total %.1f KiB vs Julia alloc total %.1f KiB across %d/%d rows)\n",
+            summary.peak_ratio, summary.py_peak_kib, summary.jl_peak_kib, summary.peak_rows, summary.total)
+else
+    println("weighted tracemalloc ratio = n/a  (QMCPy results do not record Python memory metrics)")
+end
+if summary.rss_rows > 0
+    @printf("weighted RSS delta ratio   = %.3f  (Python RSS Δ total %.1f KiB vs Julia alloc total %.1f KiB across %d/%d rows)\n",
+            summary.rss_ratio, summary.py_rss_delta_kib, summary.jl_rss_kib, summary.rss_rows, summary.total)
+else
+    println("weighted RSS delta ratio   = n/a  (QMCPy results do not record Python RSS delta)")
+end
 
 # ── Save markdown file ──────────────────────────────────────────────────────────
 outfile = compare_py_outfile(out_label)
@@ -163,30 +195,44 @@ open(outfile, "w") do io
     println(io, "")
     println(io, "> ⚠️ C-kernel rows `[C]` (Lattice/DigitalNetB2/Halton `gen_samples`) call the same")
     println(io, "> `qmctoolscl` library on both sides and are **not** a Julia vs Python comparison.")
+    println(io, "> Julia `KiB` is allocated bytes from BenchmarkTools. Python reports `tracemalloc` peak")
+    println(io, "> and a coarse retained RSS delta from one warmed call; those memory metrics are useful")
+    println(io, "> but are **not** directly equivalent to Julia allocations.")
     println(io, "")
     println(io, "## Aggregate Summary\n")
-    println(io, "| metric | ratio | Julia total | Python total |")
-    println(io, "|:-------|------:|------------:|-------------:|")
-    println(io, "| matched benchmarks | $(summary.matched)/$(summary.total) | — | — |")
-    @printf(io, "| weighted time ratio | %.3f | %.3f ms | %.3f ms |\n",
-            summary.time_ratio, summary.jl_ms, summary.py_ms)
-    @printf(io, "| weighted memory ratio | %s | %.1f KiB | %s |\n\n",
-            "n/a", summary.jl_kib, "n/a")
-    println(io, "> Python memory is not summarized here because the QMCPy harness currently records")
-    println(io, "> timing only; there is no comparable cross-language allocation/RSS measure in the results.")
+    println(io, "| metric | ratio | Julia total | Python total | rows |")
+    println(io, "|:-------|------:|------------:|-------------:|-----:|")
+    println(io, "| matched benchmarks | $(summary.matched)/$(summary.total) | — | — | $(summary.matched) |")
+    @printf(io, "| weighted time ratio | %.3f | %.3f ms | %.3f ms | %d |\n",
+            summary.time_ratio, summary.jl_ms, summary.py_ms, summary.matched)
+    if summary.peak_rows > 0
+        @printf(io, "| weighted tracemalloc ratio | %.3f | %.1f KiB | %.1f KiB | %d |\n",
+                summary.peak_ratio, summary.jl_peak_kib, summary.py_peak_kib, summary.peak_rows)
+    else
+        println(io, "| weighted tracemalloc ratio | n/a | n/a | n/a | 0 |")
+    end
+    if summary.rss_rows > 0
+        @printf(io, "| weighted RSS delta ratio | %.3f | %.1f KiB | %.1f KiB | %d |\n\n",
+                summary.rss_ratio, summary.jl_rss_kib, summary.py_rss_delta_kib, summary.rss_rows)
+    else
+        println(io, "| weighted RSS delta ratio | n/a | n/a | n/a | 0 |\n")
+    end
     println(io, "")
-    println(io, "| benchmark | ratio | verdict | Julia (ms) | Python (ms) |")
-    println(io, "|:----------|------:|:-------:|----------:|------------:|")
+    println(io, "| benchmark | time ratio | verdict | Julia (ms) | Python (ms) | Julia alloc (KiB) | Python peak (KiB) | Python RSS Δ (KiB) |")
+    println(io, "|:----------|-----------:|:-------:|----------:|------------:|-------------------:|------------------:|-------------------:|")
     for row in rows
         c_note = row.c_kernel ? " `[C]`" : ""
         if row.py_ms !== nothing
                 ratio   = row.py_ms / row.jl_ms
                 verdict = ratio < 0.95 ? "❌" : ratio > 1.05 ? "✅" : "–"
-                @printf(io, "| `[\"%s\", \"%s\"]`%s | %.3f | %s | %.3f | %.3f |\n",
-                        row.group, row.name, c_note, ratio, verdict, row.jl_ms, row.py_ms)
+                peak_txt = row.py_peak_kib === nothing ? "n/a" : @sprintf("%.1f", row.py_peak_kib)
+                rss_txt = row.py_rss_delta_kib === nothing ? "n/a" : @sprintf("%.1f", row.py_rss_delta_kib)
+                @printf(io, "| `[\"%s\", \"%s\"]`%s | %.3f | %s | %.3f | %.3f | %.1f | %s | %s |\n",
+                        row.group, row.name, c_note, ratio, verdict, row.jl_ms, row.py_ms,
+                        row.jl_kib, peak_txt, rss_txt)
         else
-            @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a |\n",
-                    row.group, row.name, row.jl_ms)
+            @printf(io, "| `[\"%s\", \"%s\"]` | n/a | — | %.3f | n/a | %.1f | n/a | n/a |\n",
+                    row.group, row.name, row.jl_ms, row.jl_kib)
         end
     end
 end

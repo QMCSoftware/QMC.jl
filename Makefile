@@ -1,7 +1,14 @@
-.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels
+.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
-PYTHON ?= python
+QMCPY_PYTHON_AUTO := $(shell \
+	for py in python python3 "$(HOME)/miniconda3/bin/python" "$(HOME)/miniconda3/envs/qmcpy/bin/python" "$(HOME)/miniconda3/envs/qmcpy-leadership/bin/python"; do \
+		if { [ -x "$$py" ] || command -v "$$py" >/dev/null 2>&1; } && "$$py" -c "import qmcpy" >/dev/null 2>&1; then \
+			printf "%s" "$$py"; \
+			break; \
+		fi; \
+	done)
+PYTHON ?= $(if $(QMCPY_PYTHON_AUTO),$(QMCPY_PYTHON_AUTO),python)
 
 # Allow `make bench gaus` / `make bench-compare gaus` / `make bench-compare-py gaus`
 # as shorthand for `LABEL=gaus`. `make` treats `gaus` as an extra goal, so consume
@@ -82,6 +89,12 @@ notebook-%:
 bench:
 	julia benchmark/runbenchmarks.jl $(LABEL)
 
+check-qmcpy-python:
+	@$(PYTHON) -c "import qmcpy" >/dev/null 2>&1 || \
+		( echo "Configured PYTHON='$(PYTHON)' cannot import qmcpy."; \
+		  echo "Use PYTHON=/path/to/python with qmcpy installed."; \
+		  exit 1 )
+
 # Compare the working tree against a baseline git revision (default: HEAD, i.e.
 # the effect of uncommitted changes). Override with: make bench-compare REV=master
 # Override output label with: make bench-compare LABEL=gaus or make bench-compare gaus
@@ -101,13 +114,13 @@ bench-compare:
 # If LABEL is set, it also becomes the default input label for both sides.
 JL_LABEL ?= $(if $(LABEL),$(LABEL),latest)
 PY_LABEL ?= $(JL_LABEL)
-bench-compare-py: bench
+bench-compare-py: bench check-qmcpy-python
 	$(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL)
 	julia benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL)
 
 # Explicit labeled Julia-vs-QMCPy comparison flow.
 # Usage: make bench-compare-py-label LABEL=base
-bench-compare-py-label:
+bench-compare-py-label: check-qmcpy-python
 	julia benchmark/runbenchmarks.jl $(LABEL)
 	$(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL)
 	julia benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL)

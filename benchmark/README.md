@@ -138,11 +138,56 @@ benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
 
+The Python benchmark JSON now records two approximate memory metrics per row:
+
+- `tracemalloc_peak_kib`: Python-managed peak memory during one warmed call
+- `rss_delta_kib`: retained process RSS delta after one warmed call
+
+These are useful for comparison, but they are not directly equivalent to Julia's
+`KiB` allocation metric from `BenchmarkTools`.
+
+Briefly:
+
+- `tracemalloc_peak_kib` is temporary Python-level memory pressure during the call
+- `rss_delta_kib` is net process memory retained after the call
+- Julia `KiB` is bytes allocated during the call, not retained RSS
+
+When reading the weighted ratios in `compare_python*.md`:
+
+- ratio `< 1` means the Python metric is smaller than the Julia total
+- ratio `> 1` means the Python metric is larger than the Julia total
+
+If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than
+contradictory. It usually means Python allocated more temporary memory during the
+call but released most of it afterward, or conversely retained more process
+memory even though its traced Python-level peak was modest. Use:
+
+- time ratio as the cleanest cross-language comparison
+- `tracemalloc` as a temporary-allocation signal
+- `RSS delta` as a retained-footprint signal
+
+The Python harness also mirrors most of the newer Julia-only benchmark rows:
+
+- large-`d` `Gaussian(diag)` and `Gaussian(dense)` transforms
+- `StudentT` and `JohnsonsSU` transforms
+- `BoxIntegral` and `Linear0` evaluate rows, including large-`d` variants
+- `Genz(gaussian_peak)` and `Genz(continuous)` via direct NumPy formulas with the
+  same default parameters Julia uses, since QMCPy exposes only oscillatory and
+  corner-peak Genz variants
+
+If `compare_python*.md` still shows `n/a` rows after regenerating `qmcpy_<label>.json`,
+those rows do not currently have a meaningful Python counterpart in the harness.
+
 If the Python interpreter should be overridden:
 
 ```bash
 make bench-compare-py base PYTHON=python3
 ```
+
+By default, the Makefile now tries to auto-detect a Python that can
+`import qmcpy`, checking common candidates such as `python`, `python3`, and
+common Miniconda locations. If that guess is wrong on your machine, override it
+explicitly with `PYTHON=/path/to/python`.
 
 If the Julia and QMCPy input labels should differ:
 
@@ -224,5 +269,8 @@ Common generated files:
 - `bench-compare` uses `PkgBenchmark` and may benchmark git revisions in a
   temporary worktree.
 - `bench-compare-py` requires a Python environment where `qmcpy` is installed.
+- Python-vs-Julia benchmark reports now include Python `tracemalloc` peak and, when
+  available, retained RSS delta. Those memory metrics are approximate and should be
+  read as supporting evidence, not as exact equivalents of Julia allocation `KiB`.
 - Current benchmark reports are written in a sanitized form and avoid embedding
   host-specific system details or absolute local paths.
