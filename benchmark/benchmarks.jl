@@ -25,6 +25,12 @@ Logging.disable_logging(Logging.Warn)
 const SAMPLES = [256, 1024, 4096, 16384]
 const DIMS = [3, 10]
 
+# Large-d cases for the Gaussian transform only (see block 2b). These dimensions
+# are where the diagonal fast path's O(n·d²)→O(n·d) saving becomes visible; the
+# small DIMS above are far too low for the d² term to matter.
+const LARGE_DIMS = [50, 200]
+const LARGE_N = [1024, 4096]
+
 # ── Helpers ───────────────────────────────────────────────────────────────
 
 function bench_gen_samples(dd_constructor, dim, n; kwargs...)
@@ -66,6 +72,32 @@ for dim in DIMS, n in SAMPLES
     x = gen_samples(dd, n)
     SUITE["transform"]["Gaussian d=$dim n=$n"] =
         @benchmarkable transform($tm_gauss, $x) evals=3 samples=5
+end
+
+# 2b. Large-d transform cases — exercise the Gaussian diagonal fast path at
+# dimensions where its O(n·d²)→O(n·d) saving actually matters. Two covariance
+# types per (d, n):
+#   * (diag)  default identity Σ → factor A is diagonal → column-scaling fast path
+#   * (dense) full PD Σ          → factor A is dense    → BLAS GEMM (= baseline path)
+# Diag-vs-dense within ONE run isolates the fast path's benefit (no git A/B needed);
+# an opt1-vs-baseline A/B on the (diag) rows confirms it, while the (dense) rows —
+# unchanged by opt1 — act as a built-in control that should stay ~1.0.
+for dim in LARGE_DIMS, n in LARGE_N
+    dd = IIDStdUniform(dim; seed=42)
+    x = gen_samples(dd, n)
+
+    tm_diag = Gaussian(dd)                       # identity Σ ⇒ diagonal A ⇒ fast path
+    SUITE["transform"]["Gaussian(diag) d=$dim n=$n"] =
+        @benchmarkable transform($tm_diag, $x) evals=3 samples=5
+
+    # Dense positive-definite Σ (unit diagonal, 0.5 off-diagonal) ⇒ dense A ⇒ GEMM.
+    cov = fill(0.5, dim, dim)
+    for i in 1:dim
+        cov[i, i] = 1.0
+    end
+    tm_dense = Gaussian(dd; covariance=cov)
+    SUITE["transform"]["Gaussian(dense) d=$dim n=$n"] =
+        @benchmarkable transform($tm_dense, $x) evals=3 samples=5
 end
 
 # 3. Integrand evaluation (pure Julia)
