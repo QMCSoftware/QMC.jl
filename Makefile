@@ -59,6 +59,7 @@ test-%:
 
 # Build documentation
 doc:
+	rm -rf docs/build
 	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
 	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl
 
