@@ -59,40 +59,47 @@ function evaluate(f::Genz, x::AbstractMatrix)
         @. y = cos(2π * u[1] + s)
 
     elseif f.kind == :product_peak
-        for i in 1:n
-            p = 1.0
-            for j in 1:d
-                p *= 1.0 / (a[j]^(-2) + (x[i, j] - u[j])^2)
+        # Column-major: contiguous reads, identical per-row product order.
+        fill!(y, 1.0)
+        @inbounds for j in 1:d
+            aj_m2 = a[j]^(-2)
+            uj = u[j]
+            @simd for i in 1:n
+                y[i] *= 1.0 / (aj_m2 + (x[i, j] - uj)^2)
             end
-            y[i] = p
         end
 
     elseif f.kind == :corner_peak
-        for i in 1:n
-            s = 1.0
-            for j in 1:d
-                s += a[j] * x[i, j]
+        s = ones(n)
+        @inbounds for j in 1:d
+            aj = a[j]
+            @simd for i in 1:n
+                s[i] += aj * x[i, j]
             end
-            y[i] = s^(-(d + 1))
         end
+        @inbounds @. y = s^(-(d + 1))
 
     elseif f.kind == :gaussian_peak
-        for i in 1:n
-            s = 0.0
-            for j in 1:d
-                s += a[j]^2 * (x[i, j] - u[j])^2
+        s = zeros(n)
+        @inbounds for j in 1:d
+            aj2 = a[j]^2
+            uj = u[j]
+            @simd for i in 1:n
+                s[i] += aj2 * (x[i, j] - uj)^2
             end
-            y[i] = exp(-s)
         end
+        @. y = exp(-s)
 
     elseif f.kind == :continuous
-        for i in 1:n
-            s = 0.0
-            for j in 1:d
-                s += a[j] * abs(x[i, j] - u[j])
+        s = zeros(n)
+        @inbounds for j in 1:d
+            aj = a[j]
+            uj = u[j]
+            @simd for i in 1:n
+                s[i] += aj * abs(x[i, j] - uj)
             end
-            y[i] = exp(-s)
         end
+        @. y = exp(-s)
 
     elseif f.kind == :discontinuous
         for i in 1:n

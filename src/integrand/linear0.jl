@@ -17,13 +17,15 @@ Linear0(tm::AbstractTrueMeasure) = Linear0(tm, tm.dimension)
 
 function evaluate(f::Linear0, x::AbstractMatrix)
     n = size(x, 1)
-    y = Vector{Float64}(undef, n)
-    @inbounds for i in 1:n
-        s = 0.0
-        for j in 1:f.dimension
-            s += x[i, j]
+    y = zeros(Float64, n)
+    # Column-major accumulation: each column of `x` is contiguous in memory, so
+    # this avoids the stride-n cache misses of a per-row inner loop at large d.
+    # For each i the additions still occur in order j = 1:d, so the result is
+    # identical to the row-major formulation.
+    @inbounds for j in 1:f.dimension
+        @simd for i in 1:n
+            y[i] += x[i, j]
         end
-        y[i] = s
     end
     return y
 end
