@@ -93,10 +93,22 @@
             dd_direct =
                 Lattice(3; randomize=false, order="linear", generating_vector=[1, 3, 5, 7])
             @test gen_samples(dd_file, 8) ≈ gen_samples(dd_direct, 8)
+            @test_throws ArgumentError gen_samples(dd_file, 17)
         end
+
+        dd_rand_a = Lattice(4; randomize=false, order="linear", seed=11, generating_vector=6)
+        dd_rand_b = Lattice(4; randomize=false, order="linear", seed=11, generating_vector=6)
+        @test dd_rand_a.gen_vector == dd_rand_b.gen_vector
+        @test dd_rand_a.gen_vector[1] == UInt64(1)
+        @test all(isodd, dd_rand_a.gen_vector[2:end])
+        @test all(3 .<= dd_rand_a.gen_vector[2:end] .<= 63)
+        @test size(gen_samples(dd_rand_a, 16)) == (16, 4)
+        @test_throws ArgumentError gen_samples(dd_rand_a, 65)
 
         @test_throws ArgumentError Lattice(3; generating_vector=[1, 3])
         @test_throws ArgumentError Lattice(2; generating_vector=[1, 0])
+        @test_throws ArgumentError Lattice(2; generating_vector=1)
+        @test_throws ArgumentError Lattice(2; generating_vector=27)
         @test_throws ArgumentError Lattice(2; generating_vector="missing-vector.txt")
     end
 

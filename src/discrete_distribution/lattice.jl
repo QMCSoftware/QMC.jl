@@ -27,6 +27,8 @@ before `using QMC`.
 - `generating_vector`: optional custom generating vector. May be
   - `nothing` (default): use the bundled Kuo vector,
   - a vector of integers: use its first `dimension` entries,
+  - an integer `M`: generate a random odd vector `(1, v₂, …, v_d)` with
+    `v_j ∈ {3, 5, …, 2^M - 1}`,
   - a local text-file path: load one integer per non-comment line, or a
     QMCPy/LDData-style file whose first two integers are metadata followed by
     the vector entries.
@@ -48,6 +50,7 @@ mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
     gen_vector::Vector{UInt64}
     shift::Matrix{Float64}   # R × d
     rng::R
+    n_limit::Union{Nothing, Int}
     mimics::String
 end
 
@@ -113,29 +116,49 @@ function _read_lattice_vector_file(path::AbstractString)
     end
     isempty(values) && throw(ArgumentError("generating_vector file \"$path\" is empty"))
     if length(values) >= 3 && Int(values[1]) == length(values) - 2
-        return values[3:end]
+        values[2] <= typemax(Int) || throw(
+            ArgumentError("generating_vector file \"$path\" has n_limit too large for Int"),
+        )
+        return values[3:end], Int(values[2])
     end
-    return values
+    return values, nothing
 end
 
-function _resolve_lattice_generating_vector(dimension::Int, generating_vector)
+function _random_lattice_vector(dimension::Int, m::Integer, rng::AbstractRNG)
+    1 < m < 27 ||
+        throw(ArgumentError("integer generating_vector must satisfy 1 < M < 27, got $m"))
+    gv = Vector{UInt64}(undef, dimension)
+    gv[1] = UInt64(1)
+    if dimension > 1
+        max_half = (1 << (Int(m) - 1)) - 1
+        for j in 2:dimension
+            gv[j] = UInt64(2 * rand(rng, 1:max_half) + 1)
+        end
+    end
+    return gv, 1 << Int(m)
+end
+
+function _resolve_lattice_generating_vector(dimension::Int, generating_vector, rng::AbstractRNG)
     if isnothing(generating_vector) || generating_vector == _DEFAULT_LATTICE_VECTOR_NAME
         dimension <= _KUO_LATTICE_MAX_DIM || throw(
             ArgumentError(
                 "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
             ),
         )
-        return _KUO_LATTICE_GEN_VECTOR[1:dimension]
+        return _KUO_LATTICE_GEN_VECTOR[1:dimension], 1 << 20
     elseif generating_vector isa AbstractVector{<:Integer}
-        return _coerce_lattice_vector(generating_vector, dimension)
+        return _coerce_lattice_vector(generating_vector, dimension), nothing
+    elseif generating_vector isa Integer
+        return _random_lattice_vector(dimension, generating_vector, rng)
     elseif generating_vector isa AbstractString
         isfile(generating_vector) ||
             throw(ArgumentError("generating_vector file \"$generating_vector\" not found"))
-        return _coerce_lattice_vector(_read_lattice_vector_file(generating_vector), dimension)
+        values, n_limit = _read_lattice_vector_file(generating_vector)
+        return _coerce_lattice_vector(values, dimension), n_limit
     else
         throw(
             ArgumentError(
-                "generating_vector must be nothing, a vector of integers, or a local file path",
+                "generating_vector must be nothing, an integer, a vector of integers, or a local file path",
             ),
         )
     end
@@ -156,15 +179,35 @@ function Lattice(
     R >= 1 || throw(ArgumentError("replications must be >= 1"))
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
-    gv = _resolve_lattice_generating_vector(dimension, generating_vector)
+    gv, n_limit = _resolve_lattice_generating_vector(dimension, generating_vector, rng)
     shift = randomize ? rand(rng, R, dimension) : zeros(R, dimension)
 
-    return Lattice(dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
+    return Lattice(
+        dimension,
+        randomize,
+        order_lc,
+        replications,
+        gv,
+        shift,
+        rng,
+        n_limit,
+        "StdUniform",
+    )
 end
 
-function _validate_lattice_window(order::String, n::Int, n_start::Int)
+function _validate_lattice_window(dd::Lattice, n::Int, n_start::Int)
+    n_stop = Base.checked_add(n, n_start)
+    if !isnothing(dd.n_limit)
+        n_eval = dd.order == "linear" ? n : n_stop
+        n_eval <= dd.n_limit || throw(
+            ArgumentError(
+                "Lattice supports at most $(dd.n_limit) samples for this generating vector, got n=$n and n_start=$n_start",
+            ),
+        )
+    end
+
+    order = dd.order
     if order == "radical_inverse"
-        n_stop = Base.checked_add(n, n_start)
         (n_start == 0 || ispow2(n_start)) || throw(
             ArgumentError(
                 "Lattice order \"$order\" requires n_start to be 0 or a power of 2, got $n_start",
@@ -181,7 +224,7 @@ end
 function gen_samples(dd::Lattice, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive"))
     n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
-    _validate_lattice_window(dd.order, n, n_start)
+    _validate_lattice_window(dd, n, n_start)
     d = dd.dimension
     R = isnothing(dd.replications) ? 1 : dd.replications
     g = dd.gen_vector  # Vector{UInt64}, length d

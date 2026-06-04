@@ -42,3 +42,4 @@ benchmark/results/*
 
 # Developer-specific files
 sc_*
+lcov.info
