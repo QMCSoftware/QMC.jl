@@ -148,7 +148,7 @@ function genz_exact(f::Genz)
         any(aj -> abs(aj) < 1e-15, a) && return NaN
         d > 20 && return NaN
         total = 0.0
-        for mask in 0:(2^d - 1)
+        for mask in 0:(2 ^ d - 1)
             s = 1.0
             bits = 0
             for j in 1:d
