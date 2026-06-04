@@ -210,6 +210,38 @@ function evaluate(f::FinancialOption, x::AbstractMatrix)
         end
     end
 
+    # Fast path: Asian option with GBM transform already applied. The transform
+    # gives the full price path in x, so the payoff is the mean across the d
+    # monitoring dates. Doing it as a column reduction (j outer, i inner) reads x
+    # contiguously and skips the per-row _stock_prices/_payoff calls and the
+    # per-row log allocation; per-row accumulation order (j = 1:d) is unchanged,
+    # so results match the generic path.
+    if f.option_type == :asian && f._use_gbm_transform
+        n, d = size(x)
+        K = f.strike_price
+        avg = zeros(Float64, n)
+        if f.mean_type == :arithmetic
+            @inbounds for j in 1:d
+                @simd for i in 1:n
+                    avg[i] += x[i, j]
+                end
+            end
+            @. avg = avg / d
+        else  # geometric: exp(mean(log S))
+            @inbounds for j in 1:d
+                @simd for i in 1:n
+                    avg[i] += log(x[i, j])
+                end
+            end
+            @. avg = exp(avg / d)
+        end
+        return if f.call_put == :call
+            @. discount * max(avg - K, 0.0)
+        else
+            @. discount * max(K - avg, 0.0)
+        end
+    end
+
     n = size(x, 1)
     y = Vector{Float64}(undef, n)
     @inbounds for i in 1:n

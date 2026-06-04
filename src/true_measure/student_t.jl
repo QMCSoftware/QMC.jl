@@ -33,11 +33,27 @@ end
 
 function transform(tm::StudentT, x::AbstractMatrix)
     n, d = size(x)
-    tdist = Distributions.TDist(tm.df)
     y = Matrix{Float64}(undef, n, d)
-    @inbounds for j in 1:d
-        for i in 1:n
-            y[i, j] = tm.loc[j] + tm.scale[j] * quantile(tdist, _open_unit_interval(x[i, j]))
+    if tm.df == 2.0
+        # Exact closed form for the Student-t quantile at ν = 2:
+        #   Q(p) = (2p − 1) / √(2p(1 − p)).
+        # This avoids the per-element inverse-incomplete-beta in
+        # Distributions.quantile and matches it to numerical precision.
+        @inbounds for j in 1:d
+            loc = tm.loc[j]
+            scale = tm.scale[j]
+            @simd for i in 1:n
+                p = _open_unit_interval(x[i, j])
+                y[i, j] = loc + scale * (2.0 * p - 1.0) / sqrt(2.0 * p * (1.0 - p))
+            end
+        end
+    else
+        tdist = Distributions.TDist(tm.df)
+        @inbounds for j in 1:d
+            for i in 1:n
+                y[i, j] =
+                    tm.loc[j] + tm.scale[j] * quantile(tdist, _open_unit_interval(x[i, j]))
+            end
         end
     end
     return y
