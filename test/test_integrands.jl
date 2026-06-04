@@ -213,6 +213,12 @@
         y = sample_and_evaluate(f, 1000)
         @test length(y) == 1000
         @test all(y .< 0)  # Hartmann6D is always negative
+
+        # Deterministic value checks (verify the A/P/α constants). Evaluating at
+        # the known global minimizer gives the textbook minimum ≈ -3.32237.
+        xstar = [0.20169 0.150011 0.476874 0.275332 0.311652 0.6573]
+        @test evaluate(f, xstar)[1] ≈ -3.322368 atol = 1e-5
+        @test evaluate(f, fill(0.5, 1, 6))[1] ≈ -0.505315 atol = 1e-5
     end
 
     @testset "Multimodal2D" begin
@@ -322,6 +328,20 @@
         y = evaluate(si, x)
         @test size(y, 1) == 200
         @test size(y, 2) == 3
+
+        # End-to-end correctness: pick-freeze estimates vs the analytical Ishigami
+        # indices. The base must live on U(-π,π)³, and the wrapper consumes 2d=6
+        # uniform columns (X = cols 1:3, Z = cols 4:6). n and tolerance chosen so
+        # the estimate reliably lands near exact (validated against a reference
+        # pick-freeze MC: max component error ≈ 0.014 at this n).
+        ddc = IIDStdUniform(6; seed = 42)
+        tmc = Uniform(ddc; lower_bound = -π, upper_bound = π)
+        sic = SensitivityIndices(Ishigami(tmc))
+        xc = transform(tmc, gen_samples(ddc, 2^16))
+        closed, total = compute_sensitivity_indices(sic, xc)
+        ref = ishigami_exact()
+        @test all(abs.(closed .- ref.closed) .<= 0.05)
+        @test all(abs.(total .- ref.total) .<= 0.05)
     end
 
     @testset "BayesianLRCoeffs" begin
