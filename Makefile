@@ -1,4 +1,4 @@
-.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-label-coverage check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
 DOC_DEPOT ?= $(if $(TMPDIR),$(TMPDIR),/tmp/)qmcju-doc-depot
@@ -146,9 +146,9 @@ bench-compare-py-label: check-qmcpy-python
 	$(call RUN_TIMED,BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
 
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
-# Usage: make bench-all-label LABEL=base
-bench-all-label:
-	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL),bench-all-label)
+# Usage: make bench-all LABEL=base
+bench-all:
+	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL),bench-all)
 
 # Run the benchmark suite with coverage enabled and produce an lcov report over
 # both src/ and benchmark/ coverage files.
@@ -164,8 +164,8 @@ bench-compare-py-coverage:
 	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare-py BENCH_COVERAGE=1 LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-py-coverage)
 
 # Run the full labeled benchmark workflow with coverage enabled and produce an lcov report.
-bench-all-label-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all-label BENCH_COVERAGE=1 LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-label-coverage)
+bench-all-coverage:
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-coverage)
 
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]

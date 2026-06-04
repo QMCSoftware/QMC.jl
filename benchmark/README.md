@@ -239,7 +239,7 @@ To run both the labeled Julia-only comparison and the labeled Julia-vs-QMCPy
 comparison in one task:
 
 ```bash
-make bench-all-label LABEL=base
+make bench-all LABEL=base
 ```
 
 This runs:

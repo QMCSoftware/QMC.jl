@@ -35,16 +35,17 @@ function JohnsonsSU(dd::AbstractDiscreteDistribution; xi=0.0, lambda=1.0, gamma=
 end
 
 function transform(tm::JohnsonsSU, x::AbstractMatrix)
-    n, d = size(x)
-    ndist = Distributions.Normal()
-    y = Matrix{Float64}(undef, n, d)
-    @inbounds for j in 1:d
-        for i in 1:n
-            z = quantile(ndist, _open_unit_interval(x[i, j]))
-            y[i, j] = tm.xi[j] + tm.lambda[j] * sinh((z - tm.gamma[j]) / tm.delta[j])
-        end
-    end
-    return y
+    # Phi^-1(u) = sqrt(2) * erfinv(2u - 1): the same fast standard-normal quantile the Gaussian
+    # transform uses, applied over the whole n x d input as a fused broadcast rather
+    # than a per-element Distributions.quantile call. The Johnson S_u map
+    # y = xi + lambda * sinh((Phi^-1(u) - gamma)/delta) is then broadcast column-wise
+    # (parameters are 1 x d rows). Numerically equivalent to the scalar form.
+    xi = transpose(tm.xi)
+    lam = transpose(tm.lambda)
+    gam = transpose(tm.gamma)
+    del = transpose(tm.delta)
+    z = @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * _open_unit_interval(x) - 1.0)
+    return @. xi + lam * sinh((z - gam) / del)
 end
 
 Base.show(io::IO, tm::JohnsonsSU) = print(io, "JohnsonsSU(d=$(tm.dimension))")
