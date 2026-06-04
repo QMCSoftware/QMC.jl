@@ -127,3 +127,45 @@ function fwht_2d!(X::AbstractMatrix{T}) where {T <: Real}
     end
     return X
 end
+
+"""
+    _fwht_ortho(x::AbstractVector) -> Vector{Float64}
+
+Orthonormal (norm-preserving) natural-order fast Walsh-Hadamard transform:
+`H_n*x / sqrt(n)`. This is the convention used by QMCPy's `fwht` (each
+butterfly step divides by `sqrt(2)`), as opposed to the unnormalised [`fwht`](@ref)
+(`H_n*x`). It is the fast transform underlying the guaranteed digital-net
+cubature error bound.
+
+The doubling identity holds with all-ones weights: for `x = [x_1; x_2]` with
+equal halves, `_fwht_ortho(x) == [y_1 .+ y_2; y_1 .- y_2] ./ sqrt(2)` where
+`y_i = _fwht_ortho(x_i)`.
+"""
+function _fwht_ortho(x::AbstractVector)
+    n = length(x)
+    return fwht(x) ./ sqrt(n)
+end
+
+"""
+    _ytilde_init(y) -> Vector{Float64}
+
+Scaled orthonormal Walsh coefficients of the function values `y` over the first
+`length(y)` net points: `_fwht_ortho(y) / √length(y)`. The first entry equals
+`mean(y)`. Used to initialise the guaranteed digital-net cubature.
+"""
+_ytilde_init(y::AbstractVector) = _fwht_ortho(y) ./ sqrt(length(y))
+
+"""
+    _ytilde_double(ytilde_prev, ynext) -> Vector{Float64}
+
+Incrementally extend the scaled Walsh coefficients when the sample size doubles,
+reusing `ytilde_prev` (coefficients of the existing points) and the function
+values `ynext` at the newly added points (equal in number). Uses the all-ones
+FWHT doubling merge, so the result equals `_ytilde_init([y_prev; ynext])` without
+recomputing the transform over the existing points.
+"""
+function _ytilde_double(ytilde_prev::AbstractVector, ynext::AbstractVector)
+    N = length(ynext)
+    yt_omega = _fwht_ortho(ynext) ./ sqrt(N)
+    return vcat((ytilde_prev .+ yt_omega) ./ 2, (ytilde_prev .- yt_omega) ./ 2)
+end

@@ -79,4 +79,44 @@
         # Unknown transforms error.
         @test_throws ErrorException periodize(x, :BOGUS)
     end
+
+    @testset "FWHT (orthonormal)" begin
+        # Matches QMCPy's `fwht` convention: H_n*x / sqrt(n) (orthonormal).
+        @test QMC._fwht_ortho([1.0, 1.0]) ≈ [sqrt(2.0), 0.0]
+        @test QMC._fwht_ortho([1.0, 0.0, 0.0, 0.0]) ≈ [0.5, 0.5, 0.5, 0.5]
+        @test QMC._fwht_ortho([1.0, 2.0, 3.0, 4.0]) ≈ [5.0, -1.0, -2.0, 0.0]
+        @test QMC._fwht_ortho([1.0, 1.0, 1.0, 1.0]) ≈ [2.0, 0.0, 0.0, 0.0]
+
+        x = Float64[3, 1, 4, 1, 5, 9, 2, 6]
+        # Orthonormal => norm-preserving, and the DC coefficient equals mean*sqrt(n).
+        @test norm(QMC._fwht_ortho(x)) ≈ norm(x)
+        @test QMC._fwht_ortho(x)[1] ≈ sum(x) / sqrt(length(x))
+
+        # Doubling identity (all-ones weights): _fwht_ortho([x_1; x_2]) for equal
+        # halves equals [y_1.+y_2; y_1.-y_2]/sqrt(2). This is the incremental-update
+        # relation the guaranteed cubature relies on.
+        x1 = Float64[1, 2, 3, 4]
+        x2 = Float64[5, 6, 7, 8]
+        y1 = QMC._fwht_ortho(x1)
+        y2 = QMC._fwht_ortho(x2)
+        @test QMC._fwht_ortho(vcat(x1, x2)) ≈ vcat(y1 .+ y2, y1 .- y2) ./ sqrt(2.0)
+    end
+
+    @testset "ytilde incremental doubling" begin
+        # The incremental update must equal the orthonormal transform of the full
+        # point set - the relation that lets the cubature reuse work across
+        # doublings - and the first coefficient must track the running mean.
+        y = Float64[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3]  # 16 = 2^4
+        N = 4
+        yt = QMC._ytilde_init(y[1:N])
+        off = N
+        cur = N
+        for _ in 1:2  # 4 -> 8 -> 16
+            yt = QMC._ytilde_double(yt, y[(off + 1):(off + cur)])
+            off += cur
+            cur *= 2
+        end
+        @test yt ≈ QMC._ytilde_init(y[1:off])
+        @test yt[1] ≈ sum(y[1:off]) / off
+    end
 end
