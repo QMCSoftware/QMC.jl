@@ -188,6 +188,17 @@
         @test scml.rmse_tol > 0
         set_tolerance!(scml; rmse_tol=0.05)
         @test scml.rmse_tol == 0.05
+
+        scmlqmc = CubMLQMC(FinancialOptionML(gbm; d_coarsest=4); abs_tol=0.1)
+        @test scmlqmc.rmse_tol > 0
+        set_tolerance!(scmlqmc; rmse_tol=0.05)
+        @test scmlqmc.rmse_tol == 0.05
+
+        scmlcont = CubMLMCCont(FinancialOptionML(gbm; d_coarsest=4); abs_tol=0.1)
+        @test scmlcont.target_tol > 0
+        set_tolerance!(scmlcont; rmse_tol=0.05)
+        @test scmlcont.target_tol == 0.05
+
         @test_throws ArgumentError set_tolerance!(scml; rel_tol=0.01)
     end
 end

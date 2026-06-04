@@ -17,8 +17,8 @@ abstract type AbstractStoppingCriterion end
 Update the error tolerance(s) on a stopping criterion in place, mirroring
 QMCPy's `set_tolerance`. Only the keyword(s) you pass are changed; the others are
 left untouched. The single-level `Cub*` criteria expose `abs_tol`/`rel_tol`; the
-multilevel criteria expose `rmse_tol`. Throws if the criterion has no field for a
-requested tolerance. Returns `sc`.
+multilevel criteria expose `rmse_tol` or `target_tol`. Throws if the criterion
+has no field for a requested tolerance. Returns `sc`.
 
 ```julia
 sc = CubQMCNetG(Keister(Gaussian(DigitalNetB2(3); covariance=0.5)); abs_tol=0.05)
@@ -44,10 +44,14 @@ function set_tolerance!(
         sc.rel_tol = Float64(rel_tol)
     end
     if rmse_tol !== nothing
-        hasfield(typeof(sc), :rmse_tol) ||
-            throw(ArgumentError("$(typeof(sc)) has no rmse_tol field"))
         rmse_tol >= 0 || throw(ArgumentError("rmse_tol must be >= 0"))
-        sc.rmse_tol = Float64(rmse_tol)
+        if hasfield(typeof(sc), :rmse_tol)
+            sc.rmse_tol = Float64(rmse_tol)
+        elseif hasfield(typeof(sc), :target_tol)
+            sc.target_tol = Float64(rmse_tol)
+        else
+            throw(ArgumentError("$(typeof(sc)) has no rmse_tol/target_tol field"))
+        end
     end
     return sc
 end
@@ -60,6 +64,9 @@ abstract type AbstractKernel end
 const _OPEN01_LOW = eps(Float64)
 const _OPEN01_HIGH = 1.0 - eps(Float64)
 @inline _open_unit_interval(u::Float64) = clamp(u, _OPEN01_LOW, _OPEN01_HIGH)
+@inline _open_unit_interval(u::T) where {T <: AbstractFloat} =
+    clamp(u, eps(T), one(T) - eps(T))
+@inline _open_unit_interval(u::Real) = _open_unit_interval(Float64(u))
 
 # Common interface functions
 """

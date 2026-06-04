@@ -226,4 +226,17 @@
         @test size(y) == (100, 2)
         @test abs(mean(y[:, 1])) < 0.5
     end
+
+    @testset "Open unit interval helper" begin
+        @test QMC._open_unit_interval(0.0f0) == eps(Float32)
+        @test QMC._open_unit_interval(1.0f0) == 1.0f0 - eps(Float32)
+        @test QMC._open_unit_interval(0) == eps(Float64)
+
+        dd = IIDStdUniform(2; seed=101)
+        tm = JohnsonsSU(dd)
+        x = Float32.(gen_samples(dd, 8))
+        y = transform(tm, x)
+        @test size(y) == size(x)
+        @test all(isfinite, y)
+    end
 end
