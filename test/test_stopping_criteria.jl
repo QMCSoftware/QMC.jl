@@ -201,4 +201,51 @@
 
         @test_throws ArgumentError set_tolerance!(scml; rel_tol=0.01)
     end
+
+    @testset "QMC criterion contract (characterization)" begin
+        # Value-free regression guards that any future rework of the replicated
+        # QMC criteria must preserve. They assert the convergence *contract* and
+        # cross-criterion consistency rather than hard-coded estimates, so they
+        # remain valid across legitimate refactors (e.g. an incremental-net or
+        # Walsh-coefficient rewrite) while catching a criterion that silently
+        # stops converging, drops a schema key, becomes non-reproducible, or
+        # disagrees with the other QMC rule.
+        exact = keister_exact(3)
+        net =
+            tol -> CubQMCNetG(
+                Keister(
+                    Gaussian(DigitalNetB2(3; randomize="LMS_DS", seed=2024); covariance=0.5),
+                );
+                abs_tol=tol,
+                n_init=2^10,
+                n_reps=16,
+            )
+        lat =
+            tol -> CubQMCLatticeG(
+                Keister(Gaussian(Lattice(3; randomize=true, seed=2024); covariance=0.5));
+                abs_tol=tol,
+                n_init=2^10,
+                n_reps=16,
+            )
+
+        for make in (net, lat)
+            res = integrate(make(0.05))
+            # Converges within a safe (5x) margin of the known exact value.
+            @test abs(res.solution - exact) < 0.25
+            # Reports having met the requested tolerance.
+            @test res.data[:error_bound] <= 0.05 + 1e-9
+            # Standardized result schema is complete and self-consistent.
+            for k in (:n, :n_per_rep, :n_total, :n_reps, :error_bound)
+                @test haskey(res.data, k)
+            end
+            @test res.data[:n_total] == res.data[:n_per_rep] * res.data[:n_reps]
+            # Reproducible under a fixed seed.
+            @test integrate(make(0.05)).solution == res.solution
+            # A tighter tolerance never uses fewer samples.
+            @test integrate(make(0.005)).data[:n_total] >= res.data[:n_total]
+        end
+
+        # The two QMC rules estimate the same integral.
+        @test abs(integrate(net(0.05)).solution - integrate(lat(0.05)).solution) < 0.2
+    end
 end

@@ -72,9 +72,35 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
         n_iter += 1
         estimates = Vector{Float64}(undef, R)
 
-        for r in 1:R
-            y = sample_and_evaluate(sc.integrand, n)
-            estimates[r] = mean(y)
+        dd = sc.integrand.true_measure.dd
+        # Batch the R replicates' transform + evaluate in GROUPS of `group_size`
+        # rather than one `sample_and_evaluate` call per replicate. The same R
+        # randomizations are drawn in the same order (gen_samples advances the
+        # same RNG), so per-replicate means, mu_hat, and the error bound are
+        # unchanged. Grouping does one large BLAS GEMM per group instead of R
+        # tiny ones while bounding the dense-transform temporaries to
+        # group_size*n rows.
+        group_size = 4
+        r0 = 1
+        while r0 <= R
+            g = min(group_size, R - r0 + 1)
+            first = gen_samples(dd, n)
+            first =
+                ndims(first) == 3 ?
+                reshape(first, size(first, 1) * size(first, 2), size(first, 3)) : first
+            m = size(first, 1)
+            x_group = Matrix{Float64}(undef, g * m, size(first, 2))
+            @inbounds x_group[1:m, :] .= first
+            @inbounds for k in 2:g
+                xu = gen_samples(dd, n)
+                xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+                x_group[((k - 1) * m + 1):(k * m), :] .= xu
+            end
+            y_group = evaluate(sc.integrand, transform(sc.integrand.true_measure, x_group))
+            @inbounds for k in 1:g
+                estimates[r0 + k - 1] = mean(@view y_group[((k - 1) * m + 1):(k * m)])
+            end
+            r0 += g
         end
 
         mu_hat = mean(estimates)
