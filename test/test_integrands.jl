@@ -228,6 +228,11 @@
         y = sample_and_evaluate(f, 1000)
         @test length(y) == 1000
         @test all(y .>= 0)  # sum of Gaussians is positive
+
+        # Deterministic values: near a peak centre the matching term dominates.
+        v = evaluate(f, [0.2 0.3; 0.5 0.7])
+        @test v[1] ≈ 1.0000004589 atol = 1e-6   # peak 1 (h=1.0) at its centre
+        @test v[2] ≈ 1.5073352177 atol = 1e-6   # peak 2 (h=1.5) at its centre
     end
 
     @testset "FourBranch2D" begin
@@ -237,6 +242,10 @@
         y = sample_and_evaluate(f, 1000)
         @test length(y) == 1000
         @test !any(isnan, y)
+
+        # Deterministic values: min branch = (k - |x₁| - |x₂|)/k.
+        v = evaluate(f, [0.0 0.0; 1.0 2.0; 3.0 4.0])
+        @test v ≈ [1.0, 0.5, -1 / 6]
     end
 
     @testset "Barrier Option" begin
