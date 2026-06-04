@@ -156,6 +156,34 @@ function kernel_eval(k::KernelRationalQuadratic, r::Float64)
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Squared Exponential (QMCPy parity twin of the Gaussian / RBF kernel)
+# ──────────────────────────────────────────────────────────────────────────────
+"""
+    KernelSquaredExponential(; lengthscale=1.0, outputscale=1.0)
+
+Squared-exponential kernel: k(r) = σ² exp(-r²/(2ℓ²)). Mathematically identical to
+[`KernelGaussian`](@ref); provided as a distinct type for naming parity with
+QMCPy's `KernelSquaredExponential` (which expresses the same kernel via the
+pairwise-distance form `S exp(-d_γ²)`, `d_γ = ‖(x - z)/(√2 ℓ)‖₂`).
+"""
+struct KernelSquaredExponential <: AbstractStationaryKernel
+    lengthscale::Float64
+    outputscale::Float64
+end
+
+function KernelSquaredExponential(; lengthscale::Float64 = 1.0,
+    outputscale::Float64 = 1.0)
+    lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
+    outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
+    return KernelSquaredExponential(lengthscale, outputscale)
+end
+
+function kernel_eval(k::KernelSquaredExponential, r::Float64)
+    z = r / k.lengthscale
+    return k.outputscale * exp(-0.5 * z^2)
+end
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Kernel matrix construction (common to all stationary kernels)
 # ──────────────────────────────────────────────────────────────────────────────
 """
@@ -234,6 +262,9 @@ function Base.show(io::IO, k::KernelRationalQuadratic)
         io,
         "KernelRationalQuadratic(ℓ=$(k.lengthscale), σ²=$(k.outputscale), α=$(k.alpha))",
     )
+end
+function Base.show(io::IO, k::KernelSquaredExponential)
+    print(io, "KernelSquaredExponential(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")
 end
 function Base.show(io::IO, k::SumKernel)
     print(io, "($(k.k1) + $(k.k2))")

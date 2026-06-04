@@ -121,16 +121,17 @@ function genz_exact(f::Genz)
     u = f.u
 
     if f.kind == :oscillatory
-        # Exact: product of sinc-like terms (complex)
-        # For a_j, u_1: cos(2π u_1) * ∏ sin(a_j) / a_j  (simplified for a ≠ 0)
-        val = cos(2π * u[1])
+        # ∫_{[0,1]^d} cos(2π u₁ + Σ aⱼ xⱼ) dx
+        #   = cos(2π u₁ + Σ aⱼ/2) · ∏ sinc(aⱼ/2),  sinc(t) = sin(t)/t (→ 1 as t→0).
+        phase = 2π * u[1]
+        val = 1.0
         for j in 1:d
-            if abs(a[j]) < 1e-15
-                continue
+            phase += a[j] / 2
+            if abs(a[j]) >= 1e-15
+                val *= sin(a[j] / 2) / (a[j] / 2)
             end
-            val *= sin(a[j]) / a[j]
         end
-        return val
+        return cos(phase) * val
 
     elseif f.kind == :product_peak
         val = 1.0
@@ -140,8 +141,29 @@ function genz_exact(f::Genz)
         return val
 
     elseif f.kind == :corner_peak
-        # Recursive formula — use simple numeric integration for now
-        return NaN  # Exact formula is complex; not implemented
+        # ∫_{[0,1]^d} (1 + Σ aⱼ xⱼ)^{-(d+1)} dx
+        #   = 1/(d! ∏ aⱼ) · Σ_{v∈{0,1}^d} (-1)^{|v|} (1 + Σ vⱼ aⱼ)^{-1}
+        # (inclusion–exclusion over the cube corners). Requires every aⱼ ≠ 0;
+        # the 2^d sum is only practical for modest d.
+        any(aj -> abs(aj) < 1e-15, a) && return NaN
+        d > 20 && return NaN
+        total = 0.0
+        for mask in 0:(2^d - 1)
+            s = 1.0
+            bits = 0
+            for j in 1:d
+                if (mask >> (j - 1)) & 1 == 1
+                    s += a[j]
+                    bits += 1
+                end
+            end
+            total += (iseven(bits) ? 1.0 : -1.0) / s
+        end
+        fact = 1.0
+        for k in 2:d
+            fact *= k
+        end
+        return total / (fact * prod(a))
 
     elseif f.kind == :gaussian_peak
         val = 1.0

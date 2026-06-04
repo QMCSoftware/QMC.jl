@@ -172,5 +172,14 @@
 
         @test_throws ArgumentError set_tolerance!(sc; abs_tol = -1.0)
         @test_throws ArgumentError set_tolerance!(sc; rel_tol = -0.5)
+
+        dd_ml = DigitalNetB2(16; randomize = "LMS_DS", seed = 7)
+        gbm = GeometricBrownianMotion(dd_ml; volatility = 0.2, start_price = 100.0,
+            interest_rate = 0.05, t_final = 1.0)
+        scml = CubMLMC(FinancialOptionML(gbm; d_coarsest = 4); abs_tol = 0.1)
+        @test scml.rmse_tol > 0
+        set_tolerance!(scml; rmse_tol = 0.05)
+        @test scml.rmse_tol == 0.05
+        @test_throws ArgumentError set_tolerance!(scml; rel_tol = 0.01)
     end
 end

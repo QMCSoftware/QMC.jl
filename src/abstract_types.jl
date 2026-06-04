@@ -11,13 +11,14 @@ abstract type AbstractIntegrand end
 abstract type AbstractStoppingCriterion end
 
 """
-    set_tolerance!(sc::AbstractStoppingCriterion; abs_tol=nothing, rel_tol=nothing) -> sc
+    set_tolerance!(sc::AbstractStoppingCriterion; abs_tol=nothing, rel_tol=nothing,
+                   rmse_tol=nothing) -> sc
 
 Update the error tolerance(s) on a stopping criterion in place, mirroring
 QMCPy's `set_tolerance`. Only the keyword(s) you pass are changed; the others are
-left untouched. Throws if the criterion has no field for a requested tolerance
-(for example, the multilevel criteria store `rmse_tol` rather than
-`abs_tol`/`rel_tol`). Returns `sc`.
+left untouched. The single-level `Cub*` criteria expose `abs_tol`/`rel_tol`; the
+multilevel criteria expose `rmse_tol`. Throws if the criterion has no field for a
+requested tolerance. Returns `sc`.
 
 ```julia
 sc = CubQMCNetG(Keister(Gaussian(DigitalNetB2(3); covariance=0.5)); abs_tol=0.05)
@@ -25,7 +26,7 @@ set_tolerance!(sc; abs_tol=0.01, rel_tol=0.0)
 ```
 """
 function set_tolerance!(sc::AbstractStoppingCriterion;
-    abs_tol = nothing, rel_tol = nothing)
+    abs_tol = nothing, rel_tol = nothing, rmse_tol = nothing)
     if abs_tol !== nothing
         hasfield(typeof(sc), :abs_tol) ||
             throw(ArgumentError("$(typeof(sc)) has no abs_tol field"))
@@ -37,6 +38,12 @@ function set_tolerance!(sc::AbstractStoppingCriterion;
             throw(ArgumentError("$(typeof(sc)) has no rel_tol field"))
         rel_tol >= 0 || throw(ArgumentError("rel_tol must be >= 0"))
         sc.rel_tol = Float64(rel_tol)
+    end
+    if rmse_tol !== nothing
+        hasfield(typeof(sc), :rmse_tol) ||
+            throw(ArgumentError("$(typeof(sc)) has no rmse_tol field"))
+        rmse_tol >= 0 || throw(ArgumentError("rmse_tol must be >= 0"))
+        sc.rmse_tol = Float64(rmse_tol)
     end
     return sc
 end

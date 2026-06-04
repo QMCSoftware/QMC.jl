@@ -42,6 +42,29 @@
         exact = genz_exact(f_cont)
         y = sample_and_evaluate(f_cont, 50000)
         @test abs(mean(y) - exact) < 0.05
+
+        f_osc1 = Genz(Uniform(IIDStdUniform(1)); kind = :oscillatory,
+            a = [1.0], u = [0.5])
+        @test genz_exact(f_osc1) ≈ -sin(1.0)
+        f_osc2 = Genz(Uniform(IIDStdUniform(2)); kind = :oscillatory,
+            a = [1.0, 1.0], u = [0.5, 0.5])
+        @test genz_exact(f_osc2) ≈ -0.4967514421 atol = 1e-9
+        f_cp = Genz(Uniform(IIDStdUniform(2)); kind = :corner_peak,
+            a = [1.0, 1.0], u = [0.5, 0.5])
+        @test genz_exact(f_cp) ≈ 1 / 6
+        f_cp2 = Genz(Uniform(IIDStdUniform(2)); kind = :corner_peak,
+            a = [0.5, 2.0], u = [0.5, 0.5])
+        @test genz_exact(f_cp2) ≈ 1 / 7
+
+        f_pp = Genz(Uniform(IIDStdUniform(2)); kind = :product_peak,
+            a = [1.0, 1.0], u = [0.5, 0.5])
+        @test genz_exact(f_pp) ≈ 0.8598764213 atol = 1e-9
+        f_gp = Genz(Uniform(IIDStdUniform(2)); kind = :gaussian_peak,
+            a = [1.0, 1.0], u = [0.5, 0.5])
+        @test genz_exact(f_gp) ≈ 0.8511206675 atol = 1e-9
+        f_dc = Genz(Uniform(IIDStdUniform(2)); kind = :discontinuous,
+            a = [1.0, 1.0], u = [0.5, 0.5])
+        @test genz_exact(f_dc) ≈ 0.4208392871 atol = 1e-9
     end
 
     @testset "AsianOption" begin

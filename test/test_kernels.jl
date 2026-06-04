@@ -76,6 +76,18 @@
         @test_throws ArgumentError KernelRationalQuadratic(lengthscale = -1.0)
     end
 
+    @testset "KernelSquaredExponential" begin
+        k = KernelSquaredExponential(lengthscale = 1.0, outputscale = 2.0)
+        @test kernel_eval(k, 0.0) ≈ 2.0
+        @test kernel_eval(k, 1.0) ≈ 2.0 * exp(-0.5)
+        kg = KernelGaussian(lengthscale = 1.3, outputscale = 0.7)
+        kse = KernelSquaredExponential(lengthscale = 1.3, outputscale = 0.7)
+        for r in (0.0, 0.5, 1.0, 2.5)
+            @test kernel_eval(kse, r) ≈ kernel_eval(kg, r)
+        end
+        @test_throws ArgumentError KernelSquaredExponential(lengthscale = 0.0)
+    end
+
     @testset "Combined Kernels" begin
         k1 = KernelMatern32(lengthscale = 1.0, outputscale = 1.0)
         k2 = KernelGaussian(lengthscale = 2.0, outputscale = 0.5)
