@@ -141,8 +141,8 @@ bench-compare-py-label: check-qmcpy-python
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
 # Usage: make bench-all-label LABEL=base
 bench-all-label:
-	$(MAKE) bench-compare LABEL=$(LABEL)
-	$(MAKE) bench-compare-py LABEL=$(LABEL)
+	$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL)
+	$(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL)
 
 # Run the benchmark suite with coverage enabled and produce an lcov report over
 # both src/ and benchmark/ coverage files.
