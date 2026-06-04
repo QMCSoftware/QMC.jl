@@ -10,6 +10,37 @@ abstract type AbstractIntegrand end
 """Abstract base for all stopping criteria."""
 abstract type AbstractStoppingCriterion end
 
+"""
+    set_tolerance!(sc::AbstractStoppingCriterion; abs_tol=nothing, rel_tol=nothing) -> sc
+
+Update the error tolerance(s) on a stopping criterion in place, mirroring
+QMCPy's `set_tolerance`. Only the keyword(s) you pass are changed; the others are
+left untouched. Throws if the criterion has no field for a requested tolerance
+(for example, the multilevel criteria store `rmse_tol` rather than
+`abs_tol`/`rel_tol`). Returns `sc`.
+
+```julia
+sc = CubQMCNetG(Keister(Gaussian(DigitalNetB2(3); covariance=0.5)); abs_tol=0.05)
+set_tolerance!(sc; abs_tol=0.01, rel_tol=0.0)
+```
+"""
+function set_tolerance!(sc::AbstractStoppingCriterion;
+    abs_tol = nothing, rel_tol = nothing)
+    if abs_tol !== nothing
+        hasfield(typeof(sc), :abs_tol) ||
+            throw(ArgumentError("$(typeof(sc)) has no abs_tol field"))
+        abs_tol >= 0 || throw(ArgumentError("abs_tol must be >= 0"))
+        sc.abs_tol = Float64(abs_tol)
+    end
+    if rel_tol !== nothing
+        hasfield(typeof(sc), :rel_tol) ||
+            throw(ArgumentError("$(typeof(sc)) has no rel_tol field"))
+        rel_tol >= 0 || throw(ArgumentError("rel_tol must be >= 0"))
+        sc.rel_tol = Float64(rel_tol)
+    end
+    return sc
+end
+
 """Abstract base for all kernels."""
 abstract type AbstractKernel end
 

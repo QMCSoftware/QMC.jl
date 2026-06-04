@@ -150,4 +150,24 @@
         @test occursin("n_total=16", txt)
         @test occursin("error_bound=", txt)
     end
+
+    @testset "set_tolerance!" begin
+        dd = IIDStdUniform(3; seed = 42)
+        f = Keister(Gaussian(dd; covariance = 0.5))
+        sc = CubMCCLT(f; abs_tol = 0.05)
+        @test sc.abs_tol == 0.05
+        @test sc.rel_tol == 0.0
+
+        ret = set_tolerance!(sc; abs_tol = 0.2)
+        @test ret === sc
+        @test sc.abs_tol == 0.2
+        @test sc.rel_tol == 0.0
+
+        set_tolerance!(sc; rel_tol = 0.01)
+        @test sc.abs_tol == 0.2
+        @test sc.rel_tol == 0.01
+
+        @test_throws ArgumentError set_tolerance!(sc; abs_tol = -1.0)
+        @test_throws ArgumentError set_tolerance!(sc; rel_tol = -0.5)
+    end
 end
