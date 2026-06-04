@@ -64,8 +64,7 @@ abstract type AbstractKernel end
 const _OPEN01_LOW = eps(Float64)
 const _OPEN01_HIGH = 1.0 - eps(Float64)
 @inline _open_unit_interval(u::Float64) = clamp(u, _OPEN01_LOW, _OPEN01_HIGH)
-@inline _open_unit_interval(u::T) where {T <: AbstractFloat} =
-    clamp(u, eps(T), one(T) - eps(T))
+@inline _open_unit_interval(u::T) where {T <: AbstractFloat} = clamp(u, eps(T), one(T) - eps(T))
 @inline _open_unit_interval(u::Real) = _open_unit_interval(Float64(u))
 
 # Common interface functions
