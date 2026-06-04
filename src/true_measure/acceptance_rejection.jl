@@ -91,9 +91,13 @@ function transform(tm::AcceptanceRejection, x::AbstractMatrix)
     d = tm.dimension
     M = tm.envelope_multiplier
 
-    accepted = Vector{Vector{Float64}}()
-    sizehint!(accepted, div(n, 2))
-
+    # Accumulate accepted candidates row-major into one flat buffer instead of a
+    # Vector{Vector{Float64}} + reduce(vcat, [a' …]): that avoided a per-row
+    # `collect`, an array of adjoints, and a quadratic-ish vcat. The candidate
+    # computation and acceptance test are unchanged.
+    flat = Float64[]
+    sizehint!(flat, (d * n) ÷ 2)
+    m = 0
     @inbounds for i in 1:n
         # Candidate point (first d coordinates)
         candidate = tm.proposal_sample_func(@view(x[i, 1:d]))
@@ -103,14 +107,17 @@ function transform(tm::AcceptanceRejection, x::AbstractMatrix)
         # Accept if u ≤ pdf(candidate) / (M * proposal_pdf(candidate))
         ratio = tm.pdf_func(candidate) / (M * tm.proposal_pdf_func(candidate))
         if u <= ratio
-            push!(accepted, collect(candidate))
+            for k in 1:d
+                push!(flat, candidate[k])
+            end
+            m += 1
         end
     end
 
-    if isempty(accepted)
-        return Matrix{Float64}(undef, 0, d)
-    end
-    return reduce(vcat, [a' for a in accepted])
+    m == 0 && return Matrix{Float64}(undef, 0, d)
+    # `flat` holds m rows of length d in row-major order; reshape to d×m (each
+    # column is an accepted row) and transpose to the (m, d) result.
+    return permutedims(reshape(flat, d, m))
 end
 
 function Base.show(io::IO, tm::AcceptanceRejection)
@@ -226,8 +233,6 @@ function transform(tm::AcceptanceRejectionReal, x::AbstractMatrix)
     L = tm.upper_bound
     epsq = 1e-8
 
-    accepted = Vector{Vector{Float64}}()
-    sizehint!(accepted, ceil(Int, n * tm.acceptance_rate))
     # Julia matrices are column-major, so map each proposal coordinate in
     # column-major order first, then perform the row-wise acceptance test.
     zmat = Matrix{Float64}(undef, n, d)
@@ -239,18 +244,21 @@ function transform(tm::AcceptanceRejectionReal, x::AbstractMatrix)
         end
     end
 
+    # Acceptance test reuses the already-materialised `zmat`: record the indices
+    # of accepted rows, then gather them in one shot (`zmat[keep, :]`). This drops
+    # the per-row `copy(z)`, the Vector{Vector{Float64}}, and the reduce(vcat).
+    keep = Int[]
+    sizehint!(keep, ceil(Int, n * tm.acceptance_rate))
     @inbounds for i in 1:n
         z = @view zmat[i, :]
         u = x[i, d + 1]
         if tm.target_density(z) >= L * tm.H_func(z) * u
-            push!(accepted, copy(z))
+            push!(keep, i)
         end
     end
 
-    if isempty(accepted)
-        return Matrix{Float64}(undef, 0, d)
-    end
-    return reduce(vcat, [a' for a in accepted])
+    isempty(keep) && return Matrix{Float64}(undef, 0, d)
+    return zmat[keep, :]
 end
 
 function Base.show(io::IO, tm::AcceptanceRejectionReal)

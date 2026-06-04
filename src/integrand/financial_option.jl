@@ -310,9 +310,28 @@ function evaluate(f::FinancialOption, x::AbstractMatrix)
 
     n = size(x, 1)
     y = Vector{Float64}(undef, n)
-    @inbounds for i in 1:n
-        S = _stock_prices(f, @view(x[i, :]))
-        y[i] = discount * _payoff(f, S)
+    if f._use_gbm_transform
+        # Prices already in x; pass row views straight to the payoff — no per-row
+        # price-vector allocation.
+        @inbounds for i in 1:n
+            y[i] = discount * _payoff(f, @view(x[i, :]))
+        end
+    else
+        # Non-GBM: build the price path into a single reused buffer instead of
+        # allocating a length-d vector per row inside _stock_prices. Also hoists
+        # the GBM/non-GBM branch out of the loop.
+        d = f.dimension
+        σ = f.volatility
+        S0 = f.start_price
+        r = f.interest_rate
+        tv = f._time_vector
+        Sbuf = Vector{Float64}(undef, d)
+        @inbounds for i in 1:n
+            for j in 1:d
+                Sbuf[j] = S0 * exp((r - 0.5 * σ^2) * tv[j] + σ * x[i, j])
+            end
+            y[i] = discount * _payoff(f, Sbuf)
+        end
     end
     return y
 end
