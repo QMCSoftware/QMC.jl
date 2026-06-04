@@ -58,13 +58,13 @@ doc:
 	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
 	julia --project=docs docs/make.jl
 
-# Format code with JuliaFormatter
+# Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:
-	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format("src/"); format("test/")'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format(["src/", "test/", "benchmark/"])'
 
 # Check formatting (CI-friendly, fails if changes needed)
 format-check:
-	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format("src/", overwrite=false); @assert format("test/", overwrite=false)'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format(["src/", "test/", "benchmark/"], overwrite=false)'
 
 # Clean build artifacts
 clean:
