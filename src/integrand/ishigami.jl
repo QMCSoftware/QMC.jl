@@ -41,3 +41,35 @@ function evaluate(f::Ishigami, x::AbstractMatrix)
 end
 
 Base.show(io::IO, f::Ishigami) = print(io, "Ishigami(a=$(f.a), b=$(f.b))")
+
+"""
+    ishigami_exact(; a=7.0, b=0.1) -> NamedTuple
+
+Closed-form reference values for the Ishigami function with parameters `a`, `b`
+on U(-π, π)³: the `mean`, `variance`, and the first-order (`closed`) and `total`
+Sobol' sensitivity indices for the three inputs (as length-3 vectors).
+
+Mirrors QMCPy's `Ishigami._exact_sensitivity_indices` for the singleton subsets.
+Useful as an analytical reference when validating [`SensitivityIndices`](@ref).
+
+```julia
+ref = ishigami_exact()
+ref.mean      # 3.5
+ref.closed    # first-order Sobol' indices S₁, S₂, S₃
+ref.total     # total Sobol' indices T₁, T₂, T₃
+```
+"""
+function ishigami_exact(; a::Float64=7.0, b::Float64=0.1)
+    mu = a / 2
+    m2 = 1 / 2 + 3 / 8 * a^2 + π^4 / 5 * b + π^8 / 18 * b^2
+    var = m2 - mu^2
+    closed = [(5 + π^4 * b)^2 / 50, a^2 / 8, 0.0] ./ var
+    total = [
+        (45 + 18 * π^4 * b + 5 * π^8 * b^2) / 90,
+        a^2 / 8,
+        8 * π^8 / 225 * b^2,
+    ] ./ var
+    return (mean = mu, variance = var, closed = closed, total = total)
+end
+
+export ishigami_exact
