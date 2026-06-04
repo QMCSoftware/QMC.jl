@@ -134,7 +134,8 @@ function transform(tm::Gaussian, x::AbstractMatrix)
         # (column scaling equals multiplying by a diagonal A); only the cost differs.
         dvec_t = transpose(dvec)        # 1×d row (computed outside @. so it isn't dotted)
         mean_t = transpose(tm.mean)
-        return @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * _open_unit_interval(x) - 1.0) * dvec_t + mean_t
+        return @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * _open_unit_interval(x) - 1.0) *
+                  dvec_t + mean_t
     end
 end
 

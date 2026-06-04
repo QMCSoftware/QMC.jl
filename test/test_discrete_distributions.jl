@@ -65,6 +65,7 @@
         @test Lattice(2; order = "gray code").order == "gray"
         let a = Lattice(3; randomize = false, seed = 7, order = "natural"),
             b = Lattice(3; randomize = false, seed = 7, order = "radical_inverse")
+
             @test gen_samples(a, 64) ≈ gen_samples(b, 64)
         end
         @test_throws ArgumentError Lattice(2; order = "bogus")

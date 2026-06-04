@@ -40,7 +40,12 @@
         jsu = transform(JohnsonsSU(dd), x)
         bm = transform(BrownianMotion(dd), x)
         gbm = transform(
-            GeometricBrownianMotion(dd; initial_value = 100.0, drift = 0.05, diffusion = 0.04),
+            GeometricBrownianMotion(
+                dd;
+                initial_value = 100.0,
+                drift = 0.05,
+                diffusion = 0.04,
+            ),
             x,
         )
 

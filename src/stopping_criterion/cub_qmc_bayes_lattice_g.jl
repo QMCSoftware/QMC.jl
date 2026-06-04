@@ -184,8 +184,9 @@ function integrate(
     resume::Union{Nothing, Dict{Symbol, Any}} = nothing,
 )
     if resume !== nothing
-        n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
-                 haskey(resume, :n) ? Int(resume[:n]) : Int(resume[:n_total])
+        n_prev =
+            haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
+            haskey(resume, :n) ? Int(resume[:n]) : Int(resume[:n_total])
         n = 2 * n_prev
     else
         n = sc.n_init
