@@ -358,7 +358,7 @@ def main():
         "results": results,
     }
     outfile.write_text(json.dumps(payload, indent=2))
-    print(f"\nResults saved to benchmark/results/qmcpy_{label}.json")
+    print(f"\nResults saved to benchmark/results/qmcpy_{label}.json\n\n")
 
 
 if __name__ == "__main__":
