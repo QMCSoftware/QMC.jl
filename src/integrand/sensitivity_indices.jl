@@ -55,7 +55,7 @@ function Base.getproperty(si::SensitivityIndices, name::Symbol)
     return getfield(si, name)
 end
 
-function SensitivityIndices(integrand::AbstractIntegrand; indices = :singletons)
+function SensitivityIndices(integrand::AbstractIntegrand; indices=:singletons)
     d_base = integrand.dimension
     d_base > 1 || throw(ArgumentError("SensitivityIndices requires dimension > 1"))
 
@@ -74,8 +74,7 @@ function SensitivityIndices(integrand::AbstractIntegrand; indices = :singletons)
         end
     elseif indices isa Matrix{Bool}
         size(indices, 2) == d_base || throw(
-            ArgumentError(
-                "indices must have $(d_base) columns, got $(size(indices, 2))"),
+            ArgumentError("indices must have $(d_base) columns, got $(size(indices, 2))"),
         )
         idx_mat = indices
     else

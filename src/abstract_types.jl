@@ -25,8 +25,12 @@ sc = CubQMCNetG(Keister(Gaussian(DigitalNetB2(3); covariance=0.5)); abs_tol=0.05
 set_tolerance!(sc; abs_tol=0.01, rel_tol=0.0)
 ```
 """
-function set_tolerance!(sc::AbstractStoppingCriterion;
-    abs_tol = nothing, rel_tol = nothing, rmse_tol = nothing)
+function set_tolerance!(
+    sc::AbstractStoppingCriterion;
+    abs_tol=nothing,
+    rel_tol=nothing,
+    rmse_tol=nothing,
+)
     if abs_tol !== nothing
         hasfield(typeof(sc), :abs_tol) ||
             throw(ArgumentError("$(typeof(sc)) has no abs_tol field"))

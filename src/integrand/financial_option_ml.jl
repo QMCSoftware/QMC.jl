@@ -52,65 +52,97 @@ function _ml_nb_of_levels(dim::Int, d_coarsest::Int)
     return Int(log2(ratio)) + 1
 end
 
-function FinancialOptionML(dd::AbstractDiscreteDistribution;
-    d_coarsest::Int = 2,
-    option_type::Symbol = :asian,
-    mean_type::Symbol = :arithmetic,
-    volatility::Float64 = 0.5,
-    start_price::Float64 = 30.0,
-    strike_price::Float64 = 25.0,
-    interest_rate::Float64 = 0.0,
-    call_put::Symbol = :call)
+function FinancialOptionML(
+    dd::AbstractDiscreteDistribution;
+    d_coarsest::Int=2,
+    option_type::Symbol=:asian,
+    mean_type::Symbol=:arithmetic,
+    volatility::Float64=0.5,
+    start_price::Float64=30.0,
+    strike_price::Float64=25.0,
+    interest_rate::Float64=0.0,
+    call_put::Symbol=:call,
+)
     dim = dd.dimension
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     tm = Gaussian(dd)
-    return FinancialOptionML(tm, dim, d_coarsest, nb_of_levels,
-        volatility, start_price, strike_price, interest_rate,
-        call_put, option_type, mean_type)
+    return FinancialOptionML(
+        tm,
+        dim,
+        d_coarsest,
+        nb_of_levels,
+        volatility,
+        start_price,
+        strike_price,
+        interest_rate,
+        call_put,
+        option_type,
+        mean_type,
+    )
 end
 
-function FinancialOptionML(tm::BrownianMotion;
-    d_coarsest::Int = 2,
-    option_type::Symbol = :asian,
-    mean_type::Symbol = :arithmetic,
-    volatility::Float64 = 0.5,
-    start_price::Float64 = 30.0,
-    strike_price::Float64 = 25.0,
-    interest_rate::Float64 = 0.0,
-    call_put::Symbol = :call)
+function FinancialOptionML(
+    tm::BrownianMotion;
+    d_coarsest::Int=2,
+    option_type::Symbol=:asian,
+    mean_type::Symbol=:arithmetic,
+    volatility::Float64=0.5,
+    start_price::Float64=30.0,
+    strike_price::Float64=25.0,
+    interest_rate::Float64=0.0,
+    call_put::Symbol=:call,
+)
     dim = tm.dimension
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
-    return FinancialOptionML(tm, dim, d_coarsest, nb_of_levels,
-        volatility, start_price, strike_price, interest_rate,
-        call_put, option_type, mean_type)
+    return FinancialOptionML(
+        tm,
+        dim,
+        d_coarsest,
+        nb_of_levels,
+        volatility,
+        start_price,
+        strike_price,
+        interest_rate,
+        call_put,
+        option_type,
+        mean_type,
+    )
 end
 
-function FinancialOptionML(tm::GeometricBrownianMotion;
-    d_coarsest::Int = 2,
-    option_type::Symbol = :asian,
-    mean_type::Symbol = :arithmetic,
-    volatility::Union{Nothing, Float64} = nothing,
-    start_price::Union{Nothing, Float64} = nothing,
-    strike_price::Float64 = 25.0,
-    interest_rate::Union{Nothing, Float64} = nothing,
-    call_put::Symbol = :call)
+function FinancialOptionML(
+    tm::GeometricBrownianMotion;
+    d_coarsest::Int=2,
+    option_type::Symbol=:asian,
+    mean_type::Symbol=:arithmetic,
+    volatility::Union{Nothing, Float64}=nothing,
+    start_price::Union{Nothing, Float64}=nothing,
+    strike_price::Float64=25.0,
+    interest_rate::Union{Nothing, Float64}=nothing,
+    call_put::Symbol=:call,
+)
     dim = tm.dimension
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     volatility = isnothing(volatility) ? sqrt(tm.diffusion) : volatility
     start_price = isnothing(start_price) ? tm.initial_value : start_price
     interest_rate = isnothing(interest_rate) ? tm.drift : interest_rate
-    return FinancialOptionML(tm, dim, d_coarsest, nb_of_levels,
-        volatility, start_price, strike_price, interest_rate,
-        call_put, option_type, mean_type)
+    return FinancialOptionML(
+        tm,
+        dim,
+        d_coarsest,
+        nb_of_levels,
+        volatility,
+        start_price,
+        strike_price,
+        interest_rate,
+        call_put,
+        option_type,
+        mean_type,
+    )
 end
 
-function QMC.dimension_at_level(f::FinancialOptionML, level::Int)
-    return f.d_coarsest * (1 << level)
-end
+QMC.dimension_at_level(f::FinancialOptionML, level::Int) = f.d_coarsest * (1 << level)
 
-function QMC.cost_at_level(f::FinancialOptionML, level::Int)
-    return Float64(f.d_coarsest * (1 << level))
-end
+QMC.cost_at_level(f::FinancialOptionML, level::Int) = Float64(f.d_coarsest * (1 << level))
 
 function _ml_time_horizon(f::FinancialOptionML)
     return hasproperty(f.true_measure, :time_vector) ? f.true_measure.time_vector[end] : 1.0
@@ -133,8 +165,11 @@ function _build_stock_path(f::FinancialOptionML, z::AbstractVector, d::Int)
     return S
 end
 
-function _stock_path_from_brownian(f::FinancialOptionML,
-    w::AbstractVector, tv::AbstractVector)
+function _stock_path_from_brownian(
+    f::FinancialOptionML,
+    w::AbstractVector,
+    tv::AbstractVector,
+)
     σ = f.volatility
     S0 = f.start_price
     r = f.interest_rate
@@ -158,7 +193,10 @@ function _coupled_stock_paths(f::FinancialOptionML, x_fine::AbstractVector, leve
             return nothing, S_fine
         end
         S_coarse = _stock_path_from_brownian(
-            f, @view(x_fine[2:2:d_fine]), @view(tv_fine[2:2:d_fine]))
+            f,
+            @view(x_fine[2:2:d_fine]),
+            @view(tv_fine[2:2:d_fine])
+        )
         return S_coarse, S_fine
     end
 
@@ -232,7 +270,9 @@ function QMC.ml_evaluate(f::FinancialOptionML, x::AbstractMatrix, level::Int)
 end
 
 function Base.show(io::IO, f::FinancialOptionML)
-    print(io,
+    print(
+        io,
         "FinancialOptionML(:$(f.option_type), :$(f.call_put), d=$(f.dimension), " *
-        "d_coarsest=$(f.d_coarsest), levels=$(f.nb_of_levels))")
+        "d_coarsest=$(f.d_coarsest), levels=$(f.nb_of_levels))",
+    )
 end

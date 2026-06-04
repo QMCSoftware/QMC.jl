@@ -19,7 +19,7 @@ struct KernelDigShiftInvar <: AbstractKernel
     order::Int
 end
 
-function KernelDigShiftInvar(; order::Int = 2)
+function KernelDigShiftInvar(; order::Int=2)
     @assert order >= 1 "Kernel order must be ≥ 1"
     return KernelDigShiftInvar(order)
 end
@@ -29,7 +29,7 @@ end
 
 XOR two floats in [0,1) by treating their binary expansions as integers.
 """
-function _xor_float(a::Float64, b::Float64; nbits::Int = 30)
+function _xor_float(a::Float64, b::Float64; nbits::Int=30)
     scale = 2^nbits
     ia = floor(Int64, a * scale)
     ib = floor(Int64, b * scale)
@@ -52,7 +52,7 @@ Walsh decay. For the standard order-2 kernel:
 
 Simplified: use the digital analog of Bernoulli polynomials.
 """
-function _dig_kernel_1d(order::Int, t::Float64; nbits::Int = 30)
+function _dig_kernel_1d(order::Int, t::Float64; nbits::Int=30)
     if abs(t) < 1e-15
         return 1.0  # K(0) = 1 + sum of positive terms (kernel at origin)
     end

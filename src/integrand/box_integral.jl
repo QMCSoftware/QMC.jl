@@ -17,9 +17,7 @@ struct BoxIntegral{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     s::Float64
 end
 
-function BoxIntegral(tm::AbstractTrueMeasure; s::Float64 = 2.0)
-    return BoxIntegral(tm, tm.dimension, s)
-end
+BoxIntegral(tm::AbstractTrueMeasure; s::Float64=2.0) = BoxIntegral(tm, tm.dimension, s)
 
 function evaluate(f::BoxIntegral, x::AbstractMatrix)
     n, d = size(x)
@@ -35,6 +33,4 @@ function evaluate(f::BoxIntegral, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::BoxIntegral)
-    print(io, "BoxIntegral(d=$(f.dimension), s=$(f.s))")
-end
+Base.show(io::IO, f::BoxIntegral) = print(io, "BoxIntegral(d=$(f.dimension), s=$(f.s))")

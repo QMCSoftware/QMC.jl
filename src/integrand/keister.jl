@@ -21,15 +21,13 @@ struct Keister{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     dimension::Int
 end
 
-function Keister(tm::AbstractTrueMeasure)
-    return Keister(tm, tm.dimension)
-end
+Keister(tm::AbstractTrueMeasure) = Keister(tm, tm.dimension)
 
 function evaluate(f::Keister, x::AbstractMatrix)
     coeff = π^(f.dimension / 2)
     # sum(abs2, x; dims=2) sweeps column-by-column (cache-friendly for column-major
     # Julia arrays), avoiding row-stride cache misses in the original loop.
-    norms = vec(sqrt.(sum(abs2, x; dims = 2)))
+    norms = vec(sqrt.(sum(abs2, x; dims=2)))
     return @. coeff * cos(norms)
 end
 
@@ -64,6 +62,4 @@ function keister_exact(d::Int)
     error("keister_exact failed to converge for d=$d")
 end
 
-function Base.show(io::IO, f::Keister)
-    print(io, "Keister(d=$(f.dimension))")
-end
+Base.show(io::IO, f::Keister) = print(io, "Keister(d=$(f.dimension))")

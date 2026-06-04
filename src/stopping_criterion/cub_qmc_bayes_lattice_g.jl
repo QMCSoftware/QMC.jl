@@ -30,18 +30,33 @@ mutable struct CubQMCBayesLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCr
     alpha::Float64
 end
 
-function CubQMCBayesLatticeG(integrand::AbstractIntegrand;
-    abs_tol::Float64 = 0.01, rel_tol::Float64 = 0.0,
-    n_init::Int = 2^8, n_max::Int = 2^22, order::Int = 2,
-    ptransform::Symbol = :C1SIN, errbd_type::Symbol = :MLE,
-    alpha::Float64 = 0.01)
+function CubQMCBayesLatticeG(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=2^8,
+    n_max::Int=2^22,
+    order::Int=2,
+    ptransform::Symbol=:C1SIN,
+    errbd_type::Symbol=:MLE,
+    alpha::Float64=0.01,
+)
     @assert ispow2(n_init) "n_init must be a power of 2"
     @assert ispow2(n_max) "n_max must be a power of 2"
     @assert order in (1, 2, 3) "order must be 1, 2, or 3"
     @assert errbd_type in (:MLE, :GCV, :FULL) "errbd_type must be :MLE, :GCV, or :FULL"
     @assert 0 < alpha < 1
-    return CubQMCBayesLatticeG(integrand, abs_tol, rel_tol, n_init, n_max,
-        order, ptransform, errbd_type, alpha)
+    return CubQMCBayesLatticeG(
+        integrand,
+        abs_tol,
+        rel_tol,
+        n_init,
+        n_max,
+        order,
+        ptransform,
+        errbd_type,
+        alpha,
+    )
 end
 
 # ── Shift-invariant kernel for lattice rules ─────────────────────────────────
@@ -95,9 +110,13 @@ end
 
 # ── MLE / GCV objective ─────────────────────────────────────────────────────
 
-function _mle_objective(theta::Float64, xun::AbstractMatrix,
-    ftilde::Vector{Float64}, order::Int,
-    errbd_type::Symbol)
+function _mle_objective(
+    theta::Float64,
+    xun::AbstractMatrix,
+    ftilde::Vector{Float64},
+    order::Int,
+    errbd_type::Symbol,
+)
     n = length(ftilde)
     fudge = 100eps(Float64)
 
@@ -135,13 +154,11 @@ end
 
 function _bayes_lattice_stop(xun, ftilde, n, order, errbd_type, alpha)
     uncert =
-        errbd_type == :FULL ?
-        -quantile(TDist(n-1), alpha/2) :
-        -quantile(Normal(), alpha/2)
+        errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
 
     # Grid search for optimal log(θ) in [-5, 0]
     best_lna, best_loss = -5.0, Inf
-    for lna in range(-5.0, 0.0; length = 21)
+    for lna in range(-5.0, 0.0; length=21)
         l, _, _, _ = _mle_objective(exp(lna), xun, ftilde, order, errbd_type)
         if isfinite(l) && l < best_loss
             best_loss = l;
@@ -149,7 +166,7 @@ function _bayes_lattice_stop(xun, ftilde, n, order, errbd_type, alpha)
         end
     end
     step = 5.0 / 21
-    for lna in range(best_lna - step, best_lna + step; length = 21)
+    for lna in range(best_lna - step, best_lna + step; length=21)
         l, _, _, _ = _mle_objective(exp(lna), xun, ftilde, order, errbd_type)
         if isfinite(l) && l < best_loss
             best_loss = l;
@@ -181,7 +198,7 @@ end
 
 function integrate(
     sc::CubQMCBayesLatticeG;
-    resume::Union{Nothing, Dict{Symbol, Any}} = nothing,
+    resume::Union{Nothing, Dict{Symbol, Any}}=nothing,
 )
     if resume !== nothing
         n_prev =
@@ -208,24 +225,30 @@ function integrate(
 
         ftilde = real.(FFTW.fft(y)) ./ sqrt(n)
 
-        mu_hat,
-        err = _bayes_lattice_stop(
-            x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
+        mu_hat, err =
+            _bayes_lattice_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
 
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
         err <= tol && break
 
-        2n > sc.n_max &&
-            (@warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err tol=$tol";
-                break)
+        2n > sc.n_max && (
+            @warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err tol=$tol";
+            break
+        )
         n *= 2
     end
 
     data = Dict{Symbol, Any}(
-        :n => n, :n_per_rep => n, :n_total => n,
-        :error_bound => err, :n_iterations => n_iter,
+        :n => n,
+        :n_per_rep => n,
+        :n_total => n,
+        :error_bound => err,
+        :n_iterations => n_iter,
         :converged => err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat)),
-        :order => sc.order, :ptransform => sc.ptransform, :errbd_type => sc.errbd_type)
+        :order => sc.order,
+        :ptransform => sc.ptransform,
+        :errbd_type => sc.errbd_type,
+    )
     return QMCResult(mu_hat, data)
 end
 

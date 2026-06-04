@@ -26,8 +26,7 @@ struct Uniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     upper_bound::Vector{Float64}
 end
 
-function Uniform(dd::AbstractDiscreteDistribution;
-    lower_bound = 0.0, upper_bound = 1.0)
+function Uniform(dd::AbstractDiscreteDistribution; lower_bound=0.0, upper_bound=1.0)
     d = dd.dimension
     lb = _expand_bounds(lower_bound, d)
     ub = _expand_bounds(upper_bound, d)
@@ -41,12 +40,9 @@ function _expand_bounds(val, d::Int)
     if val isa Real
         return fill(Float64(val), d)
     else
-        length(val) == d ||
-            throw(
-                ArgumentError(
-                    "bound vector length ($(length(val))) must match dimension ($d)",
-                ),
-            )
+        length(val) == d || throw(
+            ArgumentError("bound vector length ($(length(val))) must match dimension ($d)"),
+        )
         return Float64.(collect(val))
     end
 end

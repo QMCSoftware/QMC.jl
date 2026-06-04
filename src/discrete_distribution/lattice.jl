@@ -45,12 +45,18 @@ mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
     mimics::String
 end
 
-function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
-    order::String = "natural", replications = nothing)
+function Lattice(
+    dimension::Int;
+    randomize::Bool=true,
+    seed=nothing,
+    order::String="natural",
+    replications=nothing,
+)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
     dimension <= _KUO_LATTICE_MAX_DIM || throw(
         ArgumentError(
-            "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)"),
+            "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
+        ),
     )
     # Normalize order aliases to canonical tokens, matching QMCPy semantics:
     # "natural" is an alias for "radical inverse" (both use the lat_gen_natural
@@ -62,7 +68,8 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
     order_lc in ("linear", "radical_inverse", "gray") || throw(
         ArgumentError(
             "order must be one of linear/radical_inverse/gray " *
-            "(natural is accepted as an alias for radical_inverse)"),
+            "(natural is accepted as an alias for radical_inverse)",
+        ),
     )
 
     R = isnothing(replications) ? 1 : replications
@@ -73,7 +80,15 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
     shift = randomize ? rand(rng, R, dimension) : zeros(R, dimension)
 
     return Lattice(
-        dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
+        dimension,
+        randomize,
+        order_lc,
+        replications,
+        gv,
+        shift,
+        rng,
+        "StdUniform",
+    )
 end
 
 function _validate_lattice_window(order::String, n::Int, n_start::Int)
@@ -92,7 +107,7 @@ function _validate_lattice_window(order::String, n::Int, n_start::Int)
     end
 end
 
-function gen_samples(dd::Lattice, n::Int; n_start::Int = 0)
+function gen_samples(dd::Lattice, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive"))
     n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
     _validate_lattice_window(dd.order, n, n_start)

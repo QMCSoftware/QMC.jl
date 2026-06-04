@@ -34,6 +34,4 @@ function transform(tm::UniformTriangle, x::AbstractMatrix)
     return out
 end
 
-function Base.show(io::IO, ::UniformTriangle)
-    print(io, "UniformTriangle()")
-end
+Base.show(io::IO, ::UniformTriangle) = print(io, "UniformTriangle()")

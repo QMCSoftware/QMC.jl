@@ -17,9 +17,7 @@ struct CustomFun{TM <: AbstractTrueMeasure, G} <: AbstractIntegrand
     dimension::Int
 end
 
-function CustomFun(tm::AbstractTrueMeasure, g::Function)
-    return CustomFun(tm, g, tm.dimension)
-end
+CustomFun(tm::AbstractTrueMeasure, g::Function) = CustomFun(tm, g, tm.dimension)
 
 function evaluate(f::CustomFun, x::AbstractMatrix)
     y = f.g(x)
@@ -29,9 +27,7 @@ function evaluate(f::CustomFun, x::AbstractMatrix)
     return y isa Number ? fill(y, size(x, 1)) : collect(y)
 end
 
-function Base.show(io::IO, f::CustomFun)
-    print(io, "CustomFun(d=$(f.dimension))")
-end
+Base.show(io::IO, f::CustomFun) = print(io, "CustomFun(d=$(f.dimension))")
 
 """
     sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)

@@ -20,7 +20,7 @@ fml = FinancialOptionML(tm; d_coarsest=4)
 alpha, beta, gamma = mlmc_test(fml; n=10000, L=6)
 ```
 """
-function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
+function mlmc_test(integrand::AbstractMLIntegrand; n::Int=20000, L::Int=8)
     # Make n a multiple of 100 for batching
     n = 100 * ceil(Int, n / 100)
     n_batch = div(n, 100)
@@ -34,8 +34,16 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
     cst = Float64[]   # cost per sample
 
     @printf("Convergence tests using N = %d samples\n", n)
-    @printf("  %4s  %12s  %12s  %12s  %12s  %12s  %12s\n",
-        "l", "ave(Pf-Pc)", "ave(Pf)", "var(Pf-Pc)", "var(Pf)", "kurtosis", "check")
+    @printf(
+        "  %4s  %12s  %12s  %12s  %12s  %12s  %12s\n",
+        "l",
+        "ave(Pf-Pc)",
+        "ave(Pf)",
+        "var(Pf-Pc)",
+        "var(Pf)",
+        "kurtosis",
+        "check"
+    )
 
     for ll in 0:L
         d_l = dimension_at_level(integrand, ll)
@@ -81,8 +89,7 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
         check = if ll == 0
             0.0
         else
-            abs(del1[end] + del2[end - 1] - del2[end]) /
-            (
+            abs(del1[end] + del2[end - 1] - del2[end]) / (
                 3 * (
                     sqrt(abs(var1[end])) + sqrt(abs(var2[end - 1])) + sqrt(abs(var2[end]))
                 ) / sqrt(n)
@@ -90,8 +97,16 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int = 20000, L::Int = 8)
         end
         push!(chk1, check)
 
-        @printf("  %4d  %12.4e  %12.4e  %12.3e  %12.3e  %12.2e  %12.2e\n",
-            ll, del1[end], del2[end], var1[end], var2[end], kur1[end], chk1[end])
+        @printf(
+            "  %4d  %12.4e  %12.4e  %12.3e  %12.3e  %12.2e  %12.2e\n",
+            ll,
+            del1[end],
+            del2[end],
+            var1[end],
+            var2[end],
+            kur1[end],
+            chk1[end]
+        )
     end
 
     # Warnings

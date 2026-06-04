@@ -43,14 +43,16 @@ struct AcceptanceRejection{D <: AbstractDiscreteDistribution, F1, F2, F3} <:
     envelope_multiplier::Float64
 end
 
-function AcceptanceRejection(dd::AbstractDiscreteDistribution;
+function AcceptanceRejection(
+    dd::AbstractDiscreteDistribution;
     pdf_func::Function,
-    proposal_pdf_func::Union{Nothing, Function} = nothing,
-    proposal_sample_func::Union{Nothing, Function} = nothing,
-    envelope_multiplier::Union{Nothing, Float64} = nothing,
-    proposal_pdf::Union{Nothing, Function} = nothing,
-    proposal_sample::Union{Nothing, Function} = nothing,
-    M::Union{Nothing, Float64} = nothing)
+    proposal_pdf_func::Union{Nothing, Function}=nothing,
+    proposal_sample_func::Union{Nothing, Function}=nothing,
+    envelope_multiplier::Union{Nothing, Float64}=nothing,
+    proposal_pdf::Union{Nothing, Function}=nothing,
+    proposal_sample::Union{Nothing, Function}=nothing,
+    M::Union{Nothing, Float64}=nothing,
+)
     if !isnothing(proposal_pdf_func) && !isnothing(proposal_pdf)
         throw(
             ArgumentError(
@@ -183,13 +185,15 @@ struct AcceptanceRejectionReal{D <: AbstractDiscreteDistribution, F1, F2, V} <:
     max_retries::Int
 end
 
-function AcceptanceRejectionReal(dd::AbstractDiscreteDistribution;
+function AcceptanceRejectionReal(
+    dd::AbstractDiscreteDistribution;
     target_density::Function,
     inv_cdfs::AbstractVector,
     H_func::Function,
     upper_bound::Float64,
     density_integral::Float64,
-    max_retries::Int = 4)
+    max_retries::Int=4,
+)
     d = dd.dimension - 1
     d > 0 ||
         throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
@@ -203,8 +207,17 @@ function AcceptanceRejectionReal(dd::AbstractDiscreteDistribution;
     density_integral > 0 || throw(ArgumentError("density_integral must be > 0"))
     acceptance_rate = density_integral / upper_bound
     cdfs = collect(inv_cdfs)
-    return AcceptanceRejectionReal(dd, d, target_density, cdfs, H_func, upper_bound,
-        density_integral, acceptance_rate, max_retries)
+    return AcceptanceRejectionReal(
+        dd,
+        d,
+        target_density,
+        cdfs,
+        H_func,
+        upper_bound,
+        density_integral,
+        acceptance_rate,
+        max_retries,
+    )
 end
 
 """

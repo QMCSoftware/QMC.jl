@@ -28,13 +28,15 @@ struct Genz{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     u::Vector{Float64}
 end
 
-const GENZ_KINDS = (:oscillatory, :product_peak, :corner_peak,
-    :gaussian_peak, :continuous, :discontinuous)
+const GENZ_KINDS =
+    (:oscillatory, :product_peak, :corner_peak, :gaussian_peak, :continuous, :discontinuous)
 
-function Genz(tm::AbstractTrueMeasure;
-    kind::Symbol = :oscillatory,
-    a::Union{Nothing, Vector{Float64}} = nothing,
-    u::Union{Nothing, Vector{Float64}} = nothing)
+function Genz(
+    tm::AbstractTrueMeasure;
+    kind::Symbol=:oscillatory,
+    a::Union{Nothing, Vector{Float64}}=nothing,
+    u::Union{Nothing, Vector{Float64}}=nothing,
+)
     @assert kind in GENZ_KINDS "kind must be one of $GENZ_KINDS, got :$kind"
     d = tm.dimension
     a_vec = isnothing(a) ? ones(d) : a
@@ -205,6 +207,4 @@ function genz_exact(f::Genz)
     end
 end
 
-function Base.show(io::IO, f::Genz)
-    print(io, "Genz(:$(f.kind), d=$(f.dimension))")
-end
+Base.show(io::IO, f::Genz) = print(io, "Genz(:$(f.kind), d=$(f.dimension))")

@@ -18,11 +18,7 @@ struct CountingLogger <: AbstractLogger
 end
 
 function CountingLogger()
-    CountingLogger(
-        ConsoleLogger(stderr, Logging.Warn),
-        Dict{String, Int}(),
-        Ref(""),
-    )
+    CountingLogger(ConsoleLogger(stderr, Logging.Warn), Dict{String, Int}(), Ref(""))
 end
 
 Logging.min_enabled_level(cl::CountingLogger) = Logging.min_enabled_level(cl.inner)
@@ -30,24 +26,41 @@ Logging.shouldlog(cl::CountingLogger, args...) = Logging.shouldlog(cl.inner, arg
 Logging.catch_exceptions(cl::CountingLogger) = Logging.catch_exceptions(cl.inner)
 
 function Logging.handle_message(
-    cl::CountingLogger, level, message, _module, group, id, file, line; kwargs...)
+    cl::CountingLogger,
+    level,
+    message,
+    _module,
+    group,
+    id,
+    file,
+    line;
+    kwargs...,
+)
     if level >= Logging.Warn
         nb = cl.current_nb[]
         cl.counts[nb] = get(cl.counts, nb, 0) + 1
     end
     Logging.handle_message(
-        cl.inner, level, message, _module, group, id, file, line; kwargs...)
+        cl.inner,
+        level,
+        message,
+        _module,
+        group,
+        id,
+        file,
+        line;
+        kwargs...,
+    )
 end
 
 # Format a duration in seconds as a short string.
-function fmt_duration(s::Real)
+fmt_duration(s::Real) =
     if s >= 60
         m = floor(Int, s / 60)
         return "$(m)m $(round(s - 60m; digits = 1))s"
     else
         return "$(round(s; digits = 2))s"
     end
-end
 
 # ── Main ─────────────────────────────────────────────────
 demos_dir = joinpath(@__DIR__, "..", "demos")
@@ -86,8 +99,8 @@ for nb in notebooks
 end
 
 # ── Summary ──────────────────────────────────────────────
-total_warnings = sum(values(clogger.counts); init = 0)
-total_time = sum(values(times); init = 0.0)
+total_warnings = sum(values(clogger.counts); init=0)
+total_time = sum(values(times); init=0.0)
 n_pass = length(notebooks) - length(errors)
 
 println("\n", "="^60)

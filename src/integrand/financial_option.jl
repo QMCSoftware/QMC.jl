@@ -51,17 +51,19 @@ mutable struct FinancialOption{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     _use_gbm_transform::Bool
 end
 
-function FinancialOption(tm::AbstractTrueMeasure;
-    volatility::Union{Nothing, Float64} = nothing,
-    start_price::Union{Nothing, Float64} = nothing,
-    strike_price::Float64 = 25.0,
-    interest_rate::Union{Nothing, Float64} = nothing,
-    call_put::Symbol = :call,
-    option_type::Symbol = :european,
-    mean_type::Union{Nothing, Symbol} = nothing,
-    asian_mean::Union{Nothing, Symbol} = nothing,
-    barrier_price::Float64 = NaN,
-    barrier_in_out::Symbol = :in)
+function FinancialOption(
+    tm::AbstractTrueMeasure;
+    volatility::Union{Nothing, Float64}=nothing,
+    start_price::Union{Nothing, Float64}=nothing,
+    strike_price::Float64=25.0,
+    interest_rate::Union{Nothing, Float64}=nothing,
+    call_put::Symbol=:call,
+    option_type::Symbol=:european,
+    mean_type::Union{Nothing, Symbol}=nothing,
+    asian_mean::Union{Nothing, Symbol}=nothing,
+    barrier_price::Float64=NaN,
+    barrier_in_out::Symbol=:in,
+)
     if !isnothing(mean_type) && !isnothing(asian_mean) && mean_type != asian_mean
         throw(ArgumentError("mean_type and asian_mean must match when both are provided"))
     end
@@ -78,12 +80,11 @@ function FinancialOption(tm::AbstractTrueMeasure;
     mean_type = something(mean_type, asian_mean, :arithmetic)
 
     call_put in (:call, :put) || throw(ArgumentError("call_put must be :call or :put"))
-    option_type in (:european, :asian, :lookback, :digital, :barrier) ||
-        throw(
-            ArgumentError(
-                "option_type must be :european, :asian, :lookback, :digital, or :barrier",
-            ),
-        )
+    option_type in (:european, :asian, :lookback, :digital, :barrier) || throw(
+        ArgumentError(
+            "option_type must be :european, :asian, :lookback, :digital, or :barrier",
+        ),
+    )
     mean_type in (:arithmetic, :geometric) ||
         throw(ArgumentError("mean_type must be :arithmetic or :geometric"))
     if option_type == :barrier
@@ -97,15 +98,26 @@ function FinancialOption(tm::AbstractTrueMeasure;
     tv = if hasproperty(tm, :time_vector)
         tm.time_vector
     else
-        collect(range(1.0 / d, 1.0; length = d))
+        collect(range(1.0 / d, 1.0; length=d))
     end
 
     use_gbm = tm isa GeometricBrownianMotion
 
-    return FinancialOption(tm, d, volatility, start_price, strike_price,
-        interest_rate, call_put, option_type, mean_type,
-        barrier_price, barrier_in_out,
-        tv, use_gbm)
+    return FinancialOption(
+        tm,
+        d,
+        volatility,
+        start_price,
+        strike_price,
+        interest_rate,
+        call_put,
+        option_type,
+        mean_type,
+        barrier_price,
+        barrier_in_out,
+        tv,
+        use_gbm,
+    )
 end
 
 function _stock_prices(f::FinancialOption, x_row::AbstractVector)
@@ -262,9 +274,10 @@ function get_exact_value(f::FinancialOption)
 end
 
 function Base.show(io::IO, f::FinancialOption)
-    extra = f.option_type == :barrier ?
-            ", B=$(f.barrier_price), $(f.barrier_in_out)" : ""
-    print(io,
+    extra = f.option_type == :barrier ? ", B=$(f.barrier_price), $(f.barrier_in_out)" : ""
+    print(
+        io,
         "FinancialOption(:$(f.option_type), :$(f.call_put), d=$(f.dimension), " *
-        "S₀=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility)$extra)")
+        "S₀=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility)$extra)",
+    )
 end

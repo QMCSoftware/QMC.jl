@@ -36,7 +36,7 @@ struct KernelMatern12 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern12(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelMatern12(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern12(lengthscale, outputscale)
@@ -47,9 +47,7 @@ end
 
 Evaluate kernel `k` at distance `r`. Each kernel subtype has its own method.
 """
-function kernel_eval(k::KernelMatern12, r::Float64)
-    return k.outputscale * exp(-r / k.lengthscale)
-end
+kernel_eval(k::KernelMatern12, r::Float64) = k.outputscale * exp(-r / k.lengthscale)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Matérn-3/2
@@ -64,7 +62,7 @@ struct KernelMatern32 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern32(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelMatern32(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern32(lengthscale, outputscale)
@@ -88,7 +86,7 @@ struct KernelMatern52 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern52(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelMatern52(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern52(lengthscale, outputscale)
@@ -112,7 +110,7 @@ struct KernelGaussian <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelGaussian(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelGaussian(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelGaussian(lengthscale, outputscale)
@@ -142,8 +140,11 @@ struct KernelRationalQuadratic <: AbstractStationaryKernel
     alpha::Float64
 end
 
-function KernelRationalQuadratic(; lengthscale::Float64 = 1.0,
-    outputscale::Float64 = 1.0, alpha::Float64 = 1.0)
+function KernelRationalQuadratic(;
+    lengthscale::Float64=1.0,
+    outputscale::Float64=1.0,
+    alpha::Float64=1.0,
+)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     alpha > 0 || throw(ArgumentError("alpha must be positive"))
@@ -171,8 +172,7 @@ struct KernelSquaredExponential <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelSquaredExponential(; lengthscale::Float64 = 1.0,
-    outputscale::Float64 = 1.0)
+function KernelSquaredExponential(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelSquaredExponential(lengthscale, outputscale)
@@ -223,9 +223,7 @@ struct SumKernel <: AbstractKernel
     k2::AbstractKernel
 end
 
-function kernel_eval(k::SumKernel, r::Float64)
-    return kernel_eval(k.k1, r) + kernel_eval(k.k2, r)
-end
+kernel_eval(k::SumKernel, r::Float64) = kernel_eval(k.k1, r) + kernel_eval(k.k2, r)
 
 """
     ProductKernel(k1::AbstractKernel, k2::AbstractKernel)
@@ -237,9 +235,7 @@ struct ProductKernel <: AbstractKernel
     k2::AbstractKernel
 end
 
-function kernel_eval(k::ProductKernel, r::Float64)
-    return kernel_eval(k.k1, r) * kernel_eval(k.k2, r)
-end
+kernel_eval(k::ProductKernel, r::Float64) = kernel_eval(k.k1, r) * kernel_eval(k.k2, r)
 
 # Convenience operators
 Base.:+(k1::AbstractKernel, k2::AbstractKernel) = SumKernel(k1, k2)
@@ -266,9 +262,5 @@ end
 function Base.show(io::IO, k::KernelSquaredExponential)
     print(io, "KernelSquaredExponential(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")
 end
-function Base.show(io::IO, k::SumKernel)
-    print(io, "($(k.k1) + $(k.k2))")
-end
-function Base.show(io::IO, k::ProductKernel)
-    print(io, "($(k.k1) * $(k.k2))")
-end
+Base.show(io::IO, k::SumKernel) = print(io, "($(k.k1) + $(k.k2))")
+Base.show(io::IO, k::ProductKernel) = print(io, "($(k.k1) * $(k.k2))")

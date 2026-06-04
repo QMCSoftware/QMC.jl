@@ -22,7 +22,7 @@ struct KernelShiftInvar <: AbstractKernel
     order::Int
 end
 
-function KernelShiftInvar(; order::Int = 2)
+function KernelShiftInvar(; order::Int=2)
     @assert order >= 1 "Kernel order must be ≥ 1"
     return KernelShiftInvar(order)
 end
@@ -76,6 +76,4 @@ function compute_kernel_eigenvalues(kernel::KernelShiftInvar, x::AbstractMatrix)
     return eigenvalues
 end
 
-function Base.show(io::IO, k::KernelShiftInvar)
-    print(io, "KernelShiftInvar(order=$(k.order))")
-end
+Base.show(io::IO, k::KernelShiftInvar) = print(io, "KernelShiftInvar(order=$(k.order))")

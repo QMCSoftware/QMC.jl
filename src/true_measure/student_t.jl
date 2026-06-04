@@ -20,10 +20,7 @@ struct StudentT{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     scale::Vector{Float64}
 end
 
-function StudentT(dd::AbstractDiscreteDistribution;
-    df::Float64 = 2.0,
-    loc = 0.0,
-    scale = 1.0)
+function StudentT(dd::AbstractDiscreteDistribution; df::Float64=2.0, loc=0.0, scale=1.0)
     df > 0 || throw(ArgumentError("df must be positive"))
     d = dd.dimension
     loc_vec = loc isa Number ? fill(Float64(loc), d) : Float64.(collect(loc))
@@ -47,6 +44,4 @@ function transform(tm::StudentT, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, tm::StudentT)
-    print(io, "StudentT(d=$(tm.dimension), df=$(tm.df))")
-end
+Base.show(io::IO, tm::StudentT) = print(io, "StudentT(d=$(tm.dimension), df=$(tm.df))")

@@ -89,9 +89,7 @@ include("stopping_criterion/cub_mc_clt_vec.jl")
 include("stopping_criterion/cub_qmc_rep_student_t.jl")
 include("stopping_criterion/pf_gp_ci.jl")
 
-function __init__()
-    _init_qmctoolscl!(; warn_on_failure = false)
-end
+__init__() = _init_qmctoolscl!(; warn_on_failure=false)
 
 # Exports — abstract types
 export AbstractDiscreteDistribution, AbstractTrueMeasure, AbstractIntegrand

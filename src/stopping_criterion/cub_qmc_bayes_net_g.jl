@@ -27,18 +27,33 @@ mutable struct CubQMCBayesNetG{I <: AbstractIntegrand} <: AbstractStoppingCriter
     alpha::Float64
 end
 
-function CubQMCBayesNetG(integrand::AbstractIntegrand;
-    abs_tol::Float64 = 0.01, rel_tol::Float64 = 0.0,
-    n_init::Int = 2^8, n_max::Int = 2^22, order::Int = 2,
-    ptransform::Symbol = :NONE, errbd_type::Symbol = :MLE,
-    alpha::Float64 = 0.01)
+function CubQMCBayesNetG(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=2^8,
+    n_max::Int=2^22,
+    order::Int=2,
+    ptransform::Symbol=:NONE,
+    errbd_type::Symbol=:MLE,
+    alpha::Float64=0.01,
+)
     @assert ispow2(n_init) "n_init must be a power of 2"
     @assert ispow2(n_max) "n_max must be a power of 2"
     @assert order in (1, 2, 3)
     @assert errbd_type in (:MLE, :GCV, :FULL)
     @assert 0 < alpha < 1
-    return CubQMCBayesNetG(integrand, abs_tol, rel_tol, n_init, n_max,
-        order, ptransform, errbd_type, alpha)
+    return CubQMCBayesNetG(
+        integrand,
+        abs_tol,
+        rel_tol,
+        n_init,
+        n_max,
+        order,
+        ptransform,
+        errbd_type,
+        alpha,
+    )
 end
 
 # ── Digitally shift-invariant kernel for digital nets ────────────────────────
@@ -97,9 +112,13 @@ end
 
 # ── MLE objective (same structure as lattice, different kernel) ──────────────
 
-function _mle_objective_net(theta::Float64, xun::AbstractMatrix,
-    ftilde::Vector{Float64}, order::Int,
-    errbd_type::Symbol)
+function _mle_objective_net(
+    theta::Float64,
+    xun::AbstractMatrix,
+    ftilde::Vector{Float64},
+    order::Int,
+    errbd_type::Symbol,
+)
     n = length(ftilde)
     fudge = 100eps(Float64)
 
@@ -134,31 +153,26 @@ end
 
 function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
     uncert =
-        errbd_type == :FULL ?
-        -quantile(TDist(n-1), alpha/2) :
-        -quantile(Normal(), alpha/2)
+        errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
 
     best_lna, best_loss = -5.0, Inf
-    for lna in range(-5.0, 0.0; length = 21)
+    for lna in range(-5.0, 0.0; length=21)
         l, _, _, _ = _mle_objective_net(exp(lna), xun, ftilde, order, errbd_type)
-        isfinite(l) && l < best_loss && (best_loss = l; best_lna = lna)
+        isfinite(l) && l < best_loss && (best_loss=l; best_lna=lna)
     end
     step = 5.0 / 21
-    for lna in range(best_lna - step, best_lna + step; length = 21)
+    for lna in range(best_lna - step, best_lna + step; length=21)
         l, _, _, _ = _mle_objective_net(exp(lna), xun, ftilde, order, errbd_type)
-        isfinite(l) && l < best_loss && (best_loss = l; best_lna = lna)
+        isfinite(l) && l < best_loss && (best_loss=l; best_lna=lna)
     end
 
-    _, lam, lam_ring,
-    rkhs = _mle_objective_net(exp(best_lna), xun, ftilde, order, errbd_type)
+    _, lam, lam_ring, rkhs =
+        _mle_objective_net(exp(best_lna), xun, ftilde, order, errbd_type)
 
-    DSC = errbd_type == :FULL ?
-          abs(lam_ring[1] / n) :
-          abs(lam_ring[1] / (n + lam_ring[1]))
+    DSC = errbd_type == :FULL ? abs(lam_ring[1] / n) : abs(lam_ring[1] / (n + lam_ring[1]))
 
     err_bd =
-        errbd_type == :FULL ?
-        uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
+        errbd_type == :FULL ? uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
         uncert * sqrt(abs(DSC * rkhs / n))
 
     # `ftilde` is normalized as fwht(y) / sqrt(n), so the first coefficient is
@@ -168,7 +182,7 @@ end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
-function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     if resume !== nothing
         n_prev =
             haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
@@ -193,9 +207,8 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
         # WHT of function values (normalized)
         ftilde = fwht(y) ./ sqrt(n)
 
-        mu_hat,
-        err = _bayes_net_stop(
-            x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
+        mu_hat, err =
+            _bayes_net_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
 
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
         err <= tol && break
@@ -206,10 +219,16 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
     end
 
     data = Dict{Symbol, Any}(
-        :n => n, :n_per_rep => n, :n_total => n,
-        :error_bound => err, :n_iterations => n_iter,
+        :n => n,
+        :n_per_rep => n,
+        :n_total => n,
+        :error_bound => err,
+        :n_iterations => n_iter,
         :converged => err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat)),
-        :order => sc.order, :ptransform => sc.ptransform, :errbd_type => sc.errbd_type)
+        :order => sc.order,
+        :ptransform => sc.ptransform,
+        :errbd_type => sc.errbd_type,
+    )
     return QMCResult(mu_hat, data)
 end
 

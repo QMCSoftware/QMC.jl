@@ -12,7 +12,7 @@ struct Sin1D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     k::Int
 end
 
-function Sin1D(tm::AbstractTrueMeasure; k::Int = 1)
+function Sin1D(tm::AbstractTrueMeasure; k::Int=1)
     tm.dimension == 1 ||
         throw(ArgumentError("Sin1D requires dimension 1, got $(tm.dimension)"))
     k > 0 || throw(ArgumentError("k must be positive"))
@@ -28,6 +28,4 @@ function evaluate(f::Sin1D, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::Sin1D)
-    print(io, "Sin1D(k=$(f.k))")
-end
+Base.show(io::IO, f::Sin1D) = print(io, "Sin1D(k=$(f.k))")

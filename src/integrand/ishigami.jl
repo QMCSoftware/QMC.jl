@@ -20,7 +20,7 @@ struct Ishigami{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     b::Float64
 end
 
-function Ishigami(tm::AbstractTrueMeasure; a::Float64 = 7.0, b::Float64 = 0.1)
+function Ishigami(tm::AbstractTrueMeasure; a::Float64=7.0, b::Float64=0.1)
     tm.dimension >= 3 ||
         throw(ArgumentError("Ishigami requires dimension at least 3, got $(tm.dimension)"))
     return Ishigami(tm, 3, a, b)
@@ -40,6 +40,4 @@ function evaluate(f::Ishigami, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::Ishigami)
-    print(io, "Ishigami(a=$(f.a), b=$(f.b))")
-end
+Base.show(io::IO, f::Ishigami) = print(io, "Ishigami(a=$(f.a), b=$(f.b))")

@@ -26,17 +26,19 @@ struct MaternGP{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     chol_L::LowerTriangular{Float64, Matrix{Float64}}
 end
 
-function MaternGP(dd::AbstractDiscreteDistribution;
-    nu::Float64 = 2.5,
-    lengthscale::Float64 = 1.0,
-    variance::Float64 = 1.0)
+function MaternGP(
+    dd::AbstractDiscreteDistribution;
+    nu::Float64=2.5,
+    lengthscale::Float64=1.0,
+    variance::Float64=1.0,
+)
     nu > 0 || throw(ArgumentError("nu must be > 0"))
     lengthscale > 0 || throw(ArgumentError("lengthscale must be > 0"))
     variance > 0 || throw(ArgumentError("variance must be > 0"))
 
     d = dd.dimension
     # Build covariance matrix at equally spaced points on [0, 1]
-    t = range(0.0, 1.0, length = d)
+    t = range(0.0, 1.0, length=d)
     K = Matrix{Float64}(undef, d, d)
     for i in 1:d, j in 1:d
         K[i, j] = _matern_cov(abs(t[i] - t[j]), nu, lengthscale, variance)

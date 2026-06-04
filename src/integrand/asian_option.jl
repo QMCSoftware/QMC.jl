@@ -33,13 +33,15 @@ mutable struct AsianOption{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     _time_vector::Vector{Float64}
 end
 
-function AsianOption(tm::AbstractTrueMeasure;
-    volatility::Float64 = 0.5,
-    start_price::Float64 = 30.0,
-    strike_price::Float64 = 25.0,
-    interest_rate::Float64 = 0.0,
-    call_put::Symbol = :call,
-    mean_type::Symbol = :arithmetic)
+function AsianOption(
+    tm::AbstractTrueMeasure;
+    volatility::Float64=0.5,
+    start_price::Float64=30.0,
+    strike_price::Float64=25.0,
+    interest_rate::Float64=0.0,
+    call_put::Symbol=:call,
+    mean_type::Symbol=:arithmetic,
+)
     @assert call_put in (:call, :put) "call_put must be :call or :put"
     @assert mean_type in (:arithmetic, :geometric) "mean_type must be :arithmetic or :geometric"
     d = tm.dimension
@@ -47,10 +49,19 @@ function AsianOption(tm::AbstractTrueMeasure;
     tv = if hasproperty(tm, :time_vector)
         tm.time_vector
     else
-        collect(range(1.0 / d, 1.0, length = d))
+        collect(range(1.0 / d, 1.0, length=d))
     end
-    return AsianOption(tm, d, volatility, start_price, strike_price,
-        interest_rate, call_put, mean_type, tv)
+    return AsianOption(
+        tm,
+        d,
+        volatility,
+        start_price,
+        strike_price,
+        interest_rate,
+        call_put,
+        mean_type,
+        tv,
+    )
 end
 
 function evaluate(f::AsianOption, x::AbstractMatrix)
@@ -93,7 +104,9 @@ function evaluate(f::AsianOption, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, f::AsianOption)
-    print(io,
+    print(
+        io,
         "AsianOption($(f.call_put), $(f.mean_type), d=$(f.dimension), " *
-        "S0=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility))")
+        "S0=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility))",
+    )
 end

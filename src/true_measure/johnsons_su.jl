@@ -23,8 +23,13 @@ struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     delta::Vector{Float64}
 end
 
-function JohnsonsSU(dd::AbstractDiscreteDistribution;
-    xi = 0.0, lambda = 1.0, gamma = 0.0, delta = 1.0)
+function JohnsonsSU(
+    dd::AbstractDiscreteDistribution;
+    xi=0.0,
+    lambda=1.0,
+    gamma=0.0,
+    delta=1.0,
+)
     d = dd.dimension
     _xi = xi isa Number ? fill(Float64(xi), d) : Float64.(collect(xi))
     _lam = lambda isa Number ? fill(Float64(lambda), d) : Float64.(collect(lambda))
@@ -48,6 +53,4 @@ function transform(tm::JohnsonsSU, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, tm::JohnsonsSU)
-    print(io, "JohnsonsSU(d=$(tm.dimension))")
-end
+Base.show(io::IO, tm::JohnsonsSU) = print(io, "JohnsonsSU(d=$(tm.dimension))")

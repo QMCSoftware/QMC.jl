@@ -36,16 +36,19 @@ struct DistributionsWrapper{D <: AbstractDiscreteDistribution} <: AbstractTrueMe
     marginals::Vector{Distributions.UnivariateDistribution}
 end
 
-function DistributionsWrapper(dd::AbstractDiscreteDistribution;
-    distribution::Union{Nothing, Distributions.UnivariateDistribution} = nothing,
-    marginals::Union{Nothing, Vector} = nothing)
+function DistributionsWrapper(
+    dd::AbstractDiscreteDistribution;
+    distribution::Union{Nothing, Distributions.UnivariateDistribution}=nothing,
+    marginals::Union{Nothing, Vector}=nothing,
+)
     d = dd.dimension
     if !isnothing(distribution) && isnothing(marginals)
         margs = fill(distribution, d)
     elseif isnothing(distribution) && !isnothing(marginals)
         length(marginals) == d || throw(
             ArgumentError(
-                "marginals length ($(length(marginals))) must match dimension ($d)"),
+                "marginals length ($(length(marginals))) must match dimension ($d)",
+            ),
         )
         margs = Vector{Distributions.UnivariateDistribution}(marginals)
     else

@@ -27,14 +27,16 @@ mutable struct CubQMCNetG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     trace_iterations::Bool
 end
 
-function CubQMCNetG(integrand::AbstractIntegrand;
-    abs_tol::Float64 = 0.01,
-    rel_tol::Float64 = 0.0,
-    n_init::Int = 2^10,
-    n_max::Int = 2^30,
-    n_reps::Int = 16,
-    alpha::Float64 = 0.01,
-    trace_iterations::Bool = false)
+function CubQMCNetG(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=2^10,
+    n_max::Int=2^30,
+    n_reps::Int=16,
+    alpha::Float64=0.01,
+    trace_iterations::Bool=false,
+)
     return CubQMCNetG(
         integrand,
         abs_tol,
@@ -47,7 +49,7 @@ function CubQMCNetG(integrand::AbstractIntegrand;
     )
 end
 
-function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     R = sc.n_reps
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
 
@@ -76,13 +78,19 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}} = n
         end
 
         mu_hat = mean(estimates)
-        sigma_reps = std(estimates; corrected = true)
+        sigma_reps = std(estimates; corrected=true)
         err = t_crit * sigma_reps / sqrt(R)
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
 
         if sc.trace_iterations
-            push!(log; n = n*R, solution = mu_hat, error_bound = err,
-                tol = tol, elapsed = time() - t_start)
+            push!(
+                log;
+                n=n*R,
+                solution=mu_hat,
+                error_bound=err,
+                tol=tol,
+                elapsed=time() - t_start,
+            )
         end
 
         err <= tol && break

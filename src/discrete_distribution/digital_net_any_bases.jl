@@ -43,17 +43,19 @@ mutable struct DigitalNetAnyBases{R <: AbstractRNG} <: AbstractDiscreteDistribut
     mimics::String
 end
 
-function DigitalNetAnyBases(dimension::Int;
+function DigitalNetAnyBases(
+    dimension::Int;
     bases::Union{Int, Vector{Int}},
     generating_matrices::Array{Int, 3},
-    randomize::String = "none",
-    alpha::Int = 1,
-    seed = nothing,
-    replications = nothing)
+    randomize::String="none",
+    alpha::Int=1,
+    seed=nothing,
+    replications=nothing,
+)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
     alpha >= 1 || throw(ArgumentError("alpha must be >= 1"))
-    randomize in ("none", "DS", "NUS") || throw(ArgumentError(
-        "randomize must be none, DS, or NUS"))
+    randomize in ("none", "DS", "NUS") ||
+        throw(ArgumentError("randomize must be none, DS, or NUS"))
 
     d_gen = size(generating_matrices, 1)
     m = size(generating_matrices, 2)
@@ -61,11 +63,11 @@ function DigitalNetAnyBases(dimension::Int;
 
     if alpha > 1
         # Higher-order: d_gen dimensions get interlaced into dimension = d_gen ÷ alpha
-        d_gen >= dimension * alpha || throw(ArgumentError(
-            "Need d_gen >= dimension * alpha for higher-order nets"))
+        d_gen >= dimension * alpha ||
+            throw(ArgumentError("Need d_gen >= dimension * alpha for higher-order nets"))
     else
-        d_gen >= dimension || throw(ArgumentError(
-            "Need at least $dimension generating matrices, got $d_gen"))
+        d_gen >= dimension ||
+            throw(ArgumentError("Need at least $dimension generating matrices, got $d_gen"))
     end
 
     b_vec = bases isa Int ? fill(bases, d_gen) : bases
@@ -73,8 +75,18 @@ function DigitalNetAnyBases(dimension::Int;
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
 
-    return DigitalNetAnyBases(dimension, d_gen, b_vec[1:d_gen],
-        generating_matrices, m, randomize, alpha, replications, rng, "StdUniform")
+    return DigitalNetAnyBases(
+        dimension,
+        d_gen,
+        b_vec[1:d_gen],
+        generating_matrices,
+        m,
+        randomize,
+        alpha,
+        replications,
+        rng,
+        "StdUniform",
+    )
 end
 
 function _digits_base(i::Int, base::Int, m::Int)
@@ -129,7 +141,7 @@ function _interlace(vals::Vector{Float64}, alpha::Int, bases::Vector{Int})
     return result
 end
 
-function gen_samples(dd::DigitalNetAnyBases, n::Int; n_start::Int = 0)
+function gen_samples(dd::DigitalNetAnyBases, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive"))
     d = dd.dimension
     d_gen = dd.d_gen
@@ -154,9 +166,8 @@ function gen_samples(dd::DigitalNetAnyBases, n::Int; n_start::Int = 0)
             idx = n_start + i - 1  # 0-based sample index
             raw = Vector{Float64}(undef, d_gen)
             for j in 1:d_gen
-                raw[j] = _gen_point(
-                    @view(dd.generating_matrices[j, :, :]),
-                    idx, dd.bases[j], m)
+                raw[j] =
+                    _gen_point(@view(dd.generating_matrices[j, :, :]), idx, dd.bases[j], m)
             end
 
             # Apply digital shift
@@ -200,8 +211,7 @@ dd = Faure(3)
 x = gen_samples(dd, 125)  # 125 = 5^3 points in base 5
 ```
 """
-function Faure(dimension::Int; seed = nothing, randomize::String = "none",
-    replications = nothing)
+function Faure(dimension::Int; seed=nothing, randomize::String="none", replications=nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
 
     # Find smallest prime >= dimension
@@ -218,16 +228,20 @@ function Faure(dimension::Int; seed = nothing, randomize::String = "none",
         for row in 1:m, col in 1:m
             if col <= row
                 # C_j[row, col] = binomial(row-1, col-1) * (j-1)^(row-col) mod base
-                C[j, row, col] = mod(
-                    binomial(row - 1, col - 1) * powermod(j - 1, row - col, base),
-                    base)
+                C[j, row, col] =
+                    mod(binomial(row - 1, col - 1) * powermod(j - 1, row - col, base), base)
             end
         end
     end
 
-    return DigitalNetAnyBases(dimension; bases = base,
-        generating_matrices = C, randomize = randomize, seed = seed,
-        replications = replications)
+    return DigitalNetAnyBases(
+        dimension;
+        bases=base,
+        generating_matrices=C,
+        randomize=randomize,
+        seed=seed,
+        replications=replications,
+    )
 end
 
 function _is_prime(n::Int)

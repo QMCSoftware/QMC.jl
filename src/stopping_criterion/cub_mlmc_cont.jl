@@ -51,17 +51,19 @@ mutable struct CubMLMCCont{I <: AbstractMLIntegrand} <: AbstractStoppingCriterio
     gamma0::Float64
 end
 
-function CubMLMCCont(integrand::AbstractMLIntegrand;
-    abs_tol::Float64 = 0.05,
-    rmse_tol::Union{Nothing, Float64} = nothing,
-    n_init::Int = 256,
-    n_limit::Int = 10_000_000_000,
-    alpha_ci::Float64 = 0.01,
-    levels_min::Int = 2,
-    levels_max::Int = 10,
-    n_tols::Int = 10,
-    inflate::Float64 = 100.0^(1/9),
-    theta_init::Float64 = 0.5)
+function CubMLMCCont(
+    integrand::AbstractMLIntegrand;
+    abs_tol::Float64=0.05,
+    rmse_tol::Union{Nothing, Float64}=nothing,
+    n_init::Int=256,
+    n_limit::Int=10_000_000_000,
+    alpha_ci::Float64=0.01,
+    levels_min::Int=2,
+    levels_max::Int=10,
+    n_tols::Int=10,
+    inflate::Float64=100.0^(1/9),
+    theta_init::Float64=0.5,
+)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -75,8 +77,21 @@ function CubMLMCCont(integrand::AbstractMLIntegrand;
         target_tol = rmse_tol
     end
 
-    return CubMLMCCont(integrand, target_tol, n_init, n_limit, levels_min, levels_max,
-        n_tols, inflate, theta_init, theta_init, -1.0, -1.0, -1.0)
+    return CubMLMCCont(
+        integrand,
+        target_tol,
+        n_init,
+        n_limit,
+        levels_min,
+        levels_max,
+        n_tols,
+        inflate,
+        theta_init,
+        theta_init,
+        -1.0,
+        -1.0,
+        -1.0,
+    )
 end
 
 # ── Internal state (reuses _MLMCState from cub_mlmc.jl) ──
@@ -234,8 +249,13 @@ function _update_samples_cont!(sc::CubMLMCCont, state::_MLMCState, diff_n::Vecto
         end
         _ensure_level_spawned_cont!(sc, state, l)
         n = diff_n[l + 1]
-        dp, cost = ml_sample_and_evaluate(sc.integrand, state.level_dd[l + 1],
-            state.level_tm[l + 1], n, l)
+        dp, cost = ml_sample_and_evaluate(
+            sc.integrand,
+            state.level_dd[l + 1],
+            state.level_tm[l + 1],
+            n,
+            l,
+        )
         state.n_level[l + 1] += n
         state.sum_level[1, l + 1] += sum(dp)
         state.sum_level[2, l + 1] += sum(dp .^ 2)
@@ -250,17 +270,17 @@ function _refresh_statistics_cont!(sc::CubMLMCCont, state::_MLMCState)
         nl = state.n_level[l + 1]
         if nl > 0
             state.mean_level[l + 1] = abs(state.sum_level[1, l + 1] / nl)
-            state.var_level[l + 1] = max(0.0,
-                state.sum_level[2, l + 1] / nl - state.mean_level[l + 1]^2)
+            state.var_level[l + 1] =
+                max(0.0, state.sum_level[2, l + 1] / nl - state.mean_level[l + 1]^2)
             state.cost_per_sample[l + 1] = state.cost_level[l + 1] / nl
         end
     end
     # Fix zero values
     for l in 2:L
-        state.mean_level[l + 1] = max(state.mean_level[l + 1],
-            0.5 * state.mean_level[l] / 2^state.alpha)
-        state.var_level[l + 1] = max(state.var_level[l + 1],
-            0.5 * state.var_level[l] / 2^state.beta)
+        state.mean_level[l + 1] =
+            max(state.mean_level[l + 1], 0.5 * state.mean_level[l] / 2^state.alpha)
+        state.var_level[l + 1] =
+            max(state.var_level[l + 1], 0.5 * state.var_level[l] / 2^state.beta)
     end
     # Regression
     if L >= 2
@@ -299,7 +319,7 @@ end
 
 # ── Main integrate method ──
 
-function integrate(sc::CubMLMCCont; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubMLMCCont; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     state = _init_mlmc_cont_state(sc)
 
@@ -311,8 +331,8 @@ function integrate(sc::CubMLMCCont; resume::Union{Nothing, Dict{Symbol, Any}} = 
 
     # Compute final solution
     solution = sum(
-        state.sum_level[1, l + 1] / state.n_level[l + 1]
-        for l in 0:state.levels if state.n_level[l + 1] > 0
+        state.sum_level[1, l + 1] / state.n_level[l + 1] for
+        l in 0:state.levels if state.n_level[l + 1] > 0
     )
     n_total = sum(state.n_level)
     t_elapsed = time() - t_start
@@ -335,6 +355,12 @@ function integrate(sc::CubMLMCCont; resume::Union{Nothing, Dict{Symbol, Any}} = 
 end
 
 function Base.show(io::IO, sc::CubMLMCCont)
-    @printf(io, "CubMLMCCont(rmse_tol=%.2e, n_init=%d, n_tols=%d, inflate=%.3f)",
-        sc.target_tol, sc.n_init, sc.n_tols, sc.inflate)
+    @printf(
+        io,
+        "CubMLMCCont(rmse_tol=%.2e, n_init=%d, n_tols=%d, inflate=%.3f)",
+        sc.target_tol,
+        sc.n_init,
+        sc.n_tols,
+        sc.inflate
+    )
 end

@@ -61,8 +61,7 @@ for dim in DIMS, n in SAMPLES
         bench_gen_samples(DigitalNetB2, dim, n; randomize="LMS_DS")
     SUITE["gen_samples"]["Halton d=$dim n=$n"] =
         bench_gen_samples(Halton, dim, n; randomize=true)
-    SUITE["gen_samples"]["Kronecker d=$dim n=$n"] =
-        bench_gen_samples(Kronecker, dim, n)
+    SUITE["gen_samples"]["Kronecker d=$dim n=$n"] = bench_gen_samples(Kronecker, dim, n)
 end
 
 # 2. Transform (pure Julia: inverse-CDF + covariance factor)
@@ -244,29 +243,39 @@ end
 
 function _int_cubmcclt_asian()
     dd = IIDStdUniform(50; seed=42)
-    tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-        interest_rate=0.05, t_final=1.0)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
     f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
     CubMCCLT(f; abs_tol=0.5)
 end
 
 function _int_cubmcclt_geometric_asian()
     dd = IIDStdUniform(50; seed=42)
-    tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-        interest_rate=0.05, t_final=1.0)
-    f = FinancialOption(
-        tm;
-        option_type=:asian,
-        mean_type=:geometric,
-        strike_price=100.0,
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
     )
+    f = FinancialOption(tm; option_type=:asian, mean_type=:geometric, strike_price=100.0)
     CubMCCLT(f; abs_tol=0.25)
 end
 
 function _int_cubqmcnetg_european()
     dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
-    tm = GeometricBrownianMotion(dd; volatility=0.2, start_price=100.0,
-        interest_rate=0.05, t_final=1.0)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
     f = FinancialOption(tm; option_type=:european, strike_price=100.0)
     CubQMCNetG(f; abs_tol=0.5)
 end

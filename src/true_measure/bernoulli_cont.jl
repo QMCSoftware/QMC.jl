@@ -20,7 +20,7 @@ struct BernoulliCont{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     lam::Vector{Float64}
 end
 
-function BernoulliCont(dd::AbstractDiscreteDistribution; lam = 0.5)
+function BernoulliCont(dd::AbstractDiscreteDistribution; lam=0.5)
     d = dd.dimension
     lam_vec = lam isa Number ? fill(Float64(lam), d) : Float64.(collect(lam))
     all(0.0 .< lam_vec .< 1.0) || throw(ArgumentError("lam must be in (0,1)"))
@@ -50,6 +50,4 @@ function transform(tm::BernoulliCont, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, tm::BernoulliCont)
-    print(io, "BernoulliCont(d=$(tm.dimension))")
-end
+Base.show(io::IO, tm::BernoulliCont) = print(io, "BernoulliCont(d=$(tm.dimension))")

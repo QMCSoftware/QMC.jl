@@ -30,13 +30,15 @@ mutable struct CubMCCLTVec{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     trace_iterations::Bool
 end
 
-function CubMCCLTVec(integrand::AbstractIntegrand;
-    abs_tol::Float64 = 0.01,
-    rel_tol::Float64 = 0.0,
-    n_init::Int = 256,
-    n_max::Int = 2^30,
-    alpha::Float64 = 0.01,
-    trace_iterations::Bool = false)
+function CubMCCLTVec(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=256,
+    n_max::Int=2^30,
+    alpha::Float64=0.01,
+    trace_iterations::Bool=false,
+)
     abs_tol > 0 || throw(ArgumentError("abs_tol must be > 0"))
     rel_tol >= 0 || throw(ArgumentError("rel_tol must be ≥ 0"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -45,7 +47,7 @@ function CubMCCLTVec(integrand::AbstractIntegrand;
     return CubMCCLTVec(integrand, abs_tol, rel_tol, n_init, n_max, alpha, trace_iterations)
 end
 
-function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     f = sc.integrand
     tm = f.true_measure
@@ -89,8 +91,14 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}} = 
         tol = max(sc.abs_tol, sc.rel_tol * abs(solution))
 
         if sc.trace_iterations
-            push!(log; n = n_total, solution = solution, error_bound = err,
-                tol = tol, elapsed = time() - t_start)
+            push!(
+                log;
+                n=n_total,
+                solution=solution,
+                error_bound=err,
+                tol=tol,
+                elapsed=time() - t_start,
+            )
         end
 
         err <= tol && break
@@ -116,6 +124,11 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}} = 
 end
 
 function Base.show(io::IO, sc::CubMCCLTVec)
-    @printf(io, "CubMCCLTVec(abs_tol=%.2e, rel_tol=%.2e, n_init=%d)",
-        sc.abs_tol, sc.rel_tol, sc.n_init)
+    @printf(
+        io,
+        "CubMCCLTVec(abs_tol=%.2e, rel_tol=%.2e, n_init=%d)",
+        sc.abs_tol,
+        sc.rel_tol,
+        sc.n_init
+    )
 end

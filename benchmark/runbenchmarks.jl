@@ -16,7 +16,7 @@
 using Pkg
 Pkg.activate(@__DIR__)
 let deps = keys(Pkg.project().dependencies)
-    "QMC" in deps || Pkg.develop(; path = dirname(@__DIR__))
+    "QMC" in deps || Pkg.develop(; path=dirname(@__DIR__))
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
 end
 Pkg.instantiate()
@@ -42,11 +42,11 @@ function measure_rss_delta_kib(bench::BenchmarkTools.Benchmark)
     # to be > 0 (seconds = 0.0 throws "time limit must be greater than 0.0"). With
     # samples = 1 the run stops after a single sample regardless, so any positive
     # limit works; 1.0 is a comfortable cap.
-    run(bench; samples = 1, evals = 1, seconds = 1.0)
+    run(bench; samples=1, evals=1, seconds=1.0)
     GC.gc()
     GC.gc()
     rss_before = current_rss_kib()
-    run(bench; samples = 1, evals = 1, seconds = 1.0)
+    run(bench; samples=1, evals=1, seconds=1.0)
     GC.gc()
     GC.gc()
     rss_after = current_rss_kib()
@@ -59,16 +59,15 @@ function collect_rss_deltas(group::BenchmarkTools.BenchmarkGroup)
         subgroup = group[group_name]
         rows = Dict{String, Any}()
         for bench_name in sort(collect(keys(subgroup)))
-            rows[string(bench_name)] = Dict(
-                "rss_delta_kib" => measure_rss_delta_kib(subgroup[bench_name]),
-            )
+            rows[string(bench_name)] =
+                Dict("rss_delta_kib" => measure_rss_delta_kib(subgroup[bench_name]))
         end
         out[string(group_name)] = rows
     end
     return out
 end
 
-function maybe_exact_value(f)
+maybe_exact_value(f) =
     if f isa Keister
         return keister_exact(f.dimension)
     elseif f isa Genz
@@ -83,7 +82,6 @@ function maybe_exact_value(f)
     else
         return nothing
     end
-end
 
 function exact_accuracy_check(solution, exact_value, abs_tol, rel_tol)
     diff = abs(solution - exact_value)
@@ -93,11 +91,11 @@ function exact_accuracy_check(solution, exact_value, abs_tol, rel_tol)
     # runs while still surfacing clear correctness regressions.
     allowed = 2 * eff_tol
     return (
-        diff = diff,
-        rel_diff = rel_diff,
-        eff_tol = eff_tol,
-        allowed = allowed,
-        flagged = diff > allowed,
+        diff=diff,
+        rel_diff=rel_diff,
+        eff_tol=eff_tol,
+        allowed=allowed,
+        flagged=diff > allowed,
     )
 end
 
@@ -135,19 +133,20 @@ Julia-vs-Python accuracy check in `compare_py.jl` and by the standalone exact-
 value smoke summary. Relies on `INTEGRATE_ACCURACY_CASES` from benchmarks.jl.
 """
 function collect_integrate_solutions()
-    out = Dict{String,Any}()
+    out = Dict{String, Any}()
     for (name, make_sc) in INTEGRATE_ACCURACY_CASES
         try
             sc = make_sc()
             res = integrate(sc)
             entry = Dict(
                 "solution" => float(res.solution),
-                "abs_tol"  => float(sc.abs_tol),
-                "rel_tol"  => float(sc.rel_tol),
+                "abs_tol" => float(sc.abs_tol),
+                "rel_tol" => float(sc.rel_tol),
             )
             exact_value = maybe_exact_value(sc.integrand)
             if exact_value !== nothing
-                check = exact_accuracy_check(res.solution, exact_value, sc.abs_tol, sc.rel_tol)
+                check =
+                    exact_accuracy_check(res.solution, exact_value, sc.abs_tol, sc.rel_tol)
                 entry["exact_value"] = float(exact_value)
                 entry["abs_error"] = check.diff
                 entry["rel_error"] = check.rel_diff
@@ -169,15 +168,18 @@ function print_integrate_accuracy_summary(julia_solutions)
         entry = julia_solutions[name]
         haskey(entry, "error") && continue
         haskey(entry, "exact_value") || continue
-        push!(rows, (
-            name = name,
-            solution = Float64(entry["solution"]),
-            exact_value = Float64(entry["exact_value"]),
-            abs_error = Float64(entry["abs_error"]),
-            rel_error = Float64(entry["rel_error"]),
-            allowed = Float64(entry["allowed_error"]),
-            flagged = Bool(entry["exact_flagged"]),
-        ))
+        push!(
+            rows,
+            (
+                name=name,
+                solution=Float64(entry["solution"]),
+                exact_value=Float64(entry["exact_value"]),
+                abs_error=Float64(entry["abs_error"]),
+                rel_error=Float64(entry["rel_error"]),
+                allowed=Float64(entry["allowed_error"]),
+                flagged=Bool(entry["exact_flagged"]),
+            ),
+        )
     end
 
     isempty(rows) && return
@@ -190,8 +192,16 @@ function print_integrate_accuracy_summary(julia_solutions)
         mark = row.flagged ? "!!" : "ok"
         flagged += row.flagged
         rel_txt = isnan(row.rel_error) ? "n/a" : @sprintf("%.2e", row.rel_error)
-        @printf("  %-37s exact=%- 12.6g  est=%- 12.6g  |Δ|=%.3g  rel=%8s  smoke(2·tol)=%.3g  %s\n",
-            row.name, row.exact_value, row.solution, row.abs_error, rel_txt, row.allowed, mark)
+        @printf(
+            "  %-37s exact=%- 12.6g  est=%- 12.6g  |Δ|=%.3g  rel=%8s  smoke(2·tol)=%.3g  %s\n",
+            row.name,
+            row.exact_value,
+            row.solution,
+            row.abs_error,
+            rel_txt,
+            row.allowed,
+            mark
+        )
     end
     @printf("%d of %d exact-check case(s) exceed 2×tolerance\n", flagged, length(rows))
 end
@@ -213,8 +223,14 @@ for group_name in sort(collect(keys(results)))
     for bench_name in sort(collect(keys(group)))
         med = median(group[bench_name])
         rss_delta = julia_memory[string(group_name)][string(bench_name)]["rss_delta_kib"]
-        @printf("  %-45s  %10.3f ms  (%d allocs, %.1f KiB, rss Δ %.1f KiB)\n",
-            bench_name, med.time / 1e6, med.allocs, med.memory / 1024, rss_delta)
+        @printf(
+            "  %-45s  %10.3f ms  (%d allocs, %.1f KiB, rss Δ %.1f KiB)\n",
+            bench_name,
+            med.time / 1e6,
+            med.allocs,
+            med.memory / 1024,
+            rss_delta
+        )
     end
 end
 print_integrate_accuracy_summary(julia_solutions)
@@ -228,19 +244,21 @@ memfile = joinpath(resdir, "$(label)_memory.json")
 # JSON3.pretty(str) prints to stdout and returns `nothing`; pass an IO target so the
 # pretty-printed JSON is written to the file instead.
 open(memfile, "w") do io
-    JSON3.pretty(io, JSON3.write(Dict(
-        "julia_version" => string(VERSION),
-        "results" => julia_memory,
-    )))
+    JSON3.pretty(
+        io,
+        JSON3.write(Dict("julia_version" => string(VERSION), "results" => julia_memory)),
+    )
 end
 println("\nResults saved to benchmark/results/$(label).json")
 println("Julia memory sidecar saved to benchmark/results/$(label)_memory.json")
 
 solfile = joinpath(resdir, "$(label)_solutions.json")
 open(solfile, "w") do io
-    JSON3.pretty(io, JSON3.write(Dict(
-        "julia_version" => string(VERSION),
-        "solutions" => julia_solutions,
-    )))
+    JSON3.pretty(
+        io,
+        JSON3.write(
+            Dict("julia_version" => string(VERSION), "solutions" => julia_solutions),
+        ),
+    )
 end
 println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json")
