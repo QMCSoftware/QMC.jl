@@ -69,6 +69,34 @@
             @test gen_samples(a, 64) ≈ gen_samples(b, 64)
         end
         @test_throws ArgumentError Lattice(2; order="bogus")
+
+        # Custom generating vectors keep the existing C-backed generation path.
+        gv = [1, 3, 5]
+        dd_custom = Lattice(2; randomize=false, order="linear", generating_vector=gv)
+        x_custom = gen_samples(dd_custom, 8)
+        @test x_custom ≈ [
+            0.0 0.0
+            1 / 8 3 / 8
+            2 / 8 6 / 8
+            3 / 8 1 / 8
+            4 / 8 4 / 8
+            5 / 8 7 / 8
+            6 / 8 2 / 8
+            7 / 8 5 / 8
+        ]
+        @test dd_custom.gen_vector == UInt64[1, 3]
+
+        mktemp() do path, io
+            write(io, "# d_limit\n4\n# n_limit\n16\n1\n3\n5\n7\n")
+            close(io)
+            dd_file = Lattice(3; randomize=false, order="linear", generating_vector=path)
+            dd_direct = Lattice(3; randomize=false, order="linear", generating_vector=[1, 3, 5, 7])
+            @test gen_samples(dd_file, 8) ≈ gen_samples(dd_direct, 8)
+        end
+
+        @test_throws ArgumentError Lattice(3; generating_vector=[1, 3])
+        @test_throws ArgumentError Lattice(2; generating_vector=[1, 0])
+        @test_throws ArgumentError Lattice(2; generating_vector="missing-vector.txt")
     end
 
     @testset "DigitalNetB2" begin
@@ -103,6 +131,22 @@
         dd1 = DigitalNetB2(1; randomize="none")
         x1 = gen_samples(dd1, 8)
         @test size(x1) == (8, 1)
+
+        dd_lms_a = DigitalNetB2(3; randomize="LMS", seed=42)
+        xlms_a = gen_samples(dd_lms_a, 64)
+        dd_lms_b = DigitalNetB2(3; randomize="LMS", seed=42)
+        xlms_b = gen_samples(dd_lms_b, 64)
+        @test size(xlms_a) == (64, 3)
+        @test all(0.0 .<= xlms_a .< 1.0)
+        @test xlms_a ≈ xlms_b
+        @test xlms_a[1, :] ≈ zeros(3) atol=1e-12
+        @test xlms_a != gen_samples(DigitalNetB2(3; randomize="none", seed=42), 64)
+
+        dd_lms_rep = DigitalNetB2(2; randomize="LMS", seed=77, replications=4)
+        xlms_rep = gen_samples(dd_lms_rep, 32)
+        @test size(xlms_rep) == (4, 32, 2)
+        @test all(0.0 .<= xlms_rep .< 1.0)
+        @test xlms_rep[1, :, :] != xlms_rep[2, :, :]
     end
 
     @testset "Halton" begin

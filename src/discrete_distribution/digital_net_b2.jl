@@ -12,6 +12,7 @@ before `using QMC`.
 
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).
+- `"LMS"`: linear matrix scramble only.
 - `"DS"`: digital shift only (XOR with random integers).
 - `"NUS"`: nested uniform scrambling (Owen scrambling).
 - `"none"`: no randomization (deterministic Sobol' points).
@@ -100,9 +101,9 @@ function DigitalNetB2(
             "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)",
         ),
     )
-    randomize in ("LMS_DS", "DS", "NUS", "none") || throw(
+    randomize in ("LMS_DS", "LMS", "DS", "NUS", "none") || throw(
         ArgumentError(
-            "randomize must be \"LMS_DS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\"",
+            "randomize must be \"LMS_DS\", \"LMS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\"",
         ),
     )
     if !isnothing(replications)
@@ -183,12 +184,17 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
     mmax = _SOBOL_BITS
     V = dd.direction_nums
 
-    if dd.randomize == "LMS_DS"
+    if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
         V_scr = _lms_direction_matrix(V, d, dd.rng)
         C_flat = _direction_matrix_to_C(V_scr, d)
         lshifts = zeros(UInt64, 1)
-        shiftsb = UInt64.(rand(dd.rng, UInt32, d))
-        apply_shift = 0x01
+        if dd.randomize == "LMS_DS"
+            shiftsb = UInt64.(rand(dd.rng, UInt32, d))
+            apply_shift = 0x01
+        else
+            shiftsb = zeros(UInt64, d)
+            apply_shift = 0x00
+        end
     elseif dd.randomize == "DS"
         C_flat = _direction_matrix_to_C(V, d)
         lshifts = zeros(UInt64, 1)
@@ -288,7 +294,7 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     mmax = _SOBOL_BITS
     V = dd.direction_nums
 
-    if dd.randomize == "LMS_DS"
+    if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
         # Build R independently scrambled generating matrices (r_x = R)
         C_flat = Vector{UInt64}(undef, R * d * mmax)
         for r in 1:R
@@ -300,8 +306,13 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
         end
         r_x = R
         lshifts = zeros(UInt64, R)
-        shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
-        apply_shift = 0x01
+        if dd.randomize == "LMS_DS"
+            shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
+            apply_shift = 0x01
+        else
+            shiftsb = zeros(UInt64, R * d)
+            apply_shift = 0x00
+        end
     elseif dd.randomize == "DS"
         C_flat = _direction_matrix_to_C(V, d)
         r_x = 1
