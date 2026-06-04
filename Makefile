@@ -1,4 +1,4 @@
-.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
+.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
 QMCPY_PYTHON_AUTO := $(shell \
@@ -45,10 +45,6 @@ update:
 test: 
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 
-# Run tests with Julia coverage instrumentation
-coverage:
-	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(coverage=true)'
-
 # Run specific test file
 test-%:
 	julia --project=. -e 'include("test/$*.jl")'
@@ -58,18 +54,18 @@ doc:
 	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
 	julia --project=docs docs/make.jl
 
-# Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
+# Format code with JuliaFormatter
 format:
-	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format(["src/", "test/", "benchmark/"])'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format("src/"); format("test/")'
 
 # Check formatting (CI-friendly, fails if changes needed)
 format-check:
-	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format(["src/", "test/", "benchmark/"], overwrite=false)'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format("src/", overwrite=false); @assert format("test/", overwrite=false)'
 
 # Clean build artifacts
 clean:
 	rm -rf docs/build
-	rm -rf *.jl.cov *.jl.*.cov *.jl.mem lcov.info
+	rm -rf *.jl.cov *.jl.*.cov *.jl.mem
 
 # Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
 setup:

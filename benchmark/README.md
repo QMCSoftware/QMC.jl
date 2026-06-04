@@ -44,7 +44,6 @@ This writes:
 ```text
 benchmark/results/base.json
 benchmark/results/base_memory.json
-benchmark/results/base_solutions.json
 ```
 
 ## Julia-Only Comparison
@@ -141,10 +140,9 @@ benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
 
-The Julia runner now also writes sidecar files per label:
+The Julia runner now also writes a sidecar memory file per label:
 
 - `<label>_memory.json`: per-row Julia `rss_delta_kib` from one warmed call
-- `<label>_solutions.json`: integrate-case solution values, tolerances, and exact-value smoke-check metadata when available
 
 The Python benchmark JSON records two approximate memory metrics per row:
 
@@ -183,10 +181,6 @@ memory even though its traced Python-level peak was modest. Use:
 If `<label>_memory.json` is missing because the Julia benchmarks were generated
 before this feature was added, `compare_python*.md` will show Julia RSS delta as
 `n/a` until that label is rerun with `make bench` or `make bench-compare-py`.
-
-If `<label>_solutions.json` is missing, the Julia-vs-QMCPy report can still compare
-timings, but the integrate accuracy section will show `no solution data` until that
-label is regenerated.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
