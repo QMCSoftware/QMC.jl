@@ -64,12 +64,8 @@ function ishigami_exact(; a::Float64=7.0, b::Float64=0.1)
     m2 = 1 / 2 + 3 / 8 * a^2 + π^4 / 5 * b + π^8 / 18 * b^2
     var = m2 - mu^2
     closed = [(5 + π^4 * b)^2 / 50, a^2 / 8, 0.0] ./ var
-    total = [
-        (45 + 18 * π^4 * b + 5 * π^8 * b^2) / 90,
-        a^2 / 8,
-        8 * π^8 / 225 * b^2,
-    ] ./ var
-    return (mean = mu, variance = var, closed = closed, total = total)
+    total = [(45 + 18 * π^4 * b + 5 * π^8 * b^2) / 90, a^2 / 8, 8 * π^8 / 225 * b^2] ./ var
+    return (mean=mu, variance=var, closed=closed, total=total)
 end
 
 export ishigami_exact

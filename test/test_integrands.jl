@@ -297,10 +297,10 @@
         S0, K, r, sigma, T = 100.0, 100.0, 0.05, 0.2, 1.0
         d2 = (log(S0 / K) + (r - sigma^2 / 2) * T) / (sigma * sqrt(T))
         nd = Distributions.Normal()
-        fo_dig_c = FinancialOption(tm; option_type=:digital, call_put=:call,
-            strike_price=100.0)
-        fo_dig_p = FinancialOption(tm; option_type=:digital, call_put=:put,
-            strike_price=100.0)
+        fo_dig_c =
+            FinancialOption(tm; option_type=:digital, call_put=:call, strike_price=100.0)
+        fo_dig_p =
+            FinancialOption(tm; option_type=:digital, call_put=:put, strike_price=100.0)
         @test get_exact_value(fo_dig_c) ≈ exp(-r * T) * Distributions.cdf(nd, d2)
         @test get_exact_value(fo_dig_p) ≈ exp(-r * T) * Distributions.cdf(nd, -d2)
         @test get_exact_value(fo_dig_c) + get_exact_value(fo_dig_p) ≈ exp(-r * T)
@@ -343,8 +343,8 @@
         # uniform columns (X = cols 1:3, Z = cols 4:6). n and tolerance chosen so
         # the estimate reliably lands near exact (validated against a reference
         # pick-freeze MC: max component error ≈ 0.014 at this n).
-        ddc = IIDStdUniform(6; seed = 42)
-        tmc = Uniform(ddc; lower_bound = -π, upper_bound = π)
+        ddc = IIDStdUniform(6; seed=42)
+        tmc = Uniform(ddc; lower_bound=(-π), upper_bound=π)
         sic = SensitivityIndices(Ishigami(tmc))
         xc = transform(tmc, gen_samples(ddc, 2^16))
         closed, total = compute_sensitivity_indices(sic, xc)
