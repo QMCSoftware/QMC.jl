@@ -169,3 +169,43 @@ function _ytilde_double(ytilde_prev::AbstractVector, ynext::AbstractVector)
     yt_omega = _fwht_ortho(ynext) ./ sqrt(N)
     return vcat((ytilde_prev .+ yt_omega) ./ 2, (ytilde_prev .- yt_omega) ./ 2)
 end
+
+"""
+    _update_kappanumap!(kappanumap, ytilde, mfrom, mto, m) -> kappanumap
+
+In-place port of QMCPy's coefficient decay-ordering used by the guaranteed
+digital-net cubature. `kappanumap` is a permutation of `0:2^m-1` (0-based values,
+1-based positions); `ytilde` are the orthonormal Walsh coefficients. For each
+level `l` from `mfrom` down to `mto+1`, it compares the magnitudes of paired
+coefficients and swaps their indices so larger-magnitude coefficients move to the
+earlier (low-frequency) block - building the ordering the error bound sums over.
+The first index (a power of two) is never moved. Scalar (single-output) version.
+"""
+function _update_kappanumap!(
+    kappanumap::Vector{Int},
+    ytilde::AbstractVector,
+    mfrom::Int,
+    mto::Int,
+    m::Int,
+)
+    for l in mfrom:-1:(mto + 1)
+        nl = 2^l
+        flip = Int[]
+        for j in 0:(nl - 2)
+            v_old = kappanumap[j + 2]
+            v_new = kappanumap[nl + j + 2]
+            if abs(ytilde[v_new + 1]) > abs(ytilde[v_old + 1])
+                push!(flip, j + 1)
+            end
+        end
+        isempty(flip) && continue
+        for off in 0:(2 ^ (l + 1)):(2 ^ m - 2)
+            for f in flip
+                p_old = f + off + 1
+                p_new = nl + f + off + 1
+                kappanumap[p_old], kappanumap[p_new] = kappanumap[p_new], kappanumap[p_old]
+            end
+        end
+    end
+    return kappanumap
+end

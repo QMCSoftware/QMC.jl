@@ -119,4 +119,40 @@
         @test yt ≈ QMC._ytilde_init(y[1:off])
         @test yt[1] ≈ sum(y[1:off]) / off
     end
+
+    @testset "kappanumap (coefficient ordering)" begin
+        # Reference outputs computed from QMCPy's own _update_kappanumap (scalar).
+        # The comparison uses only the magnitude ordering of ytilde, so rounded
+        # literals reproduce the exact permutation.
+        yt3 = [-0.535669, 0.361595, 1.304, 0.947081, -0.703735, -1.265421, -0.623274, 0.041326]
+        k3 = QMC._update_kappanumap!(collect(0:7), yt3, 2, 0, 3)
+        @test k3 == [0, 5, 2, 3, 4, 1, 6, 7]
+
+        yt4 = [
+            -2.325,
+            -0.2188,
+            -1.2459,
+            -0.7323,
+            -0.5443,
+            -0.3163,
+            0.4116,
+            1.0425,
+            -0.1285,
+            1.3665,
+            -0.6652,
+            0.3515,
+            0.9035,
+            0.094,
+            -0.7435,
+            -0.9217,
+        ]
+        k4 = QMC._update_kappanumap!(collect(0:15), yt4, 3, 0, 4)
+        @test k4 == [0, 9, 2, 7, 12, 5, 14, 3, 8, 1, 10, 15, 4, 13, 6, 11]
+
+        # Structural invariants: output is a permutation of 0:n-1, and the first
+        # (power-of-two) index is never moved.
+        @test sort(k3) == collect(0:7)
+        @test sort(k4) == collect(0:15)
+        @test k3[1] == 0 && k4[1] == 0
+    end
 end
