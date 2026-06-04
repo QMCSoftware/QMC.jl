@@ -70,8 +70,7 @@ function CubQMCRepStudentT(
     ispow2(n_limit) || (@warn "n_limit must be a power of 2; using 2^30"; n_limit=2^30)
     inflate >= 1.0 || throw(ArgumentError("inflate must be >= 1.0"))
     0 < alpha < 1 || throw(ArgumentError("alpha must be in (0,1)"))
-    error_fun in (:either, :both) ||
-        throw(ArgumentError("error_fun must be :either or :both"))
+    error_fun in (:either, :both) || throw(ArgumentError("error_fun must be :either or :both"))
     return CubQMCRepStudentT(
         integrand,
         abs_tol,

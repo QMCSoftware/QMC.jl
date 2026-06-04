@@ -129,15 +129,9 @@ function _resolve_lattice_generating_vector(dimension::Int, generating_vector)
     elseif generating_vector isa AbstractVector{<:Integer}
         return _coerce_lattice_vector(generating_vector, dimension)
     elseif generating_vector isa AbstractString
-        isfile(generating_vector) || throw(
-            ArgumentError(
-                "generating_vector file \"$generating_vector\" not found",
-            ),
-        )
-        return _coerce_lattice_vector(
-            _read_lattice_vector_file(generating_vector),
-            dimension,
-        )
+        isfile(generating_vector) ||
+            throw(ArgumentError("generating_vector file \"$generating_vector\" not found"))
+        return _coerce_lattice_vector(_read_lattice_vector_file(generating_vector), dimension)
     else
         throw(
             ArgumentError(
@@ -165,16 +159,7 @@ function Lattice(
     gv = _resolve_lattice_generating_vector(dimension, generating_vector)
     shift = randomize ? rand(rng, R, dimension) : zeros(R, dimension)
 
-    return Lattice(
-        dimension,
-        randomize,
-        order_lc,
-        replications,
-        gv,
-        shift,
-        rng,
-        "StdUniform",
-    )
+    return Lattice(dimension, randomize, order_lc, replications, gv, shift, rng, "StdUniform")
 end
 
 function _validate_lattice_window(order::String, n::Int, n_start::Int)

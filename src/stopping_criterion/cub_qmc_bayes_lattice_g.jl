@@ -153,8 +153,7 @@ end
 # ── Stopping criterion ───────────────────────────────────────────────────────
 
 function _bayes_lattice_stop(xun, ftilde, n, order, errbd_type, alpha)
-    uncert =
-        errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
+    uncert = errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
 
     # Grid search for optimal log(θ) in [-5, 0]
     best_lna, best_loss = -5.0, Inf
@@ -196,10 +195,7 @@ end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
-function integrate(
-    sc::CubQMCBayesLatticeG;
-    resume::Union{Nothing, Dict{Symbol, Any}}=nothing,
-)
+function integrate(sc::CubQMCBayesLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     if resume !== nothing
         n_prev =
             haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
@@ -231,10 +227,8 @@ function integrate(
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
         err <= tol && break
 
-        2n > sc.n_max && (
-            @warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err tol=$tol";
-            break
-        )
+        2n > sc.n_max &&
+            (@warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err tol=$tol"; break)
         n *= 2
     end
 

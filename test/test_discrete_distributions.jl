@@ -90,7 +90,8 @@
             write(io, "# d_limit\n4\n# n_limit\n16\n1\n3\n5\n7\n")
             close(io)
             dd_file = Lattice(3; randomize=false, order="linear", generating_vector=path)
-            dd_direct = Lattice(3; randomize=false, order="linear", generating_vector=[1, 3, 5, 7])
+            dd_direct =
+                Lattice(3; randomize=false, order="linear", generating_vector=[1, 3, 5, 7])
             @test gen_samples(dd_file, 8) ≈ gen_samples(dd_direct, 8)
         end
 

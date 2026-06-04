@@ -84,6 +84,5 @@ end
 @inline _baker(x::Float64) = 1.0 - abs(2.0*x - 1.0)
 @inline _c1sin_deriv(x::Float64) = 1.0 - cos(2π * x)
 @inline _c1_deriv(x::Float64) = 6.0 * x * (1.0 - x)
-@inline _c2sin_deriv(x::Float64) =
-    1.0 - (8.0 / 3.0) * cos(2π * x) + (1.0 / 3.0) * cos(4π * x)
+@inline _c2sin_deriv(x::Float64) = 1.0 - (8.0 / 3.0) * cos(2π * x) + (1.0 / 3.0) * cos(4π * x)
 @inline _c3_deriv(x::Float64) = 30.0 * x^2 * (1.0 - x)^2

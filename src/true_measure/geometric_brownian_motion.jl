@@ -46,11 +46,7 @@ function GeometricBrownianMotion(
     decomp_type::Symbol=:PCA,
 )
     if !isnothing(initial_value) && !isnothing(start_price) && initial_value != start_price
-        throw(
-            ArgumentError(
-                "initial_value and start_price must match when both are provided",
-            ),
-        )
+        throw(ArgumentError("initial_value and start_price must match when both are provided"))
     end
     if !isnothing(drift) && !isnothing(interest_rate) && drift != interest_rate
         throw(ArgumentError("drift and interest_rate must match when both are provided"))
@@ -59,16 +55,13 @@ function GeometricBrownianMotion(
         throw(ArgumentError("volatility must be non-negative, got $volatility"))
     end
     if !isnothing(diffusion) && !isnothing(volatility) && diffusion != volatility^2
-        throw(
-            ArgumentError("diffusion and volatility must satisfy diffusion = volatility^2"),
-        )
+        throw(ArgumentError("diffusion and volatility must satisfy diffusion = volatility^2"))
     end
 
     initial_value = Float64(something(initial_value, start_price, 1.0))
     drift = Float64(something(drift, interest_rate, 0.0))
-    diffusion = Float64(
-        isnothing(diffusion) ? (isnothing(volatility) ? 1.0 : volatility^2) : diffusion,
-    )
+    diffusion =
+        Float64(isnothing(diffusion) ? (isnothing(volatility) ? 1.0 : volatility^2) : diffusion)
 
     t_final >= 0.0 || throw(ArgumentError("t_final must be non-negative, got $t_final"))
     initial_value > 0.0 ||

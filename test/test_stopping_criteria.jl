@@ -151,10 +151,8 @@
     end
 
     @testset "QMCResult show" begin
-        txt = sprint(
-            show,
-            QMCResult(1.0, Dict{Symbol, Any}(:n_total => 16, :error_bound => 0.1)),
-        )
+        txt =
+            sprint(show, QMCResult(1.0, Dict{Symbol, Any}(:n_total => 16, :error_bound => 0.1)))
         @test occursin("n_total=16", txt)
         @test occursin("error_bound=", txt)
     end

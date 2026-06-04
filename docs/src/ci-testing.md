@@ -106,6 +106,8 @@ QMC.jl publishes test coverage through the fast Linux CI workflow.
 - The resulting LCOV file is uploaded to Codecov and also attached to the workflow run as an artifact.
 
 The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.
+`make coverage` additionally processes the raw `*.cov` files into `lcov.info`
+and prints a source-coverage summary for `src/`.
 
 ## Test File Structure
 

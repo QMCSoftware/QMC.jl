@@ -40,17 +40,7 @@ function Logging.handle_message(
         nb = cl.current_nb[]
         cl.counts[nb] = get(cl.counts, nb, 0) + 1
     end
-    Logging.handle_message(
-        cl.inner,
-        level,
-        message,
-        _module,
-        group,
-        id,
-        file,
-        line;
-        kwargs...,
-    )
+    Logging.handle_message(cl.inner, level, message, _module, group, id, file, line; kwargs...)
 end
 
 # Format a duration in seconds as a short string.

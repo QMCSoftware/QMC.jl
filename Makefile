@@ -47,7 +47,10 @@ test:
 
 # Run tests with Julia coverage instrumentation
 coverage:
+	find src test -name '*.cov' -delete
+	rm -f lcov.info
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(coverage=true)'
+	julia --project=. devtools/process_coverage.jl
 
 # Run specific test file
 test-%:

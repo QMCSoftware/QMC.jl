@@ -33,5 +33,7 @@ make coverage
 julia --project=. test/run_notebooks.jl
 ```
 
-CI turns the coverage-instrumented run into `lcov.info`, uploads it to Codecov,
-and stores the LCOV file as a workflow artifact.
+`make coverage` also processes the raw `*.cov` files locally, writes
+`lcov.info`, and prints a source-coverage summary for `src/`.
+CI uploads the same LCOV-style output to Codecov and stores it as a workflow
+artifact.

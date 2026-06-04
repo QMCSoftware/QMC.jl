@@ -61,8 +61,5 @@ Return the Jacobian determinant of the Uniform transform (product of interval wi
 jacobian(tm::Uniform) = prod(tm.upper_bound .- tm.lower_bound)
 
 function Base.show(io::IO, tm::Uniform)
-    print(
-        io,
-        "Uniform(d=$(tm.dimension), lower=$(tm.lower_bound), upper=$(tm.upper_bound))",
-    )
+    print(io, "Uniform(d=$(tm.dimension), lower=$(tm.lower_bound), upper=$(tm.upper_bound))")
 end

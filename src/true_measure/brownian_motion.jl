@@ -22,8 +22,7 @@ x = gen_samples(dd, 256)
 paths = transform(bm, x)  # 256×64 Brownian motion paths
 ```
 """
-struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <:
-       AbstractTrueMeasure
+struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <: AbstractTrueMeasure
     dd::D
     dimension::Int
     time_vector::Vector{Float64}
@@ -37,11 +36,9 @@ function BrownianMotion(dd::AbstractDiscreteDistribution; time_vector=nothing, d
         tv = collect(range(1.0 / d, 1.0; length=d))
     else
         tv = Float64.(collect(time_vector))
-        length(tv) == d || throw(
-            ArgumentError("time_vector length ($(length(tv))) must match dimension ($d)"),
-        )
-        issorted(tv; lt=<=) ||
-            throw(ArgumentError("time_vector must be strictly increasing"))
+        length(tv) == d ||
+            throw(ArgumentError("time_vector length ($(length(tv))) must match dimension ($d)"))
+        issorted(tv; lt=<=) || throw(ArgumentError("time_vector must be strictly increasing"))
         all(tv .> 0) || throw(ArgumentError("time_vector entries must be positive"))
     end
     # Build Brownian motion covariance: C[i,j] = min(t[i], t[j])

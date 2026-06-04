@@ -166,8 +166,7 @@ function gen_samples(dd::DigitalNetAnyBases, n::Int; n_start::Int=0)
             idx = n_start + i - 1  # 0-based sample index
             raw = Vector{Float64}(undef, d_gen)
             for j in 1:d_gen
-                raw[j] =
-                    _gen_point(@view(dd.generating_matrices[j, :, :]), idx, dd.bases[j], m)
+                raw[j] = _gen_point(@view(dd.generating_matrices[j, :, :]), idx, dd.bases[j], m)
             end
 
             # Apply digital shift

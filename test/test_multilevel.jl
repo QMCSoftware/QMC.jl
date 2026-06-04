@@ -123,13 +123,7 @@ end
 
 @testset "CubMLMC" begin
     dd = IIDStdUniform(32)
-    f = TestMLIntegrand(
-        dd;
-        d_coarsest=1,
-        volatility=0.5,
-        start_price=30.0,
-        strike_price=35.0,
-    )
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
     sc = CubMLMC(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6)
     result = integrate(sc)
 
@@ -141,13 +135,7 @@ end
 
 @testset "CubMLMCCont" begin
     dd = IIDStdUniform(32)
-    f = TestMLIntegrand(
-        dd;
-        d_coarsest=1,
-        volatility=0.5,
-        start_price=30.0,
-        strike_price=35.0,
-    )
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
     sc = CubMLMCCont(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6, n_tols=5)
     result = integrate(sc)
 
@@ -158,13 +146,7 @@ end
 
 @testset "CubMLQMCCont" begin
     dd = Lattice(32; replications=8)
-    f = TestMLIntegrand(
-        dd;
-        d_coarsest=1,
-        volatility=0.5,
-        start_price=30.0,
-        strike_price=35.0,
-    )
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
     sc = CubMLQMCCont(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6, n_tols=5)
     result = integrate(sc)
 

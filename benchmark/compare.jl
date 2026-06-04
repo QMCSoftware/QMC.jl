@@ -183,11 +183,7 @@ end
 bench_worktree() = benchmarkpkg(PKG; verbose=false)
 
 "Run `f()` with `project_dir` active and `pkgdir` developed as `QMC`."
-function with_benchmark_env(
-    project_dir::AbstractString,
-    pkgdir::AbstractString,
-    f::Function,
-)
+function with_benchmark_env(project_dir::AbstractString, pkgdir::AbstractString, f::Function)
     original_project = Base.active_project()
     try
         Pkg.activate(project_dir; io=devnull)
@@ -318,9 +314,7 @@ elseif length(ARGS) == 3
     baseline = bench_revision(baseline_rev)
     outfile = comparison_outfile(ARGS[3])
     summary = write_comparison_md(outfile, target, baseline, target_rev, baseline_rev)
-    println(
-        "\nWrote benchmark/results/$(basename(outfile)) ($(target_rev) vs $(baseline_rev))",
-    )
+    println("\nWrote benchmark/results/$(basename(outfile)) ($(target_rev) vs $(baseline_rev))")
     println(
         "  ratio = $(baseline_rev) ÷ $(target_rev)  →  < 1: $(target_rev) slower  |  > 1: $(target_rev) faster",
     )

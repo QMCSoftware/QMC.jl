@@ -123,8 +123,7 @@ function _nchebe(
     function BEfun3(t)
         Distributions.cdf(d, -sqrtn * t) +
         exp(-logsqrtn) *
-        min(_BE_A1 * (M3upper + _BE_A2), _BE_A * M3upper / (1 + (sqrtn * t)^3)) -
-        alpha / 2.0
+        min(_BE_A1 * (M3upper + _BE_A2), _BE_A * M3upper / (1 + (sqrtn * t)^3)) - alpha / 2.0
     end
 
     # Find toloversig at which BEfun3 = 0
@@ -224,8 +223,7 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
 
             toloversig = bound_hw / max(sigma_up, 1e-300)
             alphai = 2^tau * (sc.alpha - sc.alpha_sigma) / (1 - sc.alpha_sigma)
-            n_new, _ =
-                _nchebe(toloversig, min(alphai, 0.99), sc.kurtmax, sc.n_max, sigma_up)
+            n_new, _ = _nchebe(toloversig, min(alphai, 0.99), sc.kurtmax, sc.n_max, sigma_up)
             n_new = min(n_new, sc.n_max - n_total)
             if n_new <= 0
                 break

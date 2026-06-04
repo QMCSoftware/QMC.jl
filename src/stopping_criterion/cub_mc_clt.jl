@@ -102,8 +102,5 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
 end
 
 function Base.show(io::IO, sc::CubMCCLT)
-    print(
-        io,
-        "CubMCCLT(abs_tol=$(sc.abs_tol), rel_tol=$(sc.rel_tol), inflate=$(sc.inflate))",
-    )
+    print(io, "CubMCCLT(abs_tol=$(sc.abs_tol), rel_tol=$(sc.rel_tol), inflate=$(sc.inflate))")
 end

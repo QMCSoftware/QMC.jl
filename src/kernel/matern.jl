@@ -254,10 +254,7 @@ function Base.show(io::IO, k::KernelGaussian)
     print(io, "KernelGaussian(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")
 end
 function Base.show(io::IO, k::KernelRationalQuadratic)
-    print(
-        io,
-        "KernelRationalQuadratic(ℓ=$(k.lengthscale), σ²=$(k.outputscale), α=$(k.alpha))",
-    )
+    print(io, "KernelRationalQuadratic(ℓ=$(k.lengthscale), σ²=$(k.outputscale), α=$(k.alpha))")
 end
 function Base.show(io::IO, k::KernelSquaredExponential)
     print(io, "KernelSquaredExponential(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")

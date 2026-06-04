@@ -112,8 +112,5 @@ function evaluate(f::BayesianLRCoeffs, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, f::BayesianLRCoeffs)
-    print(
-        io,
-        "BayesianLRCoeffs(d=$(f.dimension), obs=$(f.n_obs), features=$(f.n_features))",
-    )
+    print(io, "BayesianLRCoeffs(d=$(f.dimension), obs=$(f.n_obs), features=$(f.n_features))")
 end

@@ -73,9 +73,8 @@ function SensitivityIndices(integrand::AbstractIntegrand; indices=:singletons)
             row += 1
         end
     elseif indices isa Matrix{Bool}
-        size(indices, 2) == d_base || throw(
-            ArgumentError("indices must have $(d_base) columns, got $(size(indices, 2))"),
-        )
+        size(indices, 2) == d_base ||
+            throw(ArgumentError("indices must have $(d_base) columns, got $(size(indices, 2))"))
         idx_mat = indices
     else
         throw(ArgumentError("indices must be :singletons, :all, or a Matrix{Bool}"))

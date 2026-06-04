@@ -152,8 +152,7 @@ end
 # ── Stopping criterion ───────────────────────────────────────────────────────
 
 function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
-    uncert =
-        errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
+    uncert = errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
 
     best_lna, best_loss = -5.0, Inf
     for lna in range(-5.0, 0.0; length=21)
@@ -166,8 +165,7 @@ function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
         isfinite(l) && l < best_loss && (best_loss=l; best_lna=lna)
     end
 
-    _, lam, lam_ring, rkhs =
-        _mle_objective_net(exp(best_lna), xun, ftilde, order, errbd_type)
+    _, lam, lam_ring, rkhs = _mle_objective_net(exp(best_lna), xun, ftilde, order, errbd_type)
 
     DSC = errbd_type == :FULL ? abs(lam_ring[1] / n) : abs(lam_ring[1] / (n + lam_ring[1]))
 
@@ -207,8 +205,7 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
         # WHT of function values (normalized)
         ftilde = fwht(y) ./ sqrt(n)
 
-        mu_hat, err =
-            _bayes_net_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
+        mu_hat, err = _bayes_net_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
 
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
         err <= tol && break

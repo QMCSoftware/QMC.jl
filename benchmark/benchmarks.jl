@@ -53,8 +53,7 @@ const SUITE = BenchmarkGroup()
 #    and Kronecker are pure Julia.
 SUITE["gen_samples"] = BenchmarkGroup()
 for dim in DIMS, n in SAMPLES
-    SUITE["gen_samples"]["IIDStdUniform d=$dim n=$n"] =
-        bench_gen_samples(IIDStdUniform, dim, n)
+    SUITE["gen_samples"]["IIDStdUniform d=$dim n=$n"] = bench_gen_samples(IIDStdUniform, dim, n)
     SUITE["gen_samples"]["Lattice d=$dim n=$n"] =
         bench_gen_samples(Lattice, dim, n; randomize=true)
     SUITE["gen_samples"]["DigitalNetB2 d=$dim n=$n"] =

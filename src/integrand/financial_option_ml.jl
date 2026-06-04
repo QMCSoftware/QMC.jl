@@ -165,11 +165,7 @@ function _build_stock_path(f::FinancialOptionML, z::AbstractVector, d::Int)
     return S
 end
 
-function _stock_path_from_brownian(
-    f::FinancialOptionML,
-    w::AbstractVector,
-    tv::AbstractVector,
-)
+function _stock_path_from_brownian(f::FinancialOptionML, w::AbstractVector, tv::AbstractVector)
     σ = f.volatility
     S0 = f.start_price
     r = f.interest_rate
@@ -192,11 +188,8 @@ function _coupled_stock_paths(f::FinancialOptionML, x_fine::AbstractVector, leve
         if level == 0
             return nothing, S_fine
         end
-        S_coarse = _stock_path_from_brownian(
-            f,
-            @view(x_fine[2:2:d_fine]),
-            @view(tv_fine[2:2:d_fine])
-        )
+        S_coarse =
+            _stock_path_from_brownian(f, @view(x_fine[2:2:d_fine]), @view(tv_fine[2:2:d_fine]))
         return S_coarse, S_fine
     end
 

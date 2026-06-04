@@ -219,9 +219,8 @@ results_a = load(file_a)[1]
 results_b = load(file_b)[1]
 
 rows = collect_label_rows(results_a, results_b)
-isempty(rows) && error(
-    "No overlapping benchmarks found between labels \"$(label_a)\" and \"$(label_b)\".",
-)
+isempty(rows) &&
+    error("No overlapping benchmarks found between labels \"$(label_a)\" and \"$(label_b)\".")
 
 summary = summary_metrics(rows)
 decision = overall_decision(summary, label_a, label_b)

@@ -181,8 +181,7 @@ function collect_accuracy_rows(jl_solutions, py_results)
         py_sol =
             (py_entry !== nothing && haskey(py_entry, "solution")) ?
             Float64(py_entry["solution"]) : nothing
-        check =
-            py_sol === nothing ? nothing : accuracy_check(jl_sol, py_sol, abs_tol, rel_tol)
+        check = py_sol === nothing ? nothing : accuracy_check(jl_sol, py_sol, abs_tol, rel_tol)
         push!(
             rows,
             (
@@ -239,8 +238,7 @@ println("  NOTE: C-kernel rows [C] (Lattice/DigitalNetB2/Halton gen_samples) use
 println("  same qmctoolscl library on both sides and are NOT a language comparison.")
 println()
 
-header =
-    @sprintf("  %-48s  %11s  %11s  %7s", "benchmark", "Julia (ms)", "Python (ms)", "ratio")
+header = @sprintf("  %-48s  %11s  %11s  %7s", "benchmark", "Julia (ms)", "Python (ms)", "ratio")
 println("="^length(header))
 println(header)
 println("-"^length(header))
@@ -302,9 +300,7 @@ if summary.rss_rows > 0
         summary.total
     )
 else
-    println(
-        "weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)",
-    )
+    println("weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)")
 end
 
 # ── Accuracy (integrate): Julia vs Python solution values ───────────────────────
@@ -437,8 +433,7 @@ open(outfile, "w") do io
             jl_rss_txt =
                 row.jl_rss_delta_kib === nothing ? "n/a" :
                 @sprintf("%.1f", row.jl_rss_delta_kib)
-            peak_txt =
-                row.py_peak_kib === nothing ? "n/a" : @sprintf("%.1f", row.py_peak_kib)
+            peak_txt = row.py_peak_kib === nothing ? "n/a" : @sprintf("%.1f", row.py_peak_kib)
             rss_txt =
                 row.py_rss_delta_kib === nothing ? "n/a" :
                 @sprintf("%.1f", row.py_rss_delta_kib)
@@ -476,10 +471,7 @@ open(outfile, "w") do io
     # ── Accuracy (integrate) ────────────────────────────────────────────────
     println(io, "")
     println(io, "## Accuracy (integrate): solution agreement\n")
-    println(
-        io,
-        "Each criterion converges to within `tol` of the true value, so the Julia and",
-    )
+    println(io, "Each criterion converges to within `tol` of the true value, so the Julia and")
     println(
         io,
         "Python solutions should agree within **`2·tol`** (effective `tol = max(abs_tol,",

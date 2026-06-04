@@ -51,24 +51,18 @@
 
         f_osc1 = Genz(Uniform(IIDStdUniform(1)); kind=:oscillatory, a=[1.0], u=[0.5])
         @test genz_exact(f_osc1) ≈ -sin(1.0)
-        f_osc2 =
-            Genz(Uniform(IIDStdUniform(2)); kind=:oscillatory, a=[1.0, 1.0], u=[0.5, 0.5])
+        f_osc2 = Genz(Uniform(IIDStdUniform(2)); kind=:oscillatory, a=[1.0, 1.0], u=[0.5, 0.5])
         @test genz_exact(f_osc2) ≈ cos(π + 1.0) * (sin(0.5) / 0.5)^2
-        f_cp =
-            Genz(Uniform(IIDStdUniform(2)); kind=:corner_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+        f_cp = Genz(Uniform(IIDStdUniform(2)); kind=:corner_peak, a=[1.0, 1.0], u=[0.5, 0.5])
         @test genz_exact(f_cp) ≈ 1 / 6
-        f_cp2 =
-            Genz(Uniform(IIDStdUniform(2)); kind=:corner_peak, a=[0.5, 2.0], u=[0.5, 0.5])
+        f_cp2 = Genz(Uniform(IIDStdUniform(2)); kind=:corner_peak, a=[0.5, 2.0], u=[0.5, 0.5])
         @test genz_exact(f_cp2) ≈ 1 / 7
 
-        f_pp =
-            Genz(Uniform(IIDStdUniform(2)); kind=:product_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+        f_pp = Genz(Uniform(IIDStdUniform(2)); kind=:product_peak, a=[1.0, 1.0], u=[0.5, 0.5])
         @test genz_exact(f_pp) ≈ 0.8598764213 atol = 1e-9
-        f_gp =
-            Genz(Uniform(IIDStdUniform(2)); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+        f_gp = Genz(Uniform(IIDStdUniform(2)); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
         @test genz_exact(f_gp) ≈ 0.8511206675 atol = 1e-9
-        f_dc =
-            Genz(Uniform(IIDStdUniform(2)); kind=:discontinuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        f_dc = Genz(Uniform(IIDStdUniform(2)); kind=:discontinuous, a=[1.0, 1.0], u=[0.5, 0.5])
         @test genz_exact(f_dc) ≈ 0.4208392871 atol = 1e-9
     end
 
@@ -284,12 +278,8 @@
         @test ev > 0.0
         @test ev < 20.0
 
-        fo_asian = FinancialOption(
-            tm;
-            option_type=:asian,
-            strike_price=100.0,
-            asian_mean=:geometric,
-        )
+        fo_asian =
+            FinancialOption(tm; option_type=:asian, strike_price=100.0, asian_mean=:geometric)
         ev_asian = get_exact_value(fo_asian)
         @test ev_asian > 0.0
 
@@ -297,10 +287,8 @@
         S0, K, r, sigma, T = 100.0, 100.0, 0.05, 0.2, 1.0
         d2 = (log(S0 / K) + (r - sigma^2 / 2) * T) / (sigma * sqrt(T))
         nd = Distributions.Normal()
-        fo_dig_c =
-            FinancialOption(tm; option_type=:digital, call_put=:call, strike_price=100.0)
-        fo_dig_p =
-            FinancialOption(tm; option_type=:digital, call_put=:put, strike_price=100.0)
+        fo_dig_c = FinancialOption(tm; option_type=:digital, call_put=:call, strike_price=100.0)
+        fo_dig_p = FinancialOption(tm; option_type=:digital, call_put=:put, strike_price=100.0)
         @test get_exact_value(fo_dig_c) ≈ exp(-r * T) * Distributions.cdf(nd, d2)
         @test get_exact_value(fo_dig_p) ≈ exp(-r * T) * Distributions.cdf(nd, -d2)
         @test get_exact_value(fo_dig_c) + get_exact_value(fo_dig_p) ≈ exp(-r * T)
@@ -358,8 +346,7 @@
         response = rand(0:1, 50)
         dd = IIDStdUniform(3; seed=7)
         tm = Gaussian(dd)
-        blr =
-            BayesianLRCoeffs(tm; feature_array=features, response_vector=Float64.(response))
+        blr = BayesianLRCoeffs(tm; feature_array=features, response_vector=Float64.(response))
         x = transform(tm, gen_samples(dd, 100))
         y = evaluate(blr, x)
         @test length(y) == 100

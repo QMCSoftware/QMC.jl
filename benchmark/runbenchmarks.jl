@@ -145,8 +145,7 @@ function collect_integrate_solutions()
             )
             exact_value = maybe_exact_value(sc.integrand)
             if exact_value !== nothing
-                check =
-                    exact_accuracy_check(res.solution, exact_value, sc.abs_tol, sc.rel_tol)
+                check = exact_accuracy_check(res.solution, exact_value, sc.abs_tol, sc.rel_tol)
                 entry["exact_value"] = float(exact_value)
                 entry["abs_error"] = check.diff
                 entry["rel_error"] = check.rel_diff
@@ -256,9 +255,7 @@ solfile = joinpath(resdir, "$(label)_solutions.json")
 open(solfile, "w") do io
     JSON3.pretty(
         io,
-        JSON3.write(
-            Dict("julia_version" => string(VERSION), "solutions" => julia_solutions),
-        ),
+        JSON3.write(Dict("julia_version" => string(VERSION), "solutions" => julia_solutions)),
     )
 end
 println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json")

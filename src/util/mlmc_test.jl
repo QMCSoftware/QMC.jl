@@ -90,9 +90,8 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int=20000, L::Int=8)
             0.0
         else
             abs(del1[end] + del2[end - 1] - del2[end]) / (
-                3 * (
-                    sqrt(abs(var1[end])) + sqrt(abs(var2[end - 1])) + sqrt(abs(var2[end]))
-                ) / sqrt(n)
+                3 * (sqrt(abs(var1[end])) + sqrt(abs(var2[end - 1])) + sqrt(abs(var2[end]))) /
+                sqrt(n)
             )
         end
         push!(chk1, check)

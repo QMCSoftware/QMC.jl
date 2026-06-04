@@ -114,8 +114,7 @@ error if the library was not successfully loaded.
 function _qmctoolscl_lib_path()
     # Retry discovery on demand so users can set ENV["QMC_PYTHON"]
     # after importing QMC but before first use of QMCToolsCL-backed generators.
-    isempty(_QMCTOOLSCL_LIB_PATH[]) &&
-        _init_qmctoolscl!(; warn_on_failure=false, force=true)
+    isempty(_QMCTOOLSCL_LIB_PATH[]) && _init_qmctoolscl!(; warn_on_failure=false, force=true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) && error(
         "QMCToolsCL C library not loaded. " *
         "Lattice, DigitalNetB2, and Halton require it. " *

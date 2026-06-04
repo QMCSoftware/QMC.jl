@@ -33,8 +33,7 @@ tm = AcceptanceRejection(dd; pdf_func=pdf_func, envelope_multiplier=6.0)
 1. Zhu, H. and Dick, J. "A discrepancy bound for deterministic acceptance-rejection
    samplers beyond N^{-1/2}." 2014.
 """
-struct AcceptanceRejection{D <: AbstractDiscreteDistribution, F1, F2, F3} <:
-       AbstractTrueMeasure
+struct AcceptanceRejection{D <: AbstractDiscreteDistribution, F1, F2, F3} <: AbstractTrueMeasure
     dd::D
     dimension::Int          # target dimension (d = dd.dimension - 1)
     pdf_func::F1
@@ -54,11 +53,7 @@ function AcceptanceRejection(
     M::Union{Nothing, Float64}=nothing,
 )
     if !isnothing(proposal_pdf_func) && !isnothing(proposal_pdf)
-        throw(
-            ArgumentError(
-                "proposal_pdf_func and proposal_pdf are aliases; provide only one",
-            ),
-        )
+        throw(ArgumentError("proposal_pdf_func and proposal_pdf are aliases; provide only one"))
     end
     if !isnothing(proposal_sample_func) && !isnothing(proposal_sample)
         throw(
@@ -72,13 +67,11 @@ function AcceptanceRejection(
     end
 
     d = dd.dimension - 1
-    d > 0 ||
-        throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
+    d > 0 || throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
     envelope_multiplier = Float64(something(envelope_multiplier, M, 1.0))
     envelope_multiplier > 0 || throw(ArgumentError("envelope_multiplier must be > 0"))
 
-    ppf =
-        isnothing(proposal_pdf_func) ? something(proposal_pdf, x -> 1.0) : proposal_pdf_func
+    ppf = isnothing(proposal_pdf_func) ? something(proposal_pdf, x -> 1.0) : proposal_pdf_func
     psf =
         isnothing(proposal_sample_func) ? something(proposal_sample, x -> x) :
         proposal_sample_func
@@ -195,8 +188,7 @@ function AcceptanceRejectionReal(
     max_retries::Int=4,
 )
     d = dd.dimension - 1
-    d > 0 ||
-        throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
+    d > 0 || throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
     length(inv_cdfs) == d || throw(
         ArgumentError(
             "inv_cdfs must have one entry per target dimension " *

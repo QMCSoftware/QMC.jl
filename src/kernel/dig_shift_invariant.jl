@@ -98,6 +98,4 @@ function compute_kernel_eigenvalues(kernel::KernelDigShiftInvar, x::AbstractMatr
     return eigenvalues
 end
 
-function Base.show(io::IO, k::KernelDigShiftInvar)
-    print(io, "KernelDigShiftInvar(order=$(k.order))")
-end
+Base.show(io::IO, k::KernelDigShiftInvar) = print(io, "KernelDigShiftInvar(order=$(k.order))")
