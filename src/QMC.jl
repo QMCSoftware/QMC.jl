@@ -106,7 +106,7 @@ export DigitalNetAnyBases, Faure
 export Uniform, Gaussian, BrownianMotion, Lebesgue
 export GeometricBrownianMotion, StudentT, Triangular
 export Kumaraswamy, JohnsonsSU, BernoulliCont
-export AcceptanceRejection, DistributionsWrapper
+export AcceptanceRejection, AcceptanceRejectionReal, DistributionsWrapper
 export MaternGP, UniformTriangle, ZeroInflatedExpUniform
 
 # Exports — integrands

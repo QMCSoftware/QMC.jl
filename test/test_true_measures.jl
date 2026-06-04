@@ -150,6 +150,42 @@
         @test ar isa AcceptanceRejection
     end
 
+    @testset "AcceptanceRejectionReal" begin
+        logit(u) = log(u / (1 - u))
+        lpdf(z) = exp(-z) / (1 + exp(-z))^2
+
+        dd = DigitalNetB2(2; randomize = "none", seed = 7)
+        tm = AcceptanceRejectionReal(dd;
+            target_density = z -> lpdf(z[1]), inv_cdfs = [logit],
+            H_func = z -> lpdf(z[1]), upper_bound = 1.0, density_integral = 1.0)
+        @test tm isa AcceptanceRejectionReal
+        @test tm.dimension == 1
+        @test tm.acceptance_rate ≈ 1.0
+        x = gen_samples(dd, 64)
+        s = transform(tm, x)
+        @test size(s, 2) == 1
+        @test size(s, 1) == 64
+        @test all(isfinite, s)
+
+        tm2 = AcceptanceRejectionReal(dd;
+            target_density = z -> 0.5 * lpdf(z[1]), inv_cdfs = [logit],
+            H_func = z -> lpdf(z[1]), upper_bound = 1.0, density_integral = 0.5)
+        @test tm2.acceptance_rate ≈ 0.5
+        s2 = transform(tm2, x)
+        @test 0 < size(s2, 1) < 64
+        @test all(isfinite, s2)
+
+        @test_throws ArgumentError AcceptanceRejectionReal(dd;
+            target_density = z -> lpdf(z[1]), inv_cdfs = [logit, logit],
+            H_func = z -> lpdf(z[1]), upper_bound = 1.0, density_integral = 1.0)
+        @test_throws ArgumentError AcceptanceRejectionReal(dd;
+            target_density = z -> lpdf(z[1]), inv_cdfs = [logit],
+            H_func = z -> lpdf(z[1]), upper_bound = -1.0, density_integral = 1.0)
+        @test_throws ArgumentError AcceptanceRejectionReal(DigitalNetB2(1; seed = 1);
+            target_density = z -> lpdf(z[1]), inv_cdfs = Function[],
+            H_func = z -> lpdf(z[1]), upper_bound = 1.0, density_integral = 1.0)
+    end
+
     @testset "DistributionsWrapper" begin
         dd = IIDStdUniform(2; seed = 7)
         dw = DistributionsWrapper(
