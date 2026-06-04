@@ -1,4 +1,8 @@
-.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci check-qmcpy-python
+
+# ============================================================================
+# Configuration and helpers
+# ============================================================================
 
 FORMATTER_PROJECT=devtools/formatter
 DOC_DEPOT ?= $(if $(TMPDIR),$(TMPDIR),/tmp/)qmcju-doc-depot
@@ -45,14 +49,32 @@ ifneq ($(filter bench-compare-labels,$(firstword $(MAKECMDGOALS))),)
     LABEL_B ?= $(word 2,$(EXTRA_LABEL_COMPARE_GOALS))
     OUT_LABEL ?= $(word 3,$(EXTRA_LABEL_COMPARE_GOALS))
     .PHONY: $(EXTRA_LABEL_COMPARE_GOALS)
-    $(EXTRA_LABEL_COMPARE_GOALS):
+	    $(EXTRA_LABEL_COMPARE_GOALS):
 	@:
   endif
 endif
 
+# ============================================================================
+# Project maintenance and setup
+# ============================================================================
+
 # Update packages and resolve dependencies
 update:
 	julia --project=. -e 'using Pkg; Pkg.update(); Pkg.resolve'
+
+# Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
+setup:
+	julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+# Clean build artifacts
+clean:
+	rm -rf docs/build
+	rm -rf *.jl.cov *.jl.*.cov *.jl.mem lcov.info
+	find src benchmark test -name '*.cov' -delete
+
+# ============================================================================
+# Testing and coverage
+# ============================================================================
 
 # Run all tests
 test: 
@@ -70,9 +92,17 @@ coverage:
 test-%:
 	julia --project=. -e 'include("test/$*.jl")'
 
+# ============================================================================
+# Documentation
+# ============================================================================
+
 # Build documentation
 doc:
 	$(call RUN_TIMED,rm -rf docs/build && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl,doc)
+
+# ============================================================================
+# Formatting
+# ============================================================================
 
 # Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:
@@ -82,15 +112,9 @@ format:
 format-check:
 	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format(["src/", "test/", "benchmark/"], overwrite=false)'
 
-# Clean build artifacts
-clean:
-	rm -rf docs/build
-	rm -rf *.jl.cov *.jl.*.cov *.jl.mem lcov.info
-	find src benchmark test -name '*.cov' -delete
-
-# Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
-setup:
-	julia --project=. -e 'using Pkg; Pkg.instantiate()'
+# ============================================================================
+# Smoke checks and notebooks
+# ============================================================================
 
 # Run a quick smoke test
 smoke:
@@ -103,6 +127,10 @@ notebook:
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
 	julia --project=. test/run_notebooks.jl $*
+
+# ============================================================================
+# Benchmarking
+# ============================================================================
 
 # Run the benchmark suite (uses its own environment in benchmark/, set up on first run)
 # Override output label with: make bench LABEL=gaus or make bench gaus
@@ -164,6 +192,15 @@ bench-compare-py-coverage:
 # Run the full labeled benchmark workflow with coverage enabled and produce an lcov report.
 bench-all-coverage:
 	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-coverage)
+
+# Run the local full-check pipeline: format code, collect unit-test coverage,
+# then collect full benchmark coverage. Pass LABEL=... through to the benchmark step.
+local-ci:
+	$(call RUN_TIMED,$(MAKE) format && $(MAKE) coverage && $(MAKE) bench-all-coverage LABEL=$(LABEL),local-ci)
+
+# ============================================================================
+# Benchmark result comparison utilities
+# ============================================================================
 
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]
