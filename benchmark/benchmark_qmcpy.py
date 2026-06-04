@@ -311,6 +311,24 @@ def main():
                                 volatility=0.2, start_price=100, strike_price=100,
                                 interest_rate=0.05, t_final=1), abs_tol=0.5),
          False),
+        ("CubMCCLT EuropeanOption",
+         lambda: qp.CubMCCLT(
+             qp.FinancialOption(qp.IIDStdUniform(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCLatticeG EuropeanOption",
+         lambda: qp.CubQMCLatticeG(
+             qp.FinancialOption(qp.Lattice(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCNetG AsianOption",
+         lambda: qp.CubQMCNetG(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="ASIAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
     ]
 
     for name, make_sc, warm in integrate_cases:

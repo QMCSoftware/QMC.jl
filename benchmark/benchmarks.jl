@@ -222,12 +222,54 @@ function _int_cubqmcnetg_european()
     CubQMCNetG(f; abs_tol=0.5)
 end
 
+function _int_cubmcclt_european()
+    dd = IIDStdUniform(50; seed=42)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+    CubMCCLT(f; abs_tol=0.5)
+end
+
+function _int_cubqmclatticeg_european()
+    dd = Lattice(50; seed=42, randomize=true)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+    CubQMCLatticeG(f; abs_tol=0.5)
+end
+
+function _int_cubqmcnetg_asian()
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
+    CubQMCNetG(f; abs_tol=0.5)
+end
+
 const INTEGRATE_CASES = Pair{String, Function}[
     "CubMCCLT Keister" => _int_cubmcclt_keister,
     "CubQMCLatticeG Keister" => _int_cubqmclatticeg_keister,
     "CubQMCNetG Keister" => _int_cubqmcnetg_keister,
     "CubMCCLT AsianOption" => _int_cubmcclt_asian,
     "CubQMCNetG EuropeanOption" => _int_cubqmcnetg_european,
+    "CubMCCLT EuropeanOption" => _int_cubmcclt_european,
+    "CubQMCLatticeG EuropeanOption" => _int_cubqmclatticeg_european,
+    "CubQMCNetG AsianOption" => _int_cubqmcnetg_asian,
 ]
 
 SUITE["integrate"] = BenchmarkGroup()
