@@ -119,12 +119,11 @@ n_pass = length(notebooks) - length(errors)
 println("\n", "="^60)
 println("Summary")
 println("="^60)
-for nb in notebooks
-    status = nb in errors ? "✗ FAILED" : "✓ ok"
+for nb in errors
     w = get(clogger.counts, nb, 0)
     t = get(times, nb, 0.0)
     wtxt = w > 0 ? ", $w warning(s)" : ""
-    println("  $status  $nb  [$(fmt_duration(t))]$wtxt")
+    println("  ✗ FAILED  $nb  [$(fmt_duration(t))]$wtxt")
 end
 println("-"^60)
 println(
