@@ -321,12 +321,12 @@ else
     println("-"^length(header))
     for r in accuracy_rows
         if r.check === nothing
-            @printf("  ???  %-30s  Julia=%- 12.6g  Python=n/a\n", r.name, r.jl_sol)
+            @printf("  ???  %-40s  Julia=%- 12.6g  Python=n/a\n", r.name, r.jl_sol)
         else
             c = r.check
             mark = c.flagged ? "❌ DIFF" : "✅ ok  "
             @printf(
-                "  %s %-30s  Julia=%- 12.6g  Python=%- 12.6g  |Δ|=%.3g  allowed(2·%s)=%.3g\n",
+                "  %s %-40s  Julia=%- 12.6g  Python=%- 12.6g  |Δ|=%.3g  allowed(2·%s)=%.3g\n",
                 mark,
                 r.name,
                 r.jl_sol,
