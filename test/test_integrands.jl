@@ -245,6 +245,18 @@
         )
         ev_asian = get_exact_value(fo_asian)
         @test ev_asian > 0.0
+
+        # Digital (cash-or-nothing) European option: discounted P(ITM at T).
+        S0, K, r, sigma, T = 100.0, 100.0, 0.05, 0.2, 1.0
+        d2 = (log(S0 / K) + (r - sigma^2 / 2) * T) / (sigma * sqrt(T))
+        nd = Distributions.Normal()
+        fo_dig_c = FinancialOption(tm; option_type=:digital, call_put=:call,
+            strike_price=100.0)
+        fo_dig_p = FinancialOption(tm; option_type=:digital, call_put=:put,
+            strike_price=100.0)
+        @test get_exact_value(fo_dig_c) ≈ exp(-r * T) * Distributions.cdf(nd, d2)
+        @test get_exact_value(fo_dig_p) ≈ exp(-r * T) * Distributions.cdf(nd, -d2)
+        @test get_exact_value(fo_dig_c) + get_exact_value(fo_dig_p) ≈ exp(-r * T)
     end
 
     @testset "FinancialOptionML" begin

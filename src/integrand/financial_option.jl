@@ -244,6 +244,7 @@ end
 Compute the exact analytic fair price of the option. Supports:
 - `:european` (Black-Scholes)
 - `:asian` with `mean_type=:geometric` (Kemna-Vorst approximation)
+- `:digital` (cash-or-nothing, Black-Scholes)
 """
 function get_exact_value(f::FinancialOption)
     S0 = f.start_price
@@ -265,6 +266,16 @@ function get_exact_value(f::FinancialOption)
         gc, gp = _bs_euro_price(S0, rbar, Tbar, σbar, K)
         factor = exp(rbar * Tbar - r * T)
         return f.call_put == :call ? gc * factor : gp * factor
+    elseif f.option_type == :digital
+        # Cash-or-nothing digital under Black-Scholes: discounted P(ITM at T).
+        # Same convention as _bs_euro_price, where xbig = -d2, so
+        #   call = e^{-rT}(1 - Φ(xbig)) = e^{-rT} Φ(d2),  put = e^{-rT} Φ(xbig).
+        nd = Distributions.Normal()
+        sqrtT = σ * sqrt(T)
+        xbig = log(K * exp(-r * T) / S0) / sqrtT + sqrtT / 2
+        disc = exp(-r * T)
+        cdf_xbig = Distributions.cdf(nd, xbig)
+        return f.call_put == :call ? disc * (1 - cdf_xbig) : disc * cdf_xbig
     else
         error(
             "Exact value not supported for option_type=:$(f.option_type)" *
