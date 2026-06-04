@@ -88,13 +88,8 @@ mutable struct DigitalNetB2{R <: AbstractRNG} <: AbstractDiscreteDistribution
     replications::Union{Nothing, Int}
 end
 
-function DigitalNetB2(
-    dimension::Int;
-    randomize::String="LMS_DS",
-    seed=nothing,
-    graycode::Bool=true,
-    replications::Union{Nothing, Int}=nothing,
-)
+function DigitalNetB2(dimension::Int; randomize::String = "LMS_DS", seed = nothing,
+    graycode::Bool = true, replications::Union{Nothing, Int} = nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     dimension <= _JK_DIRECTION_MATRIX_DIMS || throw(
         ArgumentError(
@@ -179,7 +174,7 @@ end
 # Single-replication and multi-replication generation via qmctoolscl binary net
 # generation, optional digital shifts, and integer-to-float conversion.
 # ──────────────────────────────────────────────────────────────────────────────
-function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
+function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     d = dd.dimension
     mmax = _SOBOL_BITS
     V = dd.direction_nums
@@ -230,35 +225,11 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
     x_buf = Vector{Float64}(undef, n * d)
     if _HAS_DNB2_FUSED[]
         if dd.graycode
-            _c_dnb2_gen_gray_float!(
-                1,
-                n,
-                d,
-                n_start,
-                mmax,
-                1,
-                apply_shift,
-                lshifts,
-                shiftsb,
-                tmaxes,
-                C_flat,
-                x_buf,
-            )
+            _c_dnb2_gen_gray_float!(1, n, d, n_start, mmax, 1,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
         else
-            _c_dnb2_gen_natural_float!(
-                1,
-                n,
-                d,
-                n_start,
-                mmax,
-                1,
-                apply_shift,
-                lshifts,
-                shiftsb,
-                tmaxes,
-                C_flat,
-                x_buf,
-            )
+            _c_dnb2_gen_natural_float!(1, n, d, n_start, mmax, 1,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
         end
     else
         xb_buf = Vector{UInt64}(undef, n * d)
@@ -281,12 +252,12 @@ Generate `n` Sobol' points in `d` dimensions.  Returns an `n × d` matrix
 with values in [0, 1).  If `replications` was set, returns an `R × n × d` array.
 `n` should be a power of 2 for optimal equidistribution.
 """
-function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
+function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))
     n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
 
     if isnothing(dd.replications)
-        return _gen_single_replication(dd, n; n_start=n_start)
+        return _gen_single_replication(dd, n; n_start = n_start)
     end
 
     R = dd.replications
@@ -353,35 +324,11 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     x_buf = Vector{Float64}(undef, R * n * d)
     if _HAS_DNB2_FUSED[]
         if dd.graycode
-            _c_dnb2_gen_gray_float!(
-                R,
-                n,
-                d,
-                n_start,
-                mmax,
-                r_x,
-                apply_shift,
-                lshifts,
-                shiftsb,
-                tmaxes,
-                C_flat,
-                x_buf,
-            )
+            _c_dnb2_gen_gray_float!(R, n, d, n_start, mmax, r_x,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
         else
-            _c_dnb2_gen_natural_float!(
-                R,
-                n,
-                d,
-                n_start,
-                mmax,
-                r_x,
-                apply_shift,
-                lshifts,
-                shiftsb,
-                tmaxes,
-                C_flat,
-                x_buf,
-            )
+            _c_dnb2_gen_natural_float!(R, n, d, n_start, mmax, r_x,
+                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
         end
     else
         xb_buf = Vector{UInt64}(undef, r_x * n * d)
@@ -399,8 +346,7 @@ end
 
 function Base.show(io::IO, dd::DigitalNetB2)
     rep_str = isnothing(dd.replications) ? "" : ", R=$(dd.replications)"
-    print(
-        io,
+    print(io,
         "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)",
     )
 end
@@ -448,13 +394,8 @@ Apply Owen scrambling in-place to binary digital net points stored in
 row-major order: `xb[i*d + j + 1]` (0-indexed i=point, j=dimension).
 `dim_seeds` has length `d`, one per dimension.
 """
-function _owen_scramble_points!(
-    xb::Vector{UInt64},
-    n::Int,
-    d::Int,
-    mmax::Int,
-    dim_seeds::Vector{UInt64},
-)
+function _owen_scramble_points!(xb::Vector{UInt64}, n::Int, d::Int,
+    mmax::Int, dim_seeds::Vector{UInt64})
     @inbounds for i in 0:(n - 1)
         for j in 0:(d - 1)
             idx = i * d + j + 1

@@ -37,8 +37,7 @@ deps/build.log
 # Benchmark outputs — machine-specific
 benchmark/Manifest.toml
 benchmark/tune.json
-benchmark/results/*
-!benchmark/results/README.md
+benchmark/results/
 
 # Developer-specific files
 sc_*
