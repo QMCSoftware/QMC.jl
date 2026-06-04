@@ -50,17 +50,19 @@ mutable struct CubMLMC{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
     gamma0::Float64
 end
 
-function CubMLMC(integrand::AbstractMLIntegrand;
-    abs_tol::Float64 = 0.05,
-    rmse_tol::Union{Nothing, Float64} = nothing,
-    n_init::Int = 256,
-    n_limit::Int = 10_000_000_000,
-    alpha_ci::Float64 = 0.01,
-    levels_min::Int = 2,
-    levels_max::Int = 10,
-    alpha0::Float64 = -1.0,
-    beta0::Float64 = -1.0,
-    gamma0::Float64 = -1.0)
+function CubMLMC(
+    integrand::AbstractMLIntegrand;
+    abs_tol::Float64=0.05,
+    rmse_tol::Union{Nothing, Float64}=nothing,
+    n_init::Int=256,
+    n_limit::Int=10_000_000_000,
+    alpha_ci::Float64=0.01,
+    levels_min::Int=2,
+    levels_max::Int=10,
+    alpha0::Float64=-1.0,
+    beta0::Float64=-1.0,
+    gamma0::Float64=-1.0,
+)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -71,8 +73,18 @@ function CubMLMC(integrand::AbstractMLIntegrand;
         rmse_tol = abs_tol / z
     end
 
-    return CubMLMC(integrand, rmse_tol, n_init, n_limit, levels_min, levels_max,
-        0.5, alpha0, beta0, gamma0)
+    return CubMLMC(
+        integrand,
+        rmse_tol,
+        n_init,
+        n_limit,
+        levels_min,
+        levels_max,
+        0.5,
+        alpha0,
+        beta0,
+        gamma0,
+    )
 end
 
 # ── Internal MLMC State ──
@@ -149,8 +161,13 @@ function _update_samples!(sc::CubMLMC, state::_MLMCState, diff_n::Vector{Int})
         end
         _ensure_level_spawned!(sc, state, l)
         n = diff_n[l + 1]
-        dp, cost = ml_sample_and_evaluate(sc.integrand, state.level_dd[l + 1],
-            state.level_tm[l + 1], n, l)
+        dp, cost = ml_sample_and_evaluate(
+            sc.integrand,
+            state.level_dd[l + 1],
+            state.level_tm[l + 1],
+            n,
+            l,
+        )
         state.n_level[l + 1] += n
         state.sum_level[1, l + 1] += sum(dp)
         state.sum_level[2, l + 1] += sum(dp .^ 2)
@@ -167,18 +184,18 @@ function _refresh_statistics!(sc::CubMLMC, state::_MLMCState)
         nl = state.n_level[l + 1]
         if nl > 0
             state.mean_level[l + 1] = abs(state.sum_level[1, l + 1] / nl)
-            state.var_level[l + 1] = max(0.0,
-                state.sum_level[2, l + 1] / nl - state.mean_level[l + 1]^2)
+            state.var_level[l + 1] =
+                max(0.0, state.sum_level[2, l + 1] / nl - state.mean_level[l + 1]^2)
             state.cost_per_sample[l + 1] = state.cost_level[l + 1] / nl
         end
     end
 
     # Fix zero values by extrapolation
     for l in 2:L
-        state.mean_level[l + 1] = max(state.mean_level[l + 1],
-            0.5 * state.mean_level[l] / 2^state.alpha)
-        state.var_level[l + 1] = max(state.var_level[l + 1],
-            0.5 * state.var_level[l] / 2^state.beta)
+        state.mean_level[l + 1] =
+            max(state.mean_level[l + 1], 0.5 * state.mean_level[l] / 2^state.alpha)
+        state.var_level[l + 1] =
+            max(state.var_level[l + 1], 0.5 * state.var_level[l] / 2^state.beta)
     end
 
     # Linear regression to estimate alpha, beta, gamma
@@ -219,7 +236,7 @@ end
 
 # ── Main integrate method ──
 
-function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     state = _init_mlmc_state(sc)
 
@@ -276,8 +293,8 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}} = noth
 
     # Compute final solution
     solution = sum(
-        state.sum_level[1, l + 1] / state.n_level[l + 1]
-        for l in 0:state.levels if state.n_level[l + 1] > 0
+        state.sum_level[1, l + 1] / state.n_level[l + 1] for
+        l in 0:state.levels if state.n_level[l + 1] > 0
     )
     n_total = sum(state.n_level)
     t_elapsed = time() - t_start
@@ -300,6 +317,12 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}} = noth
 end
 
 function Base.show(io::IO, sc::CubMLMC)
-    @printf(io, "CubMLMC(rmse_tol=%.2e, n_init=%d, levels_min=%d, levels_max=%d)",
-        sc.rmse_tol, sc.n_init, sc.levels_min, sc.levels_max)
+    @printf(
+        io,
+        "CubMLMC(rmse_tol=%.2e, n_init=%d, levels_min=%d, levels_max=%d)",
+        sc.rmse_tol,
+        sc.n_init,
+        sc.levels_min,
+        sc.levels_max
+    )
 end

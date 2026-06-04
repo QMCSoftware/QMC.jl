@@ -29,4 +29,5 @@ PFGPCI
 ```@docs
 integrate
 QMCResult
+set_tolerance!
 ```

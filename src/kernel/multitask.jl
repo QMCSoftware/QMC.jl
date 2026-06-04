@@ -32,14 +32,17 @@ struct KernelMultiTask{K <: AbstractKernel} <: AbstractKernel
     taskmat::Matrix{Float64}  # precomputed F*F' + diag(v)
 end
 
-function KernelMultiTask(base_kernel::AbstractKernel, num_tasks::Int;
-    factor::Matrix{Float64} = zeros(num_tasks, 1),
-    diag::Vector{Float64} = ones(num_tasks))
+function KernelMultiTask(
+    base_kernel::AbstractKernel,
+    num_tasks::Int;
+    factor::Matrix{Float64}=zeros(num_tasks, 1),
+    diag::Vector{Float64}=ones(num_tasks),
+)
     num_tasks > 0 || throw(ArgumentError("num_tasks must be > 0"))
-    size(factor, 1) == num_tasks || throw(ArgumentError(
-        "factor must have $num_tasks rows, got $(size(factor, 1))"))
-    length(diag) == num_tasks || throw(ArgumentError(
-        "diag must have length $num_tasks, got $(length(diag))"))
+    size(factor, 1) == num_tasks ||
+        throw(ArgumentError("factor must have $num_tasks rows, got $(size(factor, 1))"))
+    length(diag) == num_tasks ||
+        throw(ArgumentError("diag must have length $num_tasks, got $(length(diag))"))
 
     taskmat = factor * factor' + LinearAlgebra.Diagonal(diag)
     return KernelMultiTask(base_kernel, num_tasks, factor, diag, Matrix(taskmat))
@@ -51,8 +54,13 @@ end
 Evaluate K((task_i, x), (task_j, z)) = taskmat[task_i, task_j] * K_base(x, z).
 Task indices are 1-based.
 """
-function kernel_eval(kmt::KernelMultiTask, task_i::Int, task_j::Int,
-    x::AbstractVector, z::AbstractVector)
+function kernel_eval(
+    kmt::KernelMultiTask,
+    task_i::Int,
+    task_j::Int,
+    x::AbstractVector,
+    z::AbstractVector,
+)
     return kmt.taskmat[task_i, task_j] * kernel_eval(kmt.base_kernel, x, z)
 end
 
@@ -62,8 +70,7 @@ end
 Build the full (T·n) × (T·n) kernel matrix for tasks ∈ 1:T and data X (n × d).
 Rows/columns are ordered as (task_1, x_1), (task_1, x_2), ..., (task_T, x_n).
 """
-function kernel_matrix(kmt::KernelMultiTask, tasks::AbstractVector{Int},
-    X::AbstractMatrix)
+function kernel_matrix(kmt::KernelMultiTask, tasks::AbstractVector{Int}, X::AbstractMatrix)
     T = length(tasks)
     n = size(X, 1)
     N = T * n

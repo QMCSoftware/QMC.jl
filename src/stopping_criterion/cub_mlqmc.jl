@@ -48,14 +48,16 @@ function Base.getproperty(sc::CubMLQMC, name::Symbol)
     return getfield(sc, name)
 end
 
-function CubMLQMC(integrand::AbstractMLIntegrand;
-    abs_tol::Float64 = 0.05,
-    rmse_tol::Union{Nothing, Float64} = nothing,
-    n_init::Int = 256,
-    n_limit::Int = 10_000_000_000,
-    alpha_ci::Float64 = 0.01,
-    levels_min::Int = 2,
-    levels_max::Int = 10)
+function CubMLQMC(
+    integrand::AbstractMLIntegrand;
+    abs_tol::Float64=0.05,
+    rmse_tol::Union{Nothing, Float64}=nothing,
+    n_init::Int=256,
+    n_limit::Int=10_000_000_000,
+    alpha_ci::Float64=0.01,
+    levels_min::Int=2,
+    levels_max::Int=10,
+)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -73,8 +75,7 @@ function CubMLQMC(integrand::AbstractMLIntegrand;
         target_tol = rmse_tol
     end
 
-    return CubMLQMC(integrand, target_tol, n_init, n_limit, R,
-        levels_min, levels_max, 0.5)
+    return CubMLQMC(integrand, target_tol, n_init, n_limit, R, levels_min, levels_max, 0.5)
 end
 
 # Reuse _MLQMCState from cub_mlqmc_cont.jl
@@ -155,7 +156,7 @@ function _update_data_mlqmc!(sc::CubMLQMC, state::_MLQMCState)
         state.cost_level[l + 1] += R * n_new * cost_per
         state.n_level[l + 1] = n_max
         state.mean_level[l + 1] = mean(state.mean_level_reps[l + 1])
-        state.var_level[l + 1] = var(state.mean_level_reps[l + 1]; corrected = false)
+        state.var_level[l + 1] = var(state.mean_level_reps[l + 1]; corrected=false)
         cps = state.cost_level[l + 1] / state.n_level[l + 1] / R
         state.var_cost_ratio[l + 1] = state.var_level[l + 1] / max(cps, 1e-300)
     end
@@ -182,7 +183,7 @@ function _update_bias_mlqmc!(state::_MLQMCState)
     state.bias_estimate = abs(2^(x[2] + L * x[1]) / (2^alpha_est - 1))
 end
 
-function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     state = _init_mlqmc_direct_state(sc)
     target_tol = sc.target_tol
@@ -257,6 +258,11 @@ function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}} = not
 end
 
 function Base.show(io::IO, sc::CubMLQMC)
-    @printf(io, "CubMLQMC(rmse_tol=%.2e, n_init=%d, reps=%d)",
-        sc.target_tol, sc.n_init, sc.replications)
+    @printf(
+        io,
+        "CubMLQMC(rmse_tol=%.2e, n_init=%d, reps=%d)",
+        sc.target_tol,
+        sc.n_init,
+        sc.replications
+    )
 end

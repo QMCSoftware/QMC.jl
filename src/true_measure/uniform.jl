@@ -26,8 +26,7 @@ struct Uniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     upper_bound::Vector{Float64}
 end
 
-function Uniform(dd::AbstractDiscreteDistribution;
-    lower_bound = 0.0, upper_bound = 1.0)
+function Uniform(dd::AbstractDiscreteDistribution; lower_bound=0.0, upper_bound=1.0)
     d = dd.dimension
     lb = _expand_bounds(lower_bound, d)
     ub = _expand_bounds(upper_bound, d)
@@ -41,12 +40,9 @@ function _expand_bounds(val, d::Int)
     if val isa Real
         return fill(Float64(val), d)
     else
-        length(val) == d ||
-            throw(
-                ArgumentError(
-                    "bound vector length ($(length(val))) must match dimension ($d)",
-                ),
-            )
+        length(val) == d || throw(
+            ArgumentError("bound vector length ($(length(val))) must match dimension ($d)"),
+        )
         return Float64.(collect(val))
     end
 end
@@ -65,8 +61,5 @@ Return the Jacobian determinant of the Uniform transform (product of interval wi
 jacobian(tm::Uniform) = prod(tm.upper_bound .- tm.lower_bound)
 
 function Base.show(io::IO, tm::Uniform)
-    print(
-        io,
-        "Uniform(d=$(tm.dimension), lower=$(tm.lower_bound), upper=$(tm.upper_bound))",
-    )
+    print(io, "Uniform(d=$(tm.dimension), lower=$(tm.lower_bound), upper=$(tm.upper_bound))")
 end

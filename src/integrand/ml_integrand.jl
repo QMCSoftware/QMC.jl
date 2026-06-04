@@ -40,9 +40,7 @@ function ml_evaluate end
 Return the stochastic dimension needed at the given level.
 Default implementation returns `f.dimension` (same dimension at all levels).
 """
-function dimension_at_level(f::AbstractMLIntegrand, level::Int)
-    return f.dimension
-end
+dimension_at_level(f::AbstractMLIntegrand, level::Int) = f.dimension
 
 """
     cost_at_level(f::AbstractMLIntegrand, level::Int)
@@ -50,9 +48,7 @@ end
 Return the computational cost per sample at the given level.
 Default: `2^level` (doubling cost per level).
 """
-function cost_at_level(f::AbstractMLIntegrand, level::Int)
-    return Float64(2^level)
-end
+cost_at_level(f::AbstractMLIntegrand, level::Int) = Float64(2^level)
 
 # ── Discrete Distribution Spawning ──
 
@@ -61,9 +57,7 @@ end
 
 Create a new IID uniform sampler with the given dimension and a fresh seed.
 """
-function spawn_dd(dd::IIDStdUniform, dimension::Int)
-    return IIDStdUniform(dimension)
-end
+spawn_dd(dd::IIDStdUniform, dimension::Int) = IIDStdUniform(dimension)
 
 """
     spawn_dd(dd::Lattice, dimension::Int)
@@ -73,7 +67,7 @@ and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::Lattice, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return Lattice(dimension; randomize = dd.randomize, replications = R)
+    return Lattice(dimension; randomize=dd.randomize, replications=R)
 end
 
 """
@@ -84,7 +78,16 @@ randomize and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::DigitalNetB2, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return DigitalNetB2(dimension; randomize = dd.randomize, replications = R)
+    if dimension <= size(dd.direction_nums, 1)
+        return DigitalNetB2(
+            dimension;
+            randomize=dd.randomize,
+            graycode=dd.graycode,
+            replications=R,
+            generating_matrices=dd.direction_nums,
+        )
+    end
+    return DigitalNetB2(dimension; randomize=dd.randomize, graycode=dd.graycode, replications=R)
 end
 
 """
@@ -92,9 +95,7 @@ end
 
 Create a new Halton sampler with the given dimension and fresh seed.
 """
-function spawn_dd(dd::Halton, dimension::Int)
-    return Halton(dimension; randomize = dd.randomize)
-end
+spawn_dd(dd::Halton, dimension::Int) = Halton(dimension; randomize=dd.randomize)
 
 # ── True Measure Spawning ──
 
@@ -104,9 +105,7 @@ end
 Create a new Gaussian true measure wrapping `dd_new` with standard parameters
 (mean=0, covariance=I, PCA decomposition).
 """
-function spawn_tm(tm::Gaussian, dd_new::AbstractDiscreteDistribution)
-    return Gaussian(dd_new)
-end
+spawn_tm(tm::Gaussian, dd_new::AbstractDiscreteDistribution) = Gaussian(dd_new)
 
 """
     spawn_tm(tm::Uniform, dd_new::AbstractDiscreteDistribution)
@@ -117,7 +116,7 @@ function spawn_tm(tm::Uniform, dd_new::AbstractDiscreteDistribution)
     d_new = dd_new.dimension
     lb = length(tm.lower_bound) == 1 ? tm.lower_bound[1] : tm.lower_bound[1]
     ub = length(tm.upper_bound) == 1 ? tm.upper_bound[1] : tm.upper_bound[1]
-    return Uniform(dd_new; lower_bound = lb, upper_bound = ub)
+    return Uniform(dd_new; lower_bound=lb, upper_bound=ub)
 end
 
 """
@@ -127,8 +126,8 @@ Create a new BrownianMotion true measure wrapping `dd_new`.
 """
 function spawn_tm(tm::BrownianMotion, dd_new::AbstractDiscreteDistribution)
     t_final = tm.time_vector[end]
-    tv_new = collect(range(t_final / dd_new.dimension, t_final; length = dd_new.dimension))
-    return BrownianMotion(dd_new; time_vector = tv_new, drift = tm.drift)
+    tv_new = collect(range(t_final / dd_new.dimension, t_final; length=dd_new.dimension))
+    return BrownianMotion(dd_new; time_vector=tv_new, drift=tm.drift)
 end
 
 """
@@ -137,11 +136,13 @@ end
 Create a new GeometricBrownianMotion true measure wrapping `dd_new`.
 """
 function spawn_tm(tm::GeometricBrownianMotion, dd_new::AbstractDiscreteDistribution)
-    return GeometricBrownianMotion(dd_new;
-        t_final = tm.time_vector[end],
-        initial_value = tm.initial_value,
-        drift = tm.drift,
-        diffusion = tm.diffusion)
+    return GeometricBrownianMotion(
+        dd_new;
+        t_final=tm.time_vector[end],
+        initial_value=tm.initial_value,
+        drift=tm.drift,
+        diffusion=tm.diffusion,
+    )
 end
 
 # ── Spawning a Multilevel Integrand at a Specific Level ──
@@ -172,10 +173,13 @@ multilevel integrand at the given level. Returns `(dp, cost)` where
 `dp = Qfine - Qcoarse` is the level-difference vector of length n,
 and `cost` is the total cost for this batch.
 """
-function ml_sample_and_evaluate(f::AbstractMLIntegrand,
+function ml_sample_and_evaluate(
+    f::AbstractMLIntegrand,
     dd::AbstractDiscreteDistribution,
     tm::AbstractTrueMeasure,
-    n::Int, level::Int)
+    n::Int,
+    level::Int,
+)
     x_uniform = gen_samples(dd, n)
     if ndims(x_uniform) == 3
         R, m, d = size(x_uniform)
@@ -199,10 +203,14 @@ evaluate the multilevel integrand. Returns `(rep_means, cost)` where
 `rep_means` is a length-R vector of replication means of Q_fine - Q_coarse,
 and `cost` is the total cost.
 """
-function ml_sample_and_evaluate_reps(f::AbstractMLIntegrand,
+function ml_sample_and_evaluate_reps(
+    f::AbstractMLIntegrand,
     dd::AbstractDiscreteDistribution,
     tm::AbstractTrueMeasure,
-    n::Int, level::Int, R::Int)
+    n::Int,
+    level::Int,
+    R::Int,
+)
     rep_means = zeros(R)
     total_cost = 0.0
     for r in 1:R

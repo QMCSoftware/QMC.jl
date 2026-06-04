@@ -33,15 +33,11 @@ function evaluate(f::Multimodal2D, x::AbstractMatrix)
         x1 = x[i, 1]
         x2 = x[i, 2]
         for k in 1:5
-            val +=
-                _MM2D_H[k] *
-                exp(-_MM2D_A[k] * ((x1 - _MM2D_C[k])^2 + (x2 - _MM2D_D[k])^2))
+            val += _MM2D_H[k] * exp(-_MM2D_A[k] * ((x1 - _MM2D_C[k])^2 + (x2 - _MM2D_D[k])^2))
         end
         y[i] = val
     end
     return y
 end
 
-function Base.show(io::IO, f::Multimodal2D)
-    print(io, "Multimodal2D()")
-end
+Base.show(io::IO, f::Multimodal2D) = print(io, "Multimodal2D()")

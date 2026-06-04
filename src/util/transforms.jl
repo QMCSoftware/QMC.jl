@@ -59,4 +59,4 @@ function cranley_patterson_shift!(x::AbstractMatrix, shift::AbstractVector)
 end
 
 cranley_patterson_shift(x, shift) = cranley_patterson_shift!(copy(x), shift)
-gen_cranley_patterson_shift(d::Int; rng = Random.default_rng()) = rand(rng, d)
+gen_cranley_patterson_shift(d::Int; rng=Random.default_rng()) = rand(rng, d)

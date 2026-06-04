@@ -49,10 +49,12 @@ struct UMBridgeWrapper{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     _model::Any   # UMBridge.HTTPModel (lazy, Any to avoid hard dep)
 end
 
-function UMBridgeWrapper(true_measure::AbstractTrueMeasure;
-    url::String = "http://localhost:4243",
-    model_name::String = "forward",
-    config::Dict{String, Any} = Dict{String, Any}())
+function UMBridgeWrapper(
+    true_measure::AbstractTrueMeasure;
+    url::String="http://localhost:4243",
+    model_name::String="forward",
+    config::Dict{String, Any}=Dict{String, Any}(),
+)
     # Try to load UMBridge
     model = _load_umbridge_model(url, model_name)
     return UMBridgeWrapper(true_measure, url, model_name, config, model)
@@ -75,7 +77,8 @@ function evaluate(f::UMBridgeWrapper, x::AbstractMatrix)
     if f._model === nothing
         error(
             "UMBridgeWrapper requires UMBridge.jl. " *
-            "Install with: import Pkg; Pkg.add(\"UMBridge\")")
+            "Install with: import Pkg; Pkg.add(\"UMBridge\")",
+        )
     end
 
     n = size(x, 1)

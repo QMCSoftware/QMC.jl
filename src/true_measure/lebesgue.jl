@@ -28,8 +28,7 @@ struct Lebesgue{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     volume::Float64
 end
 
-function Lebesgue(dd::AbstractDiscreteDistribution;
-    lower_bound = 0.0, upper_bound = 1.0)
+function Lebesgue(dd::AbstractDiscreteDistribution; lower_bound=0.0, upper_bound=1.0)
     d = dd.dimension
     lb = _expand_bounds(lower_bound, d)
     ub = _expand_bounds(upper_bound, d)
@@ -46,7 +45,8 @@ function transform(tm::Lebesgue, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, tm::Lebesgue)
-    print(io,
+    print(
+        io,
         "Lebesgue(d=$(tm.dimension), volume=$(tm.volume), lower=$(tm.lower_bound), upper=$(tm.upper_bound))",
     )
 end

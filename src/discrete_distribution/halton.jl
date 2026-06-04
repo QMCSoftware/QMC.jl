@@ -47,8 +47,7 @@ mutable struct Halton{R <: AbstractRNG} <: AbstractDiscreteDistribution
     mimics::String
 end
 
-function Halton(dimension::Int; randomize::Bool = true, seed = nothing,
-    generalize::Bool = true)
+function Halton(dimension::Int; randomize::Bool=true, seed=nothing, generalize::Bool=true)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     dimension <= 250 ||
         throw(ArgumentError("dimension $dimension exceeds the maximum supported (250)"))
@@ -65,7 +64,7 @@ end
 Generate the first `n` points of the (generalized, shifted) Halton sequence.
 Returns an `n × d` matrix with values in [0, 1).
 """
-function gen_samples(dd::Halton, n::Int; n_start::Int = 0)
+function gen_samples(dd::Halton, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))
     d = dd.dimension
 

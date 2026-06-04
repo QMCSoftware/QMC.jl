@@ -1,7 +1,6 @@
 module QMC
 
-using LinearAlgebra,
-    Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
+using LinearAlgebra, Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
 
 # Utilities
 include("util/bernoulli.jl")
@@ -89,9 +88,7 @@ include("stopping_criterion/cub_mc_clt_vec.jl")
 include("stopping_criterion/cub_qmc_rep_student_t.jl")
 include("stopping_criterion/pf_gp_ci.jl")
 
-function __init__()
-    _init_qmctoolscl!(; warn_on_failure = false)
-end
+__init__() = _init_qmctoolscl!(; warn_on_failure=false)
 
 # Exports — abstract types
 export AbstractDiscreteDistribution, AbstractTrueMeasure, AbstractIntegrand
@@ -106,7 +103,7 @@ export DigitalNetAnyBases, Faure
 export Uniform, Gaussian, BrownianMotion, Lebesgue
 export GeometricBrownianMotion, StudentT, Triangular
 export Kumaraswamy, JohnsonsSU, BernoulliCont
-export AcceptanceRejection, DistributionsWrapper
+export AcceptanceRejection, AcceptanceRejectionReal, DistributionsWrapper
 export MaternGP, UniformTriangle, ZeroInflatedExpUniform
 
 # Exports — integrands
@@ -119,6 +116,8 @@ export UMBridgeWrapper
 # Exports — kernels
 export KernelShiftInvar, KernelDigShiftInvar
 export KernelMatern12, KernelMatern32, KernelMatern52, KernelGaussian
+export KernelRationalQuadratic
+export KernelSquaredExponential
 export SumKernel, ProductKernel, kernel_eval, kernel_matrix
 export KernelMultiTask
 
@@ -132,6 +131,7 @@ export CubQMCRepStudentT, PFGPCI
 
 # Exports — interface functions
 export integrate, gen_samples, transform, evaluate, sample_and_evaluate
+export set_tolerance!
 export QMCResult, compute_kernel_eigenvalues
 export get_exact_value
 export ml_evaluate, dimension_at_level, cost_at_level

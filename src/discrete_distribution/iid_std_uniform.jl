@@ -18,17 +18,15 @@ mutable struct IIDStdUniform{R <: AbstractRNG} <: AbstractDiscreteDistribution
     mimics::String
 end
 
-function IIDStdUniform(dimension::Int; seed = nothing)
+function IIDStdUniform(dimension::Int; seed=nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
     return IIDStdUniform(dimension, rng, "StdUniform")
 end
 
-function gen_samples(dd::IIDStdUniform, n::Int; n_start::Int = 0)
+function gen_samples(dd::IIDStdUniform, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))
     return rand(dd.rng, n, dd.dimension)
 end
 
-function Base.show(io::IO, dd::IIDStdUniform)
-    print(io, "IIDStdUniform(d=$(dd.dimension))")
-end
+Base.show(io::IO, dd::IIDStdUniform) = print(io, "IIDStdUniform(d=$(dd.dimension))")

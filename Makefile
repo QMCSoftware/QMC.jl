@@ -1,6 +1,7 @@
-.PHONY: test doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
+DOC_DEPOT ?= $(if $(TMPDIR),$(TMPDIR),/tmp/)qmcju-doc-depot
 QMCPY_PYTHON_AUTO := $(shell \
 	for py in python python3 "$(HOME)/miniconda3/bin/python" "$(HOME)/miniconda3/envs/qmcpy/bin/python" "$(HOME)/miniconda3/envs/qmcpy-leadership/bin/python"; do \
 		if { [ -x "$$py" ] || command -v "$$py" >/dev/null 2>&1; } && "$$py" -c "import qmcpy" >/dev/null 2>&1; then \
@@ -45,27 +46,35 @@ update:
 test: 
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 
+# Run tests with Julia coverage instrumentation
+coverage:
+	find src test -name '*.cov' -delete
+	rm -f lcov.info
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(coverage=true)'
+	julia --project=. devtools/process_coverage.jl
+
 # Run specific test file
 test-%:
 	julia --project=. -e 'include("test/$*.jl")'
 
 # Build documentation
 doc:
-	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
-	julia --project=docs docs/make.jl
+	rm -rf docs/build
+	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
+	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl
 
-# Format code with JuliaFormatter
+# Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:
-	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format("src/"); format("test/")'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; format(["src/", "test/", "benchmark/"])'
 
 # Check formatting (CI-friendly, fails if changes needed)
 format-check:
-	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format("src/", overwrite=false); @assert format("test/", overwrite=false)'
+	julia --project=$(FORMATTER_PROJECT) -e 'using Pkg; Pkg.instantiate(); using JuliaFormatter; @assert format(["src/", "test/", "benchmark/"], overwrite=false)'
 
 # Clean build artifacts
 clean:
 	rm -rf docs/build
-	rm -rf *.jl.cov *.jl.*.cov *.jl.mem
+	rm -rf *.jl.cov *.jl.*.cov *.jl.mem lcov.info
 
 # Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
 setup:

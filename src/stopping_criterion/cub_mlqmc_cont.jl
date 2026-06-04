@@ -52,17 +52,19 @@ mutable struct CubMLQMCCont{I <: AbstractMLIntegrand} <: AbstractStoppingCriteri
     theta::Float64
 end
 
-function CubMLQMCCont(integrand::AbstractMLIntegrand;
-    abs_tol::Float64 = 0.05,
-    rmse_tol::Union{Nothing, Float64} = nothing,
-    n_init::Int = 256,
-    n_limit::Int = 10_000_000_000,
-    alpha_ci::Float64 = 0.01,
-    levels_min::Int = 2,
-    levels_max::Int = 10,
-    n_tols::Int = 10,
-    inflate::Float64 = 100.0^(1/9),
-    theta_init::Float64 = 0.5)
+function CubMLQMCCont(
+    integrand::AbstractMLIntegrand;
+    abs_tol::Float64=0.05,
+    rmse_tol::Union{Nothing, Float64}=nothing,
+    n_init::Int=256,
+    n_limit::Int=10_000_000_000,
+    alpha_ci::Float64=0.01,
+    levels_min::Int=2,
+    levels_max::Int=10,
+    n_tols::Int=10,
+    inflate::Float64=100.0^(1/9),
+    theta_init::Float64=0.5,
+)
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
@@ -80,9 +82,19 @@ function CubMLQMCCont(integrand::AbstractMLIntegrand;
         target_tol = rmse_tol
     end
 
-    return CubMLQMCCont(integrand, target_tol, n_init, n_limit, R,
-        levels_min, levels_max, n_tols, inflate,
-        theta_init, theta_init)
+    return CubMLQMCCont(
+        integrand,
+        target_tol,
+        n_init,
+        n_limit,
+        R,
+        levels_min,
+        levels_max,
+        n_tols,
+        inflate,
+        theta_init,
+        theta_init,
+    )
 end
 
 # ── MLQMC internal state ──
@@ -183,7 +195,7 @@ function _update_data_qmc!(sc::CubMLQMCCont, state::_MLQMCState)
         state.cost_level[l + 1] += R * n_new * cost_per
         state.n_level[l + 1] = n_max
         state.mean_level[l + 1] = mean(state.mean_level_reps[l + 1])
-        state.var_level[l + 1] = var(state.mean_level_reps[l + 1]; corrected = false)
+        state.var_level[l + 1] = var(state.mean_level_reps[l + 1]; corrected=false)
         cps = state.cost_level[l + 1] / state.n_level[l + 1] / R
         state.var_cost_ratio[l + 1] = state.var_level[l + 1] / max(cps, 1e-300)
     end
@@ -230,17 +242,13 @@ function _update_theta_qmc!(sc::CubMLQMCCont, state::_MLQMCState, step_tol::Floa
     sc.theta = clamp((real_bias / step_tol)^2, 0.01, 0.125)
 end
 
-function _varest_qmc(state::_MLQMCState)
-    return sum(state.var_level[1:state.levels])
-end
+_varest_qmc(state::_MLQMCState) = sum(state.var_level[1:state.levels])
 
 function _mse_qmc(sc::CubMLQMCCont, state::_MLQMCState)
     return (1 - sc.theta) * _varest_qmc(state) + sc.theta * state.bias_estimate^2
 end
 
-function _rmse_qmc(sc::CubMLQMCCont, state::_MLQMCState)
-    return sqrt(max(0.0, _mse_qmc(sc, state)))
-end
+_rmse_qmc(sc::CubMLQMCCont, state::_MLQMCState) = sqrt(max(0.0, _mse_qmc(sc, state)))
 
 # ── Single tolerance step ──
 
@@ -287,7 +295,7 @@ end
 
 # ── Main integrate ──
 
-function integrate(sc::CubMLQMCCont; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubMLQMCCont; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     state = _init_mlqmc_state(sc)
 
@@ -318,6 +326,12 @@ function integrate(sc::CubMLQMCCont; resume::Union{Nothing, Dict{Symbol, Any}} =
 end
 
 function Base.show(io::IO, sc::CubMLQMCCont)
-    @printf(io, "CubMLQMCCont(rmse_tol=%.2e, n_init=%d, reps=%d, n_tols=%d)",
-        sc.target_tol, sc.n_init, sc.replications, sc.n_tols)
+    @printf(
+        io,
+        "CubMLQMCCont(rmse_tol=%.2e, n_init=%d, reps=%d, n_tols=%d)",
+        sc.target_tol,
+        sc.n_init,
+        sc.replications,
+        sc.n_tols
+    )
 end

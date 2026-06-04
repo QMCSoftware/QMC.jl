@@ -18,14 +18,13 @@ x = gen_samples(dd, 2^20)  # automatically uses GPU
 """
 
 # Placeholder: check if CUDA is available
-function _gpu_available()
+_gpu_available() =
     try
         # Would check: isdefined(Main, :CUDA) && CUDA.functional()
         return false
     catch
         return false
     end
-end
 
 """
     gpu_fwht!(x::Vector{Float64})

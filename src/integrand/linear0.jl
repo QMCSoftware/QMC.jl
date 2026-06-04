@@ -13,9 +13,7 @@ struct Linear0{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     dimension::Int
 end
 
-function Linear0(tm::AbstractTrueMeasure)
-    return Linear0(tm, tm.dimension)
-end
+Linear0(tm::AbstractTrueMeasure) = Linear0(tm, tm.dimension)
 
 function evaluate(f::Linear0, x::AbstractMatrix)
     n = size(x, 1)
@@ -30,6 +28,4 @@ function evaluate(f::Linear0, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::Linear0)
-    print(io, "Linear0(d=$(f.dimension))")
-end
+Base.show(io::IO, f::Linear0) = print(io, "Linear0(d=$(f.dimension))")

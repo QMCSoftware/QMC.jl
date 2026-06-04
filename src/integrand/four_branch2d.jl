@@ -22,7 +22,7 @@ struct FourBranch2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     k::Float64
 end
 
-function FourBranch2D(tm::AbstractTrueMeasure; k::Float64 = 6.0)
+function FourBranch2D(tm::AbstractTrueMeasure; k::Float64=6.0)
     tm.dimension == 2 ||
         throw(ArgumentError("FourBranch2D requires dimension 2, got $(tm.dimension)"))
     return FourBranch2D(tm, 2, k)
@@ -40,6 +40,4 @@ function evaluate(f::FourBranch2D, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::FourBranch2D)
-    print(io, "FourBranch2D(k=$(f.k))")
-end
+Base.show(io::IO, f::FourBranch2D) = print(io, "FourBranch2D(k=$(f.k))")

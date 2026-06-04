@@ -36,7 +36,7 @@ struct KernelMatern12 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern12(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelMatern12(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern12(lengthscale, outputscale)
@@ -47,9 +47,7 @@ end
 
 Evaluate kernel `k` at distance `r`. Each kernel subtype has its own method.
 """
-function kernel_eval(k::KernelMatern12, r::Float64)
-    return k.outputscale * exp(-r / k.lengthscale)
-end
+kernel_eval(k::KernelMatern12, r::Float64) = k.outputscale * exp(-r / k.lengthscale)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Matérn-3/2
@@ -64,7 +62,7 @@ struct KernelMatern32 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern32(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelMatern32(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern32(lengthscale, outputscale)
@@ -88,7 +86,7 @@ struct KernelMatern52 <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelMatern52(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelMatern52(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelMatern52(lengthscale, outputscale)
@@ -112,13 +110,75 @@ struct KernelGaussian <: AbstractStationaryKernel
     outputscale::Float64
 end
 
-function KernelGaussian(; lengthscale::Float64 = 1.0, outputscale::Float64 = 1.0)
+function KernelGaussian(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
     lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
     outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
     return KernelGaussian(lengthscale, outputscale)
 end
 
 function kernel_eval(k::KernelGaussian, r::Float64)
+    z = r / k.lengthscale
+    return k.outputscale * exp(-0.5 * z^2)
+end
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rational Quadratic
+# ──────────────────────────────────────────────────────────────────────────────
+"""
+    KernelRationalQuadratic(; lengthscale=1.0, outputscale=1.0, alpha=1.0)
+
+Rational-quadratic kernel: k(r) = σ² (1 + r²/(2 α ℓ²))^(-α), the scale-mixture of
+Gaussian kernels with mixture parameter `alpha` (α > 0). As `alpha → ∞` it
+converges to the Gaussian (RBF) kernel `σ² exp(-r²/(2ℓ²))`.
+
+Matches QMCPy's `KernelRationalQuadratic`: with distance
+`d_γ = ‖(x - z)/(√2 ℓ)‖₂`, k = σ² (1 + d_γ²/α)^(-α) = σ² (1 + r²/(2 α ℓ²))^(-α).
+"""
+struct KernelRationalQuadratic <: AbstractStationaryKernel
+    lengthscale::Float64
+    outputscale::Float64
+    alpha::Float64
+end
+
+function KernelRationalQuadratic(;
+    lengthscale::Float64=1.0,
+    outputscale::Float64=1.0,
+    alpha::Float64=1.0,
+)
+    lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
+    outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
+    alpha > 0 || throw(ArgumentError("alpha must be positive"))
+    return KernelRationalQuadratic(lengthscale, outputscale, alpha)
+end
+
+function kernel_eval(k::KernelRationalQuadratic, r::Float64)
+    z2 = (r / k.lengthscale)^2
+    return k.outputscale * (1.0 + z2 / (2.0 * k.alpha))^(-k.alpha)
+end
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Squared Exponential (QMCPy parity twin of the Gaussian / RBF kernel)
+# ──────────────────────────────────────────────────────────────────────────────
+"""
+    KernelSquaredExponential(; lengthscale=1.0, outputscale=1.0)
+
+Squared-exponential kernel: k(r) = σ² exp(-r²/(2ℓ²)). Mathematically identical to
+[`KernelGaussian`](@ref); provided as a distinct type for naming parity with
+QMCPy's `KernelSquaredExponential` (which expresses the same kernel via the
+pairwise-distance form `S exp(-d_γ²)`, `d_γ = ‖(x - z)/(√2 ℓ)‖₂`).
+"""
+struct KernelSquaredExponential <: AbstractStationaryKernel
+    lengthscale::Float64
+    outputscale::Float64
+end
+
+function KernelSquaredExponential(; lengthscale::Float64=1.0, outputscale::Float64=1.0)
+    lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
+    outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
+    return KernelSquaredExponential(lengthscale, outputscale)
+end
+
+function kernel_eval(k::KernelSquaredExponential, r::Float64)
     z = r / k.lengthscale
     return k.outputscale * exp(-0.5 * z^2)
 end
@@ -163,9 +223,7 @@ struct SumKernel <: AbstractKernel
     k2::AbstractKernel
 end
 
-function kernel_eval(k::SumKernel, r::Float64)
-    return kernel_eval(k.k1, r) + kernel_eval(k.k2, r)
-end
+kernel_eval(k::SumKernel, r::Float64) = kernel_eval(k.k1, r) + kernel_eval(k.k2, r)
 
 """
     ProductKernel(k1::AbstractKernel, k2::AbstractKernel)
@@ -177,9 +235,7 @@ struct ProductKernel <: AbstractKernel
     k2::AbstractKernel
 end
 
-function kernel_eval(k::ProductKernel, r::Float64)
-    return kernel_eval(k.k1, r) * kernel_eval(k.k2, r)
-end
+kernel_eval(k::ProductKernel, r::Float64) = kernel_eval(k.k1, r) * kernel_eval(k.k2, r)
 
 # Convenience operators
 Base.:+(k1::AbstractKernel, k2::AbstractKernel) = SumKernel(k1, k2)
@@ -197,9 +253,11 @@ end
 function Base.show(io::IO, k::KernelGaussian)
     print(io, "KernelGaussian(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")
 end
-function Base.show(io::IO, k::SumKernel)
-    print(io, "($(k.k1) + $(k.k2))")
+function Base.show(io::IO, k::KernelRationalQuadratic)
+    print(io, "KernelRationalQuadratic(ℓ=$(k.lengthscale), σ²=$(k.outputscale), α=$(k.alpha))")
 end
-function Base.show(io::IO, k::ProductKernel)
-    print(io, "($(k.k1) * $(k.k2))")
+function Base.show(io::IO, k::KernelSquaredExponential)
+    print(io, "KernelSquaredExponential(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")
 end
+Base.show(io::IO, k::SumKernel) = print(io, "($(k.k1) + $(k.k2))")
+Base.show(io::IO, k::ProductKernel) = print(io, "($(k.k1) * $(k.k2))")

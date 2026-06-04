@@ -34,21 +34,19 @@ struct GeometricBrownianMotion{D <: AbstractDiscreteDistribution, B <: BrownianM
     _bm::B
 end
 
-function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
-    t_final::Float64 = 1.0,
-    initial_value::Union{Nothing, Float64} = nothing,
-    drift::Union{Nothing, Float64} = nothing,
-    diffusion::Union{Nothing, Float64} = nothing,
-    volatility::Union{Nothing, Float64} = nothing,
-    start_price::Union{Nothing, Float64} = nothing,
-    interest_rate::Union{Nothing, Float64} = nothing,
-    decomp_type::Symbol = :PCA)
+function GeometricBrownianMotion(
+    dd::AbstractDiscreteDistribution;
+    t_final::Float64=1.0,
+    initial_value::Union{Nothing, Float64}=nothing,
+    drift::Union{Nothing, Float64}=nothing,
+    diffusion::Union{Nothing, Float64}=nothing,
+    volatility::Union{Nothing, Float64}=nothing,
+    start_price::Union{Nothing, Float64}=nothing,
+    interest_rate::Union{Nothing, Float64}=nothing,
+    decomp_type::Symbol=:PCA,
+)
     if !isnothing(initial_value) && !isnothing(start_price) && initial_value != start_price
-        throw(
-            ArgumentError(
-                "initial_value and start_price must match when both are provided",
-            ),
-        )
+        throw(ArgumentError("initial_value and start_price must match when both are provided"))
     end
     if !isnothing(drift) && !isnothing(interest_rate) && drift != interest_rate
         throw(ArgumentError("drift and interest_rate must match when both are provided"))
@@ -57,18 +55,13 @@ function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
         throw(ArgumentError("volatility must be non-negative, got $volatility"))
     end
     if !isnothing(diffusion) && !isnothing(volatility) && diffusion != volatility^2
-        throw(
-            ArgumentError("diffusion and volatility must satisfy diffusion = volatility^2"),
-        )
+        throw(ArgumentError("diffusion and volatility must satisfy diffusion = volatility^2"))
     end
 
     initial_value = Float64(something(initial_value, start_price, 1.0))
     drift = Float64(something(drift, interest_rate, 0.0))
-    diffusion = Float64(
-        isnothing(diffusion) ?
-        (isnothing(volatility) ? 1.0 : volatility^2) :
-        diffusion,
-    )
+    diffusion =
+        Float64(isnothing(diffusion) ? (isnothing(volatility) ? 1.0 : volatility^2) : diffusion)
 
     t_final >= 0.0 || throw(ArgumentError("t_final must be non-negative, got $t_final"))
     initial_value > 0.0 ||
@@ -76,7 +69,7 @@ function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
     diffusion > 0.0 || throw(ArgumentError("diffusion must be positive, got $diffusion"))
 
     d = dd.dimension
-    tv = collect(range(t_final / d, t_final; length = d))
+    tv = collect(range(t_final / d, t_final; length=d))
 
     # Build BM covariance: C[i,j] = diffusion * min(t[i], t[j])
     cov = Matrix{Float64}(undef, d, d)
@@ -84,7 +77,7 @@ function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
         cov[i, j] = diffusion * min(tv[i], tv[j])
     end
 
-    gauss = Gaussian(dd; mean = 0.0, covariance = cov, decomp_type = decomp_type)
+    gauss = Gaussian(dd; mean=0.0, covariance=cov, decomp_type=decomp_type)
     bm = BrownianMotion(dd, d, tv, 0.0, gauss)
 
     return GeometricBrownianMotion(dd, d, tv, initial_value, drift, diffusion, bm)
@@ -101,7 +94,8 @@ function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, tm::GeometricBrownianMotion)
-    print(io,
+    print(
+        io,
         "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))",
     )
 end

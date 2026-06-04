@@ -31,25 +31,27 @@ mutable struct CubMCCLT{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     inflate::Float64
 end
 
-function CubMCCLT(integrand::AbstractIntegrand;
-    abs_tol::Float64 = 0.01,
-    rel_tol::Float64 = 0.0,
-    n_init::Int = 1024,
-    n_max::Int = 2^30,
-    alpha::Float64 = 0.01,
-    inflate::Float64 = 1.2)
+function CubMCCLT(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=1024,
+    n_max::Int=2^30,
+    alpha::Float64=0.01,
+    inflate::Float64=1.2,
+)
     n_max > 2 * n_init || throw(ArgumentError("n_max must be > 2 * n_init"))
     inflate >= 1.0 || throw(ArgumentError("inflate must be ≥ 1.0"))
     0.0 < alpha < 1.0 || throw(ArgumentError("alpha must be in (0, 1)"))
     return CubMCCLT(integrand, abs_tol, rel_tol, n_init, n_max, alpha, inflate)
 end
 
-function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     z_star = quantile(Normal(), 1.0 - sc.alpha / 2.0)
 
     # ── Stage 1: Pilot sample to estimate variance ──
     y0 = sample_and_evaluate(sc.integrand, sc.n_init)
-    sig_hat0 = std(y0; corrected = true)
+    sig_hat0 = std(y0; corrected=true)
     mu_hat0 = mean(y0)
 
     # Determine tolerance using pilot estimate
@@ -67,7 +69,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}} = not
 
     # ── Stage 2: Main sample ──
     y = sample_and_evaluate(sc.integrand, n_mu)
-    sig_hat = std(y; corrected = true)
+    sig_hat = std(y; corrected=true)
     mu_hat = mean(y)
 
     # Final confidence interval from main-stage samples
@@ -85,6 +87,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}} = not
 
     data = Dict{Symbol, Any}(
         :n => n_total,
+        :n_total => n_total,
         :n_mu => n_mu,
         :error_bound => err,
         :bound_low => bound_low,
@@ -99,8 +102,5 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}} = not
 end
 
 function Base.show(io::IO, sc::CubMCCLT)
-    print(
-        io,
-        "CubMCCLT(abs_tol=$(sc.abs_tol), rel_tol=$(sc.rel_tol), inflate=$(sc.inflate))",
-    )
+    print(io, "CubMCCLT(abs_tol=$(sc.abs_tol), rel_tol=$(sc.rel_tol), inflate=$(sc.inflate))")
 end

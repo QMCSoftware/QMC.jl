@@ -27,14 +27,16 @@ mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriteri
     trace_iterations::Bool
 end
 
-function CubQMCLatticeG(integrand::AbstractIntegrand;
-    abs_tol::Float64 = 0.01,
-    rel_tol::Float64 = 0.0,
-    n_init::Int = 2^10,
-    n_max::Int = 2^30,
-    n_reps::Int = 16,
-    alpha::Float64 = 0.01,
-    trace_iterations::Bool = false)
+function CubQMCLatticeG(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=2^10,
+    n_max::Int=2^30,
+    n_reps::Int=16,
+    alpha::Float64=0.01,
+    trace_iterations::Bool=false,
+)
     return CubQMCLatticeG(
         integrand,
         abs_tol,
@@ -47,12 +49,13 @@ function CubQMCLatticeG(integrand::AbstractIntegrand;
     )
 end
 
-function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}} = nothing)
+function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     R = sc.n_reps
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
 
     if resume !== nothing
-        n = 2 * Int(resume[:n])
+        n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) : Int(resume[:n])
+        n = 2 * n_prev
         prev_time = Float64(get(resume, :time_integrate, 0.0))
     else
         n = sc.n_init
@@ -75,13 +78,19 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
         end
 
         mu_hat = mean(estimates)
-        sigma_reps = std(estimates; corrected = true)
+        sigma_reps = std(estimates; corrected=true)
         err = t_crit * sigma_reps / sqrt(R)
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
 
         if sc.trace_iterations
-            push!(log; n = n*R, solution = mu_hat, error_bound = err,
-                tol = tol, elapsed = time() - t_start)
+            push!(
+                log;
+                n=n*R,
+                solution=mu_hat,
+                error_bound=err,
+                tol=tol,
+                elapsed=time() - t_start,
+            )
         end
 
         err <= tol && break
@@ -94,8 +103,11 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
     end
 
     t_elapsed = time() - t_start
+    n_per_rep = n > sc.n_max ? sc.n_max : n
     data = Dict{Symbol, Any}(
-        :n => n > sc.n_max ? sc.n_max : n,
+        :n => n_per_rep,
+        :n_per_rep => n_per_rep,
+        :n_total => n_per_rep * R,
         :n_reps => R,
         :error_bound => err,
         :n_iterations => n_iter,

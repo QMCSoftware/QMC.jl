@@ -22,8 +22,7 @@ x = gen_samples(dd, 256)
 paths = transform(bm, x)  # 256×64 Brownian motion paths
 ```
 """
-struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <:
-       AbstractTrueMeasure
+struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <: AbstractTrueMeasure
     dd::D
     dimension::Int
     time_vector::Vector{Float64}
@@ -31,27 +30,21 @@ struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <:
     _gaussian::G
 end
 
-function BrownianMotion(dd::AbstractDiscreteDistribution;
-    time_vector = nothing, drift = 0.0)
+function BrownianMotion(dd::AbstractDiscreteDistribution; time_vector=nothing, drift=0.0)
     d = dd.dimension
     if isnothing(time_vector)
-        tv = collect(range(1.0 / d, 1.0; length = d))
+        tv = collect(range(1.0 / d, 1.0; length=d))
     else
         tv = Float64.(collect(time_vector))
         length(tv) == d ||
-            throw(
-                ArgumentError(
-                    "time_vector length ($(length(tv))) must match dimension ($d)",
-                ),
-            )
-        issorted(tv; lt = <=) ||
-            throw(ArgumentError("time_vector must be strictly increasing"))
+            throw(ArgumentError("time_vector length ($(length(tv))) must match dimension ($d)"))
+        issorted(tv; lt=<=) || throw(ArgumentError("time_vector must be strictly increasing"))
         all(tv .> 0) || throw(ArgumentError("time_vector entries must be positive"))
     end
     # Build Brownian motion covariance: C[i,j] = min(t[i], t[j])
     cov = _bm_covariance(tv)
     # Internal Gaussian with zero mean and BM covariance (PCA decomposition)
-    gauss = Gaussian(dd; mean = 0.0, covariance = cov, decomp_type = :PCA)
+    gauss = Gaussian(dd; mean=0.0, covariance=cov, decomp_type=:PCA)
     return BrownianMotion(dd, d, tv, Float64(drift), gauss)
 end
 
@@ -78,7 +71,8 @@ function transform(tm::BrownianMotion, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, tm::BrownianMotion)
-    print(io,
+    print(
+        io,
         "BrownianMotion(d=$(tm.dimension), drift=$(tm.drift), t=[$(tm.time_vector[1]),…,$(tm.time_vector[end])])",
     )
 end

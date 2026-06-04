@@ -38,9 +38,11 @@ struct BayesianLRCoeffs{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     n_obs::Int                        # m
 end
 
-function BayesianLRCoeffs(tm::AbstractTrueMeasure;
+function BayesianLRCoeffs(
+    tm::AbstractTrueMeasure;
     feature_array::AbstractMatrix,
-    response_vector::AbstractVector)
+    response_vector::AbstractVector,
+)
     m, p = size(feature_array)
     d = tm.dimension
     length(response_vector) == m || throw(
@@ -48,13 +50,12 @@ function BayesianLRCoeffs(tm::AbstractTrueMeasure;
             "response_vector length ($(length(response_vector))) must match rows of feature_array ($m)",
         ),
     )
-    (d == p || d == p + 1) || throw(ArgumentError(
-        "True measure dimension ($d) must be p = $p or p+1 = $(p + 1)"))
-    all(y -> y == 0.0 || y == 1.0, response_vector) || throw(ArgumentError(
-        "response_vector must contain only 0s and 1s"))
+    (d == p || d == p + 1) ||
+        throw(ArgumentError("True measure dimension ($d) must be p = $p or p+1 = $(p + 1)"))
+    all(y -> y == 0.0 || y == 1.0, response_vector) ||
+        throw(ArgumentError("response_vector must contain only 0s and 1s"))
 
-    return BayesianLRCoeffs(tm, d, Float64.(feature_array),
-        Float64.(response_vector), p, m)
+    return BayesianLRCoeffs(tm, d, Float64.(feature_array), Float64.(response_vector), p, m)
 end
 
 """
@@ -111,8 +112,5 @@ function evaluate(f::BayesianLRCoeffs, x::AbstractMatrix)
 end
 
 function Base.show(io::IO, f::BayesianLRCoeffs)
-    print(
-        io,
-        "BayesianLRCoeffs(d=$(f.dimension), obs=$(f.n_obs), features=$(f.n_features))",
-    )
+    print(io, "BayesianLRCoeffs(d=$(f.dimension), obs=$(f.n_obs), features=$(f.n_features))")
 end

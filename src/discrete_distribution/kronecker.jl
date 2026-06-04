@@ -51,7 +51,7 @@ function _first_primes(n::Int)
     return primes
 end
 
-function Kronecker(dimension::Int; seed = nothing, generator = :default)
+function Kronecker(dimension::Int; seed=nothing, generator=:default)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
 
     if generator == :default
@@ -85,7 +85,7 @@ end
 Generate `n` Kronecker sequence points. Returns an `n × d` matrix with values
 in [0, 1).
 """
-function gen_samples(kr::Kronecker, n::Int; n_start::Int = 0)
+function gen_samples(kr::Kronecker, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive"))
     d = kr.dimension
     x = Matrix{Float64}(undef, n, d)

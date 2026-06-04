@@ -16,12 +16,14 @@ struct TestMLIntegrand <: AbstractMLIntegrand
     interest_rate::Float64
 end
 
-function TestMLIntegrand(dd::AbstractDiscreteDistribution;
-    d_coarsest::Int = 1,
-    volatility::Float64 = 0.5,
-    start_price::Float64 = 30.0,
-    strike_price::Float64 = 35.0,
-    interest_rate::Float64 = 0.0)
+function TestMLIntegrand(
+    dd::AbstractDiscreteDistribution;
+    d_coarsest::Int=1,
+    volatility::Float64=0.5,
+    start_price::Float64=30.0,
+    strike_price::Float64=35.0,
+    interest_rate::Float64=0.0,
+)
     # The dimension of the base DD determines max level
     tm = Gaussian(dd)
     return TestMLIntegrand(
@@ -35,13 +37,9 @@ function TestMLIntegrand(dd::AbstractDiscreteDistribution;
     )
 end
 
-function QMC.dimension_at_level(f::TestMLIntegrand, level::Int)
-    return f.d_coarsest * 2^level
-end
+QMC.dimension_at_level(f::TestMLIntegrand, level::Int) = f.d_coarsest * 2^level
 
-function QMC.cost_at_level(f::TestMLIntegrand, level::Int)
-    return Float64(2 * f.d_coarsest * 2^level)
-end
+QMC.cost_at_level(f::TestMLIntegrand, level::Int) = Float64(2 * f.d_coarsest * 2^level)
 
 function _gbm_payoff(f::TestMLIntegrand, x::AbstractVector)
     d = length(x)
@@ -95,14 +93,22 @@ end
         dd2 = spawn_dd(dd, 8)
         @test dd2.dimension == 8
 
-        dd_lat = Lattice(4; replications = 8)
+        dd_lat = Lattice(4; replications=8)
         dd_lat2 = spawn_dd(dd_lat, 16)
         @test dd_lat2.dimension == 16
         @test dd_lat2.replications == 8
 
-        dd_dn = DigitalNetB2(4; replications = 8)
+        dd_dn = DigitalNetB2(4; replications=8)
         dd_dn2 = spawn_dd(dd_dn, 16)
         @test dd_dn2.dimension == 16
+
+        dd_dn_custom = DigitalNetB2(
+            4;
+            randomize="none",
+            generating_matrices=Int.(dd_dn.direction_nums[:, 1:6] .>> 26),
+        )
+        dd_dn_custom2 = spawn_dd(dd_dn_custom, 2)
+        @test dd_dn_custom2.direction_nums == dd_dn_custom.direction_nums[1:2, :]
     end
 
     @testset "spawn_tm" begin
@@ -115,7 +121,7 @@ end
 
     @testset "dimension_at_level" begin
         dd = IIDStdUniform(32)
-        f = TestMLIntegrand(dd; d_coarsest = 1)
+        f = TestMLIntegrand(dd; d_coarsest=1)
         @test dimension_at_level(f, 0) == 1
         @test dimension_at_level(f, 1) == 2
         @test dimension_at_level(f, 2) == 4
@@ -125,14 +131,8 @@ end
 
 @testset "CubMLMC" begin
     dd = IIDStdUniform(32)
-    f = TestMLIntegrand(
-        dd;
-        d_coarsest = 1,
-        volatility = 0.5,
-        start_price = 30.0,
-        strike_price = 35.0,
-    )
-    sc = CubMLMC(f; abs_tol = 0.5, n_init = 256, levels_min = 2, levels_max = 6)
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
+    sc = CubMLMC(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6)
     result = integrate(sc)
 
     @test result.solution isa Float64
@@ -143,21 +143,8 @@ end
 
 @testset "CubMLMCCont" begin
     dd = IIDStdUniform(32)
-    f = TestMLIntegrand(
-        dd;
-        d_coarsest = 1,
-        volatility = 0.5,
-        start_price = 30.0,
-        strike_price = 35.0,
-    )
-    sc = CubMLMCCont(
-        f;
-        abs_tol = 0.5,
-        n_init = 256,
-        levels_min = 2,
-        levels_max = 6,
-        n_tols = 5,
-    )
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
+    sc = CubMLMCCont(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6, n_tols=5)
     result = integrate(sc)
 
     @test result.solution isa Float64
@@ -166,22 +153,9 @@ end
 end
 
 @testset "CubMLQMCCont" begin
-    dd = Lattice(32; replications = 8)
-    f = TestMLIntegrand(
-        dd;
-        d_coarsest = 1,
-        volatility = 0.5,
-        start_price = 30.0,
-        strike_price = 35.0,
-    )
-    sc = CubMLQMCCont(
-        f;
-        abs_tol = 0.5,
-        n_init = 64,
-        levels_min = 2,
-        levels_max = 6,
-        n_tols = 5,
-    )
+    dd = Lattice(32; replications=8)
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
+    sc = CubMLQMCCont(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6, n_tols=5)
     result = integrate(sc)
 
     @test result.solution isa Float64

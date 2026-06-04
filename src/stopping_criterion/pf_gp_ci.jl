@@ -32,17 +32,28 @@ struct PFGPCI{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     n_approx::Int
 end
 
-function PFGPCI(integrand::AbstractIntegrand;
-    failure_threshold::Float64 = 0.0,
-    failure_above_threshold::Bool = true,
-    abs_tol::Float64 = 5e-3,
-    alpha::Float64 = 0.01,
-    n_init::Int = 64,
-    n_limit::Int = 1000,
-    n_batch::Int = 4,
-    n_approx::Int = 2^20)
-    return PFGPCI(integrand, failure_threshold, failure_above_threshold,
-        abs_tol, alpha, n_init, n_limit, n_batch, n_approx)
+function PFGPCI(
+    integrand::AbstractIntegrand;
+    failure_threshold::Float64=0.0,
+    failure_above_threshold::Bool=true,
+    abs_tol::Float64=5e-3,
+    alpha::Float64=0.01,
+    n_init::Int=64,
+    n_limit::Int=1000,
+    n_batch::Int=4,
+    n_approx::Int=2^20,
+)
+    return PFGPCI(
+        integrand,
+        failure_threshold,
+        failure_above_threshold,
+        abs_tol,
+        alpha,
+        n_init,
+        n_limit,
+        n_batch,
+        n_approx,
+    )
 end
 
 function integrate(sc::PFGPCI; kwargs...)
