@@ -72,9 +72,7 @@ test-%:
 
 # Build documentation
 doc:
-	rm -rf docs/build
-	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
-	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl
+	$(call RUN_TIMED,rm -rf docs/build && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl,doc)
 
 # Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:
