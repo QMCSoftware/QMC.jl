@@ -48,7 +48,7 @@
         @test genz_exact(f_osc1) ≈ -sin(1.0)
         f_osc2 = Genz(Uniform(IIDStdUniform(2)); kind = :oscillatory,
             a = [1.0, 1.0], u = [0.5, 0.5])
-        @test genz_exact(f_osc2) ≈ -0.4967514421 atol = 1e-9
+        @test genz_exact(f_osc2) ≈ cos(π + 1.0) * (sin(0.5) / 0.5)^2
         f_cp = Genz(Uniform(IIDStdUniform(2)); kind = :corner_peak,
             a = [1.0, 1.0], u = [0.5, 0.5])
         @test genz_exact(f_cp) ≈ 1 / 6
