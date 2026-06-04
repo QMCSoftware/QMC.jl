@@ -87,7 +87,8 @@ function summary_metrics(rows)
     )
 end
 
-coverage_juliacmd() = BENCH_COVERAGE ? `$(Base.julia_cmd()) --code-coverage=user` : Base.julia_cmd()
+coverage_juliacmd() =
+    BENCH_COVERAGE ? `$(Base.julia_cmd()) --code-coverage=user` : Base.julia_cmd()
 
 function copy_coverage_files(src::AbstractString, dest::AbstractString)
     for (dir, _, files) in walkdir(src)
@@ -202,7 +203,11 @@ function bench_worktree()
         return with_benchmark_env(
             joinpath(snap, "benchmark"),
             snap,
-            () -> benchmarkpkg(snap, BenchmarkConfig(; juliacmd=coverage_juliacmd()); verbose=false),
+            () -> benchmarkpkg(
+                snap,
+                BenchmarkConfig(; juliacmd=coverage_juliacmd());
+                verbose=false,
+            ),
         )
     finally
         BENCH_COVERAGE && copy_coverage_files(snap, PKG)
@@ -264,7 +269,11 @@ function bench_revision(rev::AbstractString)
             return with_benchmark_env(
                 joinpath(snap, "benchmark"),
                 snap,
-                () -> benchmarkpkg(snap, BenchmarkConfig(; juliacmd=coverage_juliacmd()); verbose=false),
+                () -> benchmarkpkg(
+                    snap,
+                    BenchmarkConfig(; juliacmd=coverage_juliacmd());
+                    verbose=false,
+                ),
             )
         finally
             BENCH_COVERAGE && copy_coverage_files(snap, PKG)

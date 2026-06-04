@@ -54,6 +54,7 @@ coverage:
 	rm -f lcov.info
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(coverage=true)'
 	julia --project=. devtools/process_coverage.jl
+	find src test -name '*.cov' -delete
 
 # Run specific test file
 test-%:
@@ -77,6 +78,7 @@ format-check:
 clean:
 	rm -rf docs/build
 	rm -rf *.jl.cov *.jl.*.cov *.jl.mem lcov.info
+	find src benchmark test -name '*.cov' -delete
 
 # Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
 setup:
@@ -149,6 +151,7 @@ bench-coverage:
 	rm -f lcov.info
 	$(MAKE) bench BENCH_COVERAGE=1
 	julia --project=. devtools/process_coverage.jl src benchmark
+	find src benchmark -name '*.cov' -delete
 
 # Run the Julia-vs-Julia comparison with coverage enabled and produce an lcov report.
 bench-compare-coverage:
@@ -156,6 +159,7 @@ bench-compare-coverage:
 	rm -f lcov.info
 	$(MAKE) bench-compare BENCH_COVERAGE=1 REV=$(REV) LABEL=$(LABEL)
 	julia --project=. devtools/process_coverage.jl src benchmark
+	find src benchmark -name '*.cov' -delete
 
 # Run the Julia-vs-QMCPy comparison with coverage enabled and produce an lcov report.
 bench-compare-py-coverage:
@@ -163,6 +167,7 @@ bench-compare-py-coverage:
 	rm -f lcov.info
 	$(MAKE) bench-compare-py BENCH_COVERAGE=1 LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL)
 	julia --project=. devtools/process_coverage.jl src benchmark
+	find src benchmark -name '*.cov' -delete
 
 # Run the full labeled benchmark workflow with coverage enabled and produce an lcov report.
 bench-all-label-coverage:
@@ -170,6 +175,7 @@ bench-all-label-coverage:
 	rm -f lcov.info
 	$(MAKE) bench-all-label BENCH_COVERAGE=1 LABEL=$(LABEL)
 	julia --project=. devtools/process_coverage.jl src benchmark
+	find src benchmark -name '*.cov' -delete
 
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]
