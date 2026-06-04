@@ -20,6 +20,7 @@ Kumaraswamy
 JohnsonsSU
 BernoulliCont
 AcceptanceRejection
+AcceptanceRejectionReal
 DistributionsWrapper
 MaternGP
 UniformTriangle

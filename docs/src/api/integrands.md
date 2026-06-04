@@ -47,5 +47,7 @@ compute_sensitivity_indices(::SensitivityIndices, ::AbstractMatrix)
 ```@docs
 keister_exact
 genz_exact
+ishigami_exact
+get_exact_value(::AsianOption)
 get_exact_value(::FinancialOption)
 ```

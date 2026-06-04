@@ -1,6 +1,7 @@
 .PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
+DOC_DEPOT ?= $(if $(TMPDIR),$(TMPDIR),/tmp/)qmcju-doc-depot
 QMCPY_PYTHON_AUTO := $(shell \
 	for py in python python3 "$(HOME)/miniconda3/bin/python" "$(HOME)/miniconda3/envs/qmcpy/bin/python" "$(HOME)/miniconda3/envs/qmcpy-leadership/bin/python"; do \
 		if { [ -x "$$py" ] || command -v "$$py" >/dev/null 2>&1; } && "$$py" -c "import qmcpy" >/dev/null 2>&1; then \
@@ -58,8 +59,8 @@ test-%:
 
 # Build documentation
 doc:
-	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
-	julia --project=docs docs/make.jl
+	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()'
+	JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl
 
 # Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:

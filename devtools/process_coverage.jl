@@ -90,12 +90,12 @@ function print_summary(merged::Dict{String, Vector{Int}})
     end
     total_pct = total_exec == 0 ? 100.0 : 100 * total_covered / total_exec
     println("Coverage summary (src):")
-    println("  total: $(round(total_pct; digits=2))% ($total_covered/$total_exec executable lines)")
     for (source, covered, exec, pct) in rows
         pct_str = string(round(pct; digits=2), "%")
         println("  $(rpad(source, 56)) $(lpad(pct_str, 8))  ($covered/$exec)")
     end
     println("Wrote lcov.info")
+    println("  total: $(round(total_pct; digits=2))% ($total_covered/$total_exec executable lines)")
 end
 
 merged, _ = collect_coverage(COVERAGE_ROOTS)
