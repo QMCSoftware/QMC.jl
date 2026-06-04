@@ -119,6 +119,7 @@ export UMBridgeWrapper
 # Exports — kernels
 export KernelShiftInvar, KernelDigShiftInvar
 export KernelMatern12, KernelMatern32, KernelMatern52, KernelGaussian
+export KernelRationalQuadratic
 export SumKernel, ProductKernel, kernel_eval, kernel_matrix
 export KernelMultiTask
 

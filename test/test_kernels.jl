@@ -59,6 +59,23 @@
         @test kernel_eval(k, 1.0) ≈ 2.0 * exp(-0.5)
     end
 
+    @testset "KernelRationalQuadratic" begin
+        k = KernelRationalQuadratic(lengthscale = 1.0, outputscale = 2.0, alpha = 1.0)
+        @test kernel_eval(k, 0.0) ≈ 2.0
+        @test kernel_eval(k, 1.0) ≈ 2.0 * (1.0 + 0.5)^(-1.0)
+        k2 = KernelRationalQuadratic(lengthscale = 1.5, outputscale = 1.0, alpha = 0.5)
+        @test kernel_eval(k2, 2.0) ≈ 0.6
+        klim = KernelRationalQuadratic(lengthscale = 1.0, outputscale = 1.0, alpha = 1e8)
+        @test kernel_eval(klim, 1.0) ≈ exp(-0.5) atol = 1e-6
+        x = [0.0 0.0; 0.5 0.5; 1.0 1.0]
+        K = kernel_matrix(k, x)
+        @test size(K) == (3, 3)
+        @test K ≈ K'
+        @test all(eigvals(K) .>= -1e-10)
+        @test_throws ArgumentError KernelRationalQuadratic(alpha = 0.0)
+        @test_throws ArgumentError KernelRationalQuadratic(lengthscale = -1.0)
+    end
+
     @testset "Combined Kernels" begin
         k1 = KernelMatern32(lengthscale = 1.0, outputscale = 1.0)
         k2 = KernelGaussian(lengthscale = 2.0, outputscale = 0.5)

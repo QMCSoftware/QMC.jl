@@ -124,6 +124,38 @@ function kernel_eval(k::KernelGaussian, r::Float64)
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Rational Quadratic
+# ──────────────────────────────────────────────────────────────────────────────
+"""
+    KernelRationalQuadratic(; lengthscale=1.0, outputscale=1.0, alpha=1.0)
+
+Rational-quadratic kernel: k(r) = σ² (1 + r²/(2 α ℓ²))^(-α), the scale-mixture of
+Gaussian kernels with mixture parameter `alpha` (α > 0). As `alpha → ∞` it
+converges to the Gaussian (RBF) kernel `σ² exp(-r²/(2ℓ²))`.
+
+Matches QMCPy's `KernelRationalQuadratic`: with distance
+`d_γ = ‖(x - z)/(√2 ℓ)‖₂`, k = σ² (1 + d_γ²/α)^(-α) = σ² (1 + r²/(2 α ℓ²))^(-α).
+"""
+struct KernelRationalQuadratic <: AbstractStationaryKernel
+    lengthscale::Float64
+    outputscale::Float64
+    alpha::Float64
+end
+
+function KernelRationalQuadratic(; lengthscale::Float64 = 1.0,
+    outputscale::Float64 = 1.0, alpha::Float64 = 1.0)
+    lengthscale > 0 || throw(ArgumentError("lengthscale must be positive"))
+    outputscale > 0 || throw(ArgumentError("outputscale must be positive"))
+    alpha > 0 || throw(ArgumentError("alpha must be positive"))
+    return KernelRationalQuadratic(lengthscale, outputscale, alpha)
+end
+
+function kernel_eval(k::KernelRationalQuadratic, r::Float64)
+    z2 = (r / k.lengthscale)^2
+    return k.outputscale * (1.0 + z2 / (2.0 * k.alpha))^(-k.alpha)
+end
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Kernel matrix construction (common to all stationary kernels)
 # ──────────────────────────────────────────────────────────────────────────────
 """
@@ -196,6 +228,12 @@ function Base.show(io::IO, k::KernelMatern52)
 end
 function Base.show(io::IO, k::KernelGaussian)
     print(io, "KernelGaussian(ℓ=$(k.lengthscale), σ²=$(k.outputscale))")
+end
+function Base.show(io::IO, k::KernelRationalQuadratic)
+    print(
+        io,
+        "KernelRationalQuadratic(ℓ=$(k.lengthscale), σ²=$(k.outputscale), α=$(k.alpha))",
+    )
 end
 function Base.show(io::IO, k::SumKernel)
     print(io, "($(k.k1) + $(k.k2))")
