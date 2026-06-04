@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-const COVERAGE_ROOTS = ("src",)
+coverage_roots() = isempty(ARGS) ? ("src",) : Tuple(ARGS)
 
 function cov_to_source_path(path::AbstractString)
     return replace(path, r"\.(?:\d+\.)?cov$" => "")
@@ -78,7 +78,7 @@ function write_lcov(path::AbstractString, merged::Dict{String, Vector{Int}})
     end
 end
 
-function print_summary(merged::Dict{String, Vector{Int}})
+function print_summary(merged::Dict{String, Vector{Int}}, roots)
     rows = Tuple{String, Int, Int, Float64}[]
     total_covered = 0
     total_exec = 0
@@ -89,7 +89,7 @@ function print_summary(merged::Dict{String, Vector{Int}})
         push!(rows, (source, covered, exec, pct))
     end
     total_pct = total_exec == 0 ? 100.0 : 100 * total_covered / total_exec
-    println("Coverage summary (src):")
+    println("Coverage summary ($(join(roots, ", "))):")
     for (source, covered, exec, pct) in rows
         pct_str = string(round(pct; digits=2), "%")
         println("  $(rpad(source, 56)) $(lpad(pct_str, 8))  ($covered/$exec)")
@@ -98,6 +98,7 @@ function print_summary(merged::Dict{String, Vector{Int}})
     println("  total: $(round(total_pct; digits=2))% ($total_covered/$total_exec executable lines)")
 end
 
-merged, _ = collect_coverage(COVERAGE_ROOTS)
+roots = coverage_roots()
+merged, _ = collect_coverage(roots)
 write_lcov("lcov.info", merged)
-print_summary(merged)
+print_summary(merged, roots)

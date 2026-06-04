@@ -36,6 +36,7 @@ using Printf
 
 const PKG = dirname(@__DIR__)
 const RESDIR = joinpath(@__DIR__, "results")
+const BENCH_COVERAGE = get(ENV, "BENCH_COVERAGE", "0") == "1"
 mkpath(RESDIR)
 
 comparison_outfile(label::AbstractString) =
@@ -84,6 +85,21 @@ function summary_metrics(rows)
         ref_kib=total_ref_kib,
         memory_ratio=total_local_kib > 0 ? total_ref_kib / total_local_kib : NaN,
     )
+end
+
+coverage_juliacmd() = BENCH_COVERAGE ? `$(Base.julia_cmd()) --code-coverage=user` : Base.julia_cmd()
+
+function copy_coverage_files(src::AbstractString, dest::AbstractString)
+    for (dir, _, files) in walkdir(src)
+        for file in files
+            endswith(file, ".cov") || continue
+            srcfile = joinpath(dir, file)
+            rel = relpath(srcfile, src)
+            destfile = joinpath(dest, rel)
+            mkpath(dirname(destfile))
+            cp(srcfile, destfile; force=true)
+        end
+    end
 end
 
 "Write a sanitized single-run benchmark summary without host or path metadata."
@@ -180,7 +196,19 @@ function write_comparison_md(
 end
 
 "Benchmark the current working tree in place (uncommitted changes included)."
-bench_worktree() = benchmarkpkg(PKG; verbose=false)
+function bench_worktree()
+    snap = snapshot_package_tree(PKG)
+    try
+        return with_benchmark_env(
+            joinpath(snap, "benchmark"),
+            snap,
+            () -> benchmarkpkg(snap, BenchmarkConfig(; juliacmd=coverage_juliacmd()); verbose=false),
+        )
+    finally
+        BENCH_COVERAGE && copy_coverage_files(snap, PKG)
+        rm(snap; force=true, recursive=true)
+    end
+end
 
 "Run `f()` with `project_dir` active and `pkgdir` developed as `QMC`."
 function with_benchmark_env(project_dir::AbstractString, pkgdir::AbstractString, f::Function)
@@ -197,10 +225,19 @@ function with_benchmark_env(project_dir::AbstractString, pkgdir::AbstractString,
     end
 end
 
+"Copy a package tree into a temporary directory without its `.git` metadata."
+function snapshot_package_tree(src::AbstractString)
+    dest = mktempdir()
+    for entry in readdir(src; join=true)
+        basename(entry) == ".git" && continue
+        cp(entry, joinpath(dest, basename(entry)); force=true)
+    end
+    return dest
+end
+
 "Benchmark a committed `rev` in a throwaway git worktree, leaving PKG untouched.
-The current benchmark/benchmarks.jl is copied into the worktree first, so the
-revision's own (possibly old or broken) benchmarks.jl is never used — both sides
-run today's suite against their respective package source."
+The worktree is snapshotted into a git-free temporary directory before running
+PkgBenchmark so the benchmark runner never needs to restore a git sha."
 function bench_revision(rev::AbstractString)
     if !success(`git -C $PKG rev-parse --verify --quiet $rev`)
         error(
@@ -213,39 +250,26 @@ function bench_revision(rev::AbstractString)
     wt = joinpath(parent, "wt")   # must not pre-exist; `git worktree add` creates it
     run(`git -C $PKG worktree add --quiet --detach $wt $rev`)
     try
-        # Run the CURRENT benchmark suite against the revision's package source, so
-        # an old/broken benchmarks.jl committed at `rev` doesn't break the run and
-        # both sides measure the same suite.
+        # Run the CURRENT benchmark suite against the revision's package source,
+        # so an old/broken benchmarks.jl committed at `rev` doesn't break the run
+        # and both sides measure the same suite.
         cp(
             joinpath(PKG, "benchmark", "benchmarks.jl"),
             joinpath(wt, "benchmark", "benchmarks.jl");
             force=true,
         )
-        # Commit the synced suite inside the throwaway worktree so its working tree
-        # is clean. PkgBenchmark checks out the commit it benchmarks and then tries
-        # to restore the original sha; on a *dirty* detached worktree that restore
-        # fails and emits "Failed to return back to original sha …". A clean tree
-        # avoids the stash/checkout dance. This only moves the worktree's detached
-        # HEAD (the main repo and `rev` are untouched), and the worktree is removed
-        # below regardless.
+
+        snap = snapshot_package_tree(wt)
         try
-            run(`git -C $wt add -A`)
-            run(
-                pipeline(
-                    `git -C $wt -c user.email=bench@localhost -c user.name=bench commit -q --allow-empty -m bench-sync-suite`;
-                    stdout=devnull,
-                    stderr=devnull,
-                ),
+            return with_benchmark_env(
+                joinpath(snap, "benchmark"),
+                snap,
+                () -> benchmarkpkg(snap, BenchmarkConfig(; juliacmd=coverage_juliacmd()); verbose=false),
             )
-        catch
-            # If committing fails (e.g. git identity unavailable), benchmarking
-            # still works; PkgBenchmark may just re-emit its restore warning.
+        finally
+            BENCH_COVERAGE && copy_coverage_files(snap, PKG)
+            rm(snap; force=true, recursive=true)
         end
-        return with_benchmark_env(
-            joinpath(wt, "benchmark"),
-            wt,
-            () -> benchmarkpkg(wt; verbose=false),
-        )
     finally
         try
             run(`git -C $PKG worktree remove --force $wt`)

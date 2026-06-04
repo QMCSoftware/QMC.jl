@@ -1,4 +1,4 @@
-.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all-label bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-label-coverage check-qmcpy-python
 
 FORMATTER_PROJECT=devtools/formatter
 DOC_DEPOT ?= $(if $(TMPDIR),$(TMPDIR),/tmp/)qmcju-doc-depot
@@ -10,6 +10,8 @@ QMCPY_PYTHON_AUTO := $(shell \
 		fi; \
 	done)
 PYTHON ?= $(if $(QMCPY_PYTHON_AUTO),$(QMCPY_PYTHON_AUTO),python)
+BENCH_COVERAGE ?= 0
+JULIA_BENCH_COVERAGE_FLAG := $(if $(filter 1,$(BENCH_COVERAGE)),--code-coverage=user,)
 
 # Allow `make bench gaus` / `make bench-compare gaus` / `make bench-compare-py gaus`
 # as shorthand for `LABEL=gaus`. `make` treats `gaus` as an extra goal, so consume
@@ -96,7 +98,7 @@ notebook-%:
 # Override output label with: make bench LABEL=gaus or make bench gaus
 # Saves results to benchmark/results/latest.json (default) or <LABEL>.json
 bench:
-	julia benchmark/runbenchmarks.jl $(LABEL)
+	BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL)
 
 check-qmcpy-python:
 	@$(PYTHON) -c "import qmcpy" >/dev/null 2>&1 || \
@@ -112,7 +114,7 @@ check-qmcpy-python:
 REV ?= HEAD
 LABEL ?=
 bench-compare:
-	julia benchmark/compare.jl $(REV) $(LABEL)
+	BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare.jl $(REV) $(LABEL)
 
 # Side-by-side Julia vs QMCPy comparison.
 # Runs both the Julia and QMCPy benchmark harnesses for the requested labels.
@@ -125,20 +127,49 @@ JL_LABEL ?= $(if $(LABEL),$(LABEL),latest)
 PY_LABEL ?= $(JL_LABEL)
 bench-compare-py: bench check-qmcpy-python
 	$(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL)
-	julia benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL)
+	BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL)
 
 # Explicit labeled Julia-vs-QMCPy comparison flow.
 # Usage: make bench-compare-py-label LABEL=base
 bench-compare-py-label: check-qmcpy-python
-	julia benchmark/runbenchmarks.jl $(LABEL)
+	BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL)
 	$(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL)
-	julia benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL)
+	BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL)
 
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
 # Usage: make bench-all-label LABEL=base
 bench-all-label:
 	$(MAKE) bench-compare LABEL=$(LABEL)
 	$(MAKE) bench-compare-py LABEL=$(LABEL)
+
+# Run the benchmark suite with coverage enabled and produce an lcov report over
+# both src/ and benchmark/ coverage files.
+bench-coverage:
+	find src benchmark -name '*.cov' -delete
+	rm -f lcov.info
+	$(MAKE) bench BENCH_COVERAGE=1
+	julia --project=. devtools/process_coverage.jl src benchmark
+
+# Run the Julia-vs-Julia comparison with coverage enabled and produce an lcov report.
+bench-compare-coverage:
+	find src benchmark -name '*.cov' -delete
+	rm -f lcov.info
+	$(MAKE) bench-compare BENCH_COVERAGE=1 REV=$(REV) LABEL=$(LABEL)
+	julia --project=. devtools/process_coverage.jl src benchmark
+
+# Run the Julia-vs-QMCPy comparison with coverage enabled and produce an lcov report.
+bench-compare-py-coverage:
+	find src benchmark -name '*.cov' -delete
+	rm -f lcov.info
+	$(MAKE) bench-compare-py BENCH_COVERAGE=1 LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL)
+	julia --project=. devtools/process_coverage.jl src benchmark
+
+# Run the full labeled benchmark workflow with coverage enabled and produce an lcov report.
+bench-all-label-coverage:
+	find src benchmark -name '*.cov' -delete
+	rm -f lcov.info
+	$(MAKE) bench-all-label BENCH_COVERAGE=1 LABEL=$(LABEL)
+	julia --project=. devtools/process_coverage.jl src benchmark
 
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]
