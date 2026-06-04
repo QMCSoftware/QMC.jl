@@ -22,8 +22,11 @@ BoxIntegral(tm::AbstractTrueMeasure; s::Float64=2.0) = BoxIntegral(tm, tm.dimens
 function evaluate(f::BoxIntegral, x::AbstractMatrix)
     n, d = size(x)
     s_half = f.s / 2.0
-    # Column-major accumulation of the squared radius (contiguous reads, no
-    # stride-n cache misses at large d); per-row summation order is unchanged.
+    # Julia matrices are column-major, so the natural row loop
+    # `for i in 1:n; for j in 1:d; x[i, j]^2 end end` makes the inner loop walk
+    # memory with stride `n`, which is cache-unfriendly at large `d`. Making `j`
+    # the outer loop reads each column contiguously and accumulates into a
+    # length-`n` vector; the per-row summation order remains unchanged.
     r2 = zeros(Float64, n)
     @inbounds for j in 1:d
         @simd for i in 1:n

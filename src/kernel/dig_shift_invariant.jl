@@ -87,9 +87,11 @@ function compute_kernel_eigenvalues(kernel::KernelDigShiftInvar, x::AbstractMatr
     @assert ispow2(n) "Number of points must be a power of 2 for WHT, got $n"
     # Build first column: K(x_i ⊕ x_1)
     first_col = ones(n)
-    for i in 1:n
-        for j in 1:d
-            diff = _xor_float(x[i, j], x[1, j])
+    # Column-major reduction: update all rows for one coordinate at a time.
+    for j in 1:d
+        x1j = x[1, j]
+        for i in 1:n
+            diff = _xor_float(x[i, j], x1j)
             first_col[i] *= _dig_kernel_1d(kernel.order, diff)
         end
     end

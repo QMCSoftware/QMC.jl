@@ -37,17 +37,37 @@ const _HARTMANN_P = [
 
 function evaluate(f::Hartmann6D, x::AbstractMatrix)
     n = size(x, 1)
+    s1 = zeros(Float64, n)
+    s2 = zeros(Float64, n)
+    s3 = zeros(Float64, n)
+    s4 = zeros(Float64, n)
+    # Julia matrices are column-major, so accumulate one coordinate at a time
+    # rather than striding by `n` across a per-row inner loop.
+    @inbounds for j in 1:6
+        a1 = _HARTMANN_A[1, j]
+        a2 = _HARTMANN_A[2, j]
+        a3 = _HARTMANN_A[3, j]
+        a4 = _HARTMANN_A[4, j]
+        p1 = _HARTMANN_P[1, j]
+        p2 = _HARTMANN_P[2, j]
+        p3 = _HARTMANN_P[3, j]
+        p4 = _HARTMANN_P[4, j]
+        @simd for i in 1:n
+            xij = x[i, j]
+            s1[i] += a1 * (xij - p1)^2
+            s2[i] += a2 * (xij - p2)^2
+            s3[i] += a3 * (xij - p3)^2
+            s4[i] += a4 * (xij - p4)^2
+        end
+    end
     y = Vector{Float64}(undef, n)
     @inbounds for i in 1:n
-        val = 0.0
-        for k in 1:4
-            inner = 0.0
-            for j in 1:6
-                inner += _HARTMANN_A[k, j] * (x[i, j] - _HARTMANN_P[k, j])^2
-            end
-            val -= _HARTMANN_ALPHA[k] * exp(-inner)
-        end
-        y[i] = val
+        y[i] = -(
+            _HARTMANN_ALPHA[1] * exp(-s1[i]) +
+            _HARTMANN_ALPHA[2] * exp(-s2[i]) +
+            _HARTMANN_ALPHA[3] * exp(-s3[i]) +
+            _HARTMANN_ALPHA[4] * exp(-s4[i])
+        )
     end
     return y
 end

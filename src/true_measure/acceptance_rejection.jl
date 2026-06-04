@@ -228,13 +228,19 @@ function transform(tm::AcceptanceRejectionReal, x::AbstractMatrix)
 
     accepted = Vector{Vector{Float64}}()
     sizehint!(accepted, ceil(Int, n * tm.acceptance_rate))
-    z = Vector{Float64}(undef, d)
+    # Julia matrices are column-major, so map each proposal coordinate in
+    # column-major order first, then perform the row-wise acceptance test.
+    zmat = Matrix{Float64}(undef, n, d)
+    @inbounds for j in 1:d
+        invcdf = tm.inv_cdfs[j]
+        @simd for i in 1:n
+            uj = clamp(x[i, j], epsq, 1.0 - epsq)
+            zmat[i, j] = invcdf(uj)
+        end
+    end
 
     @inbounds for i in 1:n
-        for j in 1:d
-            uj = clamp(x[i, j], epsq, 1.0 - epsq)
-            z[j] = tm.inv_cdfs[j](uj)
-        end
+        z = @view zmat[i, :]
         u = x[i, d + 1]
         if tm.target_density(z) >= L * tm.H_func(z) * u
             push!(accepted, copy(z))

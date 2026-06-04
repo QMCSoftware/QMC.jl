@@ -242,6 +242,72 @@ function evaluate(f::FinancialOption, x::AbstractMatrix)
         end
     end
 
+    # Fast path: digital option with GBM transform already applied.
+    # Only the terminal price S(T) = x[:, end] matters.
+    if f.option_type == :digital && f._use_gbm_transform
+        S_T = @view x[:, end]
+        K = f.strike_price
+        return if f.call_put == :call
+            @. discount * ifelse(S_T > K, 1.0, 0.0)
+        else
+            @. discount * ifelse(S_T < K, 1.0, 0.0)
+        end
+    end
+
+    # Fast path: lookback option with GBM transform already applied.
+    # Reduce the path extrema in column-major order instead of rebuilding each
+    # row's stock-price vector.
+    if f.option_type == :lookback && f._use_gbm_transform
+        n, d = size(x)
+        extrema = copy(@view x[:, 1])
+        if f.call_put == :call
+            @inbounds for j in 2:d
+                @simd for i in 1:n
+                    extrema[i] = max(extrema[i], x[i, j])
+                end
+            end
+            K = f.strike_price
+            return @. discount * max(extrema - K, 0.0)
+        else
+            @inbounds for j in 2:d
+                @simd for i in 1:n
+                    extrema[i] = min(extrema[i], x[i, j])
+                end
+            end
+            K = f.strike_price
+            return @. discount * max(K - extrema, 0.0)
+        end
+    end
+
+    # Fast path: barrier option with GBM transform already applied.
+    # Track the terminal price and the path crossing state by reducing columns.
+    if f.option_type == :barrier && f._use_gbm_transform
+        n, d = size(x)
+        B = f.barrier_price
+        K = f.strike_price
+        ST = @view x[:, end]
+        crossed = falses(n)
+        if f.start_price < B
+            @inbounds for j in 1:d
+                @simd for i in 1:n
+                    crossed[i] |= x[i, j] >= B
+                end
+            end
+        else
+            @inbounds for j in 1:d
+                @simd for i in 1:n
+                    crossed[i] |= x[i, j] <= B
+                end
+            end
+        end
+        active = f.barrier_in_out == :in ? crossed : .!crossed
+        return if f.call_put == :call
+            @. discount * ifelse(active, max(ST - K, 0.0), 0.0)
+        else
+            @. discount * ifelse(active, max(K - ST, 0.0), 0.0)
+        end
+    end
+
     n = size(x, 1)
     y = Vector{Float64}(undef, n)
     @inbounds for i in 1:n

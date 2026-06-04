@@ -72,32 +72,40 @@ function evaluate(f::AsianOption, x::AbstractMatrix)
     r = f.interest_rate
     T = f._time_vector[end]
     tv = f._time_vector
+    drift = r - 0.5 * σ^2
+    avg = zeros(Float64, n)
+    # Julia matrices are column-major, so the natural `i`-outer / `j`-inner
+    # stock-price loop would stride by `n` across `x[i, j]`. Accumulating the
+    # average with `j` outer / `i` inner reads each Brownian-motion column
+    # contiguously while preserving the per-row monitoring-date order.
+    if f.mean_type == :arithmetic
+        @inbounds for j in 1:d
+            tj = tv[j]
+            @simd for i in 1:n
+                avg[i] += S0 * exp(drift * tj + σ * x[i, j])
+            end
+        end
+        @. avg = avg / d
+    else  # geometric
+        logS0 = log(S0)
+        @inbounds for j in 1:d
+            tj = tv[j]
+            @simd for i in 1:n
+                avg[i] += logS0 + drift * tj + σ * x[i, j]
+            end
+        end
+        @. avg = exp(avg / d)
+    end
+
+    discount = exp(-r * T)
     y = Vector{Float64}(undef, n)
-
-    for i in 1:n
-        # Compute stock prices at each monitoring date
-        # x[i,:] contains Brownian motion values W(t_1), ..., W(t_d)
-        stock_prices = Vector{Float64}(undef, d)
-        for j in 1:d
-            stock_prices[j] = S0 * exp((r - 0.5 * σ^2) * tv[j] + σ * x[i, j])
+    @inbounds for i in 1:n
+        payoff = if f.call_put == :call
+            max(avg[i] - K, 0.0)
+        else
+            max(K - avg[i], 0.0)
         end
-
-        # Compute average
-        if f.mean_type == :arithmetic
-            avg_price = mean(stock_prices)
-        else  # :geometric
-            avg_price = exp(mean(log.(stock_prices)))
-        end
-
-        # Compute payoff
-        if f.call_put == :call
-            payoff = max(avg_price - K, 0.0)
-        else  # :put
-            payoff = max(K - avg_price, 0.0)
-        end
-
-        # Discount
-        y[i] = exp(-r * T) * payoff
+        y[i] = discount * payoff
     end
 
     return y

@@ -65,11 +65,15 @@ where eta_i = beta_0 + X_i' * beta_{1:p}
 function _log_likelihood(f::BayesianLRCoeffs, beta::AbstractVector)
     ll = 0.0
     offset = f.dimension == f.n_features + 1 ? 1 : 0
+    # Julia stores matrices column-major, so `X * β` uses a cache-friendly
+    # column reduction / BLAS GEMV instead of striding across rows in a nested
+    # `for i; for j; X[i, j]` loop.
+    eta_vec = f.feature_array * @view(beta[(offset + 1):end])
+    if offset == 1
+        eta_vec .+= beta[1]
+    end
     @inbounds for i in 1:f.n_obs
-        eta = offset == 1 ? beta[1] : 0.0
-        for j in 1:f.n_features
-            eta += f.feature_array[i, j] * beta[j + offset]
-        end
+        eta = eta_vec[i]
         # Numerically stable log(1 + exp(eta))
         if eta > 20
             ll += f.response_vector[i] * eta - eta

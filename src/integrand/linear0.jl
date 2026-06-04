@@ -18,10 +18,12 @@ Linear0(tm::AbstractTrueMeasure) = Linear0(tm, tm.dimension)
 function evaluate(f::Linear0, x::AbstractMatrix)
     n = size(x, 1)
     y = zeros(Float64, n)
-    # Column-major accumulation: each column of `x` is contiguous in memory, so
-    # this avoids the stride-n cache misses of a per-row inner loop at large d.
-    # For each i the additions still occur in order j = 1:d, so the result is
-    # identical to the row-major formulation.
+    # Julia stores matrices in column-major order, so a loop nest like
+    # `for i in 1:n; for j in 1:d; x[i, j] end end` strides by `n` in the inner
+    # loop and starts thrashing cache at large `d`. Swapping the loop nest to
+    # `j` outer / `i` inner reads each column contiguously while accumulating
+    # into a length-`n` vector. For each row `i`, the additions still happen in
+    # order `j = 1:d`, so the result matches the original formulation.
     @inbounds for j in 1:f.dimension
         @simd for i in 1:n
             y[i] += x[i, j]
