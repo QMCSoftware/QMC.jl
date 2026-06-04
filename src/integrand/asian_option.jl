@@ -110,3 +110,32 @@ function Base.show(io::IO, f::AsianOption)
         "S0=$(f.start_price), K=$(f.strike_price), σ=$(f.volatility))",
     )
 end
+
+"""
+    get_exact_value(f::AsianOption) -> Float64
+
+Exact fair price of a geometric-mean Asian option via the Kemna-Vorst formula
+(`mean_type=:geometric` only). Uses the same discrete-monitoring convention as
+[`FinancialOption`](@ref): `d` equally spaced dates with terminal time
+`T = _time_vector[end]`. Throws for `mean_type=:arithmetic`, which has no
+closed form.
+"""
+function get_exact_value(f::AsianOption)
+    f.mean_type == :geometric || error(
+        "Exact value only supported for AsianOption with mean_type=:geometric " *
+        "(got mean_type=:$(f.mean_type))",
+    )
+    S0 = f.start_price
+    K = f.strike_price
+    r = f.interest_rate
+    σ = f.volatility
+    T = f._time_vector[end]
+    d = f.dimension
+    # Kemna-Vorst (finite-dimensional geometric Asian)
+    Tbar = (1 + 1 / d) * T / 2
+    σbar = σ * sqrt((2 + 1 / d) / 3)
+    rbar = r + (σbar^2 - σ^2) / 2
+    gc, gp = _bs_euro_price(S0, rbar, Tbar, σbar, K)
+    factor = exp(rbar * Tbar - r * T)
+    return f.call_put == :call ? gc * factor : gp * factor
+end

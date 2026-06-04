@@ -86,6 +86,38 @@
         y = sample_and_evaluate(f, 1000)
         @test length(y) == 1000
         @test all(y .>= 0.0)
+
+        # Geometric Asian exact value (Kemna-Vorst) — must agree with the
+        # FinancialOption geometric-Asian exact for matching parameters.
+        tmg = BrownianMotion(IIDStdUniform(50; seed=7))
+        ao = AsianOption(
+            tmg;
+            mean_type=:geometric,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+        )
+        fo = FinancialOption(
+            tmg;
+            option_type=:asian,
+            asian_mean=:geometric,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+        )
+        @test get_exact_value(ao) ≈ get_exact_value(fo)
+        @test get_exact_value(ao) > 0.0
+        ao_a = AsianOption(
+            tmg;
+            mean_type=:arithmetic,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+        )
+        @test_throws ErrorException get_exact_value(ao_a)
     end
 
     @testset "FinancialOption" begin

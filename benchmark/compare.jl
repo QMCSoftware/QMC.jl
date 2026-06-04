@@ -225,6 +225,26 @@ function bench_revision(rev::AbstractString)
             joinpath(wt, "benchmark", "benchmarks.jl");
             force=true,
         )
+        # Commit the synced suite inside the throwaway worktree so its working tree
+        # is clean. PkgBenchmark checks out the commit it benchmarks and then tries
+        # to restore the original sha; on a *dirty* detached worktree that restore
+        # fails and emits "Failed to return back to original sha …". A clean tree
+        # avoids the stash/checkout dance. This only moves the worktree's detached
+        # HEAD (the main repo and `rev` are untouched), and the worktree is removed
+        # below regardless.
+        try
+            run(`git -C $wt add -A`)
+            run(
+                pipeline(
+                    `git -C $wt -c user.email=bench@localhost -c user.name=bench commit -q --allow-empty -m bench-sync-suite`;
+                    stdout=devnull,
+                    stderr=devnull,
+                ),
+            )
+        catch
+            # If committing fails (e.g. git identity unavailable), benchmarking
+            # still works; PkgBenchmark may just re-emit its restore warning.
+        end
         return with_benchmark_env(
             joinpath(wt, "benchmark"),
             wt,
