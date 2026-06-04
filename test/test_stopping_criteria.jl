@@ -37,6 +37,26 @@
         @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
     end
 
+    @testset "CubQMCNetGSingle" begin
+        # Single-net guaranteed cubature (QMCPy CubQMCNetG port). Requires a
+        # non-replicated DigitalNetB2 in natural (radical-inverse) order.
+        dd = DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=2024)
+        tm = Gaussian(dd; covariance=0.5)
+        f = Keister(tm)
+        exact = keister_exact(3)
+        sc = CubQMCNetGSingle(f; abs_tol=0.01, n_init=2^10)
+        result = integrate(sc)
+        @test abs(result.solution - exact) < 0.05
+        @test result.data[:error_bound] <= 0.01 + 1e-9
+        @test result.data[:converged]
+        @test result.data[:n_reps] == 1
+        @test result.data[:n_total] == result.data[:n]
+
+        # Guard: a default (graycode=true) net is rejected at construction.
+        dd_gc = DigitalNetB2(3; randomize="LMS_DS", seed=1)
+        @test_throws ErrorException CubQMCNetGSingle(Keister(Gaussian(dd_gc; covariance=0.5)))
+    end
+
     @testset "CubQMCBayesLatticeG (smoke)" begin
         dd = Lattice(2; randomize=true, seed=800)
         tm = Uniform(dd)
