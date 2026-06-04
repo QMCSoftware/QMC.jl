@@ -138,7 +138,7 @@ def main():
     label = sys.argv[1] if len(sys.argv) > 1 else "latest"
     results = {"gen_samples": {}, "transform": {}, "evaluate": {}, "integrate": {}}
 
-    print("QMCPy Benchmarks (qmcpy %s)" % getattr(qp, "__version__", "?"))
+    print("\n\nQMCPy Benchmarks (qmcpy %s)" % getattr(qp, "__version__", "?"))
     print("=" * 70)
 
     # 1. Discrete distribution sampling --------------------------------------
@@ -358,7 +358,7 @@ def main():
         "results": results,
     }
     outfile.write_text(json.dumps(payload, indent=2))
-    print(f"\nResults saved to benchmark/results/qmcpy_{label}.json\n\n")
+    print(f"\nResults saved to benchmark/results/qmcpy_{label}.json")
 
 
 if __name__ == "__main__":

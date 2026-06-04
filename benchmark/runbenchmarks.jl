@@ -258,4 +258,4 @@ open(solfile, "w") do io
         JSON3.write(Dict("julia_version" => string(VERSION), "solutions" => julia_solutions)),
     )
 end
-println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json\n\n")
+println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json")
