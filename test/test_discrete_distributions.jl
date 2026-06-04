@@ -57,6 +57,17 @@
         dd_nat = Lattice(2; randomize = true, seed = 42, order = "natural")
         @test_throws ArgumentError gen_samples(dd_nat, 200)
         @test_throws ArgumentError gen_samples(dd_nat, 40; n_start = 8)
+
+        # "natural" is an alias for "radical_inverse" (QMCPy semantics): it is
+        # normalized to the canonical token and produces identical points.
+        @test Lattice(2; order = "natural").order == "radical_inverse"
+        @test Lattice(2; order = "RADICAL INVERSE").order == "radical_inverse"
+        @test Lattice(2; order = "gray code").order == "gray"
+        let a = Lattice(3; randomize = false, seed = 7, order = "natural"),
+            b = Lattice(3; randomize = false, seed = 7, order = "radical_inverse")
+            @test gen_samples(a, 64) ≈ gen_samples(b, 64)
+        end
+        @test_throws ArgumentError Lattice(2; order = "bogus")
     end
 
     @testset "DigitalNetB2" begin

@@ -19,9 +19,10 @@ before `using QMC`.
 - `dimension`: number of dimensions (up to 9125).
 - `randomize`: if true, apply a random shift.
 - `seed`: optional RNG seed.
-- `order`: `"natural"`, `"linear"`, `"radical_inverse"`, or `"gray"`.
-  Natural and radical-inverse order require `n_start` and `n + n_start`
-  to be powers of 2 when calling `gen_samples`.
+- `order`: `"linear"`, `"radical_inverse"`, or `"gray"` (`"natural"` is accepted
+  as an alias for `"radical_inverse"`, and `"gray code"` for `"gray"`, matching
+  QMCPy). Radical-inverse order requires `n_start` and `n + n_start` to be
+  powers of 2 when calling `gen_samples`.
 - `replications`: number of independent shifts (nothing = 1, no extra dim).
 
 # Examples
@@ -51,9 +52,18 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
         ArgumentError(
             "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)"),
     )
-    order_lc = lowercase(strip(order))
-    order_lc in ("natural", "linear", "radical_inverse", "gray") ||
-        throw(ArgumentError("order must be natural/linear/radical_inverse/gray"))
+    # Normalize order aliases to canonical tokens, matching QMCPy semantics:
+    # "natural" is an alias for "radical inverse" (both use the lat_gen_natural
+    # kernel) and "gray code" == "gray". Accept "_" or " " as word separators.
+    order_lc = replace(lowercase(strip(order)), "_" => " ")
+    order_lc == "gray code" && (order_lc = "gray")
+    order_lc == "natural" && (order_lc = "radical inverse")
+    order_lc = replace(order_lc, " " => "_")
+    order_lc in ("linear", "radical_inverse", "gray") || throw(
+        ArgumentError(
+            "order must be one of linear/radical_inverse/gray " *
+            "(natural is accepted as an alias for radical_inverse)"),
+    )
 
     R = isnothing(replications) ? 1 : replications
     R >= 1 || throw(ArgumentError("replications must be >= 1"))
@@ -67,7 +77,7 @@ function Lattice(dimension::Int; randomize::Bool = true, seed = nothing,
 end
 
 function _validate_lattice_window(order::String, n::Int, n_start::Int)
-    if order in ("natural", "radical_inverse")
+    if order == "radical_inverse"
         n_stop = Base.checked_add(n, n_start)
         (n_start == 0 || ispow2(n_start)) || throw(
             ArgumentError(
@@ -102,7 +112,7 @@ function gen_samples(dd::Lattice, n::Int; n_start::Int = 0)
             @warn "Lattice linear order ignores n_start; generating from index 0"
         end
         _c_lat_gen_linear!(n, d, g, x_buf)
-    elseif dd.order == "natural" || dd.order == "radical_inverse"
+    elseif dd.order == "radical_inverse"
         _c_lat_gen_natural!(n, d, n_start, g, x_buf)
     else  # "gray"
         _c_lat_gen_gray!(n, d, n_start, g, x_buf)
