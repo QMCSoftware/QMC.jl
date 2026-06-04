@@ -87,7 +87,7 @@ function integrate(
     sc::CubQMCRepStudentT;
     resume::Union{Nothing, Dict{Symbol, Any}} = nothing,
 )
-    dd = sc.integrand.true_measure.discrete_distrib
+    dd = sc.integrand.true_measure.dd
     R = dd.replications
     R > 1 || throw(ArgumentError("CubQMCRepStudentT requires replications > 1"))
 
@@ -95,7 +95,8 @@ function integrate(
 
     # --- Initialise or resume ---
     if resume !== nothing
-        n_rep = 2 * Int(resume[:n_rep])
+        n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) : Int(resume[:n_rep])
+        n_rep = 2 * n_prev
         prev_time = Float64(get(resume, :time_integrate, 0.0))
     else
         n_rep = sc.n_init
@@ -115,11 +116,16 @@ function integrate(
     while n_rep <= sc.n_limit
         n_iter += 1
 
-        # Generate samples from n_so_far+1 to n_rep for each replication
-        for r in 1:R
-            y = sample_and_evaluate(sc.integrand, n_rep; n_start = n_so_far)
-            ysums[r] += sum(y)
-        end
+        # Generate only the incremental block for all replications at once, then
+        # split the flattened evaluations back into per-replication sums.
+        n_new = n_rep - n_so_far
+        x_uniform = gen_samples(dd, n_new; n_start = n_so_far)
+        ndims(x_uniform) == 3 ||
+            throw(ArgumentError("CubQMCRepStudentT requires a replicated sampler"))
+        _, m, d = size(x_uniform)
+        x_trans = transform(sc.integrand.true_measure, reshape(x_uniform, R * m, d))
+        y = evaluate(sc.integrand, x_trans)
+        ysums .+= vec(sum(reshape(y, R, m); dims = 2))
         n_so_far = n_rep
 
         # Replication means and statistics
@@ -157,7 +163,9 @@ function integrate(
 
     data = Dict{Symbol, Any}(
         :n => n_so_far * R,
+        :n_total => n_so_far * R,
         :n_rep => n_so_far,
+        :n_per_rep => n_so_far,
         :replications => R,
         :error_bound => ci_half,
         :bound_low => mu_hat - ci_half,

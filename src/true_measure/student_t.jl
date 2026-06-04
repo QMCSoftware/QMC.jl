@@ -40,7 +40,7 @@ function transform(tm::StudentT, x::AbstractMatrix)
     y = Matrix{Float64}(undef, n, d)
     @inbounds for j in 1:d
         for i in 1:n
-            y[i, j] = tm.loc[j] + tm.scale[j] * quantile(tdist, x[i, j])
+            y[i, j] = tm.loc[j] + tm.scale[j] * quantile(tdist, _open_unit_interval(x[i, j]))
         end
     end
     return y

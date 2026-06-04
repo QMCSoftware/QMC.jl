@@ -34,13 +34,15 @@ function Base.show(io::IO, f::CustomFun)
 end
 
 """
-    sample_and_evaluate(f::AbstractIntegrand, n::Int)
+    sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)
 
-Generate `n` samples, transform, and evaluate the integrand. Returns a vector of function values.
+Generate `n` samples, transform, and evaluate the integrand. Keyword arguments
+are forwarded to `gen_samples`, e.g. `n_start` for extensible generators.
+Returns a vector of function values.
 """
-function sample_and_evaluate(f::AbstractIntegrand, n::Int)
+function sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)
     dd = f.true_measure.dd
-    x_uniform = gen_samples(dd, n)
+    x_uniform = gen_samples(dd, n; kwargs...)
     if ndims(x_uniform) == 3
         # Replicated sampler: (R, n, d) → (R*n, d) so transform accepts a matrix.
         R, m, d = size(x_uniform)

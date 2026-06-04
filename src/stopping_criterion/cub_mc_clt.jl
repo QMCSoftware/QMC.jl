@@ -85,6 +85,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}} = not
 
     data = Dict{Symbol, Any}(
         :n => n_total,
+        :n_total => n_total,
         :n_mu => n_mu,
         :error_bound => err,
         :bound_low => bound_low,

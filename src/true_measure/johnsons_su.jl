@@ -41,7 +41,7 @@ function transform(tm::JohnsonsSU, x::AbstractMatrix)
     y = Matrix{Float64}(undef, n, d)
     @inbounds for j in 1:d
         for i in 1:n
-            z = quantile(ndist, x[i, j])
+            z = quantile(ndist, _open_unit_interval(x[i, j]))
             y[i, j] = tm.xi[j] + tm.lambda[j] * sinh((z - tm.gamma[j]) / tm.delta[j])
         end
     end

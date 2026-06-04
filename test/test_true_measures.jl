@@ -30,6 +30,28 @@
         @test abs(mean(xt[:, 2]) - (-1.0)) < 0.2
     end
 
+    @testset "Deterministic inverse-CDF boundaries" begin
+        dd = DigitalNetB2(2; randomize = "none", seed = 31)
+        x = gen_samples(dd, 8)
+        @test x[1, :] == [0.0, 0.0]
+
+        gauss = transform(Gaussian(dd; mean = 0.0, covariance = 1.0), x)
+        stud = transform(StudentT(dd; df = 5.0), x)
+        jsu = transform(JohnsonsSU(dd), x)
+        bm = transform(BrownianMotion(dd), x)
+        gbm = transform(
+            GeometricBrownianMotion(dd; initial_value = 100.0, drift = 0.05, diffusion = 0.04),
+            x,
+        )
+
+        for y in (gauss, stud, jsu, bm, gbm)
+            @test size(y) == size(x)
+            @test all(isfinite, y)
+            @test all(isfinite, y[1, :])
+        end
+        @test all(gbm .> 0.0)
+    end
+
     @testset "BrownianMotion" begin
         dd = IIDStdUniform(4; seed = 40)
         tm = BrownianMotion(dd)

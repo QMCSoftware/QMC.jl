@@ -52,7 +52,8 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
 
     if resume !== nothing
-        n = 2 * Int(resume[:n])
+        n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) : Int(resume[:n])
+        n = 2 * n_prev
         prev_time = Float64(get(resume, :time_integrate, 0.0))
     else
         n = sc.n_init
@@ -94,8 +95,11 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
     end
 
     t_elapsed = time() - t_start
+    n_per_rep = n > sc.n_max ? sc.n_max : n
     data = Dict{Symbol, Any}(
-        :n => n > sc.n_max ? sc.n_max : n,
+        :n => n_per_rep,
+        :n_per_rep => n_per_rep,
+        :n_total => n_per_rep * R,
         :n_reps => R,
         :error_bound => err,
         :n_iterations => n_iter,

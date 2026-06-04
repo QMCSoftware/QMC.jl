@@ -13,6 +13,12 @@ abstract type AbstractStoppingCriterion end
 """Abstract base for all kernels."""
 abstract type AbstractKernel end
 
+# Exact zeros appear in deterministic QMC sequences, but inverse-CDF transforms
+# require probabilities in the open interval.
+const _OPEN01_LOW = eps(Float64)
+const _OPEN01_HIGH = 1.0 - eps(Float64)
+@inline _open_unit_interval(u::Float64) = clamp(u, _OPEN01_LOW, _OPEN01_HIGH)
+
 # Common interface functions
 """
     gen_samples(dd::AbstractDiscreteDistribution, n::Int; kwargs...)
@@ -63,6 +69,8 @@ function Base.show(io::IO, r::QMCResult)
     @printf(io, "QMCResult(solution=%.6e", r.solution)
     if haskey(r.data, :n_total)
         @printf(io, ", n_total=%d", r.data[:n_total])
+    elseif haskey(r.data, :n)
+        @printf(io, ", n=%d", r.data[:n])
     end
     if haskey(r.data, :error_bound)
         @printf(io, ", error_bound=%.2e", r.data[:error_bound])

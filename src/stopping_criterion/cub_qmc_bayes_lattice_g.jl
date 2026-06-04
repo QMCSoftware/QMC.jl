@@ -184,7 +184,9 @@ function integrate(
     resume::Union{Nothing, Dict{Symbol, Any}} = nothing,
 )
     if resume !== nothing
-        n = 2 * Int(resume[:n])
+        n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
+                 haskey(resume, :n) ? Int(resume[:n]) : Int(resume[:n_total])
+        n = 2 * n_prev
     else
         n = sc.n_init
     end
@@ -219,7 +221,8 @@ function integrate(
     end
 
     data = Dict{Symbol, Any}(
-        :n => n, :error_bound => err, :n_iterations => n_iter,
+        :n => n, :n_per_rep => n, :n_total => n,
+        :error_bound => err, :n_iterations => n_iter,
         :converged => err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat)),
         :order => sc.order, :ptransform => sc.ptransform, :errbd_type => sc.errbd_type)
     return QMCResult(mu_hat, data)

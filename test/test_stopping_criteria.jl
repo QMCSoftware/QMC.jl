@@ -8,6 +8,7 @@
         @test abs(result.solution - 1.0) < 0.1
         @test result.data[:converged] == true
         @test result.data[:n] > 0
+        @test result.data[:n_total] == result.data[:n]
     end
 
     @testset "CubQMCLatticeG" begin
@@ -19,6 +20,8 @@
         result = integrate(sc)
         @test abs(result.solution - exact) < 1.0
         @test result.data[:n] >= 2^10
+        @test result.data[:n_per_rep] == result.data[:n]
+        @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
     end
 
     @testset "CubQMCNetG" begin
@@ -30,6 +33,8 @@
         result = integrate(sc)
         @test abs(result.solution - exact) < 1.0
         @test result.data[:n] >= 2^10
+        @test result.data[:n_per_rep] == result.data[:n]
+        @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
     end
 
     @testset "CubQMCBayesLatticeG (smoke)" begin
@@ -43,6 +48,8 @@
         @test !isnan(result.solution)
         @test abs(result.solution - exact) < 0.02
         @test result.data[:n] >= 2^8
+        @test result.data[:n_total] == result.data[:n]
+        @test result.data[:n_per_rep] == result.data[:n]
     end
 
     @testset "CubQMCBayesNetG (smoke)" begin
@@ -56,6 +63,21 @@
         @test !isnan(result.solution)
         @test abs(result.solution - exact) < 0.02
         @test result.data[:n] >= 2^8
+        @test result.data[:n_total] == result.data[:n]
+        @test result.data[:n_per_rep] == result.data[:n]
+    end
+
+    @testset "CubQMCRepStudentT (smoke)" begin
+        dd = DigitalNetB2(2; randomize = "LMS_DS", seed = 901, replications = 4)
+        tm = Uniform(dd)
+        f = Genz(tm; kind = :continuous, a = [1.0, 1.0], u = [0.5, 0.5])
+        sc = CubQMCRepStudentT(f; abs_tol = 0.2, n_init = 32, n_limit = 128)
+        result = integrate(sc)
+        @test result.solution isa Float64
+        @test isfinite(result.solution)
+        @test result.data[:n_total] == result.data[:n]
+        @test result.data[:n_per_rep] == result.data[:n_rep]
+        @test result.data[:n_total] == result.data[:n_per_rep] * result.data[:replications]
     end
 
     @testset "rel_tol in stopping criteria" begin
@@ -121,5 +143,11 @@
         r = integrate(sc)
         @test haskey(r.data, :iteration_log)
         @test length(r.data[:iteration_log]) >= 1
+    end
+
+    @testset "QMCResult show" begin
+        txt = sprint(show, QMCResult(1.0, Dict{Symbol, Any}(:n_total => 16, :error_bound => 0.1)))
+        @test occursin("n_total=16", txt)
+        @test occursin("error_bound=", txt)
     end
 end
