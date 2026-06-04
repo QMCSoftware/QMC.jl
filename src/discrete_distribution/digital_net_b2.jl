@@ -1,5 +1,6 @@
 """
-    DigitalNetB2(dimension::Int; randomize="LMS_DS", seed=nothing, graycode=true, replications=nothing)
+    DigitalNetB2(dimension::Int; randomize="LMS_DS", seed=nothing, graycode=true,
+                 replications=nothing, generating_matrices=nothing)
 
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 
@@ -24,6 +25,11 @@ before `using QMC`.
 - `graycode::Bool=true`: use Gray-code ordering for efficiency.
 - `replications::Union{Nothing,Int}=nothing`: number of independent randomizations.
   If set, `gen_samples` returns an `R × n × d` array.
+- `generating_matrices`: optional custom direction-number matrix. May be
+  `nothing` (default Joe-Kuo table) or an integer matrix with at least
+  `dimension` rows and at most 32 columns. When the custom matrix has `m`
+  columns, `gen_samples` supports at most `2^m` points including any `n_start`
+  offset. Custom entries must already be represented in that `m`-bit precision.
 
 # Examples
 ```julia
@@ -84,31 +90,122 @@ mutable struct DigitalNetB2{R <: AbstractRNG} <: AbstractDiscreteDistribution
     graycode::Bool
     rng::R
     direction_nums::Matrix{UInt32}   # ndim × BITS
+    n_limit::Union{Nothing, Int}
     mimics::String
     replications::Union{Nothing, Int}
 end
 
-function DigitalNetB2(dimension::Int; randomize::String = "LMS_DS", seed = nothing,
-    graycode::Bool = true, replications::Union{Nothing, Int} = nothing)
-    dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
-    dimension <= _JK_DIRECTION_MATRIX_DIMS || throw(
-        ArgumentError(
-            "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)",
-        ),
-    )
-    randomize in ("LMS_DS", "LMS", "DS", "NUS", "none") || throw(
+function _normalize_digital_net_randomize(randomize)
+    token = randomize isa Symbol ? String(randomize) : randomize
+    token isa AbstractString ||
+        throw(ArgumentError("randomize must be a string or symbol, got $(typeof(randomize))"))
+    token_lc = replace(lowercase(strip(token)), "-" => "_", " " => "_")
+    if token_lc == "lms_ds"
+        return "LMS_DS"
+    elseif token_lc == "lms"
+        return "LMS"
+    elseif token_lc == "ds"
+        return "DS"
+    elseif token_lc == "nus"
+        return "NUS"
+    elseif token_lc in ("none", "false")
+        return "none"
+    end
+    throw(
         ArgumentError(
             "randomize must be \"LMS_DS\", \"LMS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\"",
         ),
     )
+end
+
+function _coerce_direction_matrix(values::AbstractMatrix{<:Integer}, dimension::Int)
+    size(values, 1) >= dimension || throw(
+        ArgumentError(
+            "generating_matrices must have at least $dimension rows, got $(size(values, 1))",
+        ),
+    )
+    mmax = size(values, 2)
+    0 < mmax <= _SOBOL_BITS || throw(
+        ArgumentError(
+            "generating_matrices must have between 1 and $_SOBOL_BITS columns, got $mmax",
+        ),
+    )
+    max_entry = (BigInt(1) << mmax) - 1
+    V = Matrix{UInt32}(undef, dimension, mmax)
+    for j in 1:dimension, k in 1:mmax
+        value = values[j, k]
+        value > 0 || throw(
+            ArgumentError(
+                "generating_matrices entries must be positive, got $value at ($j, $k)",
+            ),
+        )
+        value <= max_entry || throw(
+            ArgumentError(
+                "generating_matrices entry at ($j, $k) must fit within $mmax bits, got $value",
+            ),
+        )
+        try
+            V[j, k] = UInt32(value)
+        catch err
+            if err isa InexactError
+                throw(
+                    ArgumentError(
+                        "generating_matrices entry at ($j, $k) cannot be represented as UInt32: $value",
+                    ),
+                )
+            end
+            rethrow()
+        end
+    end
+    return V, Int(1) << mmax
+end
+
+function _resolve_direction_numbers(dimension::Int, generating_matrices)
+    if isnothing(generating_matrices)
+        return _load_direction_numbers(dimension), Int(1) << _SOBOL_BITS
+    elseif generating_matrices isa AbstractMatrix{<:Integer}
+        return _coerce_direction_matrix(generating_matrices, dimension)
+    end
+    throw(
+        ArgumentError(
+            "generating_matrices must be nothing or an integer matrix with direction numbers",
+        ),
+    )
+end
+
+function DigitalNetB2(
+    dimension::Int;
+    randomize="LMS_DS",
+    seed=nothing,
+    graycode::Bool=true,
+    replications::Union{Nothing, Int}=nothing,
+    generating_matrices=nothing,
+)
+    dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
+    isnothing(generating_matrices) &&
+        dimension > _JK_DIRECTION_MATRIX_DIMS &&
+        throw(
+            ArgumentError(
+                "dimension $dimension exceeds the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)",
+            ),
+        )
     if !isnothing(replications)
         replications > 0 || throw(ArgumentError("replications must be positive"))
     end
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
-    V = _load_direction_numbers(dimension)
+    V, n_limit = _resolve_direction_numbers(dimension, generating_matrices)
 
-    return DigitalNetB2(dimension, randomize, graycode, rng, V, "StdUniform", replications)
+    return DigitalNetB2(
+        dimension,
+        _normalize_digital_net_randomize(randomize),
+        graycode,
+        rng,
+        V,
+        n_limit,
+        "StdUniform",
+        replications,
+    )
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -174,10 +271,10 @@ end
 # Single-replication and multi-replication generation via qmctoolscl binary net
 # generation, optional digital shifts, and integer-to-float conversion.
 # ──────────────────────────────────────────────────────────────────────────────
-function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int = 0)
+function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
     d = dd.dimension
-    mmax = _SOBOL_BITS
     V = dd.direction_nums
+    mmax = size(V, 2)
 
     if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
         V_scr = _lms_direction_matrix(V, d, dd.rng)
@@ -225,11 +322,35 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     x_buf = Vector{Float64}(undef, n * d)
     if _HAS_DNB2_FUSED[]
         if dd.graycode
-            _c_dnb2_gen_gray_float!(1, n, d, n_start, mmax, 1,
-                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+            _c_dnb2_gen_gray_float!(
+                1,
+                n,
+                d,
+                n_start,
+                mmax,
+                1,
+                apply_shift,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
         else
-            _c_dnb2_gen_natural_float!(1, n, d, n_start, mmax, 1,
-                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+            _c_dnb2_gen_natural_float!(
+                1,
+                n,
+                d,
+                n_start,
+                mmax,
+                1,
+                apply_shift,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
         end
     else
         xb_buf = Vector{UInt64}(undef, n * d)
@@ -252,18 +373,26 @@ Generate `n` Sobol' points in `d` dimensions.  Returns an `n × d` matrix
 with values in [0, 1).  If `replications` was set, returns an `R × n × d` array.
 `n` should be a power of 2 for optimal equidistribution.
 """
-function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
+function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))
     n_start >= 0 || throw(ArgumentError("n_start must be non-negative"))
+    n_stop = Base.checked_add(n, n_start)
+    if !isnothing(dd.n_limit)
+        n_stop <= dd.n_limit || throw(
+            ArgumentError(
+                "DigitalNetB2 supports at most $(dd.n_limit) samples for this generating matrix, got n=$n and n_start=$n_start",
+            ),
+        )
+    end
 
     if isnothing(dd.replications)
-        return _gen_single_replication(dd, n; n_start = n_start)
+        return _gen_single_replication(dd, n; n_start=n_start)
     end
 
     R = dd.replications
     d = dd.dimension
-    mmax = _SOBOL_BITS
     V = dd.direction_nums
+    mmax = size(V, 2)
 
     if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
         # Build R independently scrambled generating matrices (r_x = R)
@@ -324,11 +453,35 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int = 0)
     x_buf = Vector{Float64}(undef, R * n * d)
     if _HAS_DNB2_FUSED[]
         if dd.graycode
-            _c_dnb2_gen_gray_float!(R, n, d, n_start, mmax, r_x,
-                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+            _c_dnb2_gen_gray_float!(
+                R,
+                n,
+                d,
+                n_start,
+                mmax,
+                r_x,
+                apply_shift,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
         else
-            _c_dnb2_gen_natural_float!(R, n, d, n_start, mmax, r_x,
-                apply_shift, lshifts, shiftsb, tmaxes, C_flat, x_buf)
+            _c_dnb2_gen_natural_float!(
+                R,
+                n,
+                d,
+                n_start,
+                mmax,
+                r_x,
+                apply_shift,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
         end
     else
         xb_buf = Vector{UInt64}(undef, r_x * n * d)
@@ -346,7 +499,8 @@ end
 
 function Base.show(io::IO, dd::DigitalNetB2)
     rep_str = isnothing(dd.replications) ? "" : ", R=$(dd.replications)"
-    print(io,
+    print(
+        io,
         "DigitalNetB2(d=$(dd.dimension), randomize=\"$(dd.randomize)\", graycode=$(dd.graycode)$rep_str)",
     )
 end
@@ -394,8 +548,13 @@ Apply Owen scrambling in-place to binary digital net points stored in
 row-major order: `xb[i*d + j + 1]` (0-indexed i=point, j=dimension).
 `dim_seeds` has length `d`, one per dimension.
 """
-function _owen_scramble_points!(xb::Vector{UInt64}, n::Int, d::Int,
-    mmax::Int, dim_seeds::Vector{UInt64})
+function _owen_scramble_points!(
+    xb::Vector{UInt64},
+    n::Int,
+    d::Int,
+    mmax::Int,
+    dim_seeds::Vector{UInt64},
+)
     @inbounds for i in 0:(n - 1)
         for j in 0:(d - 1)
             idx = i * d + j + 1

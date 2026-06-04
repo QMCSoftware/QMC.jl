@@ -37,8 +37,12 @@ struct Gaussian{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     _decomp_diag::Union{Nothing, Vector{Float64}}
 end
 
-function Gaussian(dd::AbstractDiscreteDistribution;
-    mean = 0.0, covariance = 1.0, decomp_type::Symbol = :PCA)
+function Gaussian(
+    dd::AbstractDiscreteDistribution;
+    mean=0.0,
+    covariance=1.0,
+    decomp_type::Symbol=:PCA,
+)
     d = dd.dimension
     mu = _expand_mean(mean, d)
     cov = _expand_covariance(covariance, d)
@@ -56,12 +60,9 @@ function _expand_mean(val, d::Int)
     if val isa Real
         return fill(Float64(val), d)
     else
-        length(val) == d ||
-            throw(
-                ArgumentError(
-                    "mean vector length ($(length(val))) must match dimension ($d)",
-                ),
-            )
+        length(val) == d || throw(
+            ArgumentError("mean vector length ($(length(val))) must match dimension ($d)"),
+        )
         return Float64.(collect(val))
     end
 end
@@ -70,12 +71,11 @@ function _expand_covariance(val, d::Int)
     if val isa Real
         return Float64(val) * Matrix{Float64}(I, d, d)
     elseif val isa AbstractVector
-        length(val) == d ||
-            throw(
-                ArgumentError(
-                    "covariance diagonal length ($(length(val))) must match dimension ($d)",
-                ),
-            )
+        length(val) == d || throw(
+            ArgumentError(
+                "covariance diagonal length ($(length(val))) must match dimension ($d)",
+            ),
+        )
         return diagm(Float64.(collect(val)))
     elseif val isa AbstractMatrix
         size(val) == (d, d) ||
@@ -98,7 +98,7 @@ function _compute_decomp(cov::Matrix{Float64}, decomp_type::Symbol)
     if decomp_type == :PCA
         eig = eigen(Symmetric(cov))
         # Sort eigenvalues descending
-        idx = sortperm(eig.values; rev = true)
+        idx = sortperm(eig.values; rev=true)
         vals = eig.values[idx]
         vecs = eig.vectors[:, idx]
         # Clamp small negative eigenvalues to zero (numerical tolerance)
@@ -114,10 +114,12 @@ end
 function transform(tm::Gaussian, x::AbstractMatrix)
     # x is n×d with entries in [0,1); compute  y = Φ⁻¹(x) * Aᵀ .+ μᵀ.
     # Φ⁻¹(u) = √2·erfinv(2u-1) — avoids per-element Distributions.Normal() dispatch.
+    # Clamp into (0,1) so deterministic digital-net points at exactly 0 stay finite.
     dvec = tm._decomp_diag
     if dvec === nothing
         # General (dense) case: BLAS GEMM, O(n·d²).
-        z = @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * x - 1.0)   # one n×d temporary
+        z = @. sqrt(2.0) *
+           SpecialFunctions.erfinv(2.0 * clamp(x, _OPEN01_LOW, _OPEN01_HIGH) - 1.0)   # one n×d temporary
         y = z * transpose(tm._decomp)
         y .+= transpose(tm.mean)                                    # in-place mean shift
         return y
@@ -132,7 +134,9 @@ function transform(tm::Gaussian, x::AbstractMatrix)
         # (column scaling equals multiplying by a diagonal A); only the cost differs.
         dvec_t = transpose(dvec)        # 1×d row (computed outside @. so it isn't dotted)
         mean_t = transpose(tm.mean)
-        return @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * x - 1.0) * dvec_t + mean_t
+        return @. sqrt(2.0) *
+                  SpecialFunctions.erfinv(2.0 * clamp(x, _OPEN01_LOW, _OPEN01_HIGH) - 1.0) *
+                  dvec_t + mean_t
     end
 end
 

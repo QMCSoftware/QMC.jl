@@ -160,6 +160,39 @@
         @test size(xlms_rep) == (4, 32, 2)
         @test all(0.0 .<= xlms_rep .< 1.0)
         @test xlms_rep[1, :, :] != xlms_rep[2, :, :]
+
+        # Constructor parity: accept QMCPy-style token spellings.
+        @test DigitalNetB2(2; randomize="LMS DS").randomize == "LMS_DS"
+        @test DigitalNetB2(2; randomize=:LMS_DS).randomize == "LMS_DS"
+        @test DigitalNetB2(2; randomize="false").randomize == "none"
+
+        # Custom direction matrices keep the existing generation path.
+        V8 = Int.(dd.direction_nums[:, 1:8] .>> 24)
+        dd_custom = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8)
+        @test gen_samples(dd_custom, 16) ≈ gen_samples(dd, 16)
+        @test dd_custom.direction_nums == UInt32.(V8)
+
+        # The custom matrix precision limits the allowable sample window.
+        dd_short = DigitalNetB2(
+            2;
+            randomize="none",
+            generating_matrices=Int.(dd.direction_nums[:, 1:3] .>> 29),
+        )
+        @test size(gen_samples(dd_short, 8)) == (8, 2)
+        @test_throws ArgumentError gen_samples(dd_short, 9)
+        @test_throws ArgumentError gen_samples(dd_short, 4; n_start=5)
+
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 1, 4))
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 2, 33))
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=zeros(Int, 2, 4))
+        @test_throws ArgumentError DigitalNetB2(
+            2;
+            generating_matrices=Int.(dd.direction_nums[:, 1:8]),
+        )
+        @test_throws ArgumentError DigitalNetB2(
+            2;
+            generating_matrices=fill(BigInt(typemax(UInt32)) + 1, 2, 4),
+        )
     end
 
     @testset "Halton" begin

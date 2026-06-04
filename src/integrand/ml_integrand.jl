@@ -78,7 +78,16 @@ randomize and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::DigitalNetB2, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return DigitalNetB2(dimension; randomize=dd.randomize, replications=R)
+    if dimension <= size(dd.direction_nums, 1)
+        return DigitalNetB2(
+            dimension;
+            randomize=dd.randomize,
+            graycode=dd.graycode,
+            replications=R,
+            generating_matrices=dd.direction_nums,
+        )
+    end
+    return DigitalNetB2(dimension; randomize=dd.randomize, graycode=dd.graycode, replications=R)
 end
 
 """

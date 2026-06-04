@@ -101,6 +101,14 @@ end
         dd_dn = DigitalNetB2(4; replications=8)
         dd_dn2 = spawn_dd(dd_dn, 16)
         @test dd_dn2.dimension == 16
+
+        dd_dn_custom = DigitalNetB2(
+            4;
+            randomize="none",
+            generating_matrices=Int.(dd_dn.direction_nums[:, 1:6] .>> 26),
+        )
+        dd_dn_custom2 = spawn_dd(dd_dn_custom, 2)
+        @test dd_dn_custom2.direction_nums == dd_dn_custom.direction_nums[1:2, :]
     end
 
     @testset "spawn_tm" begin
