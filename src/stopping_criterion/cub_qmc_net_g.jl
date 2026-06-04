@@ -72,9 +72,34 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
         n_iter += 1
         estimates = Vector{Float64}(undef, R)
 
-        for r in 1:R
-            y = sample_and_evaluate(sc.integrand, n)
-            estimates[r] = mean(y)
+        # Batch the R replicates' transform + evaluate into a single pass.
+        # The R independent randomizations are drawn exactly as before (R
+        # `gen_samples` calls on the integrand's discrete distribution, in the
+        # same order, advancing the same RNG), so the points — and therefore the
+        # per-replicate means, `mu_hat`, and the error bound — are unchanged.
+        # The only difference is that the (dense, O(n·d²) for GBM) transform and
+        # the integrand evaluation run once over the stacked R·n rows instead of
+        # R times over n rows: one large BLAS GEMM rather than R small ones, with
+        # far less per-call dispatch/allocation overhead. `transform` and
+        # `evaluate` act row-by-row, so each replicate's block is identical to
+        # what the per-replicate call produced.
+        dd = sc.integrand.true_measure.dd
+        blocks = Vector{AbstractMatrix{Float64}}(undef, R)
+        @inbounds for r in 1:R
+            xu = gen_samples(dd, n)
+            blocks[r] = if ndims(xu) == 3
+                reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3))
+            else
+                xu
+            end
+        end
+        x_uniform = reduce(vcat, blocks)
+        y_all = evaluate(sc.integrand, transform(sc.integrand.true_measure, x_uniform))
+        off = 0
+        @inbounds for r in 1:R
+            m = size(blocks[r], 1)
+            estimates[r] = mean(@view y_all[(off + 1):(off + m)])
+            off += m
         end
 
         mu_hat = mean(estimates)
