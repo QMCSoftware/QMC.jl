@@ -67,7 +67,30 @@ and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::Lattice, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return Lattice(dimension; randomize=dd.randomize, replications=R)
+    if !isnothing(dd.source_gen_vector)
+        length(dd.source_gen_vector) >= dimension || throw(
+            ArgumentError(
+                "cannot spawn Lattice dimension $dimension from a custom generating vector with only $(length(dd.source_gen_vector)) stored entries",
+            ),
+        )
+        rng = Random.default_rng()
+        reps = isnothing(R) ? 1 : R
+        shift = dd.randomize ? rand(rng, reps, dimension) : zeros(reps, dimension)
+        source = copy(dd.source_gen_vector)
+        return Lattice(
+            dimension,
+            dd.randomize,
+            dd.order,
+            R,
+            source[1:dimension],
+            source,
+            shift,
+            rng,
+            dd.n_limit,
+            dd.mimics,
+        )
+    end
+    return Lattice(dimension; randomize=dd.randomize, order=dd.order, replications=R)
 end
 
 """

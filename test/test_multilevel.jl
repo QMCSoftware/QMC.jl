@@ -93,10 +93,23 @@ end
         dd2 = spawn_dd(dd, 8)
         @test dd2.dimension == 8
 
-        dd_lat = Lattice(4; replications=8)
+        dd_lat = Lattice(4; replications=8, order="gray")
         dd_lat2 = spawn_dd(dd_lat, 16)
         @test dd_lat2.dimension == 16
+        @test dd_lat2.order == "gray"
         @test dd_lat2.replications == 8
+
+        lat_source = [1, 3, 5, 7, 9, 11]
+        dd_lat_custom =
+            Lattice(4; randomize=false, order="linear", generating_vector=lat_source)
+        dd_lat_custom2 = spawn_dd(dd_lat_custom, 6)
+        @test dd_lat_custom2.dimension == 6
+        @test dd_lat_custom2.order == "linear"
+        @test dd_lat_custom2.gen_vector == UInt64.(lat_source)
+        @test gen_samples(dd_lat_custom2, 8) == gen_samples(
+            Lattice(6; randomize=false, order="linear", generating_vector=lat_source),
+            8,
+        )
 
         dd_dn = DigitalNetB2(4; replications=8)
         dd_dn2 = spawn_dd(dd_dn, 16)
