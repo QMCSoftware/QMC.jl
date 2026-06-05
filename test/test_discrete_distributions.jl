@@ -345,12 +345,8 @@
 
         # Explicit custom matrices can still exceed the bundled effective-dimension
         # limit as long as enough raw rows are supplied.
-        dd_alpha_custom = DigitalNetB2(
-            513;
-            randomize="none",
-            alpha=2,
-            generating_matrices=ones(Int, 1026, 1),
-        )
+        dd_alpha_custom =
+            DigitalNetB2(513; randomize="none", alpha=2, generating_matrices=ones(Int, 1026, 1))
         @test size(gen_samples(dd_alpha_custom, 2)) == (2, 513)
 
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 1, 4))
