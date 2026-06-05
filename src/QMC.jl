@@ -1,7 +1,6 @@
 module QMC
 
-using LinearAlgebra,
-    Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf, Downloads
+using LinearAlgebra, Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
 
 # Utilities
 include("util/bernoulli.jl")

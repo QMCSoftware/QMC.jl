@@ -28,8 +28,6 @@ let deps = keys(Pkg.project().dependencies)
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
     "PkgBenchmark" in deps || Pkg.add("PkgBenchmark")
 end
-# Keep the benchmark manifest in sync when the local path package changes deps.
-Pkg.resolve()
 Pkg.instantiate()
 
 using PkgBenchmark

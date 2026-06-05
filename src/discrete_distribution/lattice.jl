@@ -60,6 +60,10 @@ end
 
 const _DEFAULT_LATTICE_VECTOR_NAME = "kuo.lattice-33002-1024-1048576.9125.txt"
 const _LATTICE_LDDATA_RAW_BASE = "https://raw.githubusercontent.com/QMCSoftware/LDData/main/lattice/"
+const _DOWNLOADS_PKGID =
+    Base.PkgId(Base.UUID("f43a241f-c20a-4ad4-852c-f6b1247861c6"), "Downloads")
+
+_downloads_module() = Base.require(_DOWNLOADS_PKGID)
 
 function _normalize_lattice_order(order::String)
     # Normalize order aliases to canonical tokens, matching QMCPy semantics:
@@ -160,7 +164,7 @@ function _download_lattice_vector_from_lddata(filename::AbstractString)
     path, io = mktemp()
     close(io)
     try
-        Downloads.download(url, path)
+        _downloads_module().download(url, path)
         return _read_lattice_vector_file(path)
     catch err
         msg = sprint(showerror, err)
