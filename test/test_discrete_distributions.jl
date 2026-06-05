@@ -337,6 +337,22 @@
         @test_throws ArgumentError gen_samples(dd_short, 9)
         @test_throws ArgumentError gen_samples(dd_short, 4; n_start=5)
 
+        # Higher-order bundled data uses raw Sobol' dimensions, so the default
+        # Joe-Kuo table tops out at floor(1024 / alpha) output dimensions.
+        dd_alpha_limit = DigitalNetB2(512; randomize="none", alpha=2)
+        @test size(gen_samples(dd_alpha_limit, 2)) == (2, 512)
+        @test_throws ArgumentError DigitalNetB2(513; randomize="none", alpha=2)
+
+        # Explicit custom matrices can still exceed the bundled effective-dimension
+        # limit as long as enough raw rows are supplied.
+        dd_alpha_custom = DigitalNetB2(
+            513;
+            randomize="none",
+            alpha=2,
+            generating_matrices=ones(Int, 1026, 1),
+        )
+        @test size(gen_samples(dd_alpha_custom, 2)) == (2, 513)
+
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 1, 4))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 2, 33))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=zeros(Int, 2, 4))

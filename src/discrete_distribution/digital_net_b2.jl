@@ -247,7 +247,8 @@ end
     DigitalNetB2 <: AbstractDiscreteDistribution
 
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
-Supports up to 1024 dimensions using Joe-Kuo direction numbers.
+Supports up to 1024 raw Sobol' dimensions when using the bundled Joe-Kuo
+direction numbers.
 See the outer constructor for full documentation.
 
 QMCToolsCL is required for sample generation.
