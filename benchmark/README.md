@@ -14,6 +14,21 @@ The benchmark scripts use the local `benchmark/Project.toml` environment, so ben
 - `compare_py.jl`: compares Julia results against QMCPy results
 - `results/`: generated benchmark result files and Markdown reports
 
+## Results Directory
+
+`benchmark/results/` stores generated benchmark outputs and comparison reports.
+
+Typical files:
+
+- `<label>.json`: Julia `BenchmarkTools` results
+- `<label>_memory.json`: Julia retained-RSS sidecar
+- `<label>_solutions.json`: Julia integrate-case solution and exactness sidecar
+- `qmcpy_<label>.json`: QMCPy benchmark results
+- `compare_*.md`: Julia-vs-Julia comparison reports
+- `compare_python*.md`: Julia-vs-QMCPy comparison reports
+
+These JSON and Markdown outputs are machine-specific benchmark artifacts and are intentionally not tracked in git.
+
 ## Quick Start
 
 From the repository root:

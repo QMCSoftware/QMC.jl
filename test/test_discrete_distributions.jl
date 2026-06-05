@@ -96,6 +96,19 @@
             @test_throws ArgumentError gen_samples(dd_file, 17)
         end
 
+        dd_default = Lattice(3; randomize=false, order="linear")
+        for ref in (
+            "kuo.lattice-33002-1024-1048576.9125",
+            "lattice/kuo.lattice-33002-1024-1048576.9125.txt",
+            "https://github.com/QMCSoftware/LDData/tree/main/lattice/kuo.lattice-33002-1024-1048576.9125.txt",
+            "https://raw.githubusercontent.com/QMCSoftware/LDData/main/lattice/kuo.lattice-33002-1024-1048576.9125.txt",
+        )
+            dd_named = Lattice(3; randomize=false, order="linear", generating_vector=ref)
+            @test dd_named.gen_vector == dd_default.gen_vector
+            @test dd_named.n_limit == dd_default.n_limit
+            @test gen_samples(dd_named, 16) ≈ gen_samples(dd_default, 16)
+        end
+
         dd_rand_a = Lattice(4; randomize=false, order="linear", seed=11, generating_vector=6)
         dd_rand_b = Lattice(4; randomize=false, order="linear", seed=11, generating_vector=6)
         @test dd_rand_a.gen_vector == dd_rand_b.gen_vector

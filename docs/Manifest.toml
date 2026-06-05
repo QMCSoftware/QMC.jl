@@ -406,7 +406,7 @@ uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
 version = "1.4.0"
 
 [[deps.QMC]]
-deps = ["Distributions", "FFTW", "Libdl", "LinearAlgebra", "NBInclude", "Printf", "Random", "SpecialFunctions", "Statistics"]
+deps = ["Distributions", "Downloads", "FFTW", "Libdl", "LinearAlgebra", "NBInclude", "Printf", "Random", "SpecialFunctions", "Statistics"]
 path = ".."
 uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
 version = "0.1.0"
