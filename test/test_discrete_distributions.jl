@@ -197,6 +197,30 @@
         dd_custom = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8)
         @test gen_samples(dd_custom, 16) ≈ gen_samples(dd, 16)
         @test dd_custom.direction_nums == UInt32.(V8)
+        V8_lsb = map(v -> Int(bitreverse(UInt32(v)) >> 24), V8)
+        dd_custom_lsb =
+            DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8_lsb, msb=false)
+        @test gen_samples(dd_custom_lsb, 16) ≈ gen_samples(dd_custom, 16)
+
+        # Advanced constructor parity: widened t-bits and msb handling.
+        @test DigitalNetB2(2; randomize="none", t=40).t == 40
+        @test gen_samples(DigitalNetB2(2; randomize="none", seed=1, t=40), 16) == x
+        xrep_t =
+            gen_samples(DigitalNetB2(2; randomize="none", seed=1, replications=3, t=40), 16)
+        @test size(xrep_t) == (3, 16, 2)
+        @test all(0.0 .<= xrep_t .< 1.0)
+        @test xrep_t[1, :, :] == xrep_t[2, :, :]
+        @test xrep_t[2, :, :] == xrep_t[3, :, :]
+
+        x_nus_t_a = gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, t=40), 16)
+        x_nus_t_b = gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, t=40), 16)
+        @test size(x_nus_t_a) == (16, 2)
+        @test all(0.0 .<= x_nus_t_a .< 1.0)
+        @test x_nus_t_a ≈ x_nus_t_b
+        x_nus_rep_t =
+            gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, replications=2, t=40), 8)
+        @test size(x_nus_rep_t) == (2, 8, 2)
+        @test all(0.0 .<= x_nus_rep_t .< 1.0)
 
         # LDData-style text sources: local file paths and QMCPy-compatible names.
         mktemp() do path, io
@@ -238,6 +262,9 @@
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 1, 4))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 2, 33))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=zeros(Int, 2, 4))
+        @test_throws ArgumentError DigitalNetB2(2; randomize="none", t=31)
+        @test_throws ArgumentError DigitalNetB2(2; randomize="none", t=65)
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=V8, t=7)
         @test_throws ArgumentError DigitalNetB2(
             2;
             generating_matrices=Int.(dd.direction_nums[:, 1:8]),

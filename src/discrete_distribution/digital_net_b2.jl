@@ -1,6 +1,7 @@
 """
     DigitalNetB2(dimension::Int; randomize="LMS_DS", seed=nothing, graycode=nothing,
-                 order=nothing, replications=nothing, generating_matrices=nothing)
+                 order=nothing, replications=nothing, generating_matrices=nothing,
+                 t=nothing, msb=nothing)
 
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 
@@ -36,6 +37,12 @@ before `using QMC`.
   A string may also point to a QMCPy/LDData `dnet` text file, either by local
   path, bare filename (for example `"joe_kuo.6.21201.txt"`), or GitHub/LDData
   URL. Non-bundled LDData files download on demand.
+- `t`: optional number of bits used after randomization / float conversion.
+  Must satisfy `mmax <= t <= 64`, where `mmax` is the number of columns in the
+  generating matrices. If omitted, Julia preserves the historical `t = mmax`.
+- `msb`: optional flag for custom integer matrices. `true` means entries are
+  already in the expected most-significant-bit ordering; `false` bit-reverses
+  each entry across the matrix width before use.
 
 # Examples
 ```julia
@@ -222,6 +229,7 @@ mutable struct DigitalNetB2{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
     randomize::String
     graycode::Bool
+    t::Int
     rng::R
     direction_nums::Matrix{UInt32}   # ndim × BITS
     n_limit::Union{Nothing, Int}
@@ -312,11 +320,28 @@ function _coerce_direction_matrix(values::AbstractMatrix{<:Integer}, dimension::
     return V, Int(1) << mmax
 end
 
-function _resolve_direction_numbers(dimension::Int, generating_matrices)
+_bitreverse_width(value::UInt32, width::Int) = bitreverse(value) >> (_SOBOL_BITS - width)
+
+function _coerce_direction_matrix(
+    values::AbstractMatrix{<:Integer},
+    dimension::Int,
+    msb::Union{Nothing, Bool},
+)
+    V, n_limit = _coerce_direction_matrix(values, dimension)
+    if msb === false
+        width = size(V, 2)
+        @inbounds for j in axes(V, 1), k in axes(V, 2)
+            V[j, k] = _bitreverse_width(V[j, k], width)
+        end
+    end
+    return V, n_limit
+end
+
+function _resolve_direction_numbers(dimension::Int, generating_matrices, msb)
     if isnothing(generating_matrices)
         return _load_direction_numbers(dimension), Int(1) << _SOBOL_BITS
     elseif generating_matrices isa AbstractMatrix{<:Integer}
-        return _coerce_direction_matrix(generating_matrices, dimension)
+        return _coerce_direction_matrix(generating_matrices, dimension, msb)
     elseif generating_matrices isa AbstractString
         if isfile(generating_matrices)
             return _read_digital_net_matrix_file(generating_matrices, dimension)
@@ -345,6 +370,8 @@ function DigitalNetB2(
     order=nothing,
     replications::Union{Nothing, Int}=nothing,
     generating_matrices=nothing,
+    t=nothing,
+    msb=nothing,
 )
     dimension > 0 || throw(ArgumentError("dimension must be positive, got $dimension"))
     isnothing(generating_matrices) &&
@@ -359,7 +386,7 @@ function DigitalNetB2(
     end
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
-    V, n_limit = _resolve_direction_numbers(dimension, generating_matrices)
+    V, n_limit = _resolve_direction_numbers(dimension, generating_matrices, msb)
     graycode_from_order = isnothing(order) ? nothing : _normalize_digital_net_order(order)
     if !isnothing(graycode_from_order) &&
        !isnothing(graycode) &&
@@ -369,11 +396,16 @@ function DigitalNetB2(
     graycode_bool =
         isnothing(graycode_from_order) ? (isnothing(graycode) ? true : graycode) :
         graycode_from_order
+    mmax = size(V, 2)
+    t_bits = isnothing(t) ? mmax : t
+    t_bits isa Integer || throw(ArgumentError("t must be an integer, got $(typeof(t))"))
+    mmax <= t_bits <= 64 || throw(ArgumentError("t must satisfy $mmax <= t <= 64, got $t_bits"))
 
     return DigitalNetB2(
         dimension,
         _normalize_digital_net_randomize(randomize),
         graycode_bool,
+        Int(t_bits),
         rng,
         V,
         n_limit,
@@ -441,6 +473,14 @@ function _direction_matrix_to_C(V_mat::AbstractMatrix{T}, d::Int) where {T}
     return C_flat
 end
 
+function _rand_tbit_uint64s(rng::AbstractRNG, t::Int, n::Int)
+    t == 64 && return rand(rng, UInt64, n)
+    mask = (UInt64(1) << t) - UInt64(1)
+    return rand(rng, UInt64, n) .& mask
+end
+
+_left_shift_words(t::Int, mmax::Int, R::Int) = fill(UInt64(t - mmax), R)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Single-replication and multi-replication generation via qmctoolscl binary net
 # generation, optional digital shifts, and integer-to-float conversion.
@@ -449,13 +489,13 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
     d = dd.dimension
     V = dd.direction_nums
     mmax = size(V, 2)
+    lshifts = _left_shift_words(dd.t, mmax, 1)
 
     if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
         V_scr = _lms_direction_matrix(V, d, dd.rng)
         C_flat = _direction_matrix_to_C(V_scr, d)
-        lshifts = zeros(UInt64, 1)
         if dd.randomize == "LMS_DS"
-            shiftsb = UInt64.(rand(dd.rng, UInt32, d))
+            shiftsb = _rand_tbit_uint64s(dd.rng, dd.t, d)
             apply_shift = 0x01
         else
             shiftsb = zeros(UInt64, d)
@@ -463,8 +503,7 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
         end
     elseif dd.randomize == "DS"
         C_flat = _direction_matrix_to_C(V, d)
-        lshifts = zeros(UInt64, 1)
-        shiftsb = UInt64.(rand(dd.rng, UInt32, d))
+        shiftsb = _rand_tbit_uint64s(dd.rng, dd.t, d)
         apply_shift = 0x01
     elseif dd.randomize == "NUS"
         C_flat = _direction_matrix_to_C(V, d)
@@ -481,18 +520,22 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
         # Apply Owen scrambling in-place
         _owen_scramble_points!(xb_buf, n, d, mmax, dim_seeds)
 
-        tmaxes = fill(UInt64(mmax), 1)
+        if dd.t > mmax
+            xb_shifted = similar(xb_buf)
+            _c_dnb2_digital_shift!(1, n, d, 1, lshifts, xb_buf, zeros(UInt64, d), xb_shifted)
+            xb_buf = xb_shifted
+        end
+        tmaxes = fill(UInt64(dd.t), 1)
         x_buf = Vector{Float64}(undef, n * d)
         _c_dnb2_integer_to_float!(1, n, d, tmaxes, xb_buf, x_buf)
         return _rowmaj_to_nxd(x_buf, n, d)
     else  # "none"
         C_flat = _direction_matrix_to_C(V, d)
-        lshifts = zeros(UInt64, 1)
         shiftsb = zeros(UInt64, d)
         apply_shift = 0x00
     end
 
-    tmaxes = fill(UInt64(mmax), 1)
+    tmaxes = fill(UInt64(dd.t), 1)
     x_buf = Vector{Float64}(undef, n * d)
     if _HAS_DNB2_FUSED[]
         if dd.graycode
@@ -579,9 +622,9 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
             end
         end
         r_x = R
-        lshifts = zeros(UInt64, R)
+        lshifts = _left_shift_words(dd.t, mmax, R)
         if dd.randomize == "LMS_DS"
-            shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
+            shiftsb = _rand_tbit_uint64s(dd.rng, dd.t, R * d)
             apply_shift = 0x01
         else
             shiftsb = zeros(UInt64, R * d)
@@ -590,8 +633,8 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     elseif dd.randomize == "DS"
         C_flat = _direction_matrix_to_C(V, d)
         r_x = 1
-        lshifts = zeros(UInt64, 1)
-        shiftsb = UInt64.(rand(dd.rng, UInt32, R * d))
+        lshifts = _left_shift_words(dd.t, mmax, 1)
+        shiftsb = _rand_tbit_uint64s(dd.rng, dd.t, R * d)
         apply_shift = 0x01
     elseif dd.randomize == "NUS"
         C_flat = _direction_matrix_to_C(V, d)
@@ -604,11 +647,25 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
         end
         # Apply R independent Owen scramblings
         x_buf = Vector{Float64}(undef, R * n * d)
-        tmaxes_one = fill(UInt64(mmax), 1)
+        tmaxes_one = fill(UInt64(dd.t), 1)
         for r in 1:R
             xb_copy = copy(xb_base)
             dim_seeds = UInt64.(rand(dd.rng, UInt64, d))
             _owen_scramble_points!(xb_copy, n, d, mmax, dim_seeds)
+            if dd.t > mmax
+                xb_shifted = similar(xb_copy)
+                _c_dnb2_digital_shift!(
+                    1,
+                    n,
+                    d,
+                    1,
+                    _left_shift_words(dd.t, mmax, 1),
+                    xb_copy,
+                    zeros(UInt64, d),
+                    xb_shifted,
+                )
+                xb_copy = xb_shifted
+            end
             x_r = Vector{Float64}(undef, n * d)
             _c_dnb2_integer_to_float!(1, n, d, tmaxes_one, xb_copy, x_r)
             base = (r - 1) * n * d
@@ -618,12 +675,12 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     else  # "none"
         C_flat = _direction_matrix_to_C(V, d)
         r_x = 1
-        lshifts = zeros(UInt64, 1)
+        lshifts = _left_shift_words(dd.t, mmax, 1)
         shiftsb = zeros(UInt64, R * d)
         apply_shift = 0x00
     end
 
-    tmaxes = fill(UInt64(mmax), R)
+    tmaxes = fill(UInt64(dd.t), R)
     x_buf = Vector{Float64}(undef, R * n * d)
     if _HAS_DNB2_FUSED[]
         if dd.graycode

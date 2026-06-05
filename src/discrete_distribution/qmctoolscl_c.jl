@@ -388,6 +388,49 @@ function _c_dnb2_digital_shift!(
     )
 end
 
+function _c_dnb2_interlace!(
+    R::Int,
+    d_alpha::Int,
+    mmax::Int,
+    d::Int,
+    tmax::Int,
+    tmax_alpha::Int,
+    alpha::Int,
+    C::Vector{UInt64},
+    C_alpha::Vector{UInt64},
+)
+    ccall(
+        (:dnb2_interlace, _qmctoolscl_lib_path()),
+        Cvoid,
+        (
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            UInt64,
+            Ptr{UInt64},
+            Ptr{UInt64},
+        ),
+        UInt64(R),
+        UInt64(d_alpha),
+        UInt64(mmax),
+        UInt64(R),
+        UInt64(d_alpha),
+        UInt64(mmax),
+        UInt64(d),
+        UInt64(tmax),
+        UInt64(tmax_alpha),
+        UInt64(alpha),
+        C,
+        C_alpha,
+    )
+end
+
 function _c_dnb2_integer_to_float!(
     R::Int,
     n::Int,
