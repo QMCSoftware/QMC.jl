@@ -49,7 +49,16 @@ function CubMCCLT(
     n_max > 2 * n_init || throw(ArgumentError("n_max must be > 2 * n_init"))
     inflate >= 1.0 || throw(ArgumentError("inflate must be ≥ 1.0"))
     0.0 < alpha < 1.0 || throw(ArgumentError("alpha must be in (0, 1)"))
-    return CubMCCLT(integrand, abs_tol, rel_tol, n_init, n_max, alpha, inflate, trace_iterations)
+    return CubMCCLT(
+        integrand,
+        abs_tol,
+        rel_tol,
+        n_init,
+        n_max,
+        alpha,
+        inflate,
+        trace_iterations,
+    )
 end
 
 function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
