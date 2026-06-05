@@ -22,6 +22,11 @@ DigitalNetAnyBases
 Faure
 ```
 
+`DigitalNetB2` now covers the main QMCPy-style constructor surface used in
+this repository: direct custom matrices, LDData-format files or names, order
+aliases, widened `t` precision, `msb` handling, and higher-order interlacing
+through `alpha`.
+
 ## Sampling
 
 ```@docs

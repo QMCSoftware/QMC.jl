@@ -6,7 +6,9 @@ This folder implements the low-discrepancy and IID point generators that produce
 
 - `iid_std_uniform.jl`: IID pseudo-random uniform samples.
 - `lattice.jl`: rank-1 lattice rules.
-- `digital_net_b2.jl`: Sobol'/digital net base-2 construction.
+- `digital_net_b2.jl`: Sobol'/digital net base-2 construction, including
+  custom generating matrices, QMCPy-style constructor aliases, and
+  higher-order interlacing through `alpha`.
 - `halton.jl`: Halton sequences.
 - `kronecker.jl`: Kronecker sequences.
 - `digital_net_any_bases.jl`: more general digital-net support.

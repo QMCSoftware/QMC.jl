@@ -11,6 +11,10 @@ Generates low-discrepancy point sets in ``[0,1)^d``. Available generators:
 - **`DigitalNetB2`** — Sobol' digital net (base 2) with optional scrambling
 - **`Halton`** — Halton sequence using prime bases
 
+`DigitalNetB2` also supports QMCPy-style constructor options such as
+custom generating matrices, `order` aliases, widened `t` bit depth, `msb`
+handling for custom matrices, and higher-order interlacing via `alpha > 1`.
+
 `Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL
 shared library, so Python is a current runtime dependency for these QMC generators.
 
