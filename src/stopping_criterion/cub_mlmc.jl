@@ -2,7 +2,8 @@
     CubMLMC(integrand::AbstractMLIntegrand; abs_tol=0.05, n_init=256,
             n_limit=10_000_000_000, alpha_ci=0.01,
             levels_min=2, levels_max=10,
-            alpha0=-1.0, beta0=-1.0, gamma0=-1.0)
+            alpha0=-1.0, beta0=-1.0, gamma0=-1.0,
+            trace_iterations=false)
 
 Multilevel Monte Carlo (MLMC) stopping criterion based on Giles (2008).
 
@@ -13,6 +14,9 @@ given RMSE tolerance.
 The rates α (weak error), β (variance decay), γ (cost growth) are
 estimated via linear regression if not provided (`alpha0`, `beta0`,
 `gamma0` ≤ 0).
+
+Set `trace_iterations=true` to record an `IterationLog` in
+`result.data[:iteration_log]`.
 
 # Arguments
 - `integrand`: A multilevel integrand (`AbstractMLIntegrand`).
@@ -48,6 +52,7 @@ mutable struct CubMLMC{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
     alpha0::Float64
     beta0::Float64
     gamma0::Float64
+    trace_iterations::Bool
 end
 
 function CubMLMC(
@@ -62,6 +67,7 @@ function CubMLMC(
     alpha0::Float64=-1.0,
     beta0::Float64=-1.0,
     gamma0::Float64=-1.0,
+    trace_iterations::Bool=false,
 )
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
@@ -84,6 +90,7 @@ function CubMLMC(
         alpha0,
         beta0,
         gamma0,
+        trace_iterations,
     )
 end
 
@@ -234,15 +241,57 @@ function _get_optimal_samples(sc::CubMLMC, state::_MLMCState)
     return ns
 end
 
+function _solution_mlmc(state::_MLMCState)
+    return sum(
+        state.sum_level[1, l + 1] / state.n_level[l + 1] for
+        l in 0:state.levels if state.n_level[l + 1] > 0
+    )
+end
+
+function _bias_estimate_mlmc(state::_MLMCState)
+    L = state.levels
+    L < 1 && return Inf
+    range_check = min(2, L - 1)
+    rem = 0.0
+    for k in 0:range_check
+        idx = L - k
+        rem = max(rem, state.mean_level[idx + 1] / 2.0^(k * state.alpha))
+    end
+    return rem / (2.0^state.alpha - 1)
+end
+
+function _varest_mlmc(state::_MLMCState)
+    return sum(
+        state.var_level[l + 1] / state.n_level[l + 1] for
+        l in 0:state.levels if state.n_level[l + 1] > 0
+    )
+end
+
+function _rmse_mlmc(sc::CubMLMC, state::_MLMCState)
+    bias = _bias_estimate_mlmc(state)
+    return sqrt(max(0.0, (1 - sc.theta) * _varest_mlmc(state) + sc.theta * bias^2))
+end
+
 # ── Main integrate method ──
 
 function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     state = _init_mlmc_state(sc)
+    log = IterationLog()
 
     # Initial warm-up: n_init samples at each level
     diff_n = fill(sc.n_init, state.levels + 1)
     _update_samples!(sc, state, diff_n)
+    if sc.trace_iterations
+        push!(
+            log;
+            n=sum(state.n_level),
+            solution=_solution_mlmc(state),
+            error_bound=_rmse_mlmc(sc, state),
+            tol=sc.rmse_tol,
+            elapsed=time() - t_start,
+        )
+    end
 
     # Main loop
     while true
@@ -259,18 +308,21 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothin
 
         # Take additional samples
         _update_samples!(sc, state, diff_n)
+        if sc.trace_iterations
+            push!(
+                log;
+                n=sum(state.n_level),
+                solution=_solution_mlmc(state),
+                error_bound=_rmse_mlmc(sc, state),
+                tol=sc.rmse_tol,
+                elapsed=time() - t_start,
+            )
+        end
 
         # Check if (almost) converged
         if all(diff_n .<= ceil.(Int, 0.01 .* state.n_level[1:(state.levels + 1)]))
             # Estimate remaining bias
-            L = state.levels
-            range_check = min(2, L - 1)
-            rem = 0.0
-            for k in 0:range_check
-                idx = L - k  # 0-based level
-                rem = max(rem, state.mean_level[idx + 1] / 2.0^(k * state.alpha))
-            end
-            rem /= (2.0^state.alpha - 1)
+            rem = _bias_estimate_mlmc(state)
 
             if rem > sqrt(sc.theta) * sc.rmse_tol
                 # Need more levels
@@ -312,6 +364,9 @@ function integrate(sc::CubMLMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothin
         :rmse_tol => sc.rmse_tol,
         :time_integrate => t_elapsed,
     )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
 
     return QMCResult(solution, data)
 end

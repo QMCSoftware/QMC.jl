@@ -191,6 +191,12 @@ end
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:levels] >= 3  # levels_min + 1
+
+    traced = integrate(
+        CubMLMC(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6, trace_iterations=true),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
 end
 
 @testset "CubMLMCCont" begin
@@ -202,6 +208,38 @@ end
     @test result.solution isa Float64
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
+
+    traced = integrate(
+        CubMLMCCont(
+            f;
+            abs_tol=0.5,
+            n_init=256,
+            levels_min=2,
+            levels_max=6,
+            n_tols=5,
+            trace_iterations=true,
+        ),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
+end
+
+@testset "CubMLQMC" begin
+    dd = Lattice(32; replications=8)
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
+    sc = CubMLQMC(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6)
+    result = integrate(sc)
+
+    @test result.solution isa Float64
+    @test !isnan(result.solution)
+    @test result.data[:n_total] > 0
+    @test result.data[:replications] == 8
+
+    traced = integrate(
+        CubMLQMC(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6, trace_iterations=true),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
 end
 
 @testset "CubMLQMCCont" begin
@@ -214,4 +252,18 @@ end
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:replications] == 8
+
+    traced = integrate(
+        CubMLQMCCont(
+            f;
+            abs_tol=0.5,
+            n_init=64,
+            levels_min=2,
+            levels_max=6,
+            n_tols=5,
+            trace_iterations=true,
+        ),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
 end
