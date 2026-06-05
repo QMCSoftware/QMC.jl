@@ -203,7 +203,7 @@ bench-compare-labels:
 # Combination of above targets
 # ============================================================================
 
-# Run the local full-check pipeline: format code, collect unit-test coverage,
-# then collect full benchmark coverage. Pass LABEL=... through to the benchmark step.
+# Run the local full-check pipeline: format code, collect unit-test,
+# then collect full benchmark. Pass LABEL=... through to the benchmark step.
 local-ci:
-	$(call RUN_TIMED,$(MAKE) format && $(MAKE) coverage && $(MAKE) bench-all-coverage LABEL=$(LABEL),local-ci)
+	$(call RUN_TIMED,$(MAKE) format && $(MAKE) test && $(MAKE) bench-all LABEL=$(LABEL),local-ci)
