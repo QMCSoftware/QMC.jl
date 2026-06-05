@@ -1,6 +1,6 @@
 """
-    DigitalNetB2(dimension::Int; randomize="LMS_DS", seed=nothing, graycode=true,
-                 replications=nothing, generating_matrices=nothing)
+    DigitalNetB2(dimension::Int; randomize="LMS_DS", seed=nothing, graycode=nothing,
+                 order=nothing, replications=nothing, generating_matrices=nothing)
 
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 
@@ -22,7 +22,10 @@ before `using QMC`.
 - `dimension::Int`: number of dimensions (up to 1024).
 - `randomize::String`: randomization method.
 - `seed`: optional RNG seed for reproducibility.
-- `graycode::Bool=true`: use Gray-code ordering for efficiency.
+- `graycode::Union{Nothing,Bool}=nothing`: use Gray-code ordering for efficiency.
+- `order`: QMCPy-style ordering alias. Accepts `"GRAY"` / `"GRAY CODE"` or
+  `"RADICAL INVERSE"` / `"NATURAL"`. If omitted, Julia keeps the historical
+  default `graycode=true`.
 - `replications::Union{Nothing,Int}=nothing`: number of independent randomizations.
   If set, `gen_samples` returns an `R × n × d` array.
 - `generating_matrices`: optional custom direction-number matrix. May be
@@ -30,6 +33,9 @@ before `using QMC`.
   `dimension` rows and at most 32 columns. When the custom matrix has `m`
   columns, `gen_samples` supports at most `2^m` points including any `n_start`
   offset. Custom entries must already be represented in that `m`-bit precision.
+  A string may also point to a QMCPy/LDData `dnet` text file, either by local
+  path, bare filename (for example `"joe_kuo.6.21201.txt"`), or GitHub/LDData
+  URL. Non-bundled LDData files download on demand.
 
 # Examples
 ```julia
@@ -46,6 +52,9 @@ x = gen_samples(dn_hd, 4096)  # 4096×52 for e.g. Asian option with 52 timesteps
 """
 
 const _SOBOL_BITS = 32
+const _DEFAULT_DNET_SOURCE_NAME = "joe_kuo.6.21201.txt"
+const _DEFAULT_DNET_1024_SOURCE_NAME = "joe_kuo.6.1024.txt"
+const _DNET_LDDATA_RAW_BASE = "https://raw.githubusercontent.com/QMCSoftware/LDData/main/dnet/"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Load precomputed direction numbers from data file
@@ -70,6 +79,131 @@ function _load_direction_numbers(ndim::Int)
         end
     end
     return V
+end
+
+function _canonical_digital_net_matrix_filename(name::AbstractString)
+    token = replace(strip(name), '\\' => '/')
+    token = split(token, '?'; limit=2)[1]
+    token = split(token, '#'; limit=2)[1]
+    isempty(token) && throw(ArgumentError("generating_matrices reference cannot be empty"))
+    parts = split(token, '/')
+    basename = parts[end]
+    isempty(basename) &&
+        throw(ArgumentError("generating_matrices reference \"$name\" has no filename"))
+    return endswith(lowercase(basename), ".txt") ? basename : string(basename, ".txt")
+end
+
+function _looks_like_lddata_digital_net_reference(name::AbstractString)
+    token = lowercase(replace(strip(name), '\\' => '/'))
+    isempty(token) && return false
+    if !(occursin('/', token) || occursin('\\', name))
+        return true
+    end
+    return (
+        occursin("github.com/qmcsoftware/lddata/", token) ||
+        occursin("raw.githubusercontent.com/qmcsoftware/lddata/", token) ||
+        startswith(token, "dnet/") ||
+        occursin("/dnet/", token)
+    )
+end
+
+function _parse_digital_net_matrix_entry(token::AbstractString, path::AbstractString)
+    value = tryparse(BigInt, token)
+    isnothing(value) &&
+        throw(ArgumentError("invalid generating-matrix entry in \"$path\": \"$token\""))
+    return value
+end
+
+function _read_digital_net_matrix_file(path::AbstractString, dimension::Int)
+    contents = String[]
+    for raw_line in eachline(path)
+        line = strip(split(raw_line, '#'; limit=2)[1])
+        isempty(line) && continue
+        push!(contents, line)
+    end
+    length(contents) >= 4 || throw(
+        ArgumentError(
+            "generating_matrices file \"$path\" must contain base, d_limit, n_limit, and bit metadata",
+        ),
+    )
+    base = tryparse(Int, contents[1])
+    base == 2 ||
+        throw(ArgumentError("DigitalNetB2 requires base=2 in \"$path\", got $(contents[1])"))
+    d_limit = tryparse(Int, contents[2])
+    isnothing(d_limit) && throw(
+        ArgumentError(
+            "invalid d_limit in generating_matrices file \"$path\": \"$(contents[2])\"",
+        ),
+    )
+    dimension <= d_limit || throw(
+        ArgumentError(
+            "dimension $dimension exceeds the file-supported maximum ($d_limit) in \"$path\"",
+        ),
+    )
+    n_limit = tryparse(Int, contents[3])
+    isnothing(n_limit) && throw(
+        ArgumentError(
+            "invalid n_limit in generating_matrices file \"$path\": \"$(contents[3])\"",
+        ),
+    )
+    bit_precision = tryparse(Int, contents[4])
+    isnothing(bit_precision) && throw(
+        ArgumentError(
+            "invalid bit precision in generating_matrices file \"$path\": \"$(contents[4])\"",
+        ),
+    )
+    0 < bit_precision <= _SOBOL_BITS || throw(
+        ArgumentError(
+            "DigitalNetB2 currently supports at most $_SOBOL_BITS-bit generating matrices, got $bit_precision in \"$path\"",
+        ),
+    )
+    length(contents) >= 4 + dimension || throw(
+        ArgumentError(
+            "generating_matrices file \"$path\" contains fewer than $dimension matrix rows",
+        ),
+    )
+    rows = split.(contents[5:(4 + dimension)])
+    mmax = length(rows[1])
+    mmax > 0 ||
+        throw(ArgumentError("generating_matrices file \"$path\" has an empty matrix row"))
+    V = Matrix{UInt32}(undef, dimension, mmax)
+    max_entry = (BigInt(1) << bit_precision) - 1
+    for j in 1:dimension
+        length(rows[j]) == mmax || throw(
+            ArgumentError(
+                "inconsistent generating-matrix row width in \"$path\": expected $mmax columns, got $(length(rows[j])) on row $j",
+            ),
+        )
+        for k in 1:mmax
+            value = _parse_digital_net_matrix_entry(rows[j][k], path)
+            0 < value <= max_entry || throw(
+                ArgumentError(
+                    "generating_matrices entry at ($j, $k) in \"$path\" must lie in 1:$max_entry, got $value",
+                ),
+            )
+            V[j, k] = UInt32(value)
+        end
+    end
+    return V, n_limit
+end
+
+function _download_digital_net_matrix_from_lddata(filename::AbstractString, dimension::Int)
+    url = _DNET_LDDATA_RAW_BASE * filename
+    path, io = mktemp()
+    close(io)
+    try
+        _downloads_module().download(url, path)
+        return _read_digital_net_matrix_file(path, dimension)
+    catch err
+        msg = sprint(showerror, err)
+        throw(
+            ArgumentError(
+                "failed to fetch LDData digital-net generating matrices \"$filename\" from $url: $msg",
+            ),
+        )
+    finally
+        isfile(path) && rm(path; force=true)
+    end
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -106,14 +240,32 @@ function _normalize_digital_net_randomize(randomize)
         return "LMS"
     elseif token_lc == "ds"
         return "DS"
-    elseif token_lc == "nus"
+    elseif token_lc in ("nus", "owen")
         return "NUS"
-    elseif token_lc in ("none", "false")
+    elseif token_lc == "true"
+        return "LMS_DS"
+    elseif token_lc in ("none", "false", "no")
         return "none"
     end
     throw(
         ArgumentError(
             "randomize must be \"LMS_DS\", \"LMS\", \"DS\", \"NUS\", or \"none\", got \"$randomize\"",
+        ),
+    )
+end
+
+function _normalize_digital_net_order(order)
+    token = order isa Symbol ? String(order) : order
+    token isa AbstractString ||
+        throw(ArgumentError("order must be a string or symbol, got $(typeof(order))"))
+    token_lc = replace(lowercase(strip(token)), "_" => " ", "-" => " ")
+    token_lc == "gray code" && return true
+    token_lc == "gray" && return true
+    token_lc == "natural" && return false
+    token_lc == "radical inverse" && return false
+    throw(
+        ArgumentError(
+            "order must be \"GRAY\" or \"RADICAL INVERSE\" (\"NATURAL\" is accepted as an alias), got \"$order\"",
         ),
     )
 end
@@ -165,10 +317,22 @@ function _resolve_direction_numbers(dimension::Int, generating_matrices)
         return _load_direction_numbers(dimension), Int(1) << _SOBOL_BITS
     elseif generating_matrices isa AbstractMatrix{<:Integer}
         return _coerce_direction_matrix(generating_matrices, dimension)
+    elseif generating_matrices isa AbstractString
+        if isfile(generating_matrices)
+            return _read_digital_net_matrix_file(generating_matrices, dimension)
+        end
+        _looks_like_lddata_digital_net_reference(generating_matrices) ||
+            throw(ArgumentError("generating_matrices file \"$generating_matrices\" not found"))
+        filename = _canonical_digital_net_matrix_filename(generating_matrices)
+        if filename in (_DEFAULT_DNET_SOURCE_NAME, _DEFAULT_DNET_1024_SOURCE_NAME) &&
+           dimension <= _JK_DIRECTION_MATRIX_DIMS
+            return _load_direction_numbers(dimension), Int(1) << _SOBOL_BITS
+        end
+        return _download_digital_net_matrix_from_lddata(filename, dimension)
     end
     throw(
         ArgumentError(
-            "generating_matrices must be nothing or an integer matrix with direction numbers",
+            "generating_matrices must be nothing, an integer matrix with direction numbers, a local LDData-format text file, or an LDData filename/URL",
         ),
     )
 end
@@ -177,7 +341,8 @@ function DigitalNetB2(
     dimension::Int;
     randomize="LMS_DS",
     seed=nothing,
-    graycode::Bool=true,
+    graycode::Union{Nothing, Bool}=nothing,
+    order=nothing,
     replications::Union{Nothing, Int}=nothing,
     generating_matrices=nothing,
 )
@@ -195,11 +360,20 @@ function DigitalNetB2(
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
     V, n_limit = _resolve_direction_numbers(dimension, generating_matrices)
+    graycode_from_order = isnothing(order) ? nothing : _normalize_digital_net_order(order)
+    if !isnothing(graycode_from_order) &&
+       !isnothing(graycode) &&
+       graycode != graycode_from_order
+        throw(ArgumentError("graycode=$(graycode) is inconsistent with order=\"$order\""))
+    end
+    graycode_bool =
+        isnothing(graycode_from_order) ? (isnothing(graycode) ? true : graycode) :
+        graycode_from_order
 
     return DigitalNetB2(
         dimension,
         _normalize_digital_net_randomize(randomize),
-        graycode,
+        graycode_bool,
         rng,
         V,
         n_limit,

@@ -178,12 +178,52 @@
         @test DigitalNetB2(2; randomize="LMS DS").randomize == "LMS_DS"
         @test DigitalNetB2(2; randomize=:LMS_DS).randomize == "LMS_DS"
         @test DigitalNetB2(2; randomize="false").randomize == "none"
+        @test DigitalNetB2(2; randomize="OWEN").randomize == "NUS"
+
+        # Constructor parity: accept QMCPy-style order spellings.
+        @test DigitalNetB2(2; order="GRAY CODE").graycode
+        @test !DigitalNetB2(2; order="NATURAL").graycode
+        @test !DigitalNetB2(2; order=:RADICAL_INVERSE).graycode
+        let a = DigitalNetB2(3; randomize="none", seed=7, order="natural"),
+            b = DigitalNetB2(3; randomize="none", seed=7, graycode=false)
+
+            @test gen_samples(a, 16) ≈ gen_samples(b, 16)
+        end
+        @test_throws ArgumentError DigitalNetB2(2; order="bogus")
+        @test_throws ArgumentError DigitalNetB2(2; order="gray", graycode=false)
 
         # Custom direction matrices keep the existing generation path.
         V8 = Int.(dd.direction_nums[:, 1:8] .>> 24)
         dd_custom = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8)
         @test gen_samples(dd_custom, 16) ≈ gen_samples(dd, 16)
         @test dd_custom.direction_nums == UInt32.(V8)
+
+        # LDData-style text sources: local file paths and QMCPy-compatible names.
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n2\n# n_limit\n16\n# bit precision\n32\n")
+            for j in 1:2
+                write(io, join(string.(Int.(dd.direction_nums[j, :])), ' '))
+                write(io, "\n")
+            end
+            flush(io)
+
+            dd_file = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=path)
+            @test gen_samples(dd_file, 16) ≈ gen_samples(dd, 16)
+            @test dd_file.n_limit == 16
+            @test_throws ArgumentError gen_samples(dd_file, 17)
+        end
+
+        dd_default = DigitalNetB2(3; randomize="none", seed=7)
+        for ref in (
+            "joe_kuo.6.21201.txt",
+            "joe_kuo.6.1024.txt",
+            "dnet/joe_kuo.6.21201.txt",
+            "https://github.com/QMCSoftware/LDData/tree/main/dnet/joe_kuo.6.21201.txt",
+            "https://raw.githubusercontent.com/QMCSoftware/LDData/main/dnet/joe_kuo.6.21201.txt",
+        )
+            dd_named = DigitalNetB2(3; randomize="none", seed=7, generating_matrices=ref)
+            @test gen_samples(dd_named, 16) ≈ gen_samples(dd_default, 16)
+        end
 
         # The custom matrix precision limits the allowable sample window.
         dd_short = DigitalNetB2(
