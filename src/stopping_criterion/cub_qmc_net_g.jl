@@ -126,6 +126,7 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
     end
 
     t_elapsed = time() - t_start
+    n_per_rep = n > sc.n_max ? sc.n_max : n
     data = Dict{Symbol, Any}(
         :n => n_final,
         :n_per_rep => n_final,
