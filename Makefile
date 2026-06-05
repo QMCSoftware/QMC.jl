@@ -193,17 +193,17 @@ bench-compare-py-coverage:
 bench-all-coverage:
 	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-coverage)
 
-# Run the local full-check pipeline: format code, collect unit-test coverage,
-# then collect full benchmark coverage. Pass LABEL=... through to the benchmark step.
-local-ci:
-	$(call RUN_TIMED,$(MAKE) format && $(MAKE) coverage && $(MAKE) bench-all-coverage LABEL=$(LABEL),local-ci)
-
-# ============================================================================
-# Benchmark result comparison utilities
-# ============================================================================
-
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]
 #    or: make bench-compare-labels a b [report]
 bench-compare-labels:
 	julia benchmark/compare_labels.jl $(LABEL_A) $(LABEL_B) $(OUT_LABEL)
+
+# ============================================================================
+# Combination of above targets
+# ============================================================================
+
+# Run the local full-check pipeline: format code, collect unit-test coverage,
+# then collect full benchmark coverage. Pass LABEL=... through to the benchmark step.
+local-ci:
+	$(call RUN_TIMED,$(MAKE) format && $(MAKE) coverage && $(MAKE) bench-all-coverage LABEL=$(LABEL),local-ci)
