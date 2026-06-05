@@ -32,7 +32,7 @@ QMC.jl provides four building blocks that snap together:
 | **Discrete Distribution** | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Halton`, `Kronecker`, `DigitalNetAnyBases`, `Faure` |
 | **True Measure** | `Uniform`, `Gaussian`, `BrownianMotion`, `Lebesgue`, `GeometricBrownianMotion`, `StudentT`, `Triangular`, `Kumaraswamy`, `JohnsonsSU`, `BernoulliCont`, `AcceptanceRejection`, `DistributionsWrapper`, `MaternGP`, `UniformTriangle`, `ZeroInflatedExpUniform` |
 | **Integrand** | `Keister`, `Genz`, `AsianOption`, `FinancialOption`, `FinancialOptionML`, `BoxIntegral`, `Linear0`, `Sin1D`, `Ishigami`, `Hartmann6D`, `Multimodal2D`, `FourBranch2D`, `SensitivityIndices`, `BayesianLRCoeffs`, `UMBridgeWrapper`, `CustomFun` |
-| **Stopping Criterion** | `CubMCCLT`, `CubMCCLTVec`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubQMCRepStudentT`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont`, `PFGPCI` |
+| **Stopping Criterion** | `CubMCCLT`, `CubMCCLTVec`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCNetGRep`, `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubQMCRepStudentT`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont`, `PFGPCI` |
 | **Kernel** | `KernelShiftInvar`, `KernelDigShiftInvar`, `KernelMatern12`, `KernelMatern32`, `KernelMatern52`, `KernelGaussian`, `KernelMultiTask`, `SumKernel`, `ProductKernel` |
 
 Additional utilities include periodization transforms, iteration diagnostics (`IterationLog`), resume/checkpoint support, Walsh-Hadamard and BRO-FFT transforms, and a LatNetBuilder linker.

@@ -14,7 +14,7 @@ CubMCCLTVec
 CubMCG
 CubQMCLatticeG
 CubQMCNetG
-CubQMCNetGSingle
+CubQMCNetGRep
 CubQMCBayesLatticeG
 CubQMCBayesNetG
 CubQMCRepStudentT

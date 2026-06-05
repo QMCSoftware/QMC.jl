@@ -61,7 +61,8 @@ Adaptive algorithms that determine sample size:
 
 - **`CubMCCLT`** — IID Monte Carlo with CLT confidence interval
 - **`CubQMCLatticeG`** — replicated randomized lattice rule
-- **`CubQMCNetG`** — replicated randomized digital net
+- **`CubQMCNetG`** — single randomized digital net in natural (radical-inverse) order
+- **`CubQMCNetGRep`** — replicated randomized digital net
 - **`CubQMCBayesLatticeG`** — Bayesian QMC for lattices (kernel-based error bound)
 - **`CubQMCBayesNetG`** — Bayesian QMC for digital nets (WHT-based error bound)
 

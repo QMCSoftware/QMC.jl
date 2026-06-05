@@ -25,26 +25,13 @@
     end
 
     @testset "CubQMCNetG" begin
-        dd = DigitalNetB2(2; randomize="DS", seed=700)
-        tm = Uniform(dd)
-        f = Genz(tm; kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
-        exact = genz_exact(f)
-        sc = CubQMCNetG(f; abs_tol=0.1, n_init=2^10, n_reps=16)
-        result = integrate(sc)
-        @test abs(result.solution - exact) < 1.0
-        @test result.data[:n] >= 2^10
-        @test result.data[:n_per_rep] == result.data[:n]
-        @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
-    end
-
-    @testset "CubQMCNetGSingle" begin
-        # Single-net guaranteed cubature (QMCPy CubQMCNetG port). Requires a
+        # Single-net guaranteed cubature (QMCPy CubQMCNetG). Requires a
         # non-replicated DigitalNetB2 in natural (radical-inverse) order.
         dd = DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=2024)
         tm = Gaussian(dd; covariance=0.5)
         f = Keister(tm)
         exact = keister_exact(3)
-        sc = CubQMCNetGSingle(f; abs_tol=0.01, n_init=2^10)
+        sc = CubQMCNetG(f; abs_tol=0.01, n_init=2^10)
         result = integrate(sc)
         @test abs(result.solution - exact) < 0.05
         @test result.data[:error_bound] <= 0.01 + 1e-9
@@ -54,7 +41,29 @@
 
         # Guard: a default (graycode=true) net is rejected at construction.
         dd_gc = DigitalNetB2(3; randomize="LMS_DS", seed=1)
-        @test_throws ErrorException CubQMCNetGSingle(Keister(Gaussian(dd_gc; covariance=0.5)))
+        @test_throws ErrorException CubQMCNetG(Keister(Gaussian(dd_gc; covariance=0.5)))
+    end
+
+    @testset "CubQMCNetGRep" begin
+        dd = DigitalNetB2(2; randomize="DS", seed=700)
+        tm = Uniform(dd)
+        f = Genz(tm; kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+        exact = genz_exact(f)
+        sc = CubQMCNetGRep(f; abs_tol=0.1, n_init=2^10, n_reps=16)
+        result = integrate(sc)
+        @test abs(result.solution - exact) < 1.0
+        @test result.data[:n] >= 2^10
+        @test result.data[:n_per_rep] == result.data[:n]
+        @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
+    end
+
+    @testset "CubQMCNetGSingle alias" begin
+        dd = DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=11)
+        tm = Gaussian(dd; covariance=0.5)
+        f = Keister(tm)
+        sc = CubQMCNetGSingle(f; abs_tol=0.01, n_init=2^10)
+        @test sc isa CubQMCNetG
+        @test integrate(sc).data[:n_reps] == 1
     end
 
     @testset "CubQMCBayesLatticeG (smoke)" begin
@@ -232,7 +241,7 @@
         # disagrees with the other QMC rule.
         exact = keister_exact(3)
         net =
-            tol -> CubQMCNetG(
+            tol -> CubQMCNetGRep(
                 Keister(
                     Gaussian(DigitalNetB2(3; randomize="LMS_DS", seed=2024); covariance=0.5),
                 );

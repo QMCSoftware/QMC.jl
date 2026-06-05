@@ -21,7 +21,10 @@ multilevel criteria expose `rmse_tol` or `target_tol`. Throws if the criterion
 has no field for a requested tolerance. Returns `sc`.
 
 ```julia
-sc = CubQMCNetG(Keister(Gaussian(DigitalNetB2(3); covariance=0.5)); abs_tol=0.05)
+sc = CubQMCNetG(
+    Keister(Gaussian(DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=7); covariance=0.5));
+    abs_tol=0.05,
+)
 set_tolerance!(sc; abs_tol=0.01, rel_tol=0.0)
 ```
 """
