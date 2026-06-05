@@ -261,6 +261,42 @@ function _int_cubqmcnetg_asian()
     CubQMCNetG(f; abs_tol=0.5)
 end
 
+# Single-net guaranteed cubature (QMCPy CubQMCNetG port). Mirrors the replicated
+# CubQMCNetG cases for a head-to-head, using natural-order (graycode=false) nets,
+# which the single-net error bound requires.
+function _int_cubqmcnetgsingle_keister()
+    dd = DigitalNetB2(3; seed=42, randomize="LMS_DS", graycode=false)
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
+    f = Keister(tm)
+    CubQMCNetGSingle(f; abs_tol=0.01)
+end
+
+function _int_cubqmcnetgsingle_european()
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS", graycode=false)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+    CubQMCNetGSingle(f; abs_tol=0.5)
+end
+
+function _int_cubqmcnetgsingle_asian()
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS", graycode=false)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
+    CubQMCNetGSingle(f; abs_tol=0.5)
+end
+
 const INTEGRATE_CASES = Pair{String, Function}[
     "CubMCCLT Keister" => _int_cubmcclt_keister,
     "CubQMCLatticeG Keister" => _int_cubqmclatticeg_keister,
@@ -270,6 +306,9 @@ const INTEGRATE_CASES = Pair{String, Function}[
     "CubMCCLT EuropeanOption" => _int_cubmcclt_european,
     "CubQMCLatticeG EuropeanOption" => _int_cubqmclatticeg_european,
     "CubQMCNetG AsianOption" => _int_cubqmcnetg_asian,
+    "CubQMCNetGSingle Keister" => _int_cubqmcnetgsingle_keister,
+    "CubQMCNetGSingle EuropeanOption" => _int_cubqmcnetgsingle_european,
+    "CubQMCNetGSingle AsianOption" => _int_cubqmcnetgsingle_asian,
 ]
 
 SUITE["integrate"] = BenchmarkGroup()

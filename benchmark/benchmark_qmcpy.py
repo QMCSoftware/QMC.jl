@@ -289,6 +289,9 @@ def main():
 
     # (name, make_sc, warmup). make_sc builds a fresh stopping criterion; it is
     # reused both for timing and for the one-shot accuracy measurement below.
+    # Julia's `CubQMCNetGSingle` is a port of QMCPy's `CubQMCNetG`, so the
+    # matching Python rows intentionally reuse `qp.CubQMCNetG` under the
+    # `CubQMCNetGSingle ...` labels for direct cross-language comparison.
     integrate_cases = [
         ("CubMCCLT Keister",
          lambda: qp.CubMCCLT(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
@@ -324,6 +327,21 @@ def main():
                                 interest_rate=0.05, t_final=1), abs_tol=0.5),
          False),
         ("CubQMCNetG AsianOption",
+         lambda: qp.CubQMCNetG(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="ASIAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCNetGSingle Keister",
+         lambda: qp.CubQMCNetG(qp.Keister(qp.DigitalNetB2(3, seed=SEED)), abs_tol=0.01),
+         False),
+        ("CubQMCNetGSingle EuropeanOption",
+         lambda: qp.CubQMCNetG(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCNetGSingle AsianOption",
          lambda: qp.CubQMCNetG(
              qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="ASIAN",
                                 volatility=0.2, start_price=100, strike_price=100,
