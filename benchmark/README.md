@@ -172,7 +172,7 @@ When reading the weighted ratios in `compare_python*.md`:
 - ratio `< 1` means the Python metric is smaller than the Julia total
 - ratio `> 1` means the Python metric is larger than the Julia total
 
-If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than contradictory. It usually mean Python allocated more temporary memory during the call but released most of it afterward, or conversely retained more process memory even though its traced Python-level peak was modest. Use:
+If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than contradictory. It usually means Python allocated more temporary memory during the call but released most of it afterward, or conversely retained more process memory even though its traced Python-level peak was modest. Use:
 
 - time ratio as the cleanest cross-language comparison
 - `tracemalloc` as a temporary-allocation signal
