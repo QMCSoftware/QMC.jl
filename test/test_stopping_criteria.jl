@@ -79,6 +79,11 @@
         @test result.data[:n] >= 2^8
         @test result.data[:n_total] == result.data[:n]
         @test result.data[:n_per_rep] == result.data[:n]
+        traced = integrate(
+            CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, trace_iterations=true),
+        )
+        @test haskey(traced.data, :iteration_log)
+        @test length(traced.data[:iteration_log]) >= 1
     end
 
     @testset "CubQMCBayesNetG (smoke)" begin
@@ -94,6 +99,11 @@
         @test result.data[:n] >= 2^8
         @test result.data[:n_total] == result.data[:n]
         @test result.data[:n_per_rep] == result.data[:n]
+        traced = integrate(
+            CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, trace_iterations=true),
+        )
+        @test haskey(traced.data, :iteration_log)
+        @test length(traced.data[:iteration_log]) >= 1
     end
 
     @testset "CubQMCRepStudentT (smoke)" begin

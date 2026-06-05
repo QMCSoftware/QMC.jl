@@ -1,10 +1,14 @@
 """
     CubQMCBayesNetG(integrand; abs_tol=0.01, rel_tol=0.0,
                     n_init=2^8, n_max=2^22, order=2,
-                    ptransform=:NONE, errbd_type=:MLE, alpha=0.01)
+                    ptransform=:NONE, errbd_type=:MLE, alpha=0.01,
+                    trace_iterations=false)
 
 Bayesian QMC cubature for digital net (Sobol') rules with digitally
 shift-invariant kernels, diagonalized by the Walsh-Hadamard Transform.
+
+Set `trace_iterations=true` to record an `IterationLog` in
+`result.data[:iteration_log]`.
 
 # Example
 ```julia
@@ -25,6 +29,7 @@ mutable struct CubQMCBayesNetG{I <: AbstractIntegrand} <: AbstractStoppingCriter
     ptransform::Symbol
     errbd_type::Symbol
     alpha::Float64
+    trace_iterations::Bool
 end
 
 function CubQMCBayesNetG(
@@ -37,6 +42,7 @@ function CubQMCBayesNetG(
     ptransform::Symbol=:NONE,
     errbd_type::Symbol=:MLE,
     alpha::Float64=0.01,
+    trace_iterations::Bool=false,
 )
     @assert ispow2(n_init) "n_init must be a power of 2"
     @assert ispow2(n_max) "n_max must be a power of 2"
@@ -53,6 +59,7 @@ function CubQMCBayesNetG(
         ptransform,
         errbd_type,
         alpha,
+        trace_iterations,
     )
 end
 
@@ -181,6 +188,7 @@ end
 # ── integrate ────────────────────────────────────────────────────────────────
 
 function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+    t_start = time()
     if resume !== nothing
         n_prev =
             haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
@@ -192,6 +200,7 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
     mu_hat = 0.0;
     err = Inf;
     n_iter = 0
+    log = IterationLog()
 
     while n <= sc.n_max
         n_iter += 1
@@ -208,6 +217,9 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
         mu_hat, err = _bayes_net_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
 
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
+        if sc.trace_iterations
+            push!(log; n=n, solution=mu_hat, error_bound=err, tol=tol, elapsed=time() - t_start)
+        end
         err <= tol && break
 
         2n > sc.n_max &&
@@ -226,6 +238,9 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
         :ptransform => sc.ptransform,
         :errbd_type => sc.errbd_type,
     )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
     return QMCResult(mu_hat, data)
 end
 
