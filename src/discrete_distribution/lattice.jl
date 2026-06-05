@@ -31,7 +31,11 @@ before `using QMC`.
     `v_j ∈ {3, 5, …, 2^M - 1}`,
   - a local text-file path: load one integer per non-comment line, or a
     QMCPy/LDData-style file whose first two integers are metadata followed by
-    the vector entries.
+    the vector entries,
+  - a QMCPy/LDData filename or GitHub URL (for example
+    `"kuo.lattice-33002-1024-1048576.9125"` or the corresponding
+    `QMCSoftware/LDData` `lattice/` URL). Non-bundled LDData files are
+    downloaded on demand.
 
 # Examples
 ```julia
@@ -55,6 +59,7 @@ mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
 end
 
 const _DEFAULT_LATTICE_VECTOR_NAME = "kuo.lattice-33002-1024-1048576.9125.txt"
+const _LATTICE_LDDATA_RAW_BASE = "https://raw.githubusercontent.com/QMCSoftware/LDData/main/lattice/"
 
 function _normalize_lattice_order(order::String)
     # Normalize order aliases to canonical tokens, matching QMCPy semantics:
@@ -124,6 +129,51 @@ function _read_lattice_vector_file(path::AbstractString)
     return values, nothing
 end
 
+function _canonical_lattice_vector_filename(name::AbstractString)
+    token = replace(strip(name), '\\' => '/')
+    token = split(token, '?'; limit=2)[1]
+    token = split(token, '#'; limit=2)[1]
+    isempty(token) && throw(ArgumentError("generating_vector reference cannot be empty"))
+    parts = split(token, '/')
+    basename = parts[end]
+    isempty(basename) &&
+        throw(ArgumentError("generating_vector reference \"$name\" has no filename"))
+    return endswith(lowercase(basename), ".txt") ? basename : string(basename, ".txt")
+end
+
+function _looks_like_lddata_lattice_reference(name::AbstractString)
+    token = lowercase(replace(strip(name), '\\' => '/'))
+    isempty(token) && return false
+    if !(occursin('/', token) || occursin('\\', name))
+        return true
+    end
+    return (
+        occursin("github.com/qmcsoftware/lddata/", token) ||
+        occursin("raw.githubusercontent.com/qmcsoftware/lddata/", token) ||
+        startswith(token, "lattice/") ||
+        occursin("/lattice/", token)
+    )
+end
+
+function _download_lattice_vector_from_lddata(filename::AbstractString)
+    url = _LATTICE_LDDATA_RAW_BASE * filename
+    path, io = mktemp()
+    close(io)
+    try
+        Downloads.download(url, path)
+        return _read_lattice_vector_file(path)
+    catch err
+        msg = sprint(showerror, err)
+        throw(
+            ArgumentError(
+                "failed to fetch LDData lattice generating vector \"$filename\" from $url: $msg",
+            ),
+        )
+    finally
+        isfile(path) && rm(path; force=true)
+    end
+end
+
 function _random_lattice_vector(dimension::Int, m::Integer, rng::AbstractRNG)
     1 < m < 27 ||
         throw(ArgumentError("integer generating_vector must satisfy 1 < M < 27, got $m"))
@@ -139,7 +189,7 @@ function _random_lattice_vector(dimension::Int, m::Integer, rng::AbstractRNG)
 end
 
 function _resolve_lattice_generating_vector(dimension::Int, generating_vector, rng::AbstractRNG)
-    if isnothing(generating_vector) || generating_vector == _DEFAULT_LATTICE_VECTOR_NAME
+    if isnothing(generating_vector)
         dimension <= _KUO_LATTICE_MAX_DIM || throw(
             ArgumentError(
                 "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
@@ -151,14 +201,27 @@ function _resolve_lattice_generating_vector(dimension::Int, generating_vector, r
     elseif generating_vector isa Integer
         return _random_lattice_vector(dimension, generating_vector, rng)
     elseif generating_vector isa AbstractString
-        isfile(generating_vector) ||
+        if isfile(generating_vector)
+            values, n_limit = _read_lattice_vector_file(generating_vector)
+            return _coerce_lattice_vector(values, dimension), n_limit
+        end
+        _looks_like_lddata_lattice_reference(generating_vector) ||
             throw(ArgumentError("generating_vector file \"$generating_vector\" not found"))
-        values, n_limit = _read_lattice_vector_file(generating_vector)
+        filename = _canonical_lattice_vector_filename(generating_vector)
+        if filename == _DEFAULT_LATTICE_VECTOR_NAME
+            dimension <= _KUO_LATTICE_MAX_DIM || throw(
+                ArgumentError(
+                    "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
+                ),
+            )
+            return _KUO_LATTICE_GEN_VECTOR[1:dimension], 1 << 20
+        end
+        values, n_limit = _download_lattice_vector_from_lddata(filename)
         return _coerce_lattice_vector(values, dimension), n_limit
     else
         throw(
             ArgumentError(
-                "generating_vector must be nothing, an integer, a vector of integers, or a local file path",
+                "generating_vector must be nothing, an integer, a vector of integers, a local file path, or an LDData lattice filename/URL",
             ),
         )
     end

@@ -1,22 +1,26 @@
 """
-    CubQMCLatticeG(integrand; abs_tol=0.01, rel_tol=0.0,
-                   n_init=2^10, n_max=2^30, n_reps=16, alpha=0.01,
-                   trace_iterations=false)
+    CubQMCNetGRep(integrand; abs_tol=0.01, rel_tol=0.0,
+                  n_init=2^10, n_max=2^30, n_reps=16, alpha=0.01,
+                  trace_iterations=false)
 
-Guaranteed QMC cubature using replicated randomized lattice rules.
+Guaranteed QMC cubature using replicated randomized digital nets.
+
+This is Julia's replicated companion to the single-net [`CubQMCNetG`](@ref).
+It estimates the mean from `n_reps` independently randomized digital nets and
+uses a Student's t half-width across the replication means as its stopping rule.
 
 Supports **resume** and optional **iteration logging** (`trace_iterations=true`).
 
 # Example
 ```julia
-dd = Lattice(3; randomize=true)
+dd = DigitalNetB2(3; randomize="LMS_DS", seed=7)
 tm = Uniform(dd)
 f = Genz(tm; kind=:oscillatory)
-sc = CubQMCLatticeG(f; abs_tol=1e-4)
+sc = CubQMCNetGRep(f; abs_tol=1e-4)
 result = integrate(sc)
 ```
 """
-mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+mutable struct CubQMCNetGRep{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     integrand::I
     abs_tol::Float64
     rel_tol::Float64
@@ -27,7 +31,7 @@ mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriteri
     trace_iterations::Bool
 end
 
-function CubQMCLatticeG(
+function CubQMCNetGRep(
     integrand::AbstractIntegrand;
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
@@ -37,7 +41,7 @@ function CubQMCLatticeG(
     alpha::Float64=0.01,
     trace_iterations::Bool=false,
 )
-    return CubQMCLatticeG(
+    return CubQMCNetGRep(
         integrand,
         abs_tol,
         rel_tol,
@@ -49,7 +53,7 @@ function CubQMCLatticeG(
     )
 end
 
-function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     R = sc.n_reps
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
 
@@ -74,12 +78,13 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
 
         dd = sc.integrand.true_measure.dd
         # Batch the R replicates' transform + evaluate in GROUPS of `group_size`
-        # rather than one `sample_and_evaluate` call per replicate. The same R
-        # randomizations are drawn in the same order (gen_samples advances the
-        # same RNG), so per-replicate means, mu_hat, and the error bound are
-        # unchanged. Grouping does one large BLAS GEMM per group instead of R
-        # tiny ones while bounding the dense-transform temporaries to
-        # group_size*n rows.
+        # rather than all at once. Each group's points are still the same draws in
+        # the same order (gen_samples advances the same RNG), so the per-replicate
+        # means — and hence mu_hat and the error bound — are unchanged. Grouping
+        # keeps one large BLAS GEMM per group (far better than R tiny ones) while
+        # bounding the dense-transform temporaries (`z`, `y`) to group_size·n rows
+        # instead of R·n: the full-stack version allocated R×-larger transform
+        # buffers, which dominated memory for the GBM integrands.
         group_size = 4
         r0 = 1
         while r0 <= R
@@ -125,7 +130,7 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
 
     converged = err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
     if !converged
-        @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
+        @warn "CubQMCNetGRep: did not converge within n_max=$(sc.n_max)."
     end
 
     t_elapsed = time() - t_start
@@ -146,6 +151,6 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
     return QMCResult(mu_hat, data)
 end
 
-function Base.show(io::IO, sc::CubQMCLatticeG)
-    print(io, "CubQMCLatticeG(abs_tol=$(sc.abs_tol), n_reps=$(sc.n_reps))")
+function Base.show(io::IO, sc::CubQMCNetGRep)
+    print(io, "CubQMCNetGRep(abs_tol=$(sc.abs_tol), n_reps=$(sc.n_reps))")
 end

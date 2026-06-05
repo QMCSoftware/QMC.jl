@@ -1,6 +1,7 @@
 module QMC
 
-using LinearAlgebra, Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf
+using LinearAlgebra,
+    Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf, Downloads
 
 # Utilities
 include("util/bernoulli.jl")
@@ -77,6 +78,7 @@ include("kernel/multitask.jl")
 include("stopping_criterion/cub_mc_clt.jl")
 include("stopping_criterion/cub_qmc_lattice_g.jl")
 include("stopping_criterion/cub_qmc_net_g.jl")
+include("stopping_criterion/cub_qmc_net_g_rep.jl")
 include("stopping_criterion/cub_qmc_bayes_lattice_g.jl")
 include("stopping_criterion/cub_qmc_bayes_net_g.jl")
 include("stopping_criterion/cub_mlmc.jl")
@@ -122,7 +124,7 @@ export SumKernel, ProductKernel, kernel_eval, kernel_matrix
 export KernelMultiTask
 
 # Exports — stopping criteria
-export CubMCCLT, CubQMCLatticeG, CubQMCNetG
+export CubMCCLT, CubQMCLatticeG, CubQMCNetG, CubQMCNetGRep, CubQMCNetGSingle
 export CubQMCBayesLatticeG, CubQMCBayesNetG
 export CubMCG
 export CubMCCLTVec

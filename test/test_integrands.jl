@@ -198,6 +198,17 @@
         y = sample_and_evaluate(f, 10000)
         # Exact mean = a/2 = 3.5
         @test abs(mean(y) - 3.5) < 0.3
+
+        # Closed-form analytical reference values (validated vs pick-freeze MC).
+        ref = ishigami_exact(a=7.0, b=0.1)
+        @test ref.mean == 3.5
+        @test ref.variance ≈ 13.844588 atol = 1e-3
+        @test ref.closed ≈ [0.31391, 0.44241, 0.0] atol = 1e-3
+        @test ref.total ≈ [0.55759, 0.44241, 0.24368] atol = 1e-3
+        # structural: 0 ≤ Sᵢ ≤ Tᵢ ≤ 1, x₃ has no main effect, x₂ has no interactions
+        @test all(0.0 .<= ref.closed .<= ref.total .<= 1.0)
+        @test ref.closed[3] == 0.0
+        @test ref.closed[2] ≈ ref.total[2]
     end
 
     @testset "Hartmann6D" begin

@@ -2,6 +2,7 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+lcov.info
 
 # Ignore the root package lockfile and the formatter tool lockfile.
 # Keep docs/Manifest.toml trackable for reproducible documentation builds.
@@ -41,4 +42,4 @@ benchmark/results/
 
 # Developer-specific files
 sc_*
-lcov.info
+

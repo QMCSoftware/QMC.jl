@@ -138,7 +138,7 @@ def main():
     label = sys.argv[1] if len(sys.argv) > 1 else "latest"
     results = {"gen_samples": {}, "transform": {}, "evaluate": {}, "integrate": {}}
 
-    print("QMCPy Benchmarks (qmcpy %s)" % getattr(qp, "__version__", "?"))
+    print("\n\nQMCPy Benchmarks (qmcpy %s)" % getattr(qp, "__version__", "?"))
     print("=" * 70)
 
     # 1. Discrete distribution sampling --------------------------------------
@@ -289,6 +289,9 @@ def main():
 
     # (name, make_sc, warmup). make_sc builds a fresh stopping criterion; it is
     # reused both for timing and for the one-shot accuracy measurement below.
+    # Julia's default `CubQMCNetG` now matches QMCPy's single-net `CubQMCNetG`
+    # directly. The Julia-only replicated companion `CubQMCNetGRep` is omitted
+    # here and will therefore show `n/a` in cross-language reports.
     integrate_cases = [
         ("CubMCCLT Keister",
          lambda: qp.CubMCCLT(qp.Keister(qp.IIDStdUniform(3, seed=SEED)), abs_tol=0.01),
@@ -308,6 +311,24 @@ def main():
         ("CubQMCNetG EuropeanOption",
          lambda: qp.CubQMCNetG(
              qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubMCCLT EuropeanOption",
+         lambda: qp.CubMCCLT(
+             qp.FinancialOption(qp.IIDStdUniform(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCLatticeG EuropeanOption",
+         lambda: qp.CubQMCLatticeG(
+             qp.FinancialOption(qp.Lattice(50, seed=SEED), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCNetG AsianOption",
+         lambda: qp.CubQMCNetG(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED), option="ASIAN",
                                 volatility=0.2, start_price=100, strike_price=100,
                                 interest_rate=0.05, t_final=1), abs_tol=0.5),
          False),

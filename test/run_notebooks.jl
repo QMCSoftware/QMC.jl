@@ -68,24 +68,47 @@ end
 errors = String[]
 times = Dict{String, Float64}()   # notebook name → wall-clock seconds
 clogger = CountingLogger()
+verbose = get(ENV, "QMC_NOTEBOOK_VERBOSE", "0") == "1"
 
 for nb in notebooks
-    println("\n", "="^60)
-    println("Running: ", nb)
-    println("="^60)
+    print("Running ", nb, " ... ")
     clogger.current_nb[] = nb
+    captured = ""
     elapsed = @elapsed try
-        with_logger(clogger) do
+        runner = () -> with_logger(clogger) do
             @nbinclude(joinpath(demos_dir, nb))
+        end
+        if verbose
+            runner()
+        else
+            mktemp() do path, io
+                redirect_stdout(runner, io)
+                flush(io)
+                seekstart(io)
+                captured = read(io, String)
+            end
         end
     catch e
         push!(errors, nb)
+        println("FAILED")
+        if !isempty(captured)
+            println("---- captured notebook stdout ----")
+            print(captured)
+            endswith(captured, '\n') || println()
+            println("---- end captured stdout ----")
+        end
         println("  ✗ FAILED: ", sprint(showerror, e))
         showerror(stdout, e, catch_backtrace())
         println()
     end
     times[nb] = elapsed
-    println("  ⏱  elapsed: ", fmt_duration(elapsed))
+    if nb in errors
+        println("  ⏱  elapsed: ", fmt_duration(elapsed))
+    else
+        w = get(clogger.counts, nb, 0)
+        wtxt = w > 0 ? ", $w warning(s)" : ""
+        println("ok [$(fmt_duration(elapsed))]$wtxt")
+    end
 end
 
 # ── Summary ──────────────────────────────────────────────
@@ -96,12 +119,11 @@ n_pass = length(notebooks) - length(errors)
 println("\n", "="^60)
 println("Summary")
 println("="^60)
-for nb in notebooks
-    status = nb in errors ? "✗ FAILED" : "✓ ok"
+for nb in errors
     w = get(clogger.counts, nb, 0)
     t = get(times, nb, 0.0)
     wtxt = w > 0 ? ", $w warning(s)" : ""
-    println("  $status  $nb  [$(fmt_duration(t))]$wtxt")
+    println("  ✗ FAILED  $nb  [$(fmt_duration(t))]$wtxt")
 end
 println("-"^60)
 println(

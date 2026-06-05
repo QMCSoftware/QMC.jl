@@ -90,9 +90,13 @@ function gen_samples(kr::Kronecker, n::Int; n_start::Int=0)
     d = kr.dimension
     x = Matrix{Float64}(undef, n, d)
 
-    @inbounds for i in 1:n
-        for j in 1:d
-            x[i, j] = mod((n_start + i) * kr.alpha[j] + kr.shift[j], 1.0)
+    # Julia matrices are column-major, so fill one column at a time rather than
+    # striding by `n` across rows in the inner loop.
+    @inbounds for j in 1:d
+        αj = kr.alpha[j]
+        shiftj = kr.shift[j]
+        for i in 1:n
+            x[i, j] = mod((n_start + i) * αj + shiftj, 1.0)
         end
     end
 

@@ -14,6 +14,7 @@ const TEST_FILES = [
     "test_stopping_criteria.jl",
     "test_integration.jl",
     "test_multilevel.jl",
+    "test_utils.jl",
     "test_aqua.jl",
 ]
 

@@ -100,13 +100,16 @@ function evaluate(si::SensitivityIndices, x::AbstractMatrix)
 
     # Output: n × 3 × k
     y = Array{Float64}(undef, n, 3, k)
+    V = copy(Z)
 
     for j in 1:k
-        # Build V_j: X on subset, Z on complement
-        V = copy(Z)
+        # Build V_j: X on subset, Z on complement. Reuse one work matrix and
+        # update/reset whole columns so the mutation stays column-major.
         for col in 1:d
             if si.indices[j, col]
                 V[:, col] .= X[:, col]
+            else
+                V[:, col] .= Z[:, col]
             end
         end
         f_V = evaluate(si.base_integrand, V)

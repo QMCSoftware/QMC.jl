@@ -21,11 +21,11 @@
     end
 
     @testset "Digital Net QMC: Genz continuous" begin
-        dd = DigitalNetB2(2; randomize="DS", seed=3000)
+        dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=3000)
         tm = Uniform(dd)
         f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
         exact = genz_exact(f)
-        sc = CubQMCNetG(f; abs_tol=0.1, n_init=2^10, n_reps=16)
+        sc = CubQMCNetG(f; abs_tol=0.1, n_init=2^10)
         result = integrate(sc)
         @test abs(result.solution - exact) < 1.0
         @test result.data[:n] >= 2^10

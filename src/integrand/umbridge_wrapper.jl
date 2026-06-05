@@ -31,7 +31,7 @@ docker run -d -p 4243:4243 linusseelinger/benchmark-muq-beam-propagation:latest
 using QMC
 import QMC: Uniform
 
-dd = DigitalNetB2(3; seed=7)
+dd = DigitalNetB2(3; seed=7, randomize="LMS_DS", graycode=false)
 tm = Uniform(dd; lower_bound=1.0, upper_bound=1.05)
 f  = UMBridgeWrapper(tm;
          url="http://localhost:4243",

@@ -88,7 +88,8 @@ function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
     bm_samples = transform(tm._bm, x)
     # S(t) = S₀ exp[(γ - σ²/2) t + BM(t)]
     # where BM(t) already has variance σ² t from the covariance
-    # offsets is 1×d; broadcast fuses + and exp into one SIMD pass over the n×d array.
+    # offsets is 1×d; broadcast fuses + and exp into one 
+    # Single Instruction, Multiple Data (SIMD) pass over the n×d array.
     offsets = transpose((tm.drift - 0.5 * tm.diffusion) .* tm.time_vector)
     return @. tm.initial_value * exp(offsets + bm_samples)
 end

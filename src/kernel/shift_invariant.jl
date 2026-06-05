@@ -65,9 +65,11 @@ function compute_kernel_eigenvalues(kernel::KernelShiftInvar, x::AbstractMatrix)
     # Build the first column of the circulant kernel matrix:
     #   K_col[i] = K(x_i - x_1) = ∏_j K_1d(x_{i,j} - x_{1,j})
     first_col = ones(n)
-    for i in 1:n
-        for j in 1:d
-            diff = x[i, j] - x[1, j]
+    # Column-major reduction: update all rows for one coordinate at a time.
+    for j in 1:d
+        x1j = x[1, j]
+        for i in 1:n
+            diff = x[i, j] - x1j
             first_col[i] *= _kernel_1d_shift(kernel.order, diff)
         end
     end

@@ -190,10 +190,17 @@ function _int_cubqmclatticeg_keister()
 end
 
 function _int_cubqmcnetg_keister()
-    dd = DigitalNetB2(3; seed=42, randomize="LMS_DS")
+    dd = DigitalNetB2(3; seed=42, randomize="LMS_DS", graycode=false)
     tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
     f = Keister(tm)
     CubQMCNetG(f; abs_tol=0.01)
+end
+
+function _int_cubqmcnetgrep_keister()
+    dd = DigitalNetB2(3; seed=42, randomize="LMS_DS")
+    tm = Gaussian(dd; covariance=0.5)   # Keister requires N(0, I/2); matches QMCPy
+    f = Keister(tm)
+    CubQMCNetGRep(f; abs_tol=0.01)
 end
 
 function _int_cubmcclt_asian()
@@ -210,7 +217,7 @@ function _int_cubmcclt_asian()
 end
 
 function _int_cubqmcnetg_european()
-    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS", graycode=false)
     tm = GeometricBrownianMotion(
         dd;
         volatility=0.2,
@@ -222,12 +229,83 @@ function _int_cubqmcnetg_european()
     CubQMCNetG(f; abs_tol=0.5)
 end
 
+function _int_cubqmcnetgrep_european()
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+    CubQMCNetGRep(f; abs_tol=0.5)
+end
+
+function _int_cubmcclt_european()
+    dd = IIDStdUniform(50; seed=42)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+    CubMCCLT(f; abs_tol=0.5)
+end
+
+function _int_cubqmclatticeg_european()
+    dd = Lattice(50; seed=42, randomize=true)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:european, strike_price=100.0)
+    CubQMCLatticeG(f; abs_tol=0.5)
+end
+
+function _int_cubqmcnetg_asian()
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS", graycode=false)
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
+    CubQMCNetG(f; abs_tol=0.5)
+end
+
+function _int_cubqmcnetgrep_asian()
+    dd = DigitalNetB2(50; seed=42, randomize="LMS_DS")
+    tm = GeometricBrownianMotion(
+        dd;
+        volatility=0.2,
+        start_price=100.0,
+        interest_rate=0.05,
+        t_final=1.0,
+    )
+    f = FinancialOption(tm; option_type=:asian, strike_price=100.0)
+    CubQMCNetGRep(f; abs_tol=0.5)
+end
+
 const INTEGRATE_CASES = Pair{String, Function}[
     "CubMCCLT Keister" => _int_cubmcclt_keister,
     "CubQMCLatticeG Keister" => _int_cubqmclatticeg_keister,
     "CubQMCNetG Keister" => _int_cubqmcnetg_keister,
+    "CubQMCNetGRep Keister" => _int_cubqmcnetgrep_keister,
     "CubMCCLT AsianOption" => _int_cubmcclt_asian,
     "CubQMCNetG EuropeanOption" => _int_cubqmcnetg_european,
+    "CubQMCNetGRep EuropeanOption" => _int_cubqmcnetgrep_european,
+    "CubMCCLT EuropeanOption" => _int_cubmcclt_european,
+    "CubQMCLatticeG EuropeanOption" => _int_cubqmclatticeg_european,
+    "CubQMCNetG AsianOption" => _int_cubqmcnetg_asian,
+    "CubQMCNetGRep AsianOption" => _int_cubqmcnetgrep_asian,
 ]
 
 SUITE["integrate"] = BenchmarkGroup()
