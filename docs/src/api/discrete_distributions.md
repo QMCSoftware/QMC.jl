@@ -25,7 +25,10 @@ Faure
 `DigitalNetB2` now covers the main QMCPy-style constructor surface used in
 this repository: direct custom matrices, LDData-format files or names, order
 aliases, widened `t` precision, `msb` handling, and higher-order interlacing
-through `alpha`.
+through `alpha`. The bundled constructor path still uses 1024 raw Sobol'
+dimensions, so `alpha > 1` reduces the default effective-dimension cap to
+`floor(1024 / alpha)` unless you provide a larger LDData-style matrix source
+explicitly.
 
 ## Sampling
 

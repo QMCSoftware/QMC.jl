@@ -314,6 +314,33 @@
             @test dd_file64.t == 64
             @test size(gen_samples(dd_file64, 4)) == (4, 1)
         end
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n1024\n# n_limit\n2\n# bit precision\n32\n")
+            for _ in 1:1024
+                write(io, "1\n")
+            end
+            flush(io)
+
+            @test_throws ArgumentError DigitalNetB2(
+                513;
+                randomize="none",
+                alpha=2,
+                generating_matrices=path,
+            )
+        end
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n1026\n# n_limit\n2\n# bit precision\n32\n")
+            for _ in 1:1026
+                write(io, "1\n")
+            end
+            flush(io)
+
+            dd_file_alpha_limit =
+                DigitalNetB2(513; randomize="none", alpha=2, generating_matrices=path)
+            @test dd_file_alpha_limit.source_bits == 32
+            @test dd_file_alpha_limit.n_limit == 2
+            @test size(gen_samples(dd_file_alpha_limit, 2)) == (2, 513)
+        end
 
         dd_default = DigitalNetB2(3; randomize="none", seed=7)
         for ref in (
