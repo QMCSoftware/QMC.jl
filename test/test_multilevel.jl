@@ -102,6 +102,14 @@ end
         dd_dn2 = spawn_dd(dd_dn, 16)
         @test dd_dn2.dimension == 16
 
+        dd_dn_alpha = DigitalNetB2(4; randomize="LMS_DS", seed=7, replications=2, alpha=2)
+        dd_dn_alpha2 = spawn_dd(dd_dn_alpha, 8)
+        @test dd_dn_alpha2.dimension == 8
+        @test dd_dn_alpha2.alpha == 2
+        @test dd_dn_alpha2.t == dd_dn_alpha.t
+        @test dd_dn_alpha2.replications == 2
+        @test size(gen_samples(dd_dn_alpha2, 8)) == (2, 8, 8)
+
         dd_dn_custom = DigitalNetB2(
             4;
             randomize="none",

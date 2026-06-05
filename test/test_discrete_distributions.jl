@@ -196,7 +196,7 @@
         V8 = Int.(dd.direction_nums[:, 1:8] .>> 24)
         dd_custom = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8)
         @test gen_samples(dd_custom, 16) ≈ gen_samples(dd, 16)
-        @test dd_custom.direction_nums == UInt32.(V8)
+        @test dd_custom.direction_nums == UInt64.(V8)
         V8_lsb = map(v -> Int(bitreverse(UInt32(v)) >> 24), V8)
         dd_custom_lsb =
             DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8_lsb, msb=false)
@@ -221,6 +221,53 @@
             gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, replications=2, t=40), 8)
         @test size(x_nus_rep_t) == (2, 8, 2)
         @test all(0.0 .<= x_nus_rep_t .< 1.0)
+
+        # Higher-order / interlaced digital nets.
+        dd_alpha = DigitalNetB2(3; randomize="none", seed=7, alpha=2, graycode=false)
+        @test dd_alpha.alpha == 2
+        @test dd_alpha.t == 63
+        @test gen_samples(dd_alpha, 4) == [
+            0.0 0.0 0.0
+            0.75 0.75 0.75
+            0.4375 0.9375 0.1875
+            0.6875 0.1875 0.9375
+        ]
+
+        x_alpha_lmsds_a = gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+        x_alpha_lmsds_b = gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+        @test size(x_alpha_lmsds_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_lmsds_a .< 1.0)
+        @test x_alpha_lmsds_a ≈ x_alpha_lmsds_b
+
+        x_alpha_lms_a = gen_samples(DigitalNetB2(3; randomize="LMS", seed=7, alpha=2), 8)
+        x_alpha_lms_b = gen_samples(DigitalNetB2(3; randomize="LMS", seed=7, alpha=2), 8)
+        @test size(x_alpha_lms_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_lms_a .< 1.0)
+        @test x_alpha_lms_a ≈ x_alpha_lms_b
+        x_alpha_lms_rep =
+            gen_samples(DigitalNetB2(3; randomize="LMS", seed=7, replications=2, alpha=2), 8)
+        @test size(x_alpha_lms_rep) == (2, 8, 3)
+        @test all(0.0 .<= x_alpha_lms_rep .< 1.0)
+
+        x_alpha_ds_a = gen_samples(DigitalNetB2(3; randomize="DS", seed=7, alpha=2), 8)
+        x_alpha_ds_b = gen_samples(DigitalNetB2(3; randomize="DS", seed=7, alpha=2), 8)
+        @test size(x_alpha_ds_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_ds_a .< 1.0)
+        @test x_alpha_ds_a ≈ x_alpha_ds_b
+        x_alpha_ds_rep =
+            gen_samples(DigitalNetB2(3; randomize="DS", seed=7, replications=2, alpha=2), 8)
+        @test size(x_alpha_ds_rep) == (2, 8, 3)
+        @test all(0.0 .<= x_alpha_ds_rep .< 1.0)
+
+        x_alpha_nus_a = gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, alpha=2), 8)
+        x_alpha_nus_b = gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, alpha=2), 8)
+        @test size(x_alpha_nus_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_nus_a .< 1.0)
+        @test x_alpha_nus_a ≈ x_alpha_nus_b
+        x_alpha_nus_rep =
+            gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, replications=2, alpha=2), 8)
+        @test size(x_alpha_nus_rep) == (2, 8, 3)
+        @test all(0.0 .<= x_alpha_nus_rep .< 1.0)
 
         # LDData-style text sources: local file paths and QMCPy-compatible names.
         mktemp() do path, io
@@ -267,11 +314,13 @@
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=V8, t=7)
         @test_throws ArgumentError DigitalNetB2(
             2;
-            generating_matrices=Int.(dd.direction_nums[:, 1:8]),
+            generating_matrices=fill(BigInt(typemax(UInt64)) + 1, 2, 4),
         )
         @test_throws ArgumentError DigitalNetB2(
-            2;
-            generating_matrices=fill(BigInt(typemax(UInt32)) + 1, 2, 4),
+            3;
+            randomize="none",
+            alpha=2,
+            generating_matrices=V8,
         )
     end
 
