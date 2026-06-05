@@ -15,6 +15,12 @@ Generates low-discrepancy point sets in ``[0,1)^d``. Available generators:
 custom generating matrices, `order` aliases, widened `t` bit depth, `msb`
 handling for custom matrices, and higher-order interlacing via `alpha > 1`.
 
+`Lattice` also supports QMCPy-style constructor inputs such as direct custom
+generating vectors, the integer shortcut for random odd vectors, order
+aliases, and LDData-format files, names, or URLs. In multilevel workflows,
+`spawn_dd` now preserves explicit lattice-vector sources when they carry enough
+entries for the requested dimension.
+
 `Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL
 shared library, so Python is a current runtime dependency for these QMC generators.
 

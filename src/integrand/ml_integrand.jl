@@ -63,7 +63,8 @@ spawn_dd(dd::IIDStdUniform, dimension::Int) = IIDStdUniform(dimension)
     spawn_dd(dd::Lattice, dimension::Int)
 
 Create a new Lattice sampler with the given dimension, preserving randomize
-and replications settings but with a fresh seed.
+and replications settings, as well as the original order and any explicit
+custom generating-vector source when enough entries are available.
 """
 function spawn_dd(dd::Lattice, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications

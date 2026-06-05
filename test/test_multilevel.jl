@@ -110,6 +110,22 @@ end
             Lattice(6; randomize=false, order="linear", generating_vector=lat_source),
             8,
         )
+        @test_throws ArgumentError spawn_dd(dd_lat_custom, 7)
+
+        mktemp() do path, io
+            write(io, "# d_limit\n6\n# n_limit\n16\n1\n3\n5\n7\n9\n11\n")
+            close(io)
+            dd_lat_file = Lattice(4; randomize=false, order="linear", generating_vector=path)
+            dd_lat_file2 = spawn_dd(dd_lat_file, 6)
+            @test dd_lat_file2.dimension == 6
+            @test dd_lat_file2.order == "linear"
+            @test dd_lat_file2.n_limit == 16
+            @test dd_lat_file2.gen_vector == UInt64.(lat_source)
+            @test gen_samples(dd_lat_file2, 8) == gen_samples(
+                Lattice(6; randomize=false, order="linear", generating_vector=lat_source),
+                8,
+            )
+        end
 
         dd_dn = DigitalNetB2(4; replications=8)
         dd_dn2 = spawn_dd(dd_dn, 16)

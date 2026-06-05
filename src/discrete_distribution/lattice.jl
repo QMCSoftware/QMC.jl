@@ -13,7 +13,7 @@ When `replications` is set to an integer R > 1, `gen_samples` returns an
 
 This generator currently relies on the QMCToolsCL shared library. Install
 `qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
-before `using QMC`.
+before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Arguments
 - `dimension`: number of dimensions (up to 9125).
@@ -30,8 +30,8 @@ before `using QMC`.
   - an integer `M`: generate a random odd vector `(1, v₂, …, v_d)` with
     `v_j ∈ {3, 5, …, 2^M - 1}`,
   - a local text-file path: load one integer per non-comment line, or a
-    QMCPy/LDData-style file whose first two integers are metadata followed by
-    the vector entries,
+    QMCPy/LDData-style file whose first two integers are `d_limit` / `n_limit`
+    metadata followed by exactly `d_limit` vector entries,
   - a QMCPy/LDData filename or GitHub URL (for example
     `"kuo.lattice-33002-1024-1048576.9125"` or the corresponding
     `QMCSoftware/LDData` `lattice/` URL). Non-bundled LDData files are

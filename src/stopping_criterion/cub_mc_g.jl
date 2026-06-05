@@ -1,6 +1,6 @@
 """
     CubMCG(integrand; abs_tol=0.01, rel_tol=0.0, n_init=1024,
-           n_max=2^30, alpha=0.01, inflate=1.2)
+           n_max=2^30, alpha=0.01, inflate=1.2, trace_iterations=false)
 
 Guaranteed IID Monte Carlo stopping criterion using Berry-Esseen inequalities.
 
@@ -18,6 +18,7 @@ functions with bounded kurtosis.
 - `n_max`: Maximum total number of samples.
 - `alpha`: Uncertainty level in (0, 1).
 - `inflate`: Inflation factor ≥ 1 for conservative variance estimation.
+- `trace_iterations`: record an `IterationLog` in `result.data[:iteration_log]`.
 
 # References
 1. Hickernell, Jiang, Liu, Owen. "Guaranteed conservative fixed width
@@ -33,6 +34,7 @@ mutable struct CubMCG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     inflate::Float64
     alpha_sigma::Float64
     kurtmax::Float64
+    trace_iterations::Bool
 end
 
 function CubMCG(
@@ -43,6 +45,7 @@ function CubMCG(
     n_max::Int=2^30,
     alpha::Float64=0.01,
     inflate::Float64=1.2,
+    trace_iterations::Bool=false,
 )
     abs_tol > 0 || throw(ArgumentError("abs_tol must be > 0"))
     rel_tol >= 0 || throw(ArgumentError("rel_tol must be ≥ 0"))
@@ -65,6 +68,7 @@ function CubMCG(
         inflate,
         alpha_sigma,
         kurtmax,
+        trace_iterations,
     )
 end
 
@@ -179,6 +183,7 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
     f = sc.integrand
     tm = f.true_measure
     dd = tm.dd
+    log = IterationLog()
 
     # Stage 1: pilot samples
     x0 = transform(tm, gen_samples(dd, sc.n_init))
@@ -186,10 +191,22 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
     mu0 = mean(y0)
     sig0 = std(y0; corrected=true)
     sigma_up = sc.inflate * sig0
+    tol0 = max(sc.abs_tol, sc.rel_tol * abs(mu0))
 
     if sc.rel_tol == 0.0
         # Fixed absolute tolerance
         alpha_mu = 1 - (1 - sc.alpha) / (1 - sc.alpha_sigma)
+        pilot_bound = sigma_up * _ncbinv(sc.n_init, alpha_mu, sc.kurtmax)
+        if sc.trace_iterations
+            push!(
+                log;
+                n=sc.n_init,
+                solution=mu0,
+                error_bound=pilot_bound,
+                tol=tol0,
+                elapsed=time() - t_start,
+            )
+        end
         toloversig = sc.abs_tol / max(sigma_up, 1e-300)
         n_mu, bound_hw = _nchebe(toloversig, alpha_mu, sc.kurtmax, sc.n_max, sigma_up)
 
@@ -202,6 +219,16 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
             solution = mu0
         end
         n_total = sc.n_init + max(n_mu, 0)
+        if sc.trace_iterations
+            push!(
+                log;
+                n=n_total,
+                solution=solution,
+                error_bound=bound_hw,
+                tol=sc.abs_tol,
+                elapsed=time() - t_start,
+            )
+        end
     else
         # Relative tolerance mode: iterative
         alphai = (sc.alpha - sc.alpha_sigma) / (2 * (1 - sc.alpha_sigma))
@@ -210,6 +237,16 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
         solution = mu0
         n_total = sc.n_init
         tau = 1.0
+        if sc.trace_iterations
+            push!(
+                log;
+                n=n_total,
+                solution=solution,
+                error_bound=bound_hw,
+                tol=tol0,
+                elapsed=time() - t_start,
+            )
+        end
 
         while true
             tol_eff = max(sc.abs_tol, sc.rel_tol * abs(solution))
@@ -233,6 +270,16 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
             y1 = evaluate(f, x1)
             solution = mean(y1)
             n_total += n_new
+            if sc.trace_iterations
+                push!(
+                    log;
+                    n=n_total,
+                    solution=solution,
+                    error_bound=bound_hw,
+                    tol=max(sc.abs_tol, sc.rel_tol * abs(solution)),
+                    elapsed=time() - t_start,
+                )
+            end
         end
     end
 
@@ -244,6 +291,9 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
         :bound_diff => 2 * bound_hw,
         :time_integrate => t_elapsed,
     )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
 
     return QMCResult(solution, data)
 end

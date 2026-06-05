@@ -30,6 +30,13 @@ dimensions, so `alpha > 1` reduces the default effective-dimension cap to
 `floor(1024 / alpha)` unless you provide a larger LDData-style matrix source
 explicitly.
 
+`Lattice` likewise covers the main QMCPy-style constructor surface used here:
+direct custom generating vectors, the integer shortcut for random odd vectors,
+order aliases, and LDData-format file/name/URL inputs. Local LDData-style
+files are validated against their declared `d_limit` / `n_limit` metadata, and
+multilevel `spawn_dd` preserves explicit custom vectors when the stored source
+is long enough for the requested dimension.
+
 ## Sampling
 
 ```@docs

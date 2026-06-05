@@ -138,6 +138,9 @@
         sc = CubMCG(f; abs_tol=0.1)
         @test sc.abs_tol == 0.1
         @test sc.kurtmax > 0
+        r = integrate(CubMCG(f; abs_tol=0.1, trace_iterations=true))
+        @test haskey(r.data, :iteration_log)
+        @test length(r.data[:iteration_log]) >= 1
     end
 
     @testset "CubMCCLTVec" begin
@@ -177,6 +180,11 @@
         r = integrate(sc)
         @test haskey(r.data, :iteration_log)
         @test length(r.data[:iteration_log]) >= 1
+
+        sc_clt = CubMCCLT(f; abs_tol=0.05, trace_iterations=true)
+        r_clt = integrate(sc_clt)
+        @test haskey(r_clt.data, :iteration_log)
+        @test length(r_clt.data[:iteration_log]) == 2
     end
 
     @testset "QMCResult show" begin
