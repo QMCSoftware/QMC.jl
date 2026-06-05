@@ -1,11 +1,8 @@
 # Benchmarking QMC.jl
 
-This directory contains the standalone benchmark suite, the git-revision
-comparison tooling, and the Julia-vs-QMCPy comparison tooling.
+This directory contains the standalone benchmark suite, the git-revision comparison tooling, and the Julia-vs-QMCPy comparison tooling.
 
-The benchmark scripts use the local `benchmark/Project.toml` environment, so
-benchmark-only dependencies do not need to be added to the main package
-environment.
+The benchmark scripts use the local `benchmark/Project.toml` environment, so benchmark-only dependencies do not need to be added to the main package environment.
 
 ## Files
 
@@ -104,8 +101,7 @@ So:
 - ratio `> 1` means `base` is better
 - ratio `< 1` means `latest` is better
 
-If one label wins both time and memory, it wins overall. If time and memory trade
-off, the script uses a combined score to break the tie and reports that explicitly.
+If one label wins both time and memory, it wins overall. If time and memory trade off, the script uses a combined score to break the tie and reports that explicitly.
 
 ## Julia vs QMCPy Comparison
 
@@ -140,6 +136,14 @@ benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
 
+### Coverage Caveat
+
+Do not interpret coverage-enabled benchmark runs as representative performance comparisons.
+
+When the Julia benchmark flow is run with `--code-coverage=user`, every native Julia line is instrumented. That instrumentation can inhibit important loop optimizations, including bounds-check elision and SIMD, and adds per-iteration overhead to Julia-native loops. In practice this can disproportionately slow rows whose cost is dominated by native Julia iteration (`O(d*n)`), while BLAS-bound rows may remain comparatively stable.
+
+If a Julia-vs-QMCPy report shows Python improving sharply against Julia, first check whether the run was produced through a `bench-*-coverage` target or with `BENCH_COVERAGE=1`. Those runs are useful for correctness and coverage collection, not for clean performance claims.
+
 The Julia runner now also writes a sidecar memory file per label:
 
 - `<label>_memory.json`: per-row Julia `rss_delta_kib` from one warmed call
@@ -149,8 +153,7 @@ The Python benchmark JSON records two approximate memory metrics per row:
 - `tracemalloc_peak_kib`: Python-managed peak memory during one warmed call
 - `rss_delta_kib`: retained process RSS delta after one warmed call
 
-Together with Julia's `KiB` allocation metric from `BenchmarkTools`, this gives
-three distinct memory signals:
+Together with Julia's `KiB` allocation metric from `BenchmarkTools`, this gives three distinct memory signals:
 
 - Julia `alloc KiB`: bytes allocated during the call
 - Julia `rss_delta_kib`: retained process RSS delta after the call
@@ -169,30 +172,22 @@ When reading the weighted ratios in `compare_python*.md`:
 - ratio `< 1` means the Python metric is smaller than the Julia total
 - ratio `> 1` means the Python metric is larger than the Julia total
 
-If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than
-contradictory. It usually means Python allocated more temporary memory during the
-call but released most of it afterward, or conversely retained more process
-memory even though its traced Python-level peak was modest. Use:
+If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than contradictory. It usually mean Python allocated more temporary memory during the call but released most of it afterward, or conversely retained more process memory even though its traced Python-level peak was modest. Use:
 
 - time ratio as the cleanest cross-language comparison
 - `tracemalloc` as a temporary-allocation signal
 - `Julia RSS delta` / `Python RSS delta` as retained-footprint signals
 
-If `<label>_memory.json` is missing because the Julia benchmarks were generated
-before this feature was added, `compare_python*.md` will show Julia RSS delta as
-`n/a` until that label is rerun with `make bench` or `make bench-compare-py`.
+If `<label>_memory.json` is missing because the Julia benchmarks were generated before this feature was added, `compare_python*.md` will show Julia RSS delta as `n/a` until that label is rerun with `make bench` or `make bench-compare-py`.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
 - large-`d` `Gaussian(diag)` and `Gaussian(dense)` transforms
 - `StudentT` and `JohnsonsSU` transforms
 - `BoxIntegral` and `Linear0` evaluate rows, including large-`d` variants
-- `Genz(gaussian_peak)` and `Genz(continuous)` via direct NumPy formulas with the
-  same default parameters Julia uses, since QMCPy exposes only oscillatory and
-  corner-peak Genz variants
+- `Genz(gaussian_peak)` and `Genz(continuous)` via direct NumPy formulas with the same default parameters Julia uses, since QMCPy exposes only oscillatory and corner-peak Genz variants
 
-If `compare_python*.md` still shows `n/a` rows after regenerating `qmcpy_<label>.json`,
-those rows do not currently have a meaningful Python counterpart in the harness.
+If `compare_python*.md` still shows `n/a` rows after regenerating `qmcpy_<label>.json`, those rows do not currently have a meaningful Python counterpart in the harness.
 
 If the Python interpreter should be overridden:
 
@@ -200,10 +195,7 @@ If the Python interpreter should be overridden:
 make bench-compare-py base PYTHON=python3
 ```
 
-By default, the Makefile now tries to auto-detect a Python that can
-`import qmcpy`, checking common candidates such as `python`, `python3`, and
-common Miniconda locations. If that guess is wrong on your machine, override it
-explicitly with `PYTHON=/path/to/python`.
+By default, the Makefile now tries to auto-detect a Python that can `import qmcpy`, checking common candidates such as `python`, `python3`, and common Miniconda locations. If that guess is wrong on your machine, override it explicitly with `PYTHON=/path/to/python`.
 
 If the Julia and QMCPy input labels should differ:
 
@@ -235,8 +227,7 @@ julia benchmark/compare_py.jl base base base
 
 ## Combined Labeled Comparison Target
 
-To run both the labeled Julia-only comparison and the labeled Julia-vs-QMCPy
-comparison in one task:
+To run both the labeled Julia-only comparison and the labeled Julia-vs-QMCPy comparison in one task:
 
 ```bash
 make bench-all LABEL=base
@@ -284,11 +275,7 @@ Common generated files:
 
 ## Notes
 
-- `bench-compare` uses `PkgBenchmark` and may benchmark git revisions in a
-  temporary worktree.
+- `bench-compare` uses `PkgBenchmark` and may benchmark git revisions in a temporary worktree.
 - `bench-compare-py` requires a Python environment where `qmcpy` is installed.
-- Python-vs-Julia benchmark reports now include Python `tracemalloc` peak and, when
-  available, retained RSS delta. Those memory metrics are approximate and should be
-  read as supporting evidence, not as exact equivalents of Julia allocation `KiB`.
-- Current benchmark reports are written in a sanitized form and avoid embedding
-  host-specific system details or absolute local paths.
+- Python-vs-Julia benchmark reports now include Python `tracemalloc` peak and, when available, retained RSS delta. Those memory metrics are approximate and should be read as supporting evidence, not as exact equivalents of Julia allocation `KiB`.
+- Current benchmark reports are written in a sanitized form and avoid embedding host-specific system details or absolute local paths.
