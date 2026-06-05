@@ -201,6 +201,10 @@
         dd_custom_lsb =
             DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8_lsb, msb=false)
         @test gen_samples(dd_custom_lsb, 16) ≈ gen_samples(dd_custom, 16)
+        Vsparse = [1 2 4 8 1 2 4 8; 1 2 4 8 1 2 4 8]
+        dd_sparse_lsb =
+            DigitalNetB2(2; randomize="none", seed=1, generating_matrices=Vsparse, msb=false)
+        @test dd_sparse_lsb.direction_nums == map(v -> bitreverse(UInt64(v)) >> 56, Vsparse)
 
         # Advanced constructor parity: widened t-bits and msb handling.
         @test DigitalNetB2(2; randomize="none", t=40).t == 40
@@ -225,7 +229,7 @@
         # Higher-order / interlaced digital nets.
         dd_alpha = DigitalNetB2(3; randomize="none", seed=7, alpha=2, graycode=false)
         @test dd_alpha.alpha == 2
-        @test dd_alpha.t == 63
+        @test dd_alpha.t == 64
         @test gen_samples(dd_alpha, 4) == [
             0.0 0.0 0.0
             0.75 0.75 0.75
@@ -268,6 +272,20 @@
             gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, replications=2, alpha=2), 8)
         @test size(x_alpha_nus_rep) == (2, 8, 3)
         @test all(0.0 .<= x_alpha_nus_rep .< 1.0)
+        if QMC._HAS_DNB2_FUSED[]
+            old_fused = QMC._HAS_DNB2_FUSED[]
+            try
+                QMC._HAS_DNB2_FUSED[] = true
+                x_alpha_fused =
+                    gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+                QMC._HAS_DNB2_FUSED[] = false
+                x_alpha_unfused =
+                    gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+                @test x_alpha_fused ≈ x_alpha_unfused
+            finally
+                QMC._HAS_DNB2_FUSED[] = old_fused
+            end
+        end
 
         # LDData-style text sources: local file paths and QMCPy-compatible names.
         mktemp() do path, io
@@ -282,6 +300,19 @@
             @test gen_samples(dd_file, 16) ≈ gen_samples(dd, 16)
             @test dd_file.n_limit == 16
             @test_throws ArgumentError gen_samples(dd_file, 17)
+        end
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n2\n# n_limit\n16\n# bit precision\n64\n")
+            for _ in 1:2
+                write(io, "1 2 4 8\n")
+            end
+            flush(io)
+
+            dd_file64 =
+                DigitalNetB2(1; randomize="none", seed=1, alpha=2, generating_matrices=path)
+            @test dd_file64.source_bits == 64
+            @test dd_file64.t == 64
+            @test size(gen_samples(dd_file64, 4)) == (4, 1)
         end
 
         dd_default = DigitalNetB2(3; randomize="none", seed=7)
@@ -309,6 +340,7 @@
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 1, 4))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 2, 33))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=zeros(Int, 2, 4))
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=fill(1 << 20, 2, 8))
         @test_throws ArgumentError DigitalNetB2(2; randomize="none", t=31)
         @test_throws ArgumentError DigitalNetB2(2; randomize="none", t=65)
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=V8, t=7)

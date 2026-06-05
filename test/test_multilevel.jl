@@ -117,6 +117,21 @@ end
         )
         dd_dn_custom2 = spawn_dd(dd_dn_custom, 2)
         @test dd_dn_custom2.direction_nums == dd_dn_custom.direction_nums[1:2, :]
+
+        mktemp() do path, io
+            write(io, "2\n4\n16\n64\n")
+            for _ in 1:4
+                write(io, "1 2 4 8\n")
+            end
+            flush(io)
+
+            dd_dn_file = DigitalNetB2(1; randomize="none", alpha=2, generating_matrices=path)
+            dd_dn_file2 = spawn_dd(dd_dn_file, 1)
+            @test dd_dn_file2.source_bits == dd_dn_file.source_bits
+            @test dd_dn_file2.t == dd_dn_file.t
+            @test dd_dn_file2.alpha == dd_dn_file.alpha
+            @test gen_samples(dd_dn_file2, 4) == gen_samples(dd_dn_file, 4)
+        end
     end
 
     @testset "spawn_tm" begin

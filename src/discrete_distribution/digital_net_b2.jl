@@ -308,7 +308,7 @@ function _coerce_direction_matrix(values::AbstractMatrix{<:Integer}, dimension::
         ),
     )
     V = Matrix{UInt64}(undef, dimension, mmax)
-    t_source = 0
+    max_entry = (BigInt(1) << mmax) - 1
     for j in 1:dimension, k in 1:mmax
         value = values[j, k]
         value > 0 || throw(
@@ -316,9 +316,13 @@ function _coerce_direction_matrix(values::AbstractMatrix{<:Integer}, dimension::
                 "generating_matrices entries must be positive, got $value at ($j, $k)",
             ),
         )
+        value <= max_entry || throw(
+            ArgumentError(
+                "generating_matrices entry at ($j, $k) must fit within $mmax bits, got $value",
+            ),
+        )
         try
             V[j, k] = UInt64(value)
-            t_source = max(t_source, 64 - leading_zeros(V[j, k]))
         catch err
             if err isa InexactError
                 throw(
@@ -330,7 +334,7 @@ function _coerce_direction_matrix(values::AbstractMatrix{<:Integer}, dimension::
             rethrow()
         end
     end
-    return V, Int(1) << mmax, t_source
+    return V, Int(1) << mmax, mmax
 end
 
 _bitreverse_width(value::UInt64, width::Int) = bitreverse(value) >> (64 - width)
@@ -342,7 +346,7 @@ function _coerce_direction_matrix(
 )
     V, n_limit, t_source = _coerce_direction_matrix(values, dimension)
     if msb === false
-        width = t_source
+        width = size(V, 2)
         @inbounds for j in axes(V, 1), k in axes(V, 2)
             V[j, k] = _bitreverse_width(V[j, k], width)
         end
@@ -413,14 +417,14 @@ function DigitalNetB2(
     graycode_bool =
         isnothing(graycode_from_order) ? (isnothing(graycode) ? true : graycode) :
         graycode_from_order
-    t_bits = isnothing(t) ? (alpha == 1 ? source_bits : min(alpha * source_bits, 63)) : t
+    interlaced_cap = min(64, Base.checked_mul(alpha, source_bits))
+    t_bits = isnothing(t) ? (alpha == 1 ? source_bits : interlaced_cap) : t
     t_bits isa Integer || throw(ArgumentError("t must be an integer, got $(typeof(t))"))
     source_bits <= t_bits <= 64 ||
         throw(ArgumentError("t must satisfy $source_bits <= t <= 64, got $t_bits"))
     randomize_norm = _normalize_digital_net_randomize(randomize)
     t_actual =
-        randomize_norm == "none" && alpha > 1 ? min(alpha * source_bits, Int(t_bits)) :
-        Int(t_bits)
+        randomize_norm == "none" && alpha > 1 ? min(interlaced_cap, Int(t_bits)) : Int(t_bits)
 
     return DigitalNetB2(
         dimension,

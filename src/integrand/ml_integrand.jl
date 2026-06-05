@@ -81,13 +81,17 @@ function spawn_dd(dd::DigitalNetB2, dimension::Int)
     raw_dimension = Base.checked_mul(dimension, dd.alpha)
     if raw_dimension <= size(dd.direction_nums, 1)
         return DigitalNetB2(
-            dimension;
-            randomize=dd.randomize,
-            graycode=dd.graycode,
-            replications=R,
-            t=dd.t,
-            alpha=dd.alpha,
-            generating_matrices=dd.direction_nums,
+            dimension,
+            dd.randomize,
+            dd.graycode,
+            dd.t,
+            dd.alpha,
+            dd.source_bits,
+            Random.default_rng(),
+            dd.direction_nums[1:raw_dimension, :],
+            dd.n_limit,
+            dd.mimics,
+            R,
         )
     end
     return DigitalNetB2(
