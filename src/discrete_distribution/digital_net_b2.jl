@@ -6,11 +6,14 @@
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 
 Generates Sobol' points using the published Joe-Kuo direction numbers,
-supporting up to 1024 dimensions and 2^32 points.
+supporting up to 1024 raw Sobol' dimensions and 2^32 points with the bundled
+Joe-Kuo table. When `alpha > 1`, those raw dimensions are interlaced in groups
+of `alpha`, so the bundled effective-dimension limit becomes `floor(1024/alpha)`
+unless custom generating matrices are supplied explicitly.
 
 This generator currently relies on the QMCToolsCL shared library. Install
 `qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
-before `using QMC`.
+before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).
@@ -20,7 +23,10 @@ before `using QMC`.
 - `"none"`: no randomization (deterministic Sobol' points).
 
 # Arguments
-- `dimension::Int`: number of dimensions (up to 1024).
+- `dimension::Int`: number of output dimensions. With the bundled Joe-Kuo
+  table, the raw Sobol' dimension cap is 1024, so higher-order
+  `alpha > 1` nets have a correspondingly lower effective-dimension limit
+  unless custom matrices are supplied.
 - `randomize::String`: randomization method.
 - `seed`: optional RNG seed for reproducibility.
 - `graycode::Union{Nothing,Bool}=nothing`: use Gray-code ordering for efficiency.
@@ -29,14 +35,16 @@ before `using QMC`.
   default `graycode=true`.
 - `replications::Union{Nothing,Int}=nothing`: number of independent randomizations.
   If set, `gen_samples` returns an `R × n × d` array.
-- `generating_matrices`: optional custom direction-number matrix. May be
-  `nothing` (default Joe-Kuo table) or an integer matrix with at least
-  `dimension` rows and at most 32 columns. When the custom matrix has `m`
-  columns, `gen_samples` supports at most `2^m` points including any `n_start`
-  offset. Custom entries must already be represented in that `m`-bit precision.
-  A string may also point to a QMCPy/LDData `dnet` text file, either by local
-  path, bare filename (for example `"joe_kuo.6.21201.txt"`), or GitHub/LDData
-  URL. Non-bundled LDData files download on demand.
+- `generating_matrices`: optional custom direction-number source. May be
+  `nothing` (default Joe-Kuo table), a direct integer matrix with at least
+  `dimension * alpha` rows and at most 32 columns, or a QMCPy/LDData-style
+  `dnet` text file/name/URL. For direct integer matrices, when the custom
+  matrix has `m` columns, `gen_samples` supports at most `2^m` points
+  including any `n_start` offset, and each entry must already fit within that
+  `m`-bit width. LDData-style text files may carry wider source precision
+  (up to 64 bits) and their own sample-limit metadata. A string may point to a
+  local file, a bare filename (for example `"joe_kuo.6.21201.txt"`), or a
+  GitHub/LDData URL. Non-bundled LDData files download on demand.
 - `t`: optional number of bits used after randomization / float conversion.
   Must satisfy `t_source <= t <= 64`, where `t_source` is the bit width of the
   generating matrices. If omitted, Julia preserves the historical `t = t_source`
@@ -55,6 +63,10 @@ x = gen_samples(dn, 1024)  # 1024×3 scrambled Sobol' points
 
 dn_r = DigitalNetB2(3; seed=7, replications=16)
 x = gen_samples(dn_r, 1024)  # 16×1024×3 array
+
+# Higher-order interlacing
+dn_alpha = DigitalNetB2(3; seed=7, alpha=2)
+x = gen_samples(dn_alpha, 256)  # 256×3 interlaced Sobol' points
 
 # High-dimensional problems
 dn_hd = DigitalNetB2(52; seed=42)
