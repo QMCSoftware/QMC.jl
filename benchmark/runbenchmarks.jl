@@ -19,6 +19,8 @@ let deps = keys(Pkg.project().dependencies)
     "QMC" in deps || Pkg.develop(; path=dirname(@__DIR__))
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
 end
+# Keep the benchmark manifest in sync when the local path package changes deps.
+Pkg.resolve()
 Pkg.instantiate()
 
 using BenchmarkTools
