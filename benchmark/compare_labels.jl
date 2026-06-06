@@ -24,6 +24,8 @@ Pkg.activate(@__DIR__)
 let deps = keys(Pkg.project().dependencies)
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
 end
+# Keep the benchmark manifest in sync when the local path package changes deps.
+Pkg.resolve()
 Pkg.instantiate()
 
 using BenchmarkTools: load, median
