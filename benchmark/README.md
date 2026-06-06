@@ -216,7 +216,11 @@ QMCPy) because those rows were the main source of weighted-ratio swings.
 The QMCPy `StudentT` transform rows now also use a dedicated higher-stability
 setting (`repeat=21`, `warmup=3`), and the Julia `StudentT` rows use
 `samples=9`. Those settings are recorded in the report header so unusually large
-cross-run changes in that family are easier to audit.
+cross-run changes in that family are easier to audit. The aggregate summary in
+`compare_python*.md` now also breaks out `StudentT` timing separately
+(`all matched rows`, `excluding StudentT`, and `StudentT only`) so the headline
+cross-language ratio is easier to interpret when that transform family dominates
+the total.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
