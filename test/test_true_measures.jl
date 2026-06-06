@@ -100,6 +100,45 @@
         @test abs(mean(xt)) < 0.15
     end
 
+    @testset "StudentT df=2 closed form" begin
+        dd = DigitalNetB2(2; randomize="none", seed=71)
+        x = gen_samples(dd, 16)
+
+        tm_std = StudentT(dd)
+        xt_std = transform(tm_std, x)
+        expected_std = Matrix{Float64}(undef, size(x))
+        @inbounds for j in axes(x, 2), i in axes(x, 1)
+            p = QMC._open_unit_interval(x[i, j])
+            expected_std[i, j] = (2.0 * p - 1.0) / sqrt(2.0 * p * (1.0 - p))
+        end
+        @test xt_std ≈ expected_std
+
+        loc = [1.0, -2.0]
+        scale = [0.5, 2.0]
+        tm_affine = StudentT(dd; df=2.0, loc=loc, scale=scale)
+        xt_affine = transform(tm_affine, x)
+        @test xt_affine ≈ expected_std .* transpose(scale) .+ transpose(loc)
+    end
+
+    @testset "StudentT df=1 closed form" begin
+        dd = DigitalNetB2(2; randomize="none", seed=72)
+        x = gen_samples(dd, 16)
+
+        tm_std = StudentT(dd; df=1.0)
+        xt_std = transform(tm_std, x)
+        expected_std = Matrix{Float64}(undef, size(x))
+        @inbounds for j in axes(x, 2), i in axes(x, 1)
+            expected_std[i, j] = tanpi(QMC._open_unit_interval(x[i, j]) - 0.5)
+        end
+        @test xt_std ≈ expected_std
+
+        loc = [0.25, -1.5]
+        scale = [1.5, 0.25]
+        tm_affine = StudentT(dd; df=1.0, loc=loc, scale=scale)
+        xt_affine = transform(tm_affine, x)
+        @test xt_affine ≈ expected_std .* transpose(scale) .+ transpose(loc)
+    end
+
     @testset "Triangular" begin
         dd = IIDStdUniform(2; seed=80)
         tm = Triangular(dd; lower=0.0, upper=1.0, mode=0.5)

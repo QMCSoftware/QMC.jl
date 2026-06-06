@@ -12,6 +12,7 @@ using BenchmarkTools
 using QMC
 import QMC: Uniform
 using Logging
+using LinearAlgebra
 
 # Silence expected, non-actionable warnings (notably CubMCCLT's single-pass
 # non-convergence notice) for EVERY harness that loads this suite — the standalone
@@ -24,6 +25,20 @@ Logging.disable_logging(Logging.Warn)
 
 const SAMPLES = [256, 1024, 4096, 16384]
 const DIMS = [3, 10]
+const BENCH_SAMPLES = 5
+const INTEGRATE_BENCH_SAMPLES = 9
+const STUDENT_T_BENCH_SAMPLES = 9
+
+const BENCH_BLAS_THREADS = let raw = get(ENV, "QMC_BENCH_BLAS_THREADS", "1")
+    threads = try
+        parse(Int, raw)
+    catch err
+        throw(ArgumentError("QMC_BENCH_BLAS_THREADS must be an integer, got $(repr(raw))"))
+    end
+    threads > 0 || throw(ArgumentError("QMC_BENCH_BLAS_THREADS must be ≥ 1, got $threads"))
+    threads
+end
+BLAS.set_num_threads(BENCH_BLAS_THREADS)
 
 # Large-d cases for the Gaussian transform only (see block 2b). These dimensions
 # are where the diagonal fast path's O(n·d²)→O(n·d) saving becomes visible; the
@@ -35,11 +50,11 @@ const LARGE_N = [1024, 4096]
 
 function bench_gen_samples(dd_constructor, dim, n; kwargs...)
     dd = dd_constructor(dim; seed=42, kwargs...)
-    @benchmarkable gen_samples($dd, $n) evals=3 samples=5
+    @benchmarkable gen_samples($dd, $n) evals=3 samples=BENCH_SAMPLES
 end
 
 function bench_integrate(make_sc; kwargs...)
-    @benchmarkable integrate(sc) evals=1 samples=3 setup=(sc = $make_sc())
+    @benchmarkable integrate(sc) evals=1 samples=INTEGRATE_BENCH_SAMPLES setup=(sc = $make_sc())
 end
 
 # ── Benchmark Groups ─────────────────────────────────────────────────────
@@ -70,7 +85,7 @@ for dim in DIMS, n in SAMPLES
     tm_gauss = Gaussian(dd)
     x = gen_samples(dd, n)
     SUITE["transform"]["Gaussian d=$dim n=$n"] =
-        @benchmarkable transform($tm_gauss, $x) evals=3 samples=5
+        @benchmarkable transform($tm_gauss, $x) evals=3 samples=BENCH_SAMPLES
 end
 
 # 2b. Large-d transform cases — exercise the Gaussian diagonal fast path at
@@ -87,7 +102,7 @@ for dim in LARGE_DIMS, n in LARGE_N
 
     tm_diag = Gaussian(dd)                       # identity Σ ⇒ diagonal A ⇒ fast path
     SUITE["transform"]["Gaussian(diag) d=$dim n=$n"] =
-        @benchmarkable transform($tm_diag, $x) evals=3 samples=5
+        @benchmarkable transform($tm_diag, $x) evals=3 samples=BENCH_SAMPLES
 
     # Dense positive-definite Σ (unit diagonal, 0.5 off-diagonal) ⇒ dense A ⇒ GEMM.
     cov = fill(0.5, dim, dim)
@@ -96,7 +111,7 @@ for dim in LARGE_DIMS, n in LARGE_N
     end
     tm_dense = Gaussian(dd; covariance=cov)
     SUITE["transform"]["Gaussian(dense) d=$dim n=$n"] =
-        @benchmarkable transform($tm_dense, $x) evals=3 samples=5
+        @benchmarkable transform($tm_dense, $x) evals=3 samples=BENCH_SAMPLES
 end
 
 # 3. Integrand evaluation (pure Julia)
@@ -108,13 +123,13 @@ for n in SAMPLES
 
     f_keister = Keister(tm)
     SUITE["evaluate"]["Keister n=$n"] =
-        @benchmarkable evaluate($f_keister, $x) evals=3 samples=5
+        @benchmarkable evaluate($f_keister, $x) evals=3 samples=BENCH_SAMPLES
 
     # NOTE: QMCPy's Genz supports only OSCILLATORY / CORNER PEAK. For a matched
     # cross-language comparison use :oscillatory here (see benchmark_qmcpy.py).
     f_genz = Genz(tm; kind=:oscillatory)
     SUITE["evaluate"]["Genz(oscillatory) n=$n"] =
-        @benchmarkable evaluate($f_genz, $x) evals=3 samples=5
+        @benchmarkable evaluate($f_genz, $x) evals=3 samples=BENCH_SAMPLES
 end
 
 # 3b. Allocation-audit coverage (opt2). These are the transform/evaluate bodies the
@@ -136,18 +151,18 @@ for n in SAMPLES
     tm_j = JohnsonsSU(dd)
 
     SUITE["evaluate"]["BoxIntegral d=10 n=$n"] =
-        @benchmarkable evaluate($f_box, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_box, $xu) evals=3 samples=BENCH_SAMPLES
     SUITE["evaluate"]["Linear0 d=10 n=$n"] =
-        @benchmarkable evaluate($f_lin, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_lin, $xu) evals=3 samples=BENCH_SAMPLES
     SUITE["evaluate"]["Genz(gaussian_peak) d=10 n=$n"] =
-        @benchmarkable evaluate($f_gp, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_gp, $xu) evals=3 samples=BENCH_SAMPLES
     SUITE["evaluate"]["Genz(continuous) d=10 n=$n"] =
-        @benchmarkable evaluate($f_cont, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_cont, $xu) evals=3 samples=BENCH_SAMPLES
 
     SUITE["transform"]["StudentT d=10 n=$n"] =
-        @benchmarkable transform($tm_t, $xu) evals=3 samples=5
+        @benchmarkable transform($tm_t, $xu) evals=3 samples=STUDENT_T_BENCH_SAMPLES
     SUITE["transform"]["JohnsonsSU d=10 n=$n"] =
-        @benchmarkable transform($tm_j, $xu) evals=3 samples=5
+        @benchmarkable transform($tm_j, $xu) evals=3 samples=BENCH_SAMPLES
 end
 
 # Large-d variants for the reductions / GEMV kinds, where the cache-friendly
@@ -160,11 +175,11 @@ for dim in LARGE_DIMS, n in LARGE_N
     f_lin = Linear0(tm)
     f_gp = Genz(tm; kind=:gaussian_peak)
     SUITE["evaluate"]["BoxIntegral d=$dim n=$n"] =
-        @benchmarkable evaluate($f_box, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_box, $xu) evals=3 samples=BENCH_SAMPLES
     SUITE["evaluate"]["Linear0 d=$dim n=$n"] =
-        @benchmarkable evaluate($f_lin, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_lin, $xu) evals=3 samples=BENCH_SAMPLES
     SUITE["evaluate"]["Genz(gaussian_peak) d=$dim n=$n"] =
-        @benchmarkable evaluate($f_gp, $xu) evals=3 samples=5
+        @benchmarkable evaluate($f_gp, $xu) evals=3 samples=BENCH_SAMPLES
 end
 
 # 4. End-to-end integration (mixed: C-backed generators + pure-Julia compute)

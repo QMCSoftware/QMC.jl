@@ -10,6 +10,18 @@ Generates low-discrepancy point sets in ``[0,1)^d``. Available generators:
 - **`Lattice`** — rank-1 integration lattice with optional random shift
 - **`DigitalNetB2`** — Sobol' digital net (base 2) with optional scrambling
 - **`Halton`** — Halton sequence using prime bases
+- **`Kronecker`** — Kronecker / irrational-rotation low-discrepancy sequence
+- **`DigitalNetAnyBases`** / **`Faure`** — more general digital-net constructions
+
+`DigitalNetB2` also supports QMCPy-style constructor options such as
+custom generating matrices, `order` aliases, widened `t` bit depth, `msb`
+handling for custom matrices, and higher-order interlacing via `alpha > 1`.
+
+`Lattice` also supports QMCPy-style constructor inputs such as direct custom
+generating vectors, the integer shortcut for random odd vectors, order
+aliases, and LDData-format files, names, or URLs. In multilevel workflows,
+`spawn_dd` now preserves explicit lattice-vector sources when they carry enough
+entries for the requested dimension.
 
 `Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL
 shared library, so Python is a current runtime dependency for these QMC generators.
@@ -28,6 +40,11 @@ Transforms ``[0,1)^d`` samples to the desired probability domain:
 - **`Kumaraswamy`** — Kumaraswamy distribution
 - **`JohnsonsSU`** — Johnson's SU distribution
 - **`BernoulliCont`** — continuous Bernoulli
+- **`AcceptanceRejection`** / **`AcceptanceRejectionReal`** — deterministic acceptance-rejection samplers on the cube / real space
+- **`DistributionsWrapper`** — bridge to Distributions.jl marginals
+- **`MaternGP`** — Matern Gaussian-process prior measure
+- **`UniformTriangle`** — uniform sampling on a reference triangle
+- **`ZeroInflatedExpUniform`** — mixed zero-inflated / exponential-uniform measure
 
 ## Integrand
 
@@ -36,9 +53,13 @@ The function to be integrated:
 - **`CustomFun`** — user-supplied function
 - **`Keister`** — ``\pi^{d/2} \cos(\|x\|)`` (standard QMC test function)
 - **`Genz`** — six Genz test functions (oscillatory, product peak, etc.)
-- **`FinancialOption`** — financial option pricing (European, Asian, lookback, digital)
+- **`AsianOption`** / **`FinancialOption`** — financial option pricing (European, Asian, lookback, digital, barrier)
+- **`FinancialOptionML`** — multilevel financial option interface
 - **`BoxIntegral`**, **`Linear0`**, **`Sin1D`**, **`Ishigami`**, **`Hartmann6D`** — standard test integrands
 - **`Multimodal2D`**, **`FourBranch2D`** — reliability analysis test functions
+- **`SensitivityIndices`** — Sobol sensitivity-index estimator
+- **`BayesianLRCoeffs`** — Bayesian logistic-regression coefficient posterior
+- **`UMBridgeWrapper`** — UMBridge.jl-backed external model integrand
 
 ### Multilevel Integrands
 
@@ -60,16 +81,21 @@ Adaptive algorithms that determine sample size:
 ### Single-Level Methods
 
 - **`CubMCCLT`** — IID Monte Carlo with CLT confidence interval
+- **`CubMCCLTVec`** — vectorized IID Monte Carlo with CLT-based doubling
+- **`CubMCG`** — guaranteed IID Monte Carlo using Berry-Esseen-style bounds
 - **`CubQMCLatticeG`** — replicated randomized lattice rule
 - **`CubQMCNetG`** — single randomized digital net in natural (radical-inverse) order
 - **`CubQMCNetGRep`** — replicated randomized digital net
 - **`CubQMCBayesLatticeG`** — Bayesian QMC for lattices (kernel-based error bound)
 - **`CubQMCBayesNetG`** — Bayesian QMC for digital nets (WHT-based error bound)
+- **`CubQMCRepStudentT`** — replicated QMC with Student's *t* confidence intervals
+- **`PFGPCI`** — probability-of-failure GP criterion; currently exported as a stub that errors on `integrate`
 
 ### Multilevel Methods
 
 - **`CubMLMC`** — multilevel Monte Carlo (Giles 2008) with optimal sample allocation
 - **`CubMLMCCont`** — continuation MLMC with progressively tighter tolerances
+- **`CubMLQMC`** — multilevel quasi-Monte Carlo with replicated low-discrepancy rules
 - **`CubMLQMCCont`** — continuation multilevel quasi-Monte Carlo using replicated lattice/digital net rules
 
 The multilevel methods use the telescoping sum ``E[Q_L] = E[Q_0] + \sum_{\ell=1}^{L} E[Q_\ell - Q_{\ell-1}]``

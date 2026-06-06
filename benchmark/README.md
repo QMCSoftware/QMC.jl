@@ -43,6 +43,14 @@ This writes:
 benchmark/results/latest.json
 ```
 
+By default the benchmark targets now pin BLAS-style thread env vars to `1` for
+more stable dense-transform timings on both the Julia and QMCPy sides. Override
+that when needed:
+
+```bash
+make bench BENCH_BLAS_THREADS=4
+```
+
 To save to a labeled file instead:
 
 ```bash
@@ -151,6 +159,12 @@ benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
 
+The Julia memory sidecar and the QMCPy JSON now also record lightweight
+benchmark metadata such as generation time, thread configuration, and the
+integrate timing sample/repeat counts. `compare_python*.md` surfaces that
+metadata in its header so stale or mismatched artifact pairings are easier to
+spot.
+
 ### Coverage Caveat
 
 Do not interpret coverage-enabled benchmark runs as representative performance comparisons.
@@ -194,6 +208,19 @@ If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than 
 - `Julia RSS delta` / `Python RSS delta` as retained-footprint signals
 
 If `<label>_memory.json` is missing because the Julia benchmarks were generated before this feature was added, `compare_python*.md` will show Julia RSS delta as `n/a` until that label is rerun with `make bench` or `make bench-compare-py`.
+
+The heaviest adaptive integrate rows are intentionally timed with more samples
+than the leaf transform/evaluate rows (`samples=9` in Julia, `repeat=9` in
+QMCPy) because those rows were the main source of weighted-ratio swings.
+
+The QMCPy `StudentT` transform rows now also use a dedicated higher-stability
+setting (`repeat=21`, `warmup=3`), and the Julia `StudentT` rows use
+`samples=9`. Those settings are recorded in the report header so unusually large
+cross-run changes in that family are easier to audit. The aggregate summary in
+`compare_python*.md` now also breaks out `StudentT` timing separately
+(`all matched rows`, `excluding StudentT`, and `StudentT only`) so the headline
+cross-language ratio is easier to interpret when that transform family dominates
+the total.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
@@ -273,6 +300,14 @@ benchmark/results/base_memory.json
 benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
+
+`bench-all` does not create a third combined ratio. It just runs both report
+generators, so you need to read each report with its own convention:
+
+- `compare_<label>.md`: `ratio = reference ÷ local`
+- `compare_python_<label>.md`: `ratio = Python ÷ Julia`
+
+So in both of those reports, `ratio > 1` means the local Julia side is faster.
 
 ## Output Files
 

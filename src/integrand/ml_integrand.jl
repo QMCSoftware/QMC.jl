@@ -63,11 +63,35 @@ spawn_dd(dd::IIDStdUniform, dimension::Int) = IIDStdUniform(dimension)
     spawn_dd(dd::Lattice, dimension::Int)
 
 Create a new Lattice sampler with the given dimension, preserving randomize
-and replications settings but with a fresh seed.
+and replications settings, as well as the original order and any explicit
+custom generating-vector source when enough entries are available.
 """
 function spawn_dd(dd::Lattice, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    return Lattice(dimension; randomize=dd.randomize, replications=R)
+    if !isnothing(dd.source_gen_vector)
+        length(dd.source_gen_vector) >= dimension || throw(
+            ArgumentError(
+                "cannot spawn Lattice dimension $dimension from a custom generating vector with only $(length(dd.source_gen_vector)) stored entries",
+            ),
+        )
+        rng = Random.default_rng()
+        reps = isnothing(R) ? 1 : R
+        shift = dd.randomize ? rand(rng, reps, dimension) : zeros(reps, dimension)
+        source = copy(dd.source_gen_vector)
+        return Lattice(
+            dimension,
+            dd.randomize,
+            dd.order,
+            R,
+            source[1:dimension],
+            source,
+            shift,
+            rng,
+            dd.n_limit,
+            dd.mimics,
+        )
+    end
+    return Lattice(dimension; randomize=dd.randomize, order=dd.order, replications=R)
 end
 
 """
@@ -78,16 +102,30 @@ randomize and replications settings but with a fresh seed.
 """
 function spawn_dd(dd::DigitalNetB2, dimension::Int)
     R = isnothing(dd.replications) ? nothing : dd.replications
-    if dimension <= size(dd.direction_nums, 1)
+    raw_dimension = Base.checked_mul(dimension, dd.alpha)
+    if raw_dimension <= size(dd.direction_nums, 1)
         return DigitalNetB2(
-            dimension;
-            randomize=dd.randomize,
-            graycode=dd.graycode,
-            replications=R,
-            generating_matrices=dd.direction_nums,
+            dimension,
+            dd.randomize,
+            dd.graycode,
+            dd.t,
+            dd.alpha,
+            dd.source_bits,
+            Random.default_rng(),
+            dd.direction_nums[1:raw_dimension, :],
+            dd.n_limit,
+            dd.mimics,
+            R,
         )
     end
-    return DigitalNetB2(dimension; randomize=dd.randomize, graycode=dd.graycode, replications=R)
+    return DigitalNetB2(
+        dimension;
+        randomize=dd.randomize,
+        graycode=dd.graycode,
+        replications=R,
+        t=dd.t,
+        alpha=dd.alpha,
+    )
 end
 
 """

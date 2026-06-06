@@ -116,7 +116,7 @@ Tests are organized to mirror the Python QMCSoftware test suite:
 | File | Coverage |
 |------|----------|
 | `test_discrete_distributions.jl` | IIDStdUniform, Lattice, DigitalNetB2, Halton, Kronecker, scrambling, windowed sampling |
-| `test_true_measures.jl` | All true measures including AcceptanceRejection, DistributionsWrapper |
+| `test_true_measures.jl` | All true measures including AcceptanceRejection, AcceptanceRejectionReal, DistributionsWrapper |
 | `test_integrands.jl` | All integrands including FinancialOption variants, SensitivityIndices, BayesianLRCoeffs |
 | `test_kernels.jl` | Shift-invariant, digital-shift-invariant, Matern, Gaussian, combined kernels |
 | `test_stopping_criteria.jl` | All stopping criteria, rel\_tol, resume/checkpoint, IterationLog |

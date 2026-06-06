@@ -44,6 +44,7 @@ import timeit
 import tracemalloc
 import warnings
 import statistics
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -55,6 +56,17 @@ DIMS = [3, 10]
 LARGE_DIMS = [50, 200]
 LARGE_N = [1024, 4096]
 SEED = 42
+DEFAULT_REPEAT = 7
+INTEGRATE_REPEAT = 9
+STUDENT_T_REPEAT = 21
+STUDENT_T_WARMUP_RUNS = 3
+THREAD_ENV_KEYS = (
+    "QMC_BENCH_BLAS_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OMP_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
 
 
 def current_rss_kib():
@@ -90,11 +102,17 @@ def measure_memory(fn):
     return metrics
 
 
-def bench(make_call, *, repeat=7, warmup=True):
+def bench(make_call, *, repeat=DEFAULT_REPEAT, warmup=True):
     """Return median seconds plus approximate memory metrics per call."""
+    if isinstance(warmup, bool):
+        warmup_runs = 1 if warmup else 0
+    else:
+        warmup_runs = int(warmup)
+        if warmup_runs < 0:
+            raise ValueError("warmup must be bool or non-negative integer")
     fn = make_call()
-    if warmup:
-        fn()  # discard first call (cache/allocation warm-up)
+    for _ in range(warmup_runs):
+        fn()  # discard first call(s) to reduce cache/allocation warm-up noise
     mem = measure_memory(fn)
     # Pick an inner count so each timing sample is long enough to be stable.
     timer = timeit.Timer(fn)
@@ -134,12 +152,25 @@ def record(results, group, name, make_call, **kw):
         print(f"  {name:<45s}  ERR: {type(e).__name__}: {e}")
 
 
+def active_thread_env():
+    return {key: os.environ[key] for key in THREAD_ENV_KEYS if key in os.environ}
+
+
 def main():
     label = sys.argv[1] if len(sys.argv) > 1 else "latest"
     results = {"gen_samples": {}, "transform": {}, "evaluate": {}, "integrate": {}}
 
     print("\n\nQMCPy Benchmarks (qmcpy %s)" % getattr(qp, "__version__", "?"))
     print("=" * 70)
+    thread_env = active_thread_env()
+    if thread_env:
+        print(
+            "Thread env: "
+            + ", ".join(f"{key}={value}" for key, value in sorted(thread_env.items()))
+        )
+    print(
+        f"StudentT config: repeat={STUDENT_T_REPEAT}, warmup_runs={STUDENT_T_WARMUP_RUNS}"
+    )
 
     # 1. Discrete distribution sampling --------------------------------------
     # [C] = qmctoolscl C kernel (not a language comparison)
@@ -191,7 +222,14 @@ def main():
             tm = qp.StudentT(dd, loc=np.zeros(dim), shape=np.eye(dim), df=2.0)
             x = dd(n)
             return lambda: tm._transform(x)
-        record(results, "transform", f"StudentT d=10 n={n}", make_student_t)
+        record(
+            results,
+            "transform",
+            f"StudentT d=10 n={n}",
+            make_student_t,
+            repeat=STUDENT_T_REPEAT,
+            warmup=STUDENT_T_WARMUP_RUNS,
+        )
 
         def make_johnsons_su(n=n):
             dim = 10
@@ -336,7 +374,7 @@ def main():
 
     for name, make_sc, warm in integrate_cases:
         record(results, "integrate", name, integrate_call(make_sc),
-               repeat=3, warmup=warm)
+               repeat=INTEGRATE_REPEAT, warmup=warm)
         # One-shot accuracy measurement: solution value + tolerances used. Kept
         # separate from the timed runs and never aborts the run on failure.
         try:
@@ -358,6 +396,16 @@ def main():
     outfile = resdir / f"qmcpy_{label}.json"
     payload = {
         "qmcpy_version": getattr(qp, "__version__", "?"),
+        "python_version": sys.version.split()[0],
+        "label": label,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "thread_env": thread_env,
+        "benchmark_config": {
+            "default_repeat": DEFAULT_REPEAT,
+            "integrate_repeat": INTEGRATE_REPEAT,
+            "student_t_repeat": STUDENT_T_REPEAT,
+            "student_t_warmup_runs": STUDENT_T_WARMUP_RUNS,
+        },
         "results": results,
     }
     outfile.write_text(json.dumps(payload, indent=2))

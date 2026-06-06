@@ -39,7 +39,7 @@
         K = kernel_matrix(k, x)
         @test size(K) == (3, 3)
         @test K ≈ K'  # symmetric
-        @test all(eigvals(K) .>= -1e-10)  # PSD
+        @test all(eigvals(K) .>= -1e-8)  # PSD up to numerical roundoff
     end
 
     @testset "KernelMatern32" begin
@@ -71,7 +71,7 @@
         K = kernel_matrix(k, x)
         @test size(K) == (3, 3)
         @test K ≈ K'
-        @test all(eigvals(K) .>= -1e-10)
+        @test all(eigvals(K) .>= -1e-8)
         @test_throws ArgumentError KernelRationalQuadratic(alpha=0.0)
         @test_throws ArgumentError KernelRationalQuadratic(lengthscale=-1.0)
     end

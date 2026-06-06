@@ -93,14 +93,51 @@ end
         dd2 = spawn_dd(dd, 8)
         @test dd2.dimension == 8
 
-        dd_lat = Lattice(4; replications=8)
+        dd_lat = Lattice(4; replications=8, order="gray")
         dd_lat2 = spawn_dd(dd_lat, 16)
         @test dd_lat2.dimension == 16
+        @test dd_lat2.order == "gray"
         @test dd_lat2.replications == 8
+
+        lat_source = [1, 3, 5, 7, 9, 11]
+        dd_lat_custom =
+            Lattice(4; randomize=false, order="linear", generating_vector=lat_source)
+        dd_lat_custom2 = spawn_dd(dd_lat_custom, 6)
+        @test dd_lat_custom2.dimension == 6
+        @test dd_lat_custom2.order == "linear"
+        @test dd_lat_custom2.gen_vector == UInt64.(lat_source)
+        @test gen_samples(dd_lat_custom2, 8) == gen_samples(
+            Lattice(6; randomize=false, order="linear", generating_vector=lat_source),
+            8,
+        )
+        @test_throws ArgumentError spawn_dd(dd_lat_custom, 7)
+
+        mktemp() do path, io
+            write(io, "# d_limit\n6\n# n_limit\n16\n1\n3\n5\n7\n9\n11\n")
+            close(io)
+            dd_lat_file = Lattice(4; randomize=false, order="linear", generating_vector=path)
+            dd_lat_file2 = spawn_dd(dd_lat_file, 6)
+            @test dd_lat_file2.dimension == 6
+            @test dd_lat_file2.order == "linear"
+            @test dd_lat_file2.n_limit == 16
+            @test dd_lat_file2.gen_vector == UInt64.(lat_source)
+            @test gen_samples(dd_lat_file2, 8) == gen_samples(
+                Lattice(6; randomize=false, order="linear", generating_vector=lat_source),
+                8,
+            )
+        end
 
         dd_dn = DigitalNetB2(4; replications=8)
         dd_dn2 = spawn_dd(dd_dn, 16)
         @test dd_dn2.dimension == 16
+
+        dd_dn_alpha = DigitalNetB2(4; randomize="LMS_DS", seed=7, replications=2, alpha=2)
+        dd_dn_alpha2 = spawn_dd(dd_dn_alpha, 8)
+        @test dd_dn_alpha2.dimension == 8
+        @test dd_dn_alpha2.alpha == 2
+        @test dd_dn_alpha2.t == dd_dn_alpha.t
+        @test dd_dn_alpha2.replications == 2
+        @test size(gen_samples(dd_dn_alpha2, 8)) == (2, 8, 8)
 
         dd_dn_custom = DigitalNetB2(
             4;
@@ -109,6 +146,21 @@ end
         )
         dd_dn_custom2 = spawn_dd(dd_dn_custom, 2)
         @test dd_dn_custom2.direction_nums == dd_dn_custom.direction_nums[1:2, :]
+
+        mktemp() do path, io
+            write(io, "2\n4\n16\n64\n")
+            for _ in 1:4
+                write(io, "1 2 4 8\n")
+            end
+            flush(io)
+
+            dd_dn_file = DigitalNetB2(1; randomize="none", alpha=2, generating_matrices=path)
+            dd_dn_file2 = spawn_dd(dd_dn_file, 1)
+            @test dd_dn_file2.source_bits == dd_dn_file.source_bits
+            @test dd_dn_file2.t == dd_dn_file.t
+            @test dd_dn_file2.alpha == dd_dn_file.alpha
+            @test gen_samples(dd_dn_file2, 4) == gen_samples(dd_dn_file, 4)
+        end
     end
 
     @testset "spawn_tm" begin
@@ -139,6 +191,12 @@ end
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:levels] >= 3  # levels_min + 1
+
+    traced = integrate(
+        CubMLMC(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6, trace_iterations=true),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
 end
 
 @testset "CubMLMCCont" begin
@@ -150,6 +208,38 @@ end
     @test result.solution isa Float64
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
+
+    traced = integrate(
+        CubMLMCCont(
+            f;
+            abs_tol=0.5,
+            n_init=256,
+            levels_min=2,
+            levels_max=6,
+            n_tols=5,
+            trace_iterations=true,
+        ),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
+end
+
+@testset "CubMLQMC" begin
+    dd = Lattice(32; replications=8)
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
+    sc = CubMLQMC(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6)
+    result = integrate(sc)
+
+    @test result.solution isa Float64
+    @test !isnan(result.solution)
+    @test result.data[:n_total] > 0
+    @test result.data[:replications] == 8
+
+    traced = integrate(
+        CubMLQMC(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6, trace_iterations=true),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
 end
 
 @testset "CubMLQMCCont" begin
@@ -162,4 +252,18 @@ end
     @test !isnan(result.solution)
     @test result.data[:n_total] > 0
     @test result.data[:replications] == 8
+
+    traced = integrate(
+        CubMLQMCCont(
+            f;
+            abs_tol=0.5,
+            n_init=64,
+            levels_min=2,
+            levels_max=6,
+            n_tols=5,
+            trace_iterations=true,
+        ),
+    )
+    @test haskey(traced.data, :iteration_log)
+    @test length(traced.data[:iteration_log]) >= 1
 end

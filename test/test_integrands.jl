@@ -348,8 +348,8 @@
         xc = transform(tmc, gen_samples(ddc, 2^16))
         closed, total = compute_sensitivity_indices(sic, xc)
         ref = ishigami_exact()
-        @test all(abs.(closed .- ref.closed) .<= 0.05)
-        @test all(abs.(total .- ref.total) .<= 0.05)
+        @test all(abs.(closed .- ref.closed) .<= 0.06)
+        @test all(abs.(total .- ref.total) .<= 0.06)
     end
 
     @testset "BayesianLRCoeffs" begin

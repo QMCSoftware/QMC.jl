@@ -13,7 +13,7 @@ When `replications` is set to an integer R > 1, `gen_samples` returns an
 
 This generator currently relies on the QMCToolsCL shared library. Install
 `qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
-before `using QMC`.
+before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Arguments
 - `dimension`: number of dimensions (up to 9125).
@@ -30,8 +30,8 @@ before `using QMC`.
   - an integer `M`: generate a random odd vector `(1, v₂, …, v_d)` with
     `v_j ∈ {3, 5, …, 2^M - 1}`,
   - a local text-file path: load one integer per non-comment line, or a
-    QMCPy/LDData-style file whose first two integers are metadata followed by
-    the vector entries,
+    QMCPy/LDData-style file whose first two integers are `d_limit` / `n_limit`
+    metadata followed by exactly `d_limit` vector entries,
   - a QMCPy/LDData filename or GitHub URL (for example
     `"kuo.lattice-33002-1024-1048576.9125"` or the corresponding
     `QMCSoftware/LDData` `lattice/` URL). Non-bundled LDData files are
@@ -52,6 +52,7 @@ mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
     order::String
     replications::Union{Nothing, Int}
     gen_vector::Vector{UInt64}
+    source_gen_vector::Union{Nothing, Vector{UInt64}}
     shift::Matrix{Float64}   # R × d
     rng::R
     n_limit::Union{Nothing, Int}
@@ -60,6 +61,10 @@ end
 
 const _DEFAULT_LATTICE_VECTOR_NAME = "kuo.lattice-33002-1024-1048576.9125.txt"
 const _LATTICE_LDDATA_RAW_BASE = "https://raw.githubusercontent.com/QMCSoftware/LDData/main/lattice/"
+const _DOWNLOADS_PKGID =
+    Base.PkgId(Base.UUID("f43a241f-c20a-4ad4-852c-f6b1247861c6"), "Downloads")
+
+_downloads_module() = Base.require(_DOWNLOADS_PKGID)
 
 function _normalize_lattice_order(order::String)
     # Normalize order aliases to canonical tokens, matching QMCPy semantics:
@@ -108,9 +113,21 @@ end
 
 function _read_lattice_vector_file(path::AbstractString)
     values = UInt64[]
+    saw_d_limit = false
+    saw_n_limit = false
     open(path, "r") do io
         for raw_line in eachline(io)
-            line = strip(first(split(raw_line, '#'; limit=2)))
+            split_line = split(raw_line, '#'; limit=2)
+            line = strip(first(split_line))
+            if length(split_line) == 2
+                comment = replace(lowercase(strip(split_line[2])), " " => "_")
+                saw_d_limit |= occursin("d_limit", comment)
+                saw_n_limit |= occursin("n_limit", comment)
+            elseif startswith(strip(raw_line), '#')
+                comment = replace(lowercase(strip(raw_line[2:end])), " " => "_")
+                saw_d_limit |= occursin("d_limit", comment)
+                saw_n_limit |= occursin("n_limit", comment)
+            end
             isempty(line) && continue
             value = tryparse(UInt64, line)
             isnothing(value) && throw(
@@ -120,7 +137,37 @@ function _read_lattice_vector_file(path::AbstractString)
         end
     end
     isempty(values) && throw(ArgumentError("generating_vector file \"$path\" is empty"))
-    if length(values) >= 3 && Int(values[1]) == length(values) - 2
+    if saw_d_limit || saw_n_limit
+        saw_d_limit && saw_n_limit || throw(
+            ArgumentError(
+                "generating_vector file \"$path\" must specify both d_limit and n_limit metadata",
+            ),
+        )
+        length(values) >= 3 || throw(
+            ArgumentError(
+                "generating_vector file \"$path\" metadata must be followed by vector entries",
+            ),
+        )
+        values[1] <= typemax(Int) || throw(
+            ArgumentError("generating_vector file \"$path\" has d_limit too large for Int"),
+        )
+        values[2] <= typemax(Int) || throw(
+            ArgumentError("generating_vector file \"$path\" has n_limit too large for Int"),
+        )
+        d_limit = Int(values[1])
+        n_limit = Int(values[2])
+        d_limit > 0 ||
+            throw(ArgumentError("generating_vector file \"$path\" must have positive d_limit"))
+        n_limit > 0 ||
+            throw(ArgumentError("generating_vector file \"$path\" must have positive n_limit"))
+        length(values) == d_limit + 2 || throw(
+            ArgumentError(
+                "generating_vector file \"$path\" declares d_limit=$d_limit but contains $(length(values) - 2) vector entries",
+            ),
+        )
+        return values[3:end], n_limit
+    end
+    if length(values) >= 3 && values[1] <= typemax(Int) && Int(values[1]) == length(values) - 2
         values[2] <= typemax(Int) || throw(
             ArgumentError("generating_vector file \"$path\" has n_limit too large for Int"),
         )
@@ -160,7 +207,7 @@ function _download_lattice_vector_from_lddata(filename::AbstractString)
     path, io = mktemp()
     close(io)
     try
-        Downloads.download(url, path)
+        _downloads_module().download(url, path)
         return _read_lattice_vector_file(path)
     catch err
         msg = sprint(showerror, err)
@@ -195,15 +242,28 @@ function _resolve_lattice_generating_vector(dimension::Int, generating_vector, r
                 "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
             ),
         )
-        return _KUO_LATTICE_GEN_VECTOR[1:dimension], 1 << 20
+        return _KUO_LATTICE_GEN_VECTOR[1:dimension], 1 << 20, nothing
     elseif generating_vector isa AbstractVector{<:Integer}
-        return _coerce_lattice_vector(generating_vector, dimension), nothing
+        length(generating_vector) >= dimension || throw(
+            ArgumentError(
+                "generating_vector must have at least $dimension entries, got $(length(generating_vector))",
+            ),
+        )
+        source = _coerce_lattice_vector(generating_vector, length(generating_vector))
+        return source[1:dimension], nothing, source
     elseif generating_vector isa Integer
-        return _random_lattice_vector(dimension, generating_vector, rng)
+        gv, n_limit = _random_lattice_vector(dimension, generating_vector, rng)
+        return gv, n_limit, copy(gv)
     elseif generating_vector isa AbstractString
         if isfile(generating_vector)
             values, n_limit = _read_lattice_vector_file(generating_vector)
-            return _coerce_lattice_vector(values, dimension), n_limit
+            source = _coerce_lattice_vector(values, length(values))
+            length(source) >= dimension || throw(
+                ArgumentError(
+                    "generating_vector must have at least $dimension entries, got $(length(source))",
+                ),
+            )
+            return source[1:dimension], n_limit, source
         end
         _looks_like_lddata_lattice_reference(generating_vector) ||
             throw(ArgumentError("generating_vector file \"$generating_vector\" not found"))
@@ -214,10 +274,16 @@ function _resolve_lattice_generating_vector(dimension::Int, generating_vector, r
                     "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
                 ),
             )
-            return _KUO_LATTICE_GEN_VECTOR[1:dimension], 1 << 20
+            return _KUO_LATTICE_GEN_VECTOR[1:dimension], 1 << 20, nothing
         end
         values, n_limit = _download_lattice_vector_from_lddata(filename)
-        return _coerce_lattice_vector(values, dimension), n_limit
+        source = _coerce_lattice_vector(values, length(values))
+        length(source) >= dimension || throw(
+            ArgumentError(
+                "generating_vector must have at least $dimension entries, got $(length(source))",
+            ),
+        )
+        return source[1:dimension], n_limit, source
     else
         throw(
             ArgumentError(
@@ -242,7 +308,8 @@ function Lattice(
     R >= 1 || throw(ArgumentError("replications must be >= 1"))
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
-    gv, n_limit = _resolve_lattice_generating_vector(dimension, generating_vector, rng)
+    gv, n_limit, source_gv =
+        _resolve_lattice_generating_vector(dimension, generating_vector, rng)
     shift = randomize ? rand(rng, R, dimension) : zeros(R, dimension)
 
     return Lattice(
@@ -251,6 +318,7 @@ function Lattice(
         order_lc,
         replications,
         gv,
+        source_gv,
         shift,
         rng,
         n_limit,

@@ -34,6 +34,7 @@ Pkg.resolve()
 Pkg.instantiate()
 
 using BenchmarkTools
+using Dates
 using JSON3
 using Statistics
 using Printf
@@ -42,8 +43,62 @@ resdir = joinpath(@__DIR__, "results")
 compare_py_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python.md") :
     joinpath(resdir, "compare_python_$(label).md")
+const ARTIFACT_SKEW_WARNING_SECONDS = 10 * 60
 
 is_c_kernel_row(name::AbstractString) = occursin(r"Lattice|DigitalNetB2|Halton", name)
+is_student_t_row(name::AbstractString) = occursin("StudentT", name)
+
+function maybe_get(obj, key, default=nothing)
+    obj === nothing && return default
+    for candidate in (key, Symbol(key))
+        try
+            haskey(obj, candidate) && return obj[candidate]
+        catch
+        end
+    end
+    return default
+end
+
+function artifact_mtime(path::AbstractString)
+    secs = floor(Int, stat(path).mtime)
+    return Dates.format(Dates.unix2datetime(secs), dateformat"yyyy-mm-ddTHH:MM:SS")
+end
+
+function format_seconds(seconds::Real)
+    total = round(Int, seconds)
+    if total < 60
+        return "$(total) s"
+    elseif total < 3600
+        mins, secs = divrem(total, 60)
+        return "$(mins) m $(secs) s"
+    end
+    hours, rems = divrem(total, 3600)
+    mins, secs = divrem(rems, 60)
+    return "$(hours) h $(mins) m $(secs) s"
+end
+
+function format_thread_env(thread_env)
+    thread_env === nothing && return "n/a"
+    entries = String[]
+    for (key, value) in pairs(thread_env)
+        push!(entries, string(key) * "=" * string(value))
+    end
+    isempty(entries) && return "n/a"
+    return join(sort(entries), ", ")
+end
+
+function wait_for_artifact(
+    path::AbstractString;
+    timeout_s::Real=10.0,
+    poll_interval_s::Real=0.1,
+)
+    deadline = time() + timeout_s
+    while true
+        isfile(path) && return true
+        time() >= deadline && return false
+        sleep(poll_interval_s)
+    end
+end
 
 function lookup_py_entry(py_results, group, name)
     py_group = get(py_results, Symbol(group), nothing)
@@ -89,6 +144,7 @@ function collect_comparison_rows(jl_results, jl_memory_results, py_results)
                                          Float64(py_entry["rss_delta_kib"]) : nothing,
                         py_error=nothing,
                         c_kernel=is_c_kernel_row(name),
+                        student_t=is_student_t_row(name),
                     ),
                 )
             else
@@ -108,6 +164,7 @@ function collect_comparison_rows(jl_results, jl_memory_results, py_results)
                         py_error=py_entry === nothing ? "no Python data" :
                                  string(py_entry["error"]),
                         c_kernel=is_c_kernel_row(name),
+                        student_t=is_student_t_row(name),
                     ),
                 )
             end
@@ -116,8 +173,9 @@ function collect_comparison_rows(jl_results, jl_memory_results, py_results)
     return rows
 end
 
-function summary_metrics(rows)
-    matched = filter(row -> row.py_ms !== nothing, rows)
+function summary_metrics(rows; include=(row -> true))
+    scoped_rows = filter(include, rows)
+    matched = filter(row -> row.py_ms !== nothing, scoped_rows)
     total_jl_ms = sum((row.jl_ms for row in matched); init=0.0)
     total_py_ms = sum((row.py_ms for row in matched); init=0.0)
     peak_rows = filter(row -> row.py_peak_kib !== nothing, matched)
@@ -131,7 +189,7 @@ function summary_metrics(rows)
     total_py_rss_delta_kib = sum((row.py_rss_delta_kib for row in rss_rows); init=0.0)
     return (
         matched=length(matched),
-        total=length(rows),
+        total=length(scoped_rows),
         jl_ms=total_jl_ms,
         py_ms=total_py_ms,
         time_ratio=total_jl_ms > 0 ? total_py_ms / total_jl_ms : NaN,
@@ -142,7 +200,7 @@ function summary_metrics(rows)
         rss_rows=length(rss_rows),
         jl_rss_kib=total_jl_rss_kib,
         py_rss_delta_kib=total_py_rss_delta_kib,
-        rss_ratio=total_jl_rss_kib > 0 ? total_py_rss_delta_kib / total_jl_rss_kib : NaN,
+        rss_ratio=total_jl_rss_kib > 0 ? total_py_rss_delta_kib / total_jl_rss_kib : nothing,
     )
 end
 
@@ -207,12 +265,12 @@ jl_file = joinpath(resdir, "$(jl_label).json")
 jl_mem_file = joinpath(resdir, "$(jl_label)_memory.json")
 py_file = joinpath(resdir, "qmcpy_$(py_label).json")
 
-isfile(jl_file) || error(
-    "Julia results not found: $jl_file\nRun: make bench" *
+wait_for_artifact(jl_file) || error(
+    "Julia results not found after waiting 10s: $jl_file\nRun: make bench" *
     (jl_label == "latest" ? "" : " then julia benchmark/runbenchmarks.jl $jl_label"),
 )
-isfile(py_file) || error(
-    "QMCPy results not found: $py_file\n" *
+wait_for_artifact(py_file) || error(
+    "QMCPy results not found after waiting 10s: $py_file\n" *
     "Run: python benchmark/benchmark_qmcpy.py $py_label",
 )
 
@@ -223,8 +281,26 @@ py_data = JSON3.read(read(py_file, String))
 jl_memory_results = jl_mem_data === nothing ? nothing : jl_mem_data["results"]
 py_results = py_data["results"]
 py_version = get(py_data, "qmcpy_version", "?")
+py_python_version = maybe_get(py_data, "python_version", "?")
+report_generated_at = Dates.format(Dates.now(), dateformat"yyyy-mm-ddTHH:MM:SS")
+jl_generated_at = maybe_get(jl_mem_data, "generated_at", "n/a")
+jl_blas_threads = maybe_get(jl_mem_data, "blas_threads", "n/a")
+jl_config = maybe_get(jl_mem_data, "benchmark_config", nothing)
+jl_integrate_samples = maybe_get(jl_config, "integrate_samples", "n/a")
+jl_student_t_samples = maybe_get(jl_config, "student_t_samples", "n/a")
+py_generated_at = maybe_get(py_data, "generated_at", "n/a")
+py_config = maybe_get(py_data, "benchmark_config", nothing)
+py_integrate_repeat = maybe_get(py_config, "integrate_repeat", "n/a")
+py_student_t_repeat = maybe_get(py_config, "student_t_repeat", "n/a")
+py_student_t_warmup_runs = maybe_get(py_config, "student_t_warmup_runs", "n/a")
+py_thread_env = format_thread_env(maybe_get(py_data, "thread_env", nothing))
+jl_file_mtime = artifact_mtime(jl_file)
+py_file_mtime = artifact_mtime(py_file)
+artifact_skew_seconds = abs(stat(jl_file).mtime - stat(py_file).mtime)
 rows = collect_comparison_rows(jl_results, jl_memory_results, py_results)
 summary = summary_metrics(rows)
+summary_non_student_t = summary_metrics(rows; include=row -> !row.student_t)
+summary_student_t = summary_metrics(rows; include=row -> row.student_t)
 
 jl_sol_file = joinpath(resdir, "$(jl_label)_solutions.json")
 jl_sol_data = isfile(jl_sol_file) ? JSON3.read(read(jl_sol_file, String)) : nothing
@@ -235,9 +311,34 @@ n_flagged = count(r -> r.check !== nothing && r.check.flagged, accuracy_rows)
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia label   : $jl_label")
 println("  QMCPy label   : $py_label  (qmcpy $py_version)")
+println(
+    "  Julia artifact: $(basename(jl_file))  (mtime $jl_file_mtime, generated $jl_generated_at)",
+)
+println(
+    "  QMCPy artifact: $(basename(py_file))  (mtime $py_file_mtime, generated $py_generated_at)",
+)
+println("  Artifact skew : $(format_seconds(artifact_skew_seconds))")
+println(
+    "  Julia config  : BLAS threads=$(jl_blas_threads), integrate samples=$(jl_integrate_samples)",
+)
+println(
+    "  Python config : python $py_python_version, integrate repeat=$(py_integrate_repeat), thread env=$py_thread_env",
+)
+println(
+    "  StudentT config: Julia samples=$(jl_student_t_samples), Python repeat=$(py_student_t_repeat), warmup runs=$(py_student_t_warmup_runs)",
+)
 println()
 println("  NOTE: C-kernel rows [C] (Lattice/DigitalNetB2/Halton gen_samples) use the")
 println("  same qmctoolscl library on both sides and are NOT a language comparison.")
+if summary_student_t.total > 0
+    println("  NOTE: StudentT rows are also summarized separately because they can dominate")
+    println("  the weighted cross-language time ratio.")
+end
+if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
+    println(
+        "  NOTE: input artifacts are more than 10 minutes apart; rerun `make bench-compare-py` if that was not intentional.",
+    )
+end
 println()
 
 header = @sprintf("  %-48s  %11s  %11s  %7s", "benchmark", "Julia (ms)", "Python (ms)", "ratio")
@@ -278,6 +379,24 @@ println(
     summary.matched,
     summary.total
 )
+if summary_student_t.total > 0
+    @printf(
+        "  weighted time ratio excluding StudentT = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
+        summary_non_student_t.time_ratio,
+        summary_non_student_t.py_ms,
+        summary_non_student_t.jl_ms,
+        summary_non_student_t.matched,
+        summary_non_student_t.total
+    )
+    @printf(
+        "  weighted time ratio StudentT only = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
+        summary_student_t.time_ratio,
+        summary_student_t.py_ms,
+        summary_student_t.jl_ms,
+        summary_student_t.matched,
+        summary_student_t.total
+    )
+end
 if summary.peak_rows > 0
     @printf(
         "weighted tracemalloc ratio = %.3f  (Python peak total %.1f KiB vs Julia alloc total %.1f KiB across %d/%d rows)\n",
@@ -292,7 +411,7 @@ else
         "weighted tracemalloc ratio = n/a  (QMCPy results do not record Python memory metrics)",
     )
 end
-if summary.rss_rows > 0
+if summary.rss_rows > 0 && summary.rss_ratio !== nothing
     @printf(
         "weighted RSS delta ratio   = %.3f  (Python RSS Δ total %.1f KiB vs Julia RSS Δ total %.1f KiB across %d/%d rows)\n",
         summary.rss_ratio,
@@ -300,6 +419,10 @@ if summary.rss_rows > 0
         summary.jl_rss_kib,
         summary.rss_rows,
         summary.total
+    )
+elseif summary.rss_rows > 0
+    println(
+        "weighted RSS delta ratio   = n/a  (Julia RSS Δ total is 0.0 KiB across matched rows, so the weighted ratio is undefined)",
     )
 else
     println("weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)")
@@ -350,7 +473,22 @@ open(outfile, "w") do io
     println(io, "|---|---|---|")
     println(io, "| Julia label | `$(jl_label)` | — |")
     println(io, "| Python label | — | `$(py_label)` |")
+    println(io, "| Julia artifact mtime | `$(jl_file_mtime)` | — |")
+    println(io, "| Python artifact mtime | — | `$(py_file_mtime)` |")
+    println(io, "| Julia generated at | `$(jl_generated_at)` | — |")
+    println(io, "| Python generated at | — | `$(py_generated_at)` |")
+    println(io, "| Julia BLAS threads | `$(jl_blas_threads)` | — |")
+    println(io, "| Python version | — | `$(py_python_version)` |")
     println(io, "| qmcpy version | — | $(py_version) |")
+    println(
+        io,
+        "| integrate timing | `samples=$(jl_integrate_samples)` | `repeat=$(py_integrate_repeat)` |",
+    )
+    println(
+        io,
+        "| StudentT timing | `samples=$(jl_student_t_samples)` | `repeat=$(py_student_t_repeat)`, `warmup=$(py_student_t_warmup_runs)` |",
+    )
+    println(io, "| thread env | — | `$(py_thread_env)` |")
     println(io, "")
     println(io, "**`ratio = Python time ÷ Julia time`**  ")
     println(
@@ -366,6 +504,13 @@ open(outfile, "w") do io
         io,
         "> `qmctoolscl` library on both sides and are **not** a Julia vs Python comparison.",
     )
+    if summary_student_t.total > 0
+        println(
+            io,
+            "> `StudentT` rows are also summarized separately below because they can dominate",
+        )
+        println(io, "> the weighted cross-language time ratio.")
+    end
     println(
         io,
         "> Julia `alloc KiB` is allocated bytes from BenchmarkTools. Julia `RSS Δ` and Python",
@@ -378,45 +523,81 @@ open(outfile, "w") do io
         io,
         "> peak is Python-managed temporary memory. These are related but not interchangeable.",
     )
-    println(io, "")
-    println(io, "## Aggregate Summary\n")
-    println(io, "| metric | ratio | Julia total | Python total | rows |")
-    println(io, "|:-------|------:|------------:|-------------:|-----:|")
     println(
         io,
-        "| matched benchmarks | $(summary.matched)/$(summary.total) | — | — | $(summary.matched) |",
+        "> Report generated at `$(report_generated_at)`. Input artifact skew: `$(format_seconds(artifact_skew_seconds))`.",
+    )
+    if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
+        println(
+            io,
+            "> ℹ️ The Julia and QMCPy input artifacts are more than 10 minutes apart. If that was not intentional, rerun `make bench-compare-py` to refresh both sides together.",
+        )
+    end
+    println(io, "")
+    println(io, "## Aggregate Summary\n")
+    println(io, "| metric | scope | ratio | Julia total | Python total | rows |")
+    println(io, "|:-------|:------|------:|------------:|-------------:|-----:|")
+    println(
+        io,
+        "| matched benchmarks | all matched rows | $(summary.matched)/$(summary.total) | — | — | $(summary.matched) |",
     )
     @printf(
         io,
-        "| weighted time ratio | %.3f | %.3f ms | %.3f ms | %d |\n",
+        "| weighted time ratio | all matched rows | %.3f | %.3f ms | %.3f ms | %d |\n",
         summary.time_ratio,
         summary.jl_ms,
         summary.py_ms,
         summary.matched
     )
+    if summary_student_t.total > 0
+        @printf(
+            io,
+            "| weighted time ratio | excluding StudentT | %.3f | %.3f ms | %.3f ms | %d |\n",
+            summary_non_student_t.time_ratio,
+            summary_non_student_t.jl_ms,
+            summary_non_student_t.py_ms,
+            summary_non_student_t.matched
+        )
+        @printf(
+            io,
+            "| weighted time ratio | StudentT only | %.3f | %.3f ms | %.3f ms | %d |\n",
+            summary_student_t.time_ratio,
+            summary_student_t.jl_ms,
+            summary_student_t.py_ms,
+            summary_student_t.matched
+        )
+    end
     if summary.peak_rows > 0
         @printf(
             io,
-            "| weighted tracemalloc ratio | %.3f | %.1f KiB | %.1f KiB | %d |\n",
+            "| weighted tracemalloc ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n",
             summary.peak_ratio,
             summary.jl_peak_kib,
             summary.py_peak_kib,
             summary.peak_rows
         )
     else
-        println(io, "| weighted tracemalloc ratio | n/a | n/a | n/a | 0 |")
+        println(io, "| weighted tracemalloc ratio | all matched rows | n/a | n/a | n/a | 0 |")
     end
-    if summary.rss_rows > 0
+    if summary.rss_rows > 0 && summary.rss_ratio !== nothing
         @printf(
             io,
-            "| weighted RSS delta ratio | %.3f | %.1f KiB | %.1f KiB | %d |\n\n",
+            "| weighted RSS delta ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n\n",
             summary.rss_ratio,
             summary.jl_rss_kib,
             summary.py_rss_delta_kib,
             summary.rss_rows
         )
+    elseif summary.rss_rows > 0
+        @printf(
+            io,
+            "| weighted RSS delta ratio | all matched rows | n/a | %.1f KiB | %.1f KiB | %d |\n\n",
+            summary.jl_rss_kib,
+            summary.py_rss_delta_kib,
+            summary.rss_rows
+        )
     else
-        println(io, "| weighted RSS delta ratio | n/a | n/a | n/a | 0 |\n")
+        println(io, "| weighted RSS delta ratio | all matched rows | n/a | n/a | n/a | 0 |\n")
     end
     println(io, "")
     println(

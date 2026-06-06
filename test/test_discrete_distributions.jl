@@ -93,7 +93,31 @@
             dd_direct =
                 Lattice(3; randomize=false, order="linear", generating_vector=[1, 3, 5, 7])
             @test gen_samples(dd_file, 8) ≈ gen_samples(dd_direct, 8)
+            @test dd_file.n_limit == 16
             @test_throws ArgumentError gen_samples(dd_file, 17)
+        end
+        mktemp() do path, io
+            write(io, "# d_limit\n2\n# n_limit\n16\n1\n3\n5\n7\n")
+            close(io)
+            @test_throws ArgumentError Lattice(
+                3;
+                randomize=false,
+                order="linear",
+                generating_vector=path,
+            )
+        end
+
+        dd_default = Lattice(3; randomize=false, order="linear")
+        for ref in (
+            "kuo.lattice-33002-1024-1048576.9125",
+            "lattice/kuo.lattice-33002-1024-1048576.9125.txt",
+            "https://github.com/QMCSoftware/LDData/tree/main/lattice/kuo.lattice-33002-1024-1048576.9125.txt",
+            "https://raw.githubusercontent.com/QMCSoftware/LDData/main/lattice/kuo.lattice-33002-1024-1048576.9125.txt",
+        )
+            dd_named = Lattice(3; randomize=false, order="linear", generating_vector=ref)
+            @test dd_named.gen_vector == dd_default.gen_vector
+            @test dd_named.n_limit == dd_default.n_limit
+            @test gen_samples(dd_named, 16) ≈ gen_samples(dd_default, 16)
         end
 
         dd_default = Lattice(3; randomize=false, order="linear")
@@ -178,12 +202,181 @@
         @test DigitalNetB2(2; randomize="LMS DS").randomize == "LMS_DS"
         @test DigitalNetB2(2; randomize=:LMS_DS).randomize == "LMS_DS"
         @test DigitalNetB2(2; randomize="false").randomize == "none"
+        @test DigitalNetB2(2; randomize="OWEN").randomize == "NUS"
+
+        # Constructor parity: accept QMCPy-style order spellings.
+        @test DigitalNetB2(2; order="GRAY CODE").graycode
+        @test !DigitalNetB2(2; order="NATURAL").graycode
+        @test !DigitalNetB2(2; order=:RADICAL_INVERSE).graycode
+        let a = DigitalNetB2(3; randomize="none", seed=7, order="natural"),
+            b = DigitalNetB2(3; randomize="none", seed=7, graycode=false)
+
+            @test gen_samples(a, 16) ≈ gen_samples(b, 16)
+        end
+        @test_throws ArgumentError DigitalNetB2(2; order="bogus")
+        @test_throws ArgumentError DigitalNetB2(2; order="gray", graycode=false)
 
         # Custom direction matrices keep the existing generation path.
         V8 = Int.(dd.direction_nums[:, 1:8] .>> 24)
         dd_custom = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8)
         @test gen_samples(dd_custom, 16) ≈ gen_samples(dd, 16)
-        @test dd_custom.direction_nums == UInt32.(V8)
+        @test dd_custom.direction_nums == UInt64.(V8)
+        V8_lsb = map(v -> Int(bitreverse(UInt32(v)) >> 24), V8)
+        dd_custom_lsb =
+            DigitalNetB2(2; randomize="none", seed=1, generating_matrices=V8_lsb, msb=false)
+        @test gen_samples(dd_custom_lsb, 16) ≈ gen_samples(dd_custom, 16)
+        Vsparse = [1 2 4 8 1 2 4 8; 1 2 4 8 1 2 4 8]
+        dd_sparse_lsb =
+            DigitalNetB2(2; randomize="none", seed=1, generating_matrices=Vsparse, msb=false)
+        @test dd_sparse_lsb.direction_nums == map(v -> bitreverse(UInt64(v)) >> 56, Vsparse)
+
+        # Advanced constructor parity: widened t-bits and msb handling.
+        @test DigitalNetB2(2; randomize="none", t=40).t == 40
+        @test gen_samples(DigitalNetB2(2; randomize="none", seed=1, t=40), 16) == x
+        xrep_t =
+            gen_samples(DigitalNetB2(2; randomize="none", seed=1, replications=3, t=40), 16)
+        @test size(xrep_t) == (3, 16, 2)
+        @test all(0.0 .<= xrep_t .< 1.0)
+        @test xrep_t[1, :, :] == xrep_t[2, :, :]
+        @test xrep_t[2, :, :] == xrep_t[3, :, :]
+
+        x_nus_t_a = gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, t=40), 16)
+        x_nus_t_b = gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, t=40), 16)
+        @test size(x_nus_t_a) == (16, 2)
+        @test all(0.0 .<= x_nus_t_a .< 1.0)
+        @test x_nus_t_a ≈ x_nus_t_b
+        x_nus_rep_t =
+            gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, replications=2, t=40), 8)
+        @test size(x_nus_rep_t) == (2, 8, 2)
+        @test all(0.0 .<= x_nus_rep_t .< 1.0)
+
+        # Higher-order / interlaced digital nets.
+        dd_alpha = DigitalNetB2(3; randomize="none", seed=7, alpha=2, graycode=false)
+        @test dd_alpha.alpha == 2
+        @test dd_alpha.t == 64
+        @test gen_samples(dd_alpha, 4) == [
+            0.0 0.0 0.0
+            0.75 0.75 0.75
+            0.4375 0.9375 0.1875
+            0.6875 0.1875 0.9375
+        ]
+
+        x_alpha_lmsds_a = gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+        x_alpha_lmsds_b = gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+        @test size(x_alpha_lmsds_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_lmsds_a .< 1.0)
+        @test x_alpha_lmsds_a ≈ x_alpha_lmsds_b
+
+        x_alpha_lms_a = gen_samples(DigitalNetB2(3; randomize="LMS", seed=7, alpha=2), 8)
+        x_alpha_lms_b = gen_samples(DigitalNetB2(3; randomize="LMS", seed=7, alpha=2), 8)
+        @test size(x_alpha_lms_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_lms_a .< 1.0)
+        @test x_alpha_lms_a ≈ x_alpha_lms_b
+        x_alpha_lms_rep =
+            gen_samples(DigitalNetB2(3; randomize="LMS", seed=7, replications=2, alpha=2), 8)
+        @test size(x_alpha_lms_rep) == (2, 8, 3)
+        @test all(0.0 .<= x_alpha_lms_rep .< 1.0)
+
+        x_alpha_ds_a = gen_samples(DigitalNetB2(3; randomize="DS", seed=7, alpha=2), 8)
+        x_alpha_ds_b = gen_samples(DigitalNetB2(3; randomize="DS", seed=7, alpha=2), 8)
+        @test size(x_alpha_ds_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_ds_a .< 1.0)
+        @test x_alpha_ds_a ≈ x_alpha_ds_b
+        x_alpha_ds_rep =
+            gen_samples(DigitalNetB2(3; randomize="DS", seed=7, replications=2, alpha=2), 8)
+        @test size(x_alpha_ds_rep) == (2, 8, 3)
+        @test all(0.0 .<= x_alpha_ds_rep .< 1.0)
+
+        x_alpha_nus_a = gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, alpha=2), 8)
+        x_alpha_nus_b = gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, alpha=2), 8)
+        @test size(x_alpha_nus_a) == (8, 3)
+        @test all(0.0 .<= x_alpha_nus_a .< 1.0)
+        @test x_alpha_nus_a ≈ x_alpha_nus_b
+        x_alpha_nus_rep =
+            gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, replications=2, alpha=2), 8)
+        @test size(x_alpha_nus_rep) == (2, 8, 3)
+        @test all(0.0 .<= x_alpha_nus_rep .< 1.0)
+        if QMC._HAS_DNB2_FUSED[]
+            old_fused = QMC._HAS_DNB2_FUSED[]
+            try
+                QMC._HAS_DNB2_FUSED[] = true
+                x_alpha_fused =
+                    gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+                QMC._HAS_DNB2_FUSED[] = false
+                x_alpha_unfused =
+                    gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
+                @test x_alpha_fused ≈ x_alpha_unfused
+            finally
+                QMC._HAS_DNB2_FUSED[] = old_fused
+            end
+        end
+
+        # LDData-style text sources: local file paths and QMCPy-compatible names.
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n2\n# n_limit\n16\n# bit precision\n32\n")
+            for j in 1:2
+                write(io, join(string.(Int.(dd.direction_nums[j, :])), ' '))
+                write(io, "\n")
+            end
+            flush(io)
+
+            dd_file = DigitalNetB2(2; randomize="none", seed=1, generating_matrices=path)
+            @test gen_samples(dd_file, 16) ≈ gen_samples(dd, 16)
+            @test dd_file.n_limit == 16
+            @test_throws ArgumentError gen_samples(dd_file, 17)
+        end
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n2\n# n_limit\n16\n# bit precision\n64\n")
+            for _ in 1:2
+                write(io, "1 2 4 8\n")
+            end
+            flush(io)
+
+            dd_file64 =
+                DigitalNetB2(1; randomize="none", seed=1, alpha=2, generating_matrices=path)
+            @test dd_file64.source_bits == 64
+            @test dd_file64.t == 64
+            @test size(gen_samples(dd_file64, 4)) == (4, 1)
+        end
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n1024\n# n_limit\n2\n# bit precision\n32\n")
+            for _ in 1:1024
+                write(io, "1\n")
+            end
+            flush(io)
+
+            @test_throws ArgumentError DigitalNetB2(
+                513;
+                randomize="none",
+                alpha=2,
+                generating_matrices=path,
+            )
+        end
+        mktemp() do path, io
+            write(io, "# base\n2\n# d_limit\n1026\n# n_limit\n2\n# bit precision\n32\n")
+            for _ in 1:1026
+                write(io, "1\n")
+            end
+            flush(io)
+
+            dd_file_alpha_limit =
+                DigitalNetB2(513; randomize="none", alpha=2, generating_matrices=path)
+            @test dd_file_alpha_limit.source_bits == 32
+            @test dd_file_alpha_limit.n_limit == 2
+            @test size(gen_samples(dd_file_alpha_limit, 2)) == (2, 513)
+        end
+
+        dd_default = DigitalNetB2(3; randomize="none", seed=7)
+        for ref in (
+            "joe_kuo.6.21201.txt",
+            "joe_kuo.6.1024.txt",
+            "dnet/joe_kuo.6.21201.txt",
+            "https://github.com/QMCSoftware/LDData/tree/main/dnet/joe_kuo.6.21201.txt",
+            "https://raw.githubusercontent.com/QMCSoftware/LDData/main/dnet/joe_kuo.6.21201.txt",
+        )
+            dd_named = DigitalNetB2(3; randomize="none", seed=7, generating_matrices=ref)
+            @test gen_samples(dd_named, 16) ≈ gen_samples(dd_default, 16)
+        end
 
         # The custom matrix precision limits the allowable sample window.
         dd_short = DigitalNetB2(
@@ -195,16 +388,34 @@
         @test_throws ArgumentError gen_samples(dd_short, 9)
         @test_throws ArgumentError gen_samples(dd_short, 4; n_start=5)
 
+        # Higher-order bundled data uses raw Sobol' dimensions, so the default
+        # Joe-Kuo table tops out at floor(1024 / alpha) output dimensions.
+        dd_alpha_limit = DigitalNetB2(512; randomize="none", alpha=2)
+        @test size(gen_samples(dd_alpha_limit, 2)) == (2, 512)
+        @test_throws ArgumentError DigitalNetB2(513; randomize="none", alpha=2)
+
+        # Explicit custom matrices can still exceed the bundled effective-dimension
+        # limit as long as enough raw rows are supplied.
+        dd_alpha_custom =
+            DigitalNetB2(513; randomize="none", alpha=2, generating_matrices=ones(Int, 1026, 1))
+        @test size(gen_samples(dd_alpha_custom, 2)) == (2, 513)
+
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 1, 4))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=ones(Int, 2, 33))
         @test_throws ArgumentError DigitalNetB2(2; generating_matrices=zeros(Int, 2, 4))
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=fill(1 << 20, 2, 8))
+        @test_throws ArgumentError DigitalNetB2(2; randomize="none", t=31)
+        @test_throws ArgumentError DigitalNetB2(2; randomize="none", t=65)
+        @test_throws ArgumentError DigitalNetB2(2; generating_matrices=V8, t=7)
         @test_throws ArgumentError DigitalNetB2(
             2;
-            generating_matrices=Int.(dd.direction_nums[:, 1:8]),
+            generating_matrices=fill(BigInt(typemax(UInt64)) + 1, 2, 4),
         )
         @test_throws ArgumentError DigitalNetB2(
-            2;
-            generating_matrices=fill(BigInt(typemax(UInt32)) + 1, 2, 4),
+            3;
+            randomize="none",
+            alpha=2,
+            generating_matrices=V8,
         )
     end
 

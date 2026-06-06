@@ -15,7 +15,9 @@ QMCPY_PYTHON_AUTO := $(shell \
 	done)
 PYTHON ?= $(if $(QMCPY_PYTHON_AUTO),$(QMCPY_PYTHON_AUTO),python)
 BENCH_COVERAGE ?= 0
+BENCH_BLAS_THREADS ?= 1
 JULIA_BENCH_COVERAGE_FLAG := $(if $(filter 1,$(BENCH_COVERAGE)),--code-coverage=user,)
+BENCH_THREAD_ENV := QMC_BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) OPENBLAS_NUM_THREADS=$(BENCH_BLAS_THREADS) MKL_NUM_THREADS=$(BENCH_BLAS_THREADS) OMP_NUM_THREADS=$(BENCH_BLAS_THREADS) NUMEXPR_NUM_THREADS=$(BENCH_BLAS_THREADS)
 
 define RUN_TIMED
 	@start=$$(date +%s); \
@@ -136,7 +138,7 @@ notebook-%:
 # Override output label with: make bench LABEL=gaus or make bench gaus
 # Saves results to benchmark/results/latest.json (default) or <LABEL>.json
 bench:
-	$(call RUN_TIMED,BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL),bench)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL),bench)
 
 check-qmcpy-python:
 	@$(PYTHON) -c "import qmcpy" >/dev/null 2>&1 || \
@@ -152,7 +154,7 @@ check-qmcpy-python:
 REV ?= HEAD
 LABEL ?=
 bench-compare:
-	$(call RUN_TIMED,BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare.jl $(REV) $(LABEL),bench-compare)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare.jl $(REV) $(LABEL),bench-compare)
 
 # Side-by-side Julia vs QMCPy comparison.
 # Runs both the Julia and QMCPy benchmark harnesses for the requested labels.
@@ -163,35 +165,40 @@ bench-compare:
 # If LABEL is set, it also becomes the default input label for both sides.
 JL_LABEL ?= $(if $(LABEL),$(LABEL),latest)
 PY_LABEL ?= $(JL_LABEL)
+BENCH_COMPARE_OUT := $(if $(LABEL),benchmark/results/compare_$(LABEL).md,benchmark/results/compare_head.md)
+BENCH_COMPARE_PY_OUT := $(if $(LABEL),benchmark/results/compare_python_$(LABEL).md,benchmark/results/compare_python.md)
 bench-compare-py: bench check-qmcpy-python
-	$(call RUN_TIMED,$(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && $(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
 
 # Explicit labeled Julia-vs-QMCPy comparison flow.
 # Usage: make bench-compare-py-label LABEL=base
 bench-compare-py-label: check-qmcpy-python
-	$(call RUN_TIMED,BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && $(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
 
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
+# This target does not define a third ratio; inspect:
+#   - $(BENCH_COMPARE_OUT)      with ratio = reference ÷ local
+#   - $(BENCH_COMPARE_PY_OUT)   with ratio = Python ÷ Julia
 # Usage: make bench-all LABEL=base
 bench-all:
-	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) LABEL=$(LABEL),bench-all)
+	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && printf '\n[bench-all] wrote %s (ratio = reference ÷ local) and %s (ratio = Python ÷ Julia)\n' "$(BENCH_COMPARE_OUT)" "$(BENCH_COMPARE_PY_OUT)",bench-all)
 
 # Run the benchmark suite with coverage enabled and produce an lcov report over
 # both src/ and benchmark/ coverage files.
 bench-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench BENCH_COVERAGE=1 && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-coverage)
 
 # Run the Julia-vs-Julia comparison with coverage enabled and produce an lcov report.
 bench-compare-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare BENCH_COVERAGE=1 REV=$(REV) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) REV=$(REV) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-coverage)
 
 # Run the Julia-vs-QMCPy comparison with coverage enabled and produce an lcov report.
 bench-compare-py-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare-py BENCH_COVERAGE=1 LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-py-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare-py BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-py-coverage)
 
 # Run the full labeled benchmark workflow with coverage enabled and produce an lcov report.
 bench-all-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-coverage)
 
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]
@@ -203,7 +210,7 @@ bench-compare-labels:
 # Combination of above targets
 # ============================================================================
 
-# Run the local full-check pipeline: format code, collect unit-test,
+# Run the full-check pipeline: format code, collect unit-test,
 # then collect full benchmark. Pass LABEL=... through to the benchmark step.
-local-ci:
+ci:
 	$(call RUN_TIMED,$(MAKE) format && $(MAKE) test && $(MAKE) bench-all LABEL=$(LABEL),local-ci)

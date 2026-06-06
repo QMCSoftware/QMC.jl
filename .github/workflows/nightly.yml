@@ -14,12 +14,10 @@ jobs:
     name: Nightly – Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
-          - os: macos-latest
-            julia-version: '1.12'
-          - os: windows-latest
+          - os: ubuntu-latest
             julia-version: '1.12'
 
     steps:
@@ -41,5 +39,5 @@ jobs:
       - name: Install dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-      - name: Run unit tests
-        run: julia --project=. -e 'using Pkg; Pkg.test()'
+      - name: Run benchmark
+        run: make ci

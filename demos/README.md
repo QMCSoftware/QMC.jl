@@ -47,15 +47,31 @@ jupyter notebook demos/quickstart.ipynb
 
 When Jupyter opens, choose the `QMC` Julia kernel for the notebook. The Python environment only launches Jupyter; it does not run the notebook code.
 
-| Notebook | Topic |
-|---|---|
-| `quickstart.ipynb` | Keister integral with all 5 stopping criteria |
-| `pricing_options.ipynb` | European, Asian, Lookback, Digital options |
-| `digital_net_b2.ipynb` | Sobol' sequences, scrambling, replications |
-| `lattice.ipynb` | Lattice orderings, shifts, Kuo vectors |
-| `lebesgue_integration.ipynb` | Lebesgue measure integration |
-| `some_true_measures.ipynb` | All 10 true measures demonstrated |
-| `gbm_demo.ipynb` | Geometric Brownian Motion for finance |
-| `qmc.jl_intro.ipynb` | Package tour: building blocks explained |
-| `sample_scatter_plots.ipynb` | Point set visualizations and statistics |
-| `elliptic_pde.ipynb` | 1D elliptic PDE uncertainty quantification with MC and lattice QMC |
+Current notebook inventory (26 notebooks):
+
+- `acceptance_rejection.ipynb`
+- `asian_option_mlqmc.ipynb`
+- `control_variates.ipynb`
+- `digital_net_b2.ipynb`
+- `elliptic_pde.ipynb`
+- `financial_option_ml.ipynb`
+- `gbm_demo.ipynb`
+- `iris.ipynb`
+- `kronecker.ipynb`
+- `lattice.ipynb`
+- `lattice_random_generator.ipynb`
+- `lebesgue_integration.ipynb`
+- `linear_scrambled_halton.ipynb`
+- `nei_demo.ipynb`
+- `plot_proj_function.ipynb`
+- `pricing_options.ipynb`
+- `qei_demo.ipynb`
+- `qmc.jl_intro.ipynb`
+- `quickstart.ipynb`
+- `ray_tracing.ipynb`
+- `sample_scatter_plots.ipynb`
+- `sensitivity_indices.ipynb`
+- `some_true_measures.ipynb`
+- `umbridge.ipynb`
+- `vectorized_qmc.ipynb`
+- `vectorized_qmc_bayes.ipynb`

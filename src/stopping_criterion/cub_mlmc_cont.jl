@@ -2,7 +2,8 @@
     CubMLMCCont(integrand::AbstractMLIntegrand; abs_tol=0.05, n_init=256,
                 n_limit=10_000_000_000, alpha_ci=0.01,
                 levels_min=2, levels_max=10,
-                n_tols=10, inflate=100^(1/9), theta_init=0.5)
+                n_tols=10, inflate=100^(1/9), theta_init=0.5,
+                trace_iterations=false)
 
 Continuation multilevel Monte Carlo (MLMC) stopping criterion.
 
@@ -10,6 +11,9 @@ Runs the MLMC algorithm at a sequence of progressively tighter tolerances
 (from `inflate^(n_tols-1) * target_tol` down to `target_tol`), reusing
 samples from coarser tolerances. This improves the estimation of the
 convergence rates α, β, γ before the final tolerance is reached.
+
+Set `trace_iterations=true` to record an `IterationLog` in
+`result.data[:iteration_log]`.
 
 # Arguments
 - `integrand`: A multilevel integrand (`AbstractMLIntegrand`).
@@ -49,6 +53,7 @@ mutable struct CubMLMCCont{I <: AbstractMLIntegrand} <: AbstractStoppingCriterio
     alpha0::Float64
     beta0::Float64
     gamma0::Float64
+    trace_iterations::Bool
 end
 
 function CubMLMCCont(
@@ -63,6 +68,7 @@ function CubMLMCCont(
     n_tols::Int=10,
     inflate::Float64=100.0^(1/9),
     theta_init::Float64=0.5,
+    trace_iterations::Bool=false,
 )
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
@@ -91,6 +97,7 @@ function CubMLMCCont(
         -1.0,
         -1.0,
         -1.0,
+        trace_iterations,
     )
 end
 
@@ -322,11 +329,22 @@ end
 function integrate(sc::CubMLMCCont; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     state = _init_mlmc_cont_state(sc)
+    log = IterationLog()
 
     # Loop over progressively tighter tolerances
     for t in 0:(sc.n_tols - 1)
         step_tol = sc.inflate^(sc.n_tols - t - 1) * sc.target_tol
         _integrate_step!(sc, state, step_tol)
+        if sc.trace_iterations
+            push!(
+                log;
+                n=sum(state.n_level),
+                solution=_solution_mlmc(state),
+                error_bound=_rmse(sc, state, step_tol),
+                tol=step_tol,
+                elapsed=time() - t_start,
+            )
+        end
     end
 
     # Compute final solution
@@ -350,6 +368,9 @@ function integrate(sc::CubMLMCCont; resume::Union{Nothing, Dict{Symbol, Any}}=no
         :rmse_tol => sc.target_tol,
         :time_integrate => t_elapsed,
     )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
 
     return QMCResult(solution, data)
 end

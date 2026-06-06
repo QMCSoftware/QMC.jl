@@ -1,7 +1,7 @@
 """
     CubMLQMC(integrand::AbstractMLIntegrand; abs_tol=0.05, n_init=256,
              n_limit=10_000_000_000, alpha_ci=0.01,
-             levels_min=2, levels_max=10)
+             levels_min=2, levels_max=10, trace_iterations=false)
 
 Multilevel quasi-Monte Carlo (MLQMC) stopping criterion.
 
@@ -12,6 +12,9 @@ is met. Unlike `CubMLQMCCont`, this criterion does not use a continuation
 strategy — it targets the final tolerance directly.
 
 The discrete distribution must have `replications ≥ 4`.
+
+Set `trace_iterations=true` to record an `IterationLog` in
+`result.data[:iteration_log]`.
 
 # Arguments
 - `integrand`: A multilevel integrand (`AbstractMLIntegrand`).
@@ -39,6 +42,7 @@ mutable struct CubMLQMC{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
     levels_min::Int
     levels_max::Int
     theta::Float64
+    trace_iterations::Bool
 end
 
 function Base.getproperty(sc::CubMLQMC, name::Symbol)
@@ -57,6 +61,7 @@ function CubMLQMC(
     alpha_ci::Float64=0.01,
     levels_min::Int=2,
     levels_max::Int=10,
+    trace_iterations::Bool=false,
 )
     levels_min >= 2 || throw(ArgumentError("levels_min must be ≥ 2"))
     levels_max >= levels_min || throw(ArgumentError("levels_max must be ≥ levels_min"))
@@ -75,7 +80,17 @@ function CubMLQMC(
         target_tol = rmse_tol
     end
 
-    return CubMLQMC(integrand, target_tol, n_init, n_limit, R, levels_min, levels_max, 0.5)
+    return CubMLQMC(
+        integrand,
+        target_tol,
+        n_init,
+        n_limit,
+        R,
+        levels_min,
+        levels_max,
+        0.5,
+        trace_iterations,
+    )
 end
 
 # Reuse _MLQMCState from cub_mlqmc_cont.jl
@@ -187,6 +202,7 @@ function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     t_start = time()
     state = _init_mlqmc_direct_state(sc)
     target_tol = sc.target_tol
+    log = IterationLog()
 
     converged = false
     while !converged
@@ -222,11 +238,32 @@ function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
         end
 
         if converged
+            rmse = sqrt(max(0.0, (1 - sc.theta) * varest + sc.theta * state.bias_estimate^2))
+            if sc.trace_iterations
+                push!(
+                    log;
+                    n=(sc.replications * sum(state.n_level)),
+                    solution=sum(state.mean_level[1:state.levels]),
+                    error_bound=rmse,
+                    tol=target_tol,
+                    elapsed=time() - t_start,
+                )
+            end
             break
         end
 
         # Check overall convergence
         rmse = sqrt(max(0.0, (1 - sc.theta) * varest + sc.theta * state.bias_estimate^2))
+        if sc.trace_iterations
+            push!(
+                log;
+                n=(sc.replications * sum(state.n_level)),
+                solution=sum(state.mean_level[1:state.levels]),
+                error_bound=rmse,
+                tol=target_tol,
+                elapsed=time() - t_start,
+            )
+        end
         converged = rmse < target_tol
         if !converged
             if state.levels >= sc.levels_max
@@ -253,6 +290,9 @@ function integrate(sc::CubMLQMC; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
         :rmse_tol => sc.target_tol,
         :time_integrate => t_elapsed,
     )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
 
     return QMCResult(solution, data)
 end

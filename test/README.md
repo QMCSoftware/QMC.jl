@@ -9,14 +9,14 @@ This directory contains the automated test suite for QMC.jl.
 
 ## Test files
 
-- `test_discrete_distributions.jl`
-- `test_true_measures.jl`
-- `test_integrands.jl`
-- `test_kernels.jl`
-- `test_stopping_criteria.jl`
-- `test_integration.jl`
-- `test_multilevel.jl`
-- `test_aqua.jl`
+- `test_discrete_distributions.jl`: tests discrete distribution constructions and sampling behavior.
+- `test_true_measures.jl`: validates true-measure definitions and related properties.
+- `test_integrands.jl`: checks integrand setup, transformations, and evaluations.
+- `test_kernels.jl`: verifies kernel implementations and expected numerical behavior.
+- `test_stopping_criteria.jl`: tests stopping rules and convergence-trigger logic.
+- `test_integration.jl`: exercises end-to-end integration workflows and outputs.
+- `test_multilevel.jl`: covers multilevel algorithms and level-coupling behavior.
+- `test_aqua.jl`: runs Aqua automatic quality checks.
 
 ## Local commands
 
