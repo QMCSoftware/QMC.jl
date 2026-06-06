@@ -27,6 +27,7 @@ const SAMPLES = [256, 1024, 4096, 16384]
 const DIMS = [3, 10]
 const BENCH_SAMPLES = 5
 const INTEGRATE_BENCH_SAMPLES = 9
+const STUDENT_T_BENCH_SAMPLES = 9
 
 const BENCH_BLAS_THREADS = let raw = get(ENV, "QMC_BENCH_BLAS_THREADS", "1")
     threads = try
@@ -159,7 +160,7 @@ for n in SAMPLES
         @benchmarkable evaluate($f_cont, $xu) evals=3 samples=BENCH_SAMPLES
 
     SUITE["transform"]["StudentT d=10 n=$n"] =
-        @benchmarkable transform($tm_t, $xu) evals=3 samples=BENCH_SAMPLES
+        @benchmarkable transform($tm_t, $xu) evals=3 samples=STUDENT_T_BENCH_SAMPLES
     SUITE["transform"]["JohnsonsSU d=10 n=$n"] =
         @benchmarkable transform($tm_j, $xu) evals=3 samples=BENCH_SAMPLES
 end

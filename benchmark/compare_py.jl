@@ -267,9 +267,12 @@ jl_generated_at = maybe_get(jl_mem_data, "generated_at", "n/a")
 jl_blas_threads = maybe_get(jl_mem_data, "blas_threads", "n/a")
 jl_config = maybe_get(jl_mem_data, "benchmark_config", nothing)
 jl_integrate_samples = maybe_get(jl_config, "integrate_samples", "n/a")
+jl_student_t_samples = maybe_get(jl_config, "student_t_samples", "n/a")
 py_generated_at = maybe_get(py_data, "generated_at", "n/a")
 py_config = maybe_get(py_data, "benchmark_config", nothing)
 py_integrate_repeat = maybe_get(py_config, "integrate_repeat", "n/a")
+py_student_t_repeat = maybe_get(py_config, "student_t_repeat", "n/a")
+py_student_t_warmup_runs = maybe_get(py_config, "student_t_warmup_runs", "n/a")
 py_thread_env = format_thread_env(maybe_get(py_data, "thread_env", nothing))
 jl_file_mtime = artifact_mtime(jl_file)
 py_file_mtime = artifact_mtime(py_file)
@@ -298,6 +301,9 @@ println(
 )
 println(
     "  Python config : python $py_python_version, integrate repeat=$(py_integrate_repeat), thread env=$py_thread_env",
+)
+println(
+    "  StudentT config: Julia samples=$(jl_student_t_samples), Python repeat=$(py_student_t_repeat), warmup runs=$(py_student_t_warmup_runs)",
 )
 println()
 println("  NOTE: C-kernel rows [C] (Lattice/DigitalNetB2/Halton gen_samples) use the")
@@ -429,6 +435,10 @@ open(outfile, "w") do io
     println(
         io,
         "| integrate timing | `samples=$(jl_integrate_samples)` | `repeat=$(py_integrate_repeat)` |",
+    )
+    println(
+        io,
+        "| StudentT timing | `samples=$(jl_student_t_samples)` | `repeat=$(py_student_t_repeat)`, `warmup=$(py_student_t_warmup_runs)` |",
     )
     println(io, "| thread env | — | `$(py_thread_env)` |")
     println(io, "")

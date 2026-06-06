@@ -58,6 +58,8 @@ LARGE_N = [1024, 4096]
 SEED = 42
 DEFAULT_REPEAT = 7
 INTEGRATE_REPEAT = 9
+STUDENT_T_REPEAT = 21
+STUDENT_T_WARMUP_RUNS = 3
 THREAD_ENV_KEYS = (
     "QMC_BENCH_BLAS_THREADS",
     "OPENBLAS_NUM_THREADS",
@@ -102,9 +104,15 @@ def measure_memory(fn):
 
 def bench(make_call, *, repeat=DEFAULT_REPEAT, warmup=True):
     """Return median seconds plus approximate memory metrics per call."""
+    if isinstance(warmup, bool):
+        warmup_runs = 1 if warmup else 0
+    else:
+        warmup_runs = int(warmup)
+        if warmup_runs < 0:
+            raise ValueError("warmup must be bool or non-negative integer")
     fn = make_call()
-    if warmup:
-        fn()  # discard first call (cache/allocation warm-up)
+    for _ in range(warmup_runs):
+        fn()  # discard first call(s) to reduce cache/allocation warm-up noise
     mem = measure_memory(fn)
     # Pick an inner count so each timing sample is long enough to be stable.
     timer = timeit.Timer(fn)
@@ -160,6 +168,9 @@ def main():
             "Thread env: "
             + ", ".join(f"{key}={value}" for key, value in sorted(thread_env.items()))
         )
+    print(
+        f"StudentT config: repeat={STUDENT_T_REPEAT}, warmup_runs={STUDENT_T_WARMUP_RUNS}"
+    )
 
     # 1. Discrete distribution sampling --------------------------------------
     # [C] = qmctoolscl C kernel (not a language comparison)
@@ -211,7 +222,14 @@ def main():
             tm = qp.StudentT(dd, loc=np.zeros(dim), shape=np.eye(dim), df=2.0)
             x = dd(n)
             return lambda: tm._transform(x)
-        record(results, "transform", f"StudentT d=10 n={n}", make_student_t)
+        record(
+            results,
+            "transform",
+            f"StudentT d=10 n={n}",
+            make_student_t,
+            repeat=STUDENT_T_REPEAT,
+            warmup=STUDENT_T_WARMUP_RUNS,
+        )
 
         def make_johnsons_su(n=n):
             dim = 10
@@ -385,6 +403,8 @@ def main():
         "benchmark_config": {
             "default_repeat": DEFAULT_REPEAT,
             "integrate_repeat": INTEGRATE_REPEAT,
+            "student_t_repeat": STUDENT_T_REPEAT,
+            "student_t_warmup_runs": STUDENT_T_WARMUP_RUNS,
         },
         "results": results,
     }

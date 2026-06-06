@@ -42,6 +42,7 @@ function benchmark_metadata(label::AbstractString)
         "benchmark_config" => Dict(
             "leaf_samples" => BENCH_SAMPLES,
             "integrate_samples" => INTEGRATE_BENCH_SAMPLES,
+            "student_t_samples" => STUDENT_T_BENCH_SAMPLES,
         ),
     )
 end
@@ -230,7 +231,7 @@ end
 println("QMC.jl Benchmarks")
 println("="^70)
 println(
-    "Benchmark config: BLAS threads=$(BLAS.get_num_threads()), integrate samples=$(INTEGRATE_BENCH_SAMPLES)",
+    "Benchmark config: BLAS threads=$(BLAS.get_num_threads()), integrate samples=$(INTEGRATE_BENCH_SAMPLES), StudentT samples=$(STUDENT_T_BENCH_SAMPLES)",
 )
 
 results = run_suite(SUITE)

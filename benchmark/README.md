@@ -213,6 +213,11 @@ The heaviest adaptive integrate rows are intentionally timed with more samples
 than the leaf transform/evaluate rows (`samples=9` in Julia, `repeat=9` in
 QMCPy) because those rows were the main source of weighted-ratio swings.
 
+The QMCPy `StudentT` transform rows now also use a dedicated higher-stability
+setting (`repeat=21`, `warmup=3`), and the Julia `StudentT` rows use
+`samples=9`. Those settings are recorded in the report header so unusually large
+cross-run changes in that family are easier to audit.
+
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
 - large-`d` `Gaussian(diag)` and `Gaussian(dense)` transforms
