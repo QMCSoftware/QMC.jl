@@ -198,7 +198,7 @@ function summary_metrics(rows; include=(row -> true))
         rss_rows=length(rss_rows),
         jl_rss_kib=total_jl_rss_kib,
         py_rss_delta_kib=total_py_rss_delta_kib,
-        rss_ratio=total_jl_rss_kib > 0 ? total_py_rss_delta_kib / total_jl_rss_kib : NaN,
+        rss_ratio=total_jl_rss_kib > 0 ? total_py_rss_delta_kib / total_jl_rss_kib : nothing,
     )
 end
 
@@ -409,7 +409,7 @@ else
         "weighted tracemalloc ratio = n/a  (QMCPy results do not record Python memory metrics)",
     )
 end
-if summary.rss_rows > 0
+if summary.rss_rows > 0 && summary.rss_ratio !== nothing
     @printf(
         "weighted RSS delta ratio   = %.3f  (Python RSS Δ total %.1f KiB vs Julia RSS Δ total %.1f KiB across %d/%d rows)\n",
         summary.rss_ratio,
@@ -417,6 +417,10 @@ if summary.rss_rows > 0
         summary.jl_rss_kib,
         summary.rss_rows,
         summary.total
+    )
+elseif summary.rss_rows > 0
+    println(
+        "weighted RSS delta ratio   = n/a  (Julia RSS Δ total is 0.0 KiB across matched rows, so the weighted ratio is undefined)",
     )
 else
     println("weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)")
@@ -573,11 +577,19 @@ open(outfile, "w") do io
     else
         println(io, "| weighted tracemalloc ratio | all matched rows | n/a | n/a | n/a | 0 |")
     end
-    if summary.rss_rows > 0
+    if summary.rss_rows > 0 && summary.rss_ratio !== nothing
         @printf(
             io,
             "| weighted RSS delta ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n\n",
             summary.rss_ratio,
+            summary.jl_rss_kib,
+            summary.py_rss_delta_kib,
+            summary.rss_rows
+        )
+    elseif summary.rss_rows > 0
+        @printf(
+            io,
+            "| weighted RSS delta ratio | all matched rows | n/a | %.1f KiB | %.1f KiB | %d |\n\n",
             summary.jl_rss_kib,
             summary.py_rss_delta_kib,
             summary.rss_rows
