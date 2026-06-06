@@ -31,7 +31,14 @@ times = Dict{String, Float64}()
 
 @testset "QMC" begin
     for test_file in TEST_FILES
-        elapsed = @elapsed include(test_file)
+        elapsed = @elapsed begin
+            try
+                include(test_file)
+            catch err
+                println("  ✗ failed in $(test_file)")
+                rethrow(err)
+            end
+        end
         times[test_file] = elapsed
         println("  ⏱  $(test_file): $(fmt_duration(elapsed))")
     end
