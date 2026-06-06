@@ -210,7 +210,7 @@ bench-compare-labels:
 # Combination of above targets
 # ============================================================================
 
-# Run the local full-check pipeline: format code, collect unit-test,
+# Run the full-check pipeline: format code, collect unit-test,
 # then collect full benchmark. Pass LABEL=... through to the benchmark step.
-local-ci:
+ci:
 	$(call RUN_TIMED,$(MAKE) format && $(MAKE) test && $(MAKE) bench-all LABEL=$(LABEL),local-ci)
