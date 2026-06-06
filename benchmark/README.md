@@ -301,6 +301,14 @@ benchmark/results/qmcpy_base.json
 benchmark/results/compare_python_base.md
 ```
 
+`bench-all` does not create a third combined ratio. It just runs both report
+generators, so you need to read each report with its own convention:
+
+- `compare_<label>.md`: `ratio = reference ÷ local`
+- `compare_python_<label>.md`: `ratio = Python ÷ Julia`
+
+So in both of those reports, `ratio > 1` means the local Julia side is faster.
+
 ## Output Files
 
 Common generated files:

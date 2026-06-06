@@ -165,6 +165,8 @@ bench-compare:
 # If LABEL is set, it also becomes the default input label for both sides.
 JL_LABEL ?= $(if $(LABEL),$(LABEL),latest)
 PY_LABEL ?= $(JL_LABEL)
+BENCH_COMPARE_OUT := $(if $(LABEL),benchmark/results/compare_$(LABEL).md,benchmark/results/compare_head.md)
+BENCH_COMPARE_PY_OUT := $(if $(LABEL),benchmark/results/compare_python_$(LABEL).md,benchmark/results/compare_python.md)
 bench-compare-py: bench check-qmcpy-python
 	$(call RUN_TIMED,$(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && $(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
 
@@ -174,9 +176,12 @@ bench-compare-py-label: check-qmcpy-python
 	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && $(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
 
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
+# This target does not define a third ratio; inspect:
+#   - $(BENCH_COMPARE_OUT)      with ratio = reference ÷ local
+#   - $(BENCH_COMPARE_PY_OUT)   with ratio = Python ÷ Julia
 # Usage: make bench-all LABEL=base
 bench-all:
-	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL),bench-all)
+	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && printf '\n[bench-all] wrote %s (ratio = reference ÷ local) and %s (ratio = Python ÷ Julia)\n' "$(BENCH_COMPARE_OUT)" "$(BENCH_COMPARE_PY_OUT)",bench-all)
 
 # Run the benchmark suite with coverage enabled and produce an lcov report over
 # both src/ and benchmark/ coverage files.

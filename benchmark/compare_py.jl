@@ -41,6 +41,7 @@ resdir = joinpath(@__DIR__, "results")
 compare_py_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python.md") :
     joinpath(resdir, "compare_python_$(label).md")
+const ARTIFACT_SKEW_WARNING_SECONDS = 10 * 60
 
 is_c_kernel_row(name::AbstractString) = occursin(r"Lattice|DigitalNetB2|Halton", name)
 is_student_t_row(name::AbstractString) = occursin("StudentT", name)
@@ -331,9 +332,9 @@ if summary_student_t.total > 0
     println("  NOTE: StudentT rows are also summarized separately because they can dominate")
     println("  the weighted cross-language time ratio.")
 end
-if artifact_skew_seconds > 300
+if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
     println(
-        "  NOTE: input artifacts are more than 5 minutes apart; rerun `make bench-compare-py` if that was not intentional.",
+        "  NOTE: input artifacts are more than 10 minutes apart; rerun `make bench-compare-py` if that was not intentional.",
     )
 end
 println()
@@ -520,10 +521,10 @@ open(outfile, "w") do io
         io,
         "> Report generated at `$(report_generated_at)`. Input artifact skew: `$(format_seconds(artifact_skew_seconds))`.",
     )
-    if artifact_skew_seconds > 300
+    if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
         println(
             io,
-            "> ℹ️ The Julia and QMCPy input artifacts are more than 5 minutes apart. If that was not intentional, rerun `make bench-compare-py` to refresh both sides together.",
+            "> ℹ️ The Julia and QMCPy input artifacts are more than 10 minutes apart. If that was not intentional, rerun `make bench-compare-py` to refresh both sides together.",
         )
     end
     println(io, "")
