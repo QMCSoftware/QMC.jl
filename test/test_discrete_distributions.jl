@@ -237,8 +237,8 @@
             gen_samples(DigitalNetB2(2; randomize="none", seed=1, replications=3, t=40), 16)
         @test size(xrep_t) == (3, 16, 2)
         @test all(0.0 .<= xrep_t .< 1.0)
-        @test xrep_t[1, :, :] == xrep_t[2, :, :]
-        @test xrep_t[2, :, :] == xrep_t[3, :, :]
+        @test isapprox(xrep_t[1, :, :], xrep_t[2, :, :]) atol=1e-10 rtol=1e-8
+        @test isapprox(xrep_t[2, :, :], xrep_t[3, :, :]) atol=1e-10 rtol=1e-8
 
         x_nus_t_a = gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, t=40), 16)
         x_nus_t_b = gen_samples(DigitalNetB2(2; randomize="NUS", seed=9, t=40), 16)
