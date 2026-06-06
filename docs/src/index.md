@@ -1,10 +1,16 @@
 # QMC.jl: Quasi-Monte Carlo Software in Julia
 
-QMC.jl is a Julia translation of the original QMC package for Quasi-Monte Carlo (QMC) numerical integration.
+QMC.jl is a Julia port of QMCPy for Quasi-Monte Carlo (QMC) numerical
+integration.
 
 `IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`,
 `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library,
 so Python is a current runtime dependency for full QMC functionality.
+
+Most core package families are implemented. A few advanced items remain
+partial: `PFGPCI` is currently a documented/exported stub that errors on
+`integrate`, and `gpu_fwht!` is presently a CPU-fallback placeholder rather
+than a real GPU backend.
 
 ## Overview
 
