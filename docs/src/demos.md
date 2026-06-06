@@ -40,20 +40,34 @@ println("Asian call price: $(result.solution)")
 
 ## Jupyter Notebooks
 
-Interactive Jupyter notebooks are available in the `demos/` directory:
+The `demos/` directory currently contains 26 notebooks. Current inventory:
 
-| Notebook | Description |
-|----------|-------------|
-| `quickstart.ipynb` | Getting started with QMC.jl |
-| `qmc.jl_intro.ipynb` | Introduction to the QMC framework |
-| `lebesgue_integration.ipynb` | Lebesgue integration examples |
-| `lattice.ipynb` | Lattice rule demonstrations |
-| `digital_net_b2.ipynb` | Digital net (Sobol') demonstrations |
-| `some_true_measures.ipynb` | True measure transforms |
-| `pricing_options.ipynb` | Financial option pricing (European, Asian, lookback) |
-| `gbm_demo.ipynb` | Geometric Brownian motion and volatility analysis |
-| `sample_scatter_plots.ipynb` | Scatter plots of QMC point sets |
-| `elliptic_pde.ipynb` | Elliptic PDE with multilevel MC/QMC methods |
+- `acceptance_rejection.ipynb`
+- `asian_option_mlqmc.ipynb`
+- `control_variates.ipynb`
+- `digital_net_b2.ipynb`
+- `elliptic_pde.ipynb`
+- `financial_option_ml.ipynb`
+- `gbm_demo.ipynb`
+- `iris.ipynb`
+- `kronecker.ipynb`
+- `lattice.ipynb`
+- `lattice_random_generator.ipynb`
+- `lebesgue_integration.ipynb`
+- `linear_scrambled_halton.ipynb`
+- `nei_demo.ipynb`
+- `plot_proj_function.ipynb`
+- `pricing_options.ipynb`
+- `qei_demo.ipynb`
+- `qmc.jl_intro.ipynb`
+- `quickstart.ipynb`
+- `ray_tracing.ipynb`
+- `sample_scatter_plots.ipynb`
+- `sensitivity_indices.ipynb`
+- `some_true_measures.ipynb`
+- `umbridge.ipynb`
+- `vectorized_qmc.ipynb`
+- `vectorized_qmc_bayes.ipynb`
 
 To run a notebook:
 ```bash
