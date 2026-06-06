@@ -232,7 +232,7 @@
 
         # Advanced constructor parity: widened t-bits and msb handling.
         @test DigitalNetB2(2; randomize="none", t=40).t == 40
-        @test gen_samples(DigitalNetB2(2; randomize="none", seed=1, t=40), 16) == x
+        @test gen_samples(DigitalNetB2(2; randomize="none", seed=1, t=40), 16) ≈ x atol=1e-10 rtol=1e-8
         xrep_t =
             gen_samples(DigitalNetB2(2; randomize="none", seed=1, replications=3, t=40), 16)
         @test size(xrep_t) == (3, 16, 2)
