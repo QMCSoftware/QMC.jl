@@ -15,7 +15,7 @@ jobs:
     name: Julia ${{ matrix.julia-version }} – Linux
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         julia-version: ['1.12']
 
