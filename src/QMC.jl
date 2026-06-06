@@ -75,6 +75,7 @@ include("kernel/matern.jl")
 include("kernel/multitask.jl")
 
 # Stopping Criteria
+include("stopping_criterion/control_variates.jl")
 include("stopping_criterion/cub_mc_clt.jl")
 include("stopping_criterion/cub_qmc_lattice_g.jl")
 include("stopping_criterion/cub_qmc_net_g.jl")

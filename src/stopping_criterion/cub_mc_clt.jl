@@ -34,6 +34,7 @@ mutable struct CubMCCLT{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     alpha::Float64
     inflate::Float64
     trace_iterations::Bool
+    cv_spec::Union{Nothing, _ControlVariateSpec}
 end
 
 function CubMCCLT(
@@ -45,10 +46,13 @@ function CubMCCLT(
     alpha::Float64=0.01,
     inflate::Float64=1.2,
     trace_iterations::Bool=false,
+    control_variates=nothing,
+    control_variate_means=nothing,
 )
     n_max > 2 * n_init || throw(ArgumentError("n_max must be > 2 * n_init"))
     inflate >= 1.0 || throw(ArgumentError("inflate must be ≥ 1.0"))
     0.0 < alpha < 1.0 || throw(ArgumentError("alpha must be in (0, 1)"))
+    cv_spec = _make_control_variate_spec(integrand, control_variates, control_variate_means)
     return CubMCCLT(
         integrand,
         abs_tol,
@@ -58,6 +62,7 @@ function CubMCCLT(
         alpha,
         inflate,
         trace_iterations,
+        cv_spec,
     )
 end
 
@@ -67,7 +72,17 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     log = IterationLog()
 
     # ── Stage 1: Pilot sample to estimate variance ──
-    y0 = sample_and_evaluate(sc.integrand, sc.n_init)
+    cv = sc.cv_spec
+    cv_beta = nothing
+    if cv === nothing
+        y0 = sample_and_evaluate(sc.integrand, sc.n_init)
+    else
+        x0_uniform = _sample_uniform_points(sc.integrand.true_measure.dd, sc.n_init)
+        y0 = evaluate_on_uniform(sc.integrand, x0_uniform)
+        ycv0 = _control_variate_values(cv, x0_uniform)
+        cv_beta = _fit_control_variate_beta(y0, ycv0)
+        y0 = _apply_control_variates(y0, ycv0, cv.means, cv_beta)
+    end
     sig_hat0 = std(y0; corrected=true)
     mu_hat0 = mean(y0)
 
@@ -96,7 +111,14 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     end
 
     # ── Stage 2: Main sample ──
-    y = sample_and_evaluate(sc.integrand, n_mu)
+    if cv === nothing
+        y = sample_and_evaluate(sc.integrand, n_mu)
+    else
+        x_uniform = _sample_uniform_points(sc.integrand.true_measure.dd, n_mu)
+        y = evaluate_on_uniform(sc.integrand, x_uniform)
+        ycv = _control_variate_values(cv, x_uniform)
+        y = _apply_control_variates(y, ycv, cv.means, cv_beta)
+    end
     sig_hat = std(y; corrected=true)
     mu_hat = mean(y)
 
@@ -136,6 +158,9 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
         :converged => converged,
         :confidence_level => 1.0 - sc.alpha,
     )
+    if cv_beta !== nothing
+        data[:control_variate_beta] = cv_beta
+    end
     if sc.trace_iterations
         data[:iteration_log] = log
     end
