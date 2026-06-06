@@ -32,6 +32,7 @@ end
 Pkg.instantiate()
 
 using BenchmarkTools
+using Dates
 using JSON3
 using Statistics
 using Printf
@@ -42,6 +43,45 @@ compare_py_outfile(label::AbstractString) =
     joinpath(resdir, "compare_python_$(label).md")
 
 is_c_kernel_row(name::AbstractString) = occursin(r"Lattice|DigitalNetB2|Halton", name)
+
+function maybe_get(obj, key, default=nothing)
+    obj === nothing && return default
+    for candidate in (key, Symbol(key))
+        try
+            haskey(obj, candidate) && return obj[candidate]
+        catch
+        end
+    end
+    return default
+end
+
+function artifact_mtime(path::AbstractString)
+    secs = floor(Int, stat(path).mtime)
+    return Dates.format(Dates.unix2datetime(secs), dateformat"yyyy-mm-ddTHH:MM:SS")
+end
+
+function format_seconds(seconds::Real)
+    total = round(Int, seconds)
+    if total < 60
+        return "$(total) s"
+    elseif total < 3600
+        mins, secs = divrem(total, 60)
+        return "$(mins) m $(secs) s"
+    end
+    hours, rems = divrem(total, 3600)
+    mins, secs = divrem(rems, 60)
+    return "$(hours) h $(mins) m $(secs) s"
+end
+
+function format_thread_env(thread_env)
+    thread_env === nothing && return "n/a"
+    entries = String[]
+    for (key, value) in pairs(thread_env)
+        push!(entries, string(key) * "=" * string(value))
+    end
+    isempty(entries) && return "n/a"
+    return join(sort(entries), ", ")
+end
 
 function lookup_py_entry(py_results, group, name)
     py_group = get(py_results, Symbol(group), nothing)
@@ -221,6 +261,19 @@ py_data = JSON3.read(read(py_file, String))
 jl_memory_results = jl_mem_data === nothing ? nothing : jl_mem_data["results"]
 py_results = py_data["results"]
 py_version = get(py_data, "qmcpy_version", "?")
+py_python_version = maybe_get(py_data, "python_version", "?")
+report_generated_at = Dates.format(Dates.now(), dateformat"yyyy-mm-ddTHH:MM:SS")
+jl_generated_at = maybe_get(jl_mem_data, "generated_at", "n/a")
+jl_blas_threads = maybe_get(jl_mem_data, "blas_threads", "n/a")
+jl_config = maybe_get(jl_mem_data, "benchmark_config", nothing)
+jl_integrate_samples = maybe_get(jl_config, "integrate_samples", "n/a")
+py_generated_at = maybe_get(py_data, "generated_at", "n/a")
+py_config = maybe_get(py_data, "benchmark_config", nothing)
+py_integrate_repeat = maybe_get(py_config, "integrate_repeat", "n/a")
+py_thread_env = format_thread_env(maybe_get(py_data, "thread_env", nothing))
+jl_file_mtime = artifact_mtime(jl_file)
+py_file_mtime = artifact_mtime(py_file)
+artifact_skew_seconds = abs(stat(jl_file).mtime - stat(py_file).mtime)
 rows = collect_comparison_rows(jl_results, jl_memory_results, py_results)
 summary = summary_metrics(rows)
 
@@ -233,9 +286,27 @@ n_flagged = count(r -> r.check !== nothing && r.check.flagged, accuracy_rows)
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia label   : $jl_label")
 println("  QMCPy label   : $py_label  (qmcpy $py_version)")
+println(
+    "  Julia artifact: $(basename(jl_file))  (mtime $jl_file_mtime, generated $jl_generated_at)",
+)
+println(
+    "  QMCPy artifact: $(basename(py_file))  (mtime $py_file_mtime, generated $py_generated_at)",
+)
+println("  Artifact skew : $(format_seconds(artifact_skew_seconds))")
+println(
+    "  Julia config  : BLAS threads=$(jl_blas_threads), integrate samples=$(jl_integrate_samples)",
+)
+println(
+    "  Python config : python $py_python_version, integrate repeat=$(py_integrate_repeat), thread env=$py_thread_env",
+)
 println()
 println("  NOTE: C-kernel rows [C] (Lattice/DigitalNetB2/Halton gen_samples) use the")
 println("  same qmctoolscl library on both sides and are NOT a language comparison.")
+if artifact_skew_seconds > 300
+    println(
+        "  NOTE: input artifacts are more than 5 minutes apart; rerun `make bench-compare-py` if that was not intentional.",
+    )
+end
 println()
 
 header = @sprintf("  %-48s  %11s  %11s  %7s", "benchmark", "Julia (ms)", "Python (ms)", "ratio")
@@ -348,7 +419,18 @@ open(outfile, "w") do io
     println(io, "|---|---|---|")
     println(io, "| Julia label | `$(jl_label)` | — |")
     println(io, "| Python label | — | `$(py_label)` |")
+    println(io, "| Julia artifact mtime | `$(jl_file_mtime)` | — |")
+    println(io, "| Python artifact mtime | — | `$(py_file_mtime)` |")
+    println(io, "| Julia generated at | `$(jl_generated_at)` | — |")
+    println(io, "| Python generated at | — | `$(py_generated_at)` |")
+    println(io, "| Julia BLAS threads | `$(jl_blas_threads)` | — |")
+    println(io, "| Python version | — | `$(py_python_version)` |")
     println(io, "| qmcpy version | — | $(py_version) |")
+    println(
+        io,
+        "| integrate timing | `samples=$(jl_integrate_samples)` | `repeat=$(py_integrate_repeat)` |",
+    )
+    println(io, "| thread env | — | `$(py_thread_env)` |")
     println(io, "")
     println(io, "**`ratio = Python time ÷ Julia time`**  ")
     println(
@@ -376,6 +458,16 @@ open(outfile, "w") do io
         io,
         "> peak is Python-managed temporary memory. These are related but not interchangeable.",
     )
+    println(
+        io,
+        "> Report generated at `$(report_generated_at)`. Input artifact skew: `$(format_seconds(artifact_skew_seconds))`.",
+    )
+    if artifact_skew_seconds > 300
+        println(
+            io,
+            "> ℹ️ The Julia and QMCPy input artifacts are more than 5 minutes apart. If that was not intentional, rerun `make bench-compare-py` to refresh both sides together.",
+        )
+    end
     println(io, "")
     println(io, "## Aggregate Summary\n")
     println(io, "| metric | ratio | Julia total | Python total | rows |")

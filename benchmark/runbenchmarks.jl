@@ -22,6 +22,8 @@ end
 Pkg.instantiate()
 
 using BenchmarkTools
+using Dates
+using LinearAlgebra
 using Statistics
 using Printf
 using JSON3
@@ -29,11 +31,28 @@ using JSON3
 include(joinpath(@__DIR__, "benchmarks.jl"))   # defines SUITE (and silences expected warnings)
 
 label = isempty(ARGS) ? "latest" : ARGS[1]
+generated_at = Dates.format(Dates.now(), dateformat"yyyy-mm-ddTHH:MM:SS")
 
-function current_rss_kib()
-    out = read(`ps -o rss= -p $(getpid())`, String)
-    return parse(Float64, strip(out))
+function benchmark_metadata(label::AbstractString)
+    return Dict(
+        "label" => label,
+        "generated_at" => generated_at,
+        "julia_version" => string(VERSION),
+        "blas_threads" => BLAS.get_num_threads(),
+        "benchmark_config" => Dict(
+            "leaf_samples" => BENCH_SAMPLES,
+            "integrate_samples" => INTEGRATE_BENCH_SAMPLES,
+        ),
+    )
 end
+
+current_rss_kib() =
+    try
+        out = read(`ps -o rss= -p $(getpid())`, String)
+        return parse(Float64, strip(out))
+    catch
+        return nothing
+    end
 
 function measure_rss_delta_kib(bench::BenchmarkTools.Benchmark)
     # Warm once so retained-memory deltas reflect steady-state behavior rather
@@ -50,6 +69,7 @@ function measure_rss_delta_kib(bench::BenchmarkTools.Benchmark)
     GC.gc()
     GC.gc()
     rss_after = current_rss_kib()
+    (rss_before === nothing || rss_after === nothing) && return nothing
     return max(rss_after - rss_before, 0.0)
 end
 
@@ -59,8 +79,10 @@ function collect_rss_deltas(group::BenchmarkTools.BenchmarkGroup)
         subgroup = group[group_name]
         rows = Dict{String, Any}()
         for bench_name in sort(collect(keys(subgroup)))
-            rows[string(bench_name)] =
-                Dict("rss_delta_kib" => measure_rss_delta_kib(subgroup[bench_name]))
+            entry = Dict{String, Any}()
+            rss_delta_kib = measure_rss_delta_kib(subgroup[bench_name])
+            rss_delta_kib !== nothing && (entry["rss_delta_kib"] = rss_delta_kib)
+            rows[string(bench_name)] = entry
         end
         out[string(group_name)] = rows
     end
@@ -207,6 +229,9 @@ end
 
 println("QMC.jl Benchmarks")
 println("="^70)
+println(
+    "Benchmark config: BLAS threads=$(BLAS.get_num_threads()), integrate samples=$(INTEGRATE_BENCH_SAMPLES)",
+)
 
 results = run_suite(SUITE)
 julia_memory = collect_rss_deltas(SUITE)
@@ -221,14 +246,16 @@ for group_name in sort(collect(keys(results)))
     group = results[group_name]
     for bench_name in sort(collect(keys(group)))
         med = median(group[bench_name])
-        rss_delta = julia_memory[string(group_name)][string(bench_name)]["rss_delta_kib"]
+        rss_entry = julia_memory[string(group_name)][string(bench_name)]
+        rss_delta = haskey(rss_entry, "rss_delta_kib") ? rss_entry["rss_delta_kib"] : nothing
+        rss_txt = rss_delta === nothing ? "n/a" : @sprintf("%.1f KiB", rss_delta)
         @printf(
-            "  %-45s  %10.3f ms  (%d allocs, %.1f KiB, rss Δ %.1f KiB)\n",
+            "  %-45s  %10.3f ms  (%d allocs, %.1f KiB, rss Δ %s)\n",
             bench_name,
             med.time / 1e6,
             med.allocs,
             med.memory / 1024,
-            rss_delta
+            rss_txt
         )
     end
 end
@@ -239,23 +266,18 @@ resdir = joinpath(@__DIR__, "results")
 mkpath(resdir)
 outfile = joinpath(resdir, "$(label).json")
 BenchmarkTools.save(outfile, results)
+julia_meta = benchmark_metadata(label)
 memfile = joinpath(resdir, "$(label)_memory.json")
 # JSON3.pretty(str) prints to stdout and returns `nothing`; pass an IO target so the
 # pretty-printed JSON is written to the file instead.
 open(memfile, "w") do io
-    JSON3.pretty(
-        io,
-        JSON3.write(Dict("julia_version" => string(VERSION), "results" => julia_memory)),
-    )
+    JSON3.pretty(io, JSON3.write(merge(julia_meta, Dict("results" => julia_memory))))
 end
 println("\nResults saved to benchmark/results/$(label).json")
 println("Julia memory sidecar saved to benchmark/results/$(label)_memory.json")
 
 solfile = joinpath(resdir, "$(label)_solutions.json")
 open(solfile, "w") do io
-    JSON3.pretty(
-        io,
-        JSON3.write(Dict("julia_version" => string(VERSION), "solutions" => julia_solutions)),
-    )
+    JSON3.pretty(io, JSON3.write(merge(julia_meta, Dict("solutions" => julia_solutions))))
 end
 println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json")
