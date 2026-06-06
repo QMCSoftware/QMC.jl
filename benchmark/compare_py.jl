@@ -379,7 +379,7 @@ println(
 )
 if summary_student_t.total > 0
     @printf(
-        "weighted time ratio excluding StudentT = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
+        "  weighted time ratio excluding StudentT = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
         summary_non_student_t.time_ratio,
         summary_non_student_t.py_ms,
         summary_non_student_t.jl_ms,
@@ -387,7 +387,7 @@ if summary_student_t.total > 0
         summary_non_student_t.total
     )
     @printf(
-        "weighted time ratio StudentT only = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
+        "  weighted time ratio StudentT only = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
         summary_student_t.time_ratio,
         summary_student_t.py_ms,
         summary_student_t.jl_ms,
