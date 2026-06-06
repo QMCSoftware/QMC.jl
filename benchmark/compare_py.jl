@@ -84,6 +84,15 @@ function format_thread_env(thread_env)
     return join(sort(entries), ", ")
 end
 
+function wait_for_artifact(path::AbstractString; timeout_s::Real=10.0, poll_interval_s::Real=0.1)
+    deadline = time() + timeout_s
+    while true
+        isfile(path) && return true
+        time() >= deadline && return false
+        sleep(poll_interval_s)
+    end
+end
+
 function lookup_py_entry(py_results, group, name)
     py_group = get(py_results, Symbol(group), nothing)
     py_group === nothing && return nothing
@@ -249,12 +258,12 @@ jl_file = joinpath(resdir, "$(jl_label).json")
 jl_mem_file = joinpath(resdir, "$(jl_label)_memory.json")
 py_file = joinpath(resdir, "qmcpy_$(py_label).json")
 
-isfile(jl_file) || error(
-    "Julia results not found: $jl_file\nRun: make bench" *
+wait_for_artifact(jl_file) || error(
+    "Julia results not found after waiting 10s: $jl_file\nRun: make bench" *
     (jl_label == "latest" ? "" : " then julia benchmark/runbenchmarks.jl $jl_label"),
 )
-isfile(py_file) || error(
-    "QMCPy results not found: $py_file\n" *
+wait_for_artifact(py_file) || error(
+    "QMCPy results not found after waiting 10s: $py_file\n" *
     "Run: python benchmark/benchmark_qmcpy.py $py_label",
 )
 
