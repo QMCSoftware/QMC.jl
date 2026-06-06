@@ -523,6 +523,15 @@ end
 _left_shift_words(t::Int, bits::Int, R::Int) = fill(UInt64(t - bits), R)
 _interlaced_bits(alpha::Int, source_bits::Int, t::Int) = min(alpha * source_bits, t)
 
+# The fused `dnb2_gen_*_float` kernels fold the t-bit alignment left-shift
+# (`lshifts`) into the digital-shift pass, which they skip entirely when
+# `apply_shift == 0x00`. Whenever `t` exceeds the current bit width the points
+# still need that left-shift to land in [0, 1) at the correct scale, so the
+# pass must run even when there is no randomization shift. Enabling it with an
+# all-zero `shiftsb` performs a no-op digital shift while still applying the
+# alignment, matching the unfused gen → digital_shift → integer_to_float path.
+_apply_shift_flag(lshifts::AbstractVector{UInt64}) = any(!iszero, lshifts) ? 0x01 : 0x00
+
 function _interlace_direction_matrices(
     C::Vector{UInt64},
     R::Int,
@@ -595,7 +604,7 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
             apply_shift = 0x01
         else
             shiftsb = zeros(UInt64, d)
-            apply_shift = 0x00
+            apply_shift = _apply_shift_flag(lshifts)
         end
     elseif dd.randomize == "DS"
         curr_bits =
@@ -673,7 +682,7 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
         end
         lshifts = _left_shift_words(dd.t, curr_bits, 1)
         shiftsb = zeros(UInt64, d)
-        apply_shift = 0x00
+        apply_shift = _apply_shift_flag(lshifts)
     end
 
     tmaxes = fill(UInt64(dd.t), 1)
@@ -783,7 +792,7 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
             apply_shift = 0x01
         else
             shiftsb = zeros(UInt64, R * d)
-            apply_shift = 0x00
+            apply_shift = _apply_shift_flag(lshifts)
         end
     elseif dd.randomize == "DS"
         curr_bits =
@@ -863,7 +872,7 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
         r_x = 1
         lshifts = _left_shift_words(dd.t, curr_bits, 1)
         shiftsb = zeros(UInt64, R * d)
-        apply_shift = 0x00
+        apply_shift = _apply_shift_flag(lshifts)
     end
 
     tmaxes = fill(UInt64(dd.t), R)
