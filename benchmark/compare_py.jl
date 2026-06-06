@@ -84,7 +84,11 @@ function format_thread_env(thread_env)
     return join(sort(entries), ", ")
 end
 
-function wait_for_artifact(path::AbstractString; timeout_s::Real=10.0, poll_interval_s::Real=0.1)
+function wait_for_artifact(
+    path::AbstractString;
+    timeout_s::Real=10.0,
+    poll_interval_s::Real=0.1,
+)
     deadline = time() + timeout_s
     while true
         isfile(path) && return true
