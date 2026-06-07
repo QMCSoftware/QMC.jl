@@ -60,6 +60,25 @@
         @test size(xt) == (2000, 4)
         @test abs(mean(xt[:, end])) < 0.1
         @test abs(var(xt[:, end]) - 1.0) < 0.3
+
+        # t_final sets the grid [T/d, …, T] (QMCPy convention)
+        @test BrownianMotion(IIDStdUniform(4); t_final=2.0).time_vector ≈ [0.5, 1.0, 1.5, 2.0]
+        # default call is unchanged (t_final = 1)
+        @test BrownianMotion(IIDStdUniform(4)).time_vector ≈ [0.25, 0.5, 0.75, 1.0]
+        @test_throws ArgumentError BrownianMotion(
+            IIDStdUniform(4);
+            time_vector=[0.5, 1, 1.5, 2],
+            t_final=2.0,
+        )
+        @test_throws ArgumentError BrownianMotion(IIDStdUniform(4); diffusion=0.0)
+
+        # initial_value + drift·t mean, diffusion·min(tᵢ,tⱼ) covariance (QMCPy semantics)
+        dd2 = DigitalNetB2(4; seed=1)
+        bm = BrownianMotion(dd2; t_final=2.0, initial_value=3.0, drift=1.0, diffusion=4.0)
+        paths = transform(bm, gen_samples(dd2, 2^14))
+        tv = [0.5, 1.0, 1.5, 2.0]
+        @test maximum(abs.(vec(mean(paths; dims=1)) .- (3.0 .+ 1.0 .* tv))) < 0.1
+        @test abs(var(paths[:, end]) - 4.0 * 2.0) < 0.8      # diffusion · t_final = 8
     end
 
     @testset "Lebesgue" begin

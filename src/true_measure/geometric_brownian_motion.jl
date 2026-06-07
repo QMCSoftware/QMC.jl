@@ -78,7 +78,7 @@ function GeometricBrownianMotion(
     end
 
     gauss = Gaussian(dd; mean=0.0, covariance=cov, decomp_type=decomp_type)
-    bm = BrownianMotion(dd, d, tv, 0.0, gauss)
+    bm = BrownianMotion(dd, d, tv, 0.0, 0.0, diffusion, gauss)
 
     return GeometricBrownianMotion(dd, d, tv, initial_value, drift, diffusion, bm)
 end
