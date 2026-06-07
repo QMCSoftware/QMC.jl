@@ -1,3 +1,9 @@
+# Top-level helper for the Stage A multi-output interface test. Struct
+# definitions must live at top level (not inside a `@testset` block), so the toy
+# vector-valued integrand and its `d_indv` override are declared here.
+struct _VecOutputToy <: QMC.AbstractIntegrand end
+QMC.d_indv(::_VecOutputToy) = (3,)
+
 @testset "Integrands" begin
     @testset "CustomFun" begin
         dd = IIDStdUniform(2; seed=100)
@@ -361,5 +367,28 @@
         x = transform(tm, gen_samples(dd, 100))
         y = evaluate(blr, x)
         @test length(y) == 100
+    end
+
+    @testset "Multi-output interface (Stage A)" begin
+        dd = IIDStdUniform(2; seed=11)
+        tm = Uniform(dd)
+        f = CustomFun(tm, x -> sum(x; dims=2)[:])
+        # Scalar integrands get scalar/identity defaults (no behavior change).
+        @test QMC.d_indv(f) == ()
+        @test QMC.d_comb(f) == ()
+        @test QMC.combine_fun(f, 3.0) === 3.0
+        @test QMC.bound_fun(f, -1.0, 2.0) == (-1.0, 2.0)
+        @test QMC.dependency(f, [true, false]) == [true, false]
+        @test QMC.d_indv(Keister(Gaussian(dd; covariance=0.5))) == ()
+        @test QMC.d_indv(Ishigami(Uniform(IIDStdUniform(3)))) == ()
+
+        # A vector-valued integrand can override d_indv; d_comb then defaults to
+        # it (identity combine) and the bound map stays identity until specialized.
+        toy = _VecOutputToy()
+        @test QMC.d_indv(toy) == (3,)
+        @test QMC.d_comb(toy) == (3,)
+        lo, hi = [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]
+        @test QMC.bound_fun(toy, lo, hi) == (lo, hi)
+        @test QMC.dependency(toy, [true, false, true]) == [true, false, true]
     end
 end

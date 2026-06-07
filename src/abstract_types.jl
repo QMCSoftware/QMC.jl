@@ -103,6 +103,60 @@ Returns a vector of function values, one per row of `x`.
 """
 function evaluate end
 
+# ── Multi-output (vector-valued) integrand interface ──────────────────────────
+# Foundation for driving vector-valued integrands to per-output tolerance,
+# mirroring QMCPy 2.3's `d_indv` machinery. Scalar integrands need no changes:
+# the defaults below describe a single scalar output (so `evaluate` keeps
+# returning an `n`-vector) and every map is the identity. A vector-valued
+# integrand whose `evaluate` returns an `n × s₁ × … × sₖ` array overrides
+# `d_indv` to return `(s₁, …, sₖ)`; the stopping criteria can then loop over the
+# individual outputs, apply `bound_fun`, and report `combine_fun` of the result.
+# These are intentionally unexported (access as `QMC.d_indv`, etc.) while the
+# interface stabilizes through the staged roll-out.
+
+"""
+    d_indv(f::AbstractIntegrand) -> Tuple
+
+Shape of the individual (per-point) outputs of `f`: `evaluate(f, x)` returns an
+array of shape `(n, d_indv(f)...)`. Defaults to `()` — a single scalar output, so
+`evaluate` returns an `n`-vector. Mirrors QMCPy's `d_indv`.
+"""
+d_indv(::AbstractIntegrand) = ()
+
+"""
+    d_comb(f::AbstractIntegrand) -> Tuple
+
+Shape of the combined solution produced by `combine_fun`. Defaults to `d_indv(f)`
+(identity combine). Mirrors QMCPy's `d_comb`.
+"""
+d_comb(f::AbstractIntegrand) = d_indv(f)
+
+"""
+    combine_fun(f::AbstractIntegrand, solution_indv)
+
+Reduce the individual-output solution(s) to the reported solution(s). Default is
+the identity. Mirrors QMCPy's `combine_fun`.
+"""
+combine_fun(::AbstractIntegrand, solution_indv) = solution_indv
+
+"""
+    bound_fun(f::AbstractIntegrand, bound_low, bound_high) -> (low, high)
+
+Map per-individual-output error bounds to bounds on the combined solution.
+Default is the identity (returns `(bound_low, bound_high)`). Mirrors QMCPy's
+`bound_fun`.
+"""
+bound_fun(::AbstractIntegrand, bound_low, bound_high) = (bound_low, bound_high)
+
+"""
+    dependency(f::AbstractIntegrand, comb_flags) -> indv_flags
+
+Given which combined outputs still need work (`comb_flags`), return which
+individual outputs must keep being computed. Default is the identity. Mirrors
+QMCPy's `dependency`.
+"""
+dependency(::AbstractIntegrand, comb_flags) = comb_flags
+
 """
 Result type returned by `integrate`.
 
