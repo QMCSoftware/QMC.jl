@@ -1,6 +1,6 @@
 """
     Lattice(dimension::Int; randomize=true, seed=nothing, order="natural",
-            replications=nothing, generating_vector=nothing)
+            replications=nothing, generating_vector=nothing, m_max=nothing)
 
 Rank-1 integration lattice using either the published Kuo generating vector
 (`kuo.lattice-33002-1024-1048576.9125`) or a user-supplied generating vector.
@@ -36,6 +36,12 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
     `"kuo.lattice-33002-1024-1048576.9125"` or the corresponding
     `QMCSoftware/LDData` `lattice/` URL). Non-bundled LDData files are
     downloaded on demand.
+- `m_max`: optional sample cap for a **custom integer** `generating_vector`,
+  mirroring QMCPy: `2^m_max` is the maximum number of valid samples (a raw
+  generating vector has no inherent period, so without `m_max` the sample count
+  is left uncapped). Only valid together with an integer-vector
+  `generating_vector`; supplying it for the default, random, or file/LDData
+  forms (which define their own cap) raises an `ArgumentError`.
 
 # Examples
 ```julia
@@ -235,8 +241,18 @@ function _random_lattice_vector(dimension::Int, m::Integer, rng::AbstractRNG)
     return gv, 1 << Int(m)
 end
 
-function _resolve_lattice_generating_vector(dimension::Int, generating_vector, rng::AbstractRNG)
+function _resolve_lattice_generating_vector(
+    dimension::Int,
+    generating_vector,
+    rng::AbstractRNG,
+    m_max=nothing,
+)
     if isnothing(generating_vector)
+        m_max === nothing || throw(
+            ArgumentError(
+                "m_max only applies when supplying a custom integer generating_vector; the default vector defines its own sample cap",
+            ),
+        )
         dimension <= _KUO_LATTICE_MAX_DIM || throw(
             ArgumentError(
                 "dimension $dimension exceeds maximum supported ($_KUO_LATTICE_MAX_DIM)",
@@ -250,11 +266,25 @@ function _resolve_lattice_generating_vector(dimension::Int, generating_vector, r
             ),
         )
         source = _coerce_lattice_vector(generating_vector, length(generating_vector))
-        return source[1:dimension], nothing, source
+        # A raw generating vector has no inherent sample cap. Mirror QMCPy's
+        # `m_max`: when supplied, 2^m_max bounds the number of valid samples;
+        # when omitted, leave it uncapped (nothing) as before.
+        n_limit = m_max === nothing ? nothing : 1 << Int(m_max)
+        return source[1:dimension], n_limit, source
     elseif generating_vector isa Integer
+        m_max === nothing || throw(
+            ArgumentError(
+                "m_max only applies when supplying a custom integer generating_vector; a random odd vector defines its own sample cap",
+            ),
+        )
         gv, n_limit = _random_lattice_vector(dimension, generating_vector, rng)
         return gv, n_limit, copy(gv)
     elseif generating_vector isa AbstractString
+        m_max === nothing || throw(
+            ArgumentError(
+                "m_max only applies when supplying a custom integer generating_vector; file/LDData vectors define their own sample cap",
+            ),
+        )
         if isfile(generating_vector)
             values, n_limit = _read_lattice_vector_file(generating_vector)
             source = _coerce_lattice_vector(values, length(values))
@@ -300,16 +330,21 @@ function Lattice(
     order::String="natural",
     replications=nothing,
     generating_vector=nothing,
+    m_max=nothing,
 )
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
     order_lc = _normalize_lattice_order(order)
+    if m_max !== nothing
+        (m_max isa Integer && m_max > 0) ||
+            throw(ArgumentError("m_max must be a positive integer (2^m_max is the sample cap)"))
+    end
 
     R = isnothing(replications) ? 1 : replications
     R >= 1 || throw(ArgumentError("replications must be >= 1"))
 
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
     gv, n_limit, source_gv =
-        _resolve_lattice_generating_vector(dimension, generating_vector, rng)
+        _resolve_lattice_generating_vector(dimension, generating_vector, rng, m_max)
     shift = randomize ? rand(rng, R, dimension) : zeros(R, dimension)
 
     return Lattice(

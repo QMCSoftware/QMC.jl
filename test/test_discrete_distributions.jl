@@ -86,6 +86,26 @@
         ]
         @test dd_custom.gen_vector == UInt64[1, 3]
 
+        # m_max caps the valid sample count for a raw generating vector
+        # (QMCPy parity): without it the count is uncapped; with it, 2^m_max.
+        @test Lattice(2; generating_vector=[1, 3, 5]).n_limit === nothing
+        let dd_cap = Lattice(
+                2;
+                randomize=false,
+                order="linear",
+                generating_vector=[1, 3, 5],
+                m_max=3,
+            )
+            @test dd_cap.n_limit == 8
+            @test size(gen_samples(dd_cap, 8), 1) == 8           # at the cap: OK
+            @test_throws ArgumentError gen_samples(dd_cap, 16)   # beyond the cap
+        end
+        @test_throws ArgumentError Lattice(2; generating_vector=[1, 3, 5], m_max=0)
+        @test_throws ArgumentError Lattice(2; generating_vector=[1, 3, 5], m_max=-1)
+        # m_max only applies to a custom integer vector
+        @test_throws ArgumentError Lattice(2; m_max=10)                       # default vector
+        @test_throws ArgumentError Lattice(2; generating_vector=6, m_max=10)  # random vector
+
         mktemp() do path, io
             write(io, "# d_limit\n4\n# n_limit\n16\n1\n3\n5\n7\n")
             close(io)

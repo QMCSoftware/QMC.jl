@@ -148,3 +148,40 @@ function _draw_adjusted(
     ycv = _control_variate_values(cv_spec, x_uniform)
     return _apply_control_variates(y, ycv, cv_spec.means, beta)
 end
+
+"""
+    _fit_control_variate_beta_transform(ytilde, ycvtilde_list, kappanumap, mllstart) -> β
+
+Transform-domain control-variate regression for the guaranteed low-discrepancy
+criteria (`CubQMCNetG` / `CubQMCLatticeG`). Mirroring QMC v2.3, the coefficients
+β are fit by ordinary least squares of the main integrand's scaled Walsh/Fourier
+coefficients onto the control variates' coefficients, restricted to the
+decay-ordered tail `kappanumap[2^mllstart : end]` — the same high-frequency block
+the guaranteed error bound is built from. Fitting on that tail makes the
+correction shrink exactly the energy the bound measures.
+
+`ytilde` and each entry of `ycvtilde_list` are the scaled coefficient vectors
+(see [`_ytilde_init`](@ref)); `kappanumap` is the decay ordering (0-based values,
+1-based positions). Returns a length-`ncv` coefficient vector.
+"""
+function _fit_control_variate_beta_transform(
+    ytilde::AbstractVector,
+    ycvtilde_list::AbstractVector,
+    kappanumap::AbstractVector{Int},
+    mllstart::Int,
+)
+    n = length(ytilde)
+    start = 2^mllstart                       # 0-based offset into the decay order
+    sel = (start + 1):n                       # 1-based positions in kappanumap
+    ncv = length(ycvtilde_list)
+    X = Matrix{Float64}(undef, length(sel), ncv)
+    yv = Vector{Float64}(undef, length(sel))
+    @inbounds for (row, p) in enumerate(sel)
+        idx = kappanumap[p] + 1
+        yv[row] = ytilde[idx]
+        for k in 1:ncv
+            X[row, k] = ycvtilde_list[k][idx]
+        end
+    end
+    return X \ yv
+end
