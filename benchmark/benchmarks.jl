@@ -27,7 +27,13 @@ const SAMPLES = [256, 1024, 4096, 16384]
 const DIMS = [3, 10]
 const BENCH_SAMPLES = 5
 const INTEGRATE_BENCH_SAMPLES = 9
-const STUDENT_T_BENCH_SAMPLES = 9
+# StudentT is reported as its own cross-language row, so its sample count is
+# matched to the Python harness's `STUDENT_T_REPEAT = 21` (benchmark_qmcpy.py) to
+# keep that comparison apples-to-apples. Both sides report the median per call;
+# Python additionally does 3 explicit warmup runs, while BenchmarkTools performs
+# its own JIT/tuning warmup before sampling (plus `evals=3` per sample), which is
+# its analog — the sample/repeat count is the directly comparable knob.
+const STUDENT_T_BENCH_SAMPLES = 21
 
 const BENCH_BLAS_THREADS = let raw = get(ENV, "QMC_BENCH_BLAS_THREADS", "1")
     threads = try
