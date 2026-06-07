@@ -1,5 +1,5 @@
 """
-    JohnsonsSU(dd; xi=0.0, lambda=1.0, gamma=0.0, delta=1.0)
+    JohnsonsSU(dd; xi=1.0, lambda=2.0, gamma=1.0, delta=2.0)
 
 Johnson's SU distribution measure via inverse CDF.
 
@@ -9,10 +9,14 @@ where Φ⁻¹ is the standard normal quantile function.
 
 # Arguments
 - `dd`: discrete distribution.
-- `xi`: location parameter ξ (scalar or d-vector).
-- `lambda`: scale parameter λ > 0 (scalar or d-vector).
-- `gamma`: shape parameter γ (scalar or d-vector).
-- `delta`: shape parameter δ > 0 (scalar or d-vector).
+- `xi`: location parameter ξ (scalar or d-vector). Default `1.0`.
+- `lambda`: scale parameter λ > 0 (scalar or d-vector). Default `2.0`
+  (QMCPy's `lam`).
+- `gamma`: shape parameter γ (scalar or d-vector). Default `1.0`.
+- `delta`: shape parameter δ > 0 (scalar or d-vector). Default `2.0`.
+
+The defaults match QMC v2.3 (`gamma=1, xi=1, delta=2, lam=2`); QMC.jl's `lambda`
+corresponds to QMCPy's `lam`.
 """
 struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     dd::D
@@ -23,7 +27,7 @@ struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     delta::Vector{Float64}
 end
 
-function JohnsonsSU(dd::AbstractDiscreteDistribution; xi=0.0, lambda=1.0, gamma=0.0, delta=1.0)
+function JohnsonsSU(dd::AbstractDiscreteDistribution; xi=1.0, lambda=2.0, gamma=1.0, delta=2.0)
     d = dd.dimension
     _xi = xi isa Number ? fill(Float64(xi), d) : Float64.(collect(xi))
     _lam = lambda isa Number ? fill(Float64(lambda), d) : Float64.(collect(lambda))

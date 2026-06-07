@@ -187,6 +187,33 @@
         @test !any(isnan, xt)
     end
 
+    @testset "Kumaraswamy/JohnsonsSU defaults match QMCPy 2.3" begin
+        # Default-constructed measures must reproduce QMCPy 2.3's defaults exactly
+        # (oracle values computed from qmcpy==2.3 on the same uniforms).
+        u = [0.1 0.3; 0.5 0.7; 0.9 0.25]
+        dd = IIDStdUniform(2; seed=1)
+
+        km = Kumaraswamy(dd)                       # QMCPy: a=2, b=2
+        @test km.alpha == [2.0, 2.0]
+        @test km.beta == [2.0, 2.0]
+        @test transform(km, u) ≈ [
+            0.226532 0.404153
+            0.541196 0.672516
+            0.826905 0.366025
+        ] atol = 1e-5
+
+        js = JohnsonsSU(dd)                        # QMCPy: gamma=1, xi=1, delta=2, lam=2
+        @test js.xi == [1.0, 1.0]
+        @test js.lambda == [2.0, 2.0]
+        @test js.gamma == [1.0, 1.0]
+        @test js.delta == [2.0, 2.0]
+        @test transform(js, u) ≈ [
+            -1.809624 -0.676348
+            -0.042191 0.519905
+            1.282482 -0.877092
+        ] atol = 1e-5
+    end
+
     @testset "BernoulliCont" begin
         dd = IIDStdUniform(2; seed=92)
         tm = BernoulliCont(dd; lam=0.3)
