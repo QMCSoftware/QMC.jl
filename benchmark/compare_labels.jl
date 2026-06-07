@@ -21,6 +21,11 @@
 
 using Pkg
 Pkg.activate(@__DIR__)
+# QMC is in this project's [deps] and is unregistered, so it must be developed by
+# local path before resolving — even though this script does not `using QMC` —
+# otherwise Pkg.resolve() on a fresh (gitignored) manifest fails trying to look
+# QMC up in a registry ("expected package QMC to be registered").
+Pkg.develop(; path=dirname(@__DIR__))
 let deps = keys(Pkg.project().dependencies)
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
 end

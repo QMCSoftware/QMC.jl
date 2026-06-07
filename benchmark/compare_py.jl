@@ -24,8 +24,12 @@
 
 using Pkg
 Pkg.activate(@__DIR__)
+# QMC is unregistered, so always develop it by local path — even if it is already
+# listed in this project's [deps]. benchmark/Manifest.toml is gitignored, so a
+# fresh CI checkout has no manifest and Pkg.resolve() below would otherwise try to
+# look QMC up in a registry and fail ("expected package QMC to be registered").
+Pkg.develop(; path=dirname(@__DIR__))
 let deps = keys(Pkg.project().dependencies)
-    "QMC" in deps || Pkg.develop(; path=dirname(@__DIR__))
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
     "JSON3" in deps || Pkg.add("JSON3")
 end
