@@ -165,7 +165,13 @@ Create a new BrownianMotion true measure wrapping `dd_new`.
 function spawn_tm(tm::BrownianMotion, dd_new::AbstractDiscreteDistribution)
     t_final = tm.time_vector[end]
     tv_new = collect(range(t_final / dd_new.dimension, t_final; length=dd_new.dimension))
-    return BrownianMotion(dd_new; time_vector=tv_new, drift=tm.drift)
+    return BrownianMotion(
+        dd_new;
+        time_vector=tv_new,
+        drift=tm.drift,
+        initial_value=tm.initial_value,
+        diffusion=tm.diffusion,
+    )
 end
 
 """

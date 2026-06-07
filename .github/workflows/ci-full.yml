@@ -33,7 +33,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install qmctoolscl
-        run: pip install qmctoolscl
+        run: pip install -r test/requirements.txt
 
       - name: Install dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
@@ -80,7 +80,7 @@ jobs:
 
       - name: Install qmctoolscl
         if: steps.changes.outputs.run == 'true'
-        run: pip install qmctoolscl
+        run: pip install -r test/requirements.txt
 
       - name: Install dependencies
         if: steps.changes.outputs.run == 'true'

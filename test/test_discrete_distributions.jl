@@ -86,6 +86,26 @@
         ]
         @test dd_custom.gen_vector == UInt64[1, 3]
 
+        # m_max caps the valid sample count for a raw generating vector
+        # (QMCPy parity): without it the count is uncapped; with it, 2^m_max.
+        @test Lattice(2; generating_vector=[1, 3, 5]).n_limit === nothing
+        let dd_cap = Lattice(
+                2;
+                randomize=false,
+                order="linear",
+                generating_vector=[1, 3, 5],
+                m_max=3,
+            )
+            @test dd_cap.n_limit == 8
+            @test size(gen_samples(dd_cap, 8), 1) == 8           # at the cap: OK
+            @test_throws ArgumentError gen_samples(dd_cap, 16)   # beyond the cap
+        end
+        @test_throws ArgumentError Lattice(2; generating_vector=[1, 3, 5], m_max=0)
+        @test_throws ArgumentError Lattice(2; generating_vector=[1, 3, 5], m_max=-1)
+        # m_max only applies to a custom integer vector
+        @test_throws ArgumentError Lattice(2; m_max=10)                       # default vector
+        @test_throws ArgumentError Lattice(2; generating_vector=6, m_max=10)  # random vector
+
         mktemp() do path, io
             write(io, "# d_limit\n4\n# n_limit\n16\n1\n3\n5\n7\n")
             close(io)
@@ -432,6 +452,22 @@
         xr = gen_samples(dd_r, 128)
         @test size(xr) == (128, 2)
         @test all(0.0 .<= xr .< 1.0)
+
+        # Replications: R×n×d, independent randomizations sharing the base
+        # sequence (mirrors Lattice/DigitalNetB2).
+        @test Halton(2; replications=nothing).replications === nothing
+        dd_rep = Halton(3; randomize=true, seed=7, replications=4)
+        xrep = gen_samples(dd_rep, 64)
+        @test size(xrep) == (4, 64, 3)
+        @test all(0.0 .<= xrep .< 1.0)
+        @test xrep[1, :, :] != xrep[2, :, :]      # distinct randomizations
+        # Without randomization the R copies are identical (no shift to differ)
+        dd_rep0 = Halton(3; randomize=false, replications=3)
+        xrep0 = gen_samples(dd_rep0, 32)
+        @test size(xrep0) == (3, 32, 3)
+        @test xrep0[1, :, :] == xrep0[2, :, :]
+        @test_throws ArgumentError Halton(2; replications=0)
+        @test_throws ArgumentError Halton(2; replications=-1)
     end
 
     @testset "Owen/NUS Scrambling" begin

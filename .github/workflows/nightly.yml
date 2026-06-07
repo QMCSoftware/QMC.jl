@@ -33,8 +33,11 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install qmctoolscl
-        run: pip install qmctoolscl
+      - name: Install qmctoolscl (latest)
+        # Intentionally unpinned: Nightly is the early-warning canary that runs
+        # against the newest qmctoolscl release, so it surfaces upstream changes
+        # before they reach the version pinned in test/requirements.txt.
+        run: pip install --upgrade qmctoolscl
 
       - name: Install dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'

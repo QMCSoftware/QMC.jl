@@ -37,13 +37,35 @@ are forwarded to `gen_samples`, e.g. `n_start` for extensible generators.
 Returns a vector of function values.
 """
 function sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)
-    dd = f.true_measure.dd
+    x_uniform = _sample_uniform_points(f.true_measure.dd, n; kwargs...)
+    return evaluate_on_uniform(f, x_uniform)
+end
+
+"""
+    _sample_uniform_points(dd::AbstractDiscreteDistribution, n::Int; kwargs...)
+
+Draw `n` points from the discrete distribution and flatten any replicated
+`(R, n, d)` block to a plain `(R*n) × d` matrix. Exposed separately from
+`sample_and_evaluate` so that several integrands (e.g. a main integrand and its
+control variates) can be evaluated on the *same* point set.
+"""
+function _sample_uniform_points(dd::AbstractDiscreteDistribution, n::Int; kwargs...)
     x_uniform = gen_samples(dd, n; kwargs...)
     if ndims(x_uniform) == 3
-        # Replicated sampler: (R, n, d) → (R*n, d) so transform accepts a matrix.
         R, m, d = size(x_uniform)
         x_uniform = reshape(x_uniform, R * m, d)
     end
+    return x_uniform
+end
+
+"""
+    evaluate_on_uniform(f::AbstractIntegrand, x_uniform::AbstractMatrix)
+
+Apply the integrand's own true-measure transform to already-drawn uniform points
+and evaluate. Pairs with [`_sample_uniform_points`](@ref) so the main integrand
+and any control variates share an identical underlying point stream.
+"""
+function evaluate_on_uniform(f::AbstractIntegrand, x_uniform::AbstractMatrix)
     x_transformed = transform(f.true_measure, x_uniform)
     return evaluate(f, x_transformed)
 end

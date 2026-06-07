@@ -43,7 +43,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install qmctoolscl
-        run: pip install qmctoolscl
+        run: pip install -r test/requirements.txt
 
       - name: Install dependencies
         run: |

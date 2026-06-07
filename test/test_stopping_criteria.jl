@@ -11,6 +11,162 @@
         @test result.data[:n_total] == result.data[:n]
     end
 
+    @testset "Control variates" begin
+        # ── core regression math, validated to equal QMC v2.3's lstsq formula ──
+        # F1: a single, perfectly affine control variate g = 2y with known mean 6.
+        let
+            y = [1.0, 2.0, 3.0, 4.0, 5.0]
+            ycv = reshape([2.0, 4.0, 6.0, 8.0, 10.0], 5, 1)
+            beta = QMC._fit_control_variate_beta(y, ycv)
+            @test length(beta) == 1
+            @test beta[1] ≈ 0.5
+            yadj = QMC._apply_control_variates(y, ycv, [6.0], beta)
+            @test all(v -> isapprox(v, 3.0; atol=1e-12), yadj)  # fully explained ⇒ constant
+            @test mean(yadj) ≈ 3.0
+        end
+        # F2: two control variates against hand-computed (QMCPy-formula) values.
+        let
+            y = [1.5, -0.5, 2.0, 3.5, 0.0, 1.0]
+            ycv = [1.0 0.2; 0.0 0.1; 2.0 0.4; 3.0 0.5; 0.5 0.0; 1.0 0.3]
+            beta = QMC._fit_control_variate_beta(y, ycv)
+            @test beta ≈ [1.1666666666666667, 0.8333333333333331] rtol = 1e-9
+            yadj = QMC._apply_control_variates(y, ycv, [1.25, 0.30], beta)
+            @test mean(yadj) ≈ 1.2916666666666665 rtol = 1e-9
+        end
+
+        # ── constructor validation mirrors QMCPy's compatibility checks ──
+        let
+            dd = IIDStdUniform(1; seed=11)
+            tm = Uniform(dd)
+            main = CustomFun(tm, x -> exp.(x[:, 1]))
+            cv = CustomFun(tm, x -> x[:, 1])
+            @test_throws ArgumentError CubMCCLT(main; control_variates=cv)  # means missing
+            @test_throws ArgumentError CubMCCLT(
+                main;
+                control_variates=[cv],
+                control_variate_means=[0.5, 0.1],
+            )  # length mismatch
+            cv_wrongdim = CustomFun(Uniform(IIDStdUniform(2; seed=12)), x -> x[:, 1])
+            @test_throws ArgumentError CubMCCLT(
+                main;
+                control_variates=cv_wrongdim,
+                control_variate_means=0.5,
+            )  # dimension/distribution mismatch
+        end
+
+        # ── end-to-end variance reduction: ∫₀¹ eˣ dx = e − 1 ──
+        let
+            dd = IIDStdUniform(1; seed=20240607)
+            tm = Uniform(dd)
+            main = CustomFun(tm, x -> exp.(x[:, 1]))
+            cv = CustomFun(tm, x -> x[:, 1])           # known mean 0.5
+            truth = exp(1) - 1
+            r0 = integrate(CubMCCLT(main; abs_tol=5e-3, n_init=2^12, n_max=2^20))
+            r1 = integrate(
+                CubMCCLT(
+                    main;
+                    abs_tol=5e-3,
+                    n_init=2^12,
+                    n_max=2^20,
+                    control_variates=cv,
+                    control_variate_means=0.5,
+                ),
+            )
+            @test abs(r1.solution - truth) < 5e-2
+            @test haskey(r1.data, :control_variate_beta)
+            @test r1.data[:control_variate_beta][1] > 1.0          # ≈1.69 for eˣ vs x
+            @test r1.data[:sigma_main] < 0.5 * r0.data[:sigma_main] # real variance cut
+        end
+
+        # ── CubMCG: the variance cut shows up as far fewer guaranteed samples ──
+        let
+            dd = IIDStdUniform(1; seed=815)
+            tm = Uniform(dd)
+            main = CustomFun(tm, x -> exp.(x[:, 1]))
+            cv = CustomFun(tm, x -> x[:, 1])           # known mean 0.5
+            truth = exp(1) - 1
+            r0 = integrate(CubMCG(main; abs_tol=5e-3, n_init=2^12, n_max=2^24))
+            r1 = integrate(
+                CubMCG(
+                    main;
+                    abs_tol=5e-3,
+                    n_init=2^12,
+                    n_max=2^24,
+                    control_variates=cv,
+                    control_variate_means=0.5,
+                ),
+            )
+            @test abs(r1.solution - truth) < 5e-2
+            @test haskey(r1.data, :control_variate_beta)
+            @test r1.data[:control_variate_beta][1] > 1.0
+            # a guaranteed method spends its variance reduction on a smaller budget
+            @test r1.data[:n_total] < r0.data[:n_total]
+        end
+    end
+
+    @testset "Control variates (QMC, CubQMCNetG)" begin
+        # ── robust property: an integrand used as its own control variate is
+        # recovered exactly (β→1, the corrected coefficients vanish, bound→0) ──
+        let
+            dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=77)
+            tm = Uniform(dd)
+            g = CustomFun(tm, x -> x[:, 1] .^ 2 .+ x[:, 2])
+            mu_g = 1 / 3 + 1 / 2                       # E[x₁² + x₂] on U[0,1]²
+            r = integrate(
+                CubQMCNetG(g; abs_tol=1e-3, control_variates=g, control_variate_means=mu_g),
+            )
+            @test isapprox(r.solution, mu_g; atol=1e-10)
+            @test r.data[:error_bound] < 1e-10
+            @test haskey(r.data, :control_variate_beta)
+            @test isapprox(r.data[:control_variate_beta][1], 1.0; atol=1e-8)
+        end
+        # ── correlated control variate: accuracy maintained, β stored ──
+        let
+            dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=78)
+            tm = Uniform(dd)
+            f = CustomFun(tm, x -> exp.(x[:, 1]) .* x[:, 2])
+            cv = CustomFun(tm, x -> x[:, 1] .+ x[:, 2])  # known mean 1.0
+            truth = (exp(1) - 1) * 0.5
+            r = integrate(
+                CubQMCNetG(f; abs_tol=1e-4, control_variates=cv, control_variate_means=1.0),
+            )
+            @test abs(r.solution - truth) < 1e-3
+            @test haskey(r.data, :control_variate_beta)
+            @test isfinite(r.data[:control_variate_beta][1])
+        end
+    end
+
+    @testset "Control variates (QMC, CubQMCLatticeG)" begin
+        # ── same robust exact-recovery property as the net case ──
+        let
+            dd = Lattice(2; randomize=true, seed=77)
+            tm = Uniform(dd)
+            g = CustomFun(tm, x -> x[:, 1] .^ 2 .+ x[:, 2])
+            mu_g = 1 / 3 + 1 / 2                       # E[x₁² + x₂] on U[0,1]²
+            r = integrate(
+                CubQMCLatticeG(g; abs_tol=1e-3, control_variates=g, control_variate_means=mu_g),
+            )
+            @test isapprox(r.solution, mu_g; atol=1e-10)
+            @test r.data[:error_bound] < 1e-10
+            @test haskey(r.data, :control_variate_beta)
+            @test isapprox(r.data[:control_variate_beta][1], 1.0; atol=1e-8)
+        end
+        # ── correlated control variate: accuracy maintained, β stored ──
+        let
+            dd = Lattice(2; randomize=true, seed=78)
+            tm = Uniform(dd)
+            f = CustomFun(tm, x -> exp.(x[:, 1]) .* x[:, 2])
+            cv = CustomFun(tm, x -> x[:, 1] .+ x[:, 2])  # known mean 1.0
+            truth = (exp(1) - 1) * 0.5
+            r = integrate(
+                CubQMCLatticeG(f; abs_tol=1e-4, control_variates=cv, control_variate_means=1.0),
+            )
+            @test abs(r.solution - truth) < 1e-3
+            @test haskey(r.data, :control_variate_beta)
+            @test isfinite(r.data[:control_variate_beta][1])
+        end
+    end
+
     @testset "CubQMCLatticeG" begin
         dd = Lattice(2; randomize=true, seed=600)
         tm = Uniform(dd)

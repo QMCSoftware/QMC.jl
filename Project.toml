@@ -2,7 +2,7 @@ name = "QMC"
 uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
 license = "Apache-2.0"
 version = "0.1.0"
-authors = ["Sou-Cheng T. Choi", "Fred J. Hickernell", "QMC Contributors"]
+authors = ["Sou-Cheng T. Choi", "Fred J. Hickernell", "Aleksei G. Sorokin", "QMC.jl and QMCPy Contributors"]
 
 [deps]
 NBInclude = "0db19996-df87-5ea3-a455-e3a50d440464"

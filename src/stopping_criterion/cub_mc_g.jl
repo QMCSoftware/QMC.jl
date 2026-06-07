@@ -20,6 +20,13 @@ functions with bounded kurtosis.
 - `inflate`: Inflation factor ≥ 1 for conservative variance estimation.
 - `trace_iterations`: record an `IterationLog` in `result.data[:iteration_log]`.
 
+Pass `control_variates` (an integrand or vector of integrands sharing the main
+integrand's discrete distribution and dimension) with their known
+`control_variate_means` to apply linear control variates. The regression
+coefficients are fit on the pilot sample, reused for every subsequent batch
+(both the fixed-tolerance and the iterative relative-tolerance paths), and
+returned in `result.data[:control_variate_beta]`.
+
 # References
 1. Hickernell, Jiang, Liu, Owen. "Guaranteed conservative fixed width
    confidence intervals via Monte Carlo sampling." MCQMC 2012.
@@ -35,6 +42,7 @@ mutable struct CubMCG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     alpha_sigma::Float64
     kurtmax::Float64
     trace_iterations::Bool
+    cv_spec::Union{Nothing, _ControlVariateSpec}
 end
 
 function CubMCG(
@@ -46,6 +54,8 @@ function CubMCG(
     alpha::Float64=0.01,
     inflate::Float64=1.2,
     trace_iterations::Bool=false,
+    control_variates=nothing,
+    control_variate_means=nothing,
 )
     abs_tol > 0 || throw(ArgumentError("abs_tol must be > 0"))
     rel_tol >= 0 || throw(ArgumentError("rel_tol must be ≥ 0"))
@@ -57,6 +67,7 @@ function CubMCG(
     kurtmax =
         (n_init - 3) / (n_init - 1) +
         (alpha_sigma * n_init) / (1 - alpha_sigma) * (1 - 1 / inflate^2)^2
+    cv_spec = _make_control_variate_spec(integrand, control_variates, control_variate_means)
 
     return CubMCG(
         integrand,
@@ -69,6 +80,7 @@ function CubMCG(
         alpha_sigma,
         kurtmax,
         trace_iterations,
+        cv_spec,
     )
 end
 
@@ -184,10 +196,17 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
     tm = f.true_measure
     dd = tm.dd
     log = IterationLog()
+    cv = sc.cv_spec
+    cv_beta = nothing
 
-    # Stage 1: pilot samples
-    x0 = transform(tm, gen_samples(dd, sc.n_init))
-    y0 = evaluate(f, x0)
+    # Stage 1: pilot samples (fit control-variate coefficients here, reuse below)
+    xu0 = _sample_uniform_points(dd, sc.n_init)
+    y0 = evaluate_on_uniform(f, xu0)
+    if cv !== nothing
+        ycv0 = _control_variate_values(cv, xu0)
+        cv_beta = _fit_control_variate_beta(y0, ycv0)
+        y0 = _apply_control_variates(y0, ycv0, cv.means, cv_beta)
+    end
     mu0 = mean(y0)
     sig0 = std(y0; corrected=true)
     sigma_up = sc.inflate * sig0
@@ -212,8 +231,7 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
 
         n_mu = min(n_mu, sc.n_max - sc.n_init)
         if n_mu > 0
-            x1 = transform(tm, gen_samples(dd, n_mu))
-            y1 = evaluate(f, x1)
+            y1 = _draw_adjusted(f, dd, n_mu, cv, cv_beta)
             solution = mean(y1)
         else
             solution = mu0
@@ -266,8 +284,7 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
                 break
             end
 
-            x1 = transform(tm, gen_samples(dd, n_new))
-            y1 = evaluate(f, x1)
+            y1 = _draw_adjusted(f, dd, n_new, cv, cv_beta)
             solution = mean(y1)
             n_total += n_new
             if sc.trace_iterations
@@ -291,6 +308,9 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
         :bound_diff => 2 * bound_hw,
         :time_integrate => t_elapsed,
     )
+    if cv_beta !== nothing
+        data[:control_variate_beta] = cv_beta
+    end
     if sc.trace_iterations
         data[:iteration_log] = log
     end
