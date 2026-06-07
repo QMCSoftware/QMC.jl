@@ -182,3 +182,30 @@ function Base.show(io::IO, r::QMCResult)
     end
     print(io, ")")
 end
+
+"""
+Result type returned by `integrate` for vector-valued (multi-output) stopping
+criteria, the array analogue of [`QMCResult`](@ref).
+
+# Fields
+- `solution::Array{Float64}`: estimated solution per combined output, shaped
+  `d_comb(integrand)`.
+- `data::Dict{Symbol,Any}`: algorithm details such as `:n_total`, `:error_bound`
+  (the worst-output half-width), `:solution_indv`, and the per-output combined
+  bounds `:comb_bound_low` / `:comb_bound_high`.
+"""
+struct QMCVecResult
+    solution::Array{Float64}
+    data::Dict{Symbol, Any}
+end
+
+function Base.show(io::IO, r::QMCVecResult)
+    print(io, "QMCVecResult(solution=", r.solution)
+    if haskey(r.data, :n_total)
+        @printf(io, ", n_total=%d", r.data[:n_total])
+    end
+    if haskey(r.data, :error_bound)
+        @printf(io, ", error_bound=%.2e", r.data[:error_bound])
+    end
+    print(io, ")")
+end

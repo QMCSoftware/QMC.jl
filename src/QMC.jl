@@ -135,7 +135,7 @@ export CubQMCRepStudentT, PFGPCI
 # Exports — interface functions
 export integrate, gen_samples, transform, evaluate, sample_and_evaluate
 export set_tolerance!
-export QMCResult, compute_kernel_eigenvalues
+export QMCResult, QMCVecResult, compute_kernel_eigenvalues
 export get_exact_value
 export ml_evaluate, dimension_at_level, cost_at_level
 export spawn_dd, spawn_tm, spawn_integrand

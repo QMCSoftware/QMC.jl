@@ -1,3 +1,17 @@
+# Top-level multi-output integrand for the CubMCCLTVec vector tests (structs must
+# be defined at top level, not inside a @testset). Two outputs over U[0,1]:
+# output 1 = x₁ (mean 0.5), output 2 = x₁² (mean 1/3).
+struct _VecCLTIntegrand{TM} <: QMC.AbstractIntegrand
+    true_measure::TM
+end
+QMC.d_indv(::_VecCLTIntegrand) = (2,)
+function QMC.evaluate(f::_VecCLTIntegrand, x::AbstractMatrix)
+    Y = Matrix{Float64}(undef, size(x, 1), 2)
+    @views Y[:, 1] .= x[:, 1]
+    @views Y[:, 2] .= x[:, 1] .^ 2
+    return Y
+end
+
 @testset "Stopping Criteria" begin
     @testset "CubMCCLT" begin
         dd = IIDStdUniform(2; seed=500)
@@ -315,6 +329,29 @@
         f = Keister(tm)
         sc = CubMCCLTVec(f; abs_tol=0.05)
         @test sc.n_init == 256
+    end
+
+    @testset "CubMCCLTVec (multi-output)" begin
+        dd = IIDStdUniform(1; seed=303)
+        tm = Uniform(dd)
+        f = _VecCLTIntegrand(tm)
+        r = integrate(CubMCCLTVec(f; abs_tol=0.02, n_max=2^20))
+        @test r isa QMCVecResult
+        @test length(r.solution) == 2
+        @test isapprox(r.solution[1], 0.5; atol=0.05)         # E[x] = 1/2
+        @test isapprox(r.solution[2], 1 / 3; atol=0.05)       # E[x²] = 1/3
+        @test r.data[:converged]
+        @test r.data[:error_bound] <= 0.02 + 1e-9             # every output within tol
+        @test size(r.data[:solution_indv]) == (2,)
+        @test size(r.data[:comb_bound_low]) == (2,)
+        # combined bounds bracket the per-output solutions
+        @test all(r.data[:comb_bound_low] .<= r.solution .<= r.data[:comb_bound_high])
+
+        # scalar integrand still returns a scalar QMCResult (path unchanged)
+        fs = CustomFun(Uniform(IIDStdUniform(2; seed=304)), x -> sum(x; dims=2)[:])
+        rs = integrate(CubMCCLTVec(fs; abs_tol=0.05))
+        @test rs isa QMCResult
+        @test rs.solution isa Float64
     end
 
     @testset "Resume/Checkpoint" begin
