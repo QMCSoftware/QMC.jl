@@ -136,6 +136,37 @@
         end
     end
 
+    @testset "Control variates (QMC, CubQMCLatticeG)" begin
+        # ── same robust exact-recovery property as the net case ──
+        let
+            dd = Lattice(2; randomize=true, seed=77)
+            tm = Uniform(dd)
+            g = CustomFun(tm, x -> x[:, 1] .^ 2 .+ x[:, 2])
+            mu_g = 1 / 3 + 1 / 2                       # E[x₁² + x₂] on U[0,1]²
+            r = integrate(
+                CubQMCLatticeG(g; abs_tol=1e-3, control_variates=g, control_variate_means=mu_g),
+            )
+            @test isapprox(r.solution, mu_g; atol=1e-10)
+            @test r.data[:error_bound] < 1e-10
+            @test haskey(r.data, :control_variate_beta)
+            @test isapprox(r.data[:control_variate_beta][1], 1.0; atol=1e-8)
+        end
+        # ── correlated control variate: accuracy maintained, β stored ──
+        let
+            dd = Lattice(2; randomize=true, seed=78)
+            tm = Uniform(dd)
+            f = CustomFun(tm, x -> exp.(x[:, 1]) .* x[:, 2])
+            cv = CustomFun(tm, x -> x[:, 1] .+ x[:, 2])  # known mean 1.0
+            truth = (exp(1) - 1) * 0.5
+            r = integrate(
+                CubQMCLatticeG(f; abs_tol=1e-4, control_variates=cv, control_variate_means=1.0),
+            )
+            @test abs(r.solution - truth) < 1e-3
+            @test haskey(r.data, :control_variate_beta)
+            @test isfinite(r.data[:control_variate_beta][1])
+        end
+    end
+
     @testset "CubQMCLatticeG" begin
         dd = Lattice(2; randomize=true, seed=600)
         tm = Uniform(dd)
