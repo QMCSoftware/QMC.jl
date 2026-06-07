@@ -146,6 +146,35 @@ end
 # `evaluate` to accept per-output flags, which the integrand interface does not
 # yet expose; recomputing is correct (every output still meets tolerance), just
 # not the work-saving optimization.
+# Distribute the combined confidence level `alpha` down to the individual outputs
+# using the integrand's `dependency` map (mirrors QMCPy's `_compute_indv_alphas`).
+# For each combined output, the individuals it depends on share its alpha budget
+# (`alpha / n_dep`), and each individual takes the smallest alpha assigned to it.
+# Identity dependency leaves every individual at `alpha` (uniform `z`); a ratio's
+# single combined output depends on two individuals, so each receives `alpha/2`,
+# keeping the combined output's simultaneous coverage at `1 - alpha`.
+function _cubmccltvec_indv_alphas(f, alpha::Float64)
+    ishape = d_indv(f)
+    cshape = d_comb(f)
+    m = prod(ishape)
+    alphas_indv = fill(1.0, m)
+    for kc in 1:prod(cshape)
+        cflags = trues(cshape)
+        cflags[kc] = false
+        flags_indv = collect(Bool, dependency(f, cflags))
+        deps = .!vec(flags_indv)
+        n_dep = count(deps)
+        n_dep == 0 && continue
+        alpha_k = alpha / n_dep
+        @inbounds for j in 1:m
+            if deps[j]
+                alphas_indv[j] = min(alphas_indv[j], alpha_k)
+            end
+        end
+    end
+    return alphas_indv
+end
+
 function _integrate_cubmccltvec_multi(
     sc::CubMCCLTVec,
     resume::Union{Nothing, Dict{Symbol, Any}},
@@ -154,7 +183,13 @@ function _integrate_cubmccltvec_multi(
     f = sc.integrand
     tm = f.true_measure
     dd = tm.dd
-    z_alpha = quantile(Normal(), 1 - sc.alpha / 2)
+    # Per-individual confidence levels via the integrand's dependency map: the
+    # combined alpha is split among the individual outputs each combined output
+    # depends on (identity dependency ⇒ every individual gets alpha ⇒ uniform z,
+    # matching the previous behavior; a ratio's combined output depends on two
+    # individuals ⇒ each gets alpha/2). Mirrors QMCPy's _compute_indv_alphas.
+    alphas_indv = _cubmccltvec_indv_alphas(f, sc.alpha)
+    z_indv = [quantile(Normal(), 1 - a / 2) for a in alphas_indv]
     log = IterationLog()
 
     ishape = d_indv(f)
@@ -205,7 +240,7 @@ function _integrate_cubmccltvec_multi(
             mu = running_sum[k] / n_total
             solution_indv[k] = mu
             var_k = max(running_sum2[k] / n_total - mu^2, 0.0)
-            ci = z_alpha * sqrt(var_k) / sqrt(Float64(n_total))
+            ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(n_total))
             indv_low[k] = mu - ci
             indv_high[k] = mu + ci
         end
