@@ -5,6 +5,13 @@
 Vectorized IID Monte Carlo stopping criterion based on the Central Limit
 Theorem with doubling sample sizes.
 
+Handles both **scalar** integrands (`d_indv == ()`, returning a `QMCResult`) and
+**vector-valued / multi-output** integrands (`d_indv != ()`, returning a
+[`QMCVecResult`](@ref)). For a multi-output integrand it tracks a per-output
+running mean and CLT interval, combines them through the integrand's `bound_fun`
+/ `combine_fun` (identity by default), and stops once **every** combined output's
+half-width meets its tolerance — mirroring QMCPy's `CubMCCLTVec`.
+
 Supports **resume**: pass the `data` dict from a previous `QMCResult` as
 `resume` to continue integration from where it left off.
 
@@ -48,6 +55,12 @@ function CubMCCLTVec(
 end
 
 function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+    # Vector-valued (multi-output) integrands take a dedicated per-output path.
+    # Scalar integrands (d_indv == ()) fall through to the original code below,
+    # which is left byte-for-byte unchanged.
+    if d_indv(sc.integrand) != ()
+        return _integrate_cubmccltvec_multi(sc, resume)
+    end
     t_start = time()
     f = sc.integrand
     tm = f.true_measure
@@ -121,6 +134,159 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=no
     end
 
     return QMCResult(solution, data)
+end
+
+# Multi-output doubling path: per-individual-output running mean/variance and a
+# CLT confidence interval, combined via the integrand's `bound_fun`/`combine_fun`
+# (identity by default), stopping once every combined output's half-width meets
+# its tolerance. Mirrors the doubling structure of QMCPy's `CubMCCLTVec`. The
+# per-output variance uses the same uncorrected estimator as the scalar path
+# above, for internal consistency. All outputs are recomputed each iteration:
+# `compute_flags` short-circuiting (freezing converged outputs) would require
+# `evaluate` to accept per-output flags, which the integrand interface does not
+# yet expose; recomputing is correct (every output still meets tolerance), just
+# not the work-saving optimization.
+# Distribute the combined confidence level `alpha` down to the individual outputs
+# using the integrand's `dependency` map (mirrors QMCPy's `_compute_indv_alphas`).
+# For each combined output, the individuals it depends on share its alpha budget
+# (`alpha / n_dep`), and each individual takes the smallest alpha assigned to it.
+# Identity dependency leaves every individual at `alpha` (uniform `z`); a ratio's
+# single combined output depends on two individuals, so each receives `alpha/2`,
+# keeping the combined output's simultaneous coverage at `1 - alpha`.
+function _cubmccltvec_indv_alphas(f, alpha::Float64)
+    ishape = d_indv(f)
+    cshape = d_comb(f)
+    m = prod(ishape)
+    alphas_indv = fill(1.0, m)
+    for kc in 1:prod(cshape)
+        cflags = trues(cshape)
+        cflags[kc] = false
+        flags_indv = collect(Bool, dependency(f, cflags))
+        deps = .!vec(flags_indv)
+        n_dep = count(deps)
+        n_dep == 0 && continue
+        alpha_k = alpha / n_dep
+        @inbounds for j in 1:m
+            if deps[j]
+                alphas_indv[j] = min(alphas_indv[j], alpha_k)
+            end
+        end
+    end
+    return alphas_indv
+end
+
+function _integrate_cubmccltvec_multi(
+    sc::CubMCCLTVec,
+    resume::Union{Nothing, Dict{Symbol, Any}},
+)
+    t_start = time()
+    f = sc.integrand
+    tm = f.true_measure
+    dd = tm.dd
+    # Per-individual confidence levels via the integrand's dependency map: the
+    # combined alpha is split among the individual outputs each combined output
+    # depends on (identity dependency ⇒ every individual gets alpha ⇒ uniform z,
+    # matching the previous behavior; a ratio's combined output depends on two
+    # individuals ⇒ each gets alpha/2). Mirrors QMCPy's _compute_indv_alphas.
+    alphas_indv = _cubmccltvec_indv_alphas(f, sc.alpha)
+    z_indv = [quantile(Normal(), 1 - a / 2) for a in alphas_indv]
+    log = IterationLog()
+
+    ishape = d_indv(f)
+    cshape = d_comb(f)
+    m = prod(ishape)
+
+    if resume !== nothing
+        running_sum = collect(Float64, resume[:_running_sum])
+        running_sum2 = collect(Float64, resume[:_running_sum2])
+        n_total = Int(resume[:n_total])
+        n = 2 * n_total
+        prev_time = Float64(get(resume, :time_integrate, 0.0))
+    else
+        running_sum = zeros(Float64, m)
+        running_sum2 = zeros(Float64, m)
+        n_total = 0
+        n = sc.n_init
+        prev_time = 0.0
+    end
+
+    solution_indv = zeros(Float64, m)
+    indv_low = zeros(Float64, m)
+    indv_high = zeros(Float64, m)
+    comb_low = zeros(Float64, m)
+    comb_high = zeros(Float64, m)
+    sol_comb = zeros(Float64, m)
+    err_comb = Inf
+    converged = false
+
+    while n_total < sc.n_max
+        n_batch = min(n, sc.n_max - n_total)
+        x = transform(tm, gen_samples(dd, n_batch))
+        Y = reshape(evaluate(f, x), n_batch, m)
+        @inbounds for k in 1:m
+            sk = 0.0
+            sk2 = 0.0
+            for i in 1:n_batch
+                v = Y[i, k]
+                sk += v
+                sk2 += v * v
+            end
+            running_sum[k] += sk
+            running_sum2[k] += sk2
+        end
+        n_total += n_batch
+
+        @inbounds for k in 1:m
+            mu = running_sum[k] / n_total
+            solution_indv[k] = mu
+            var_k = max(running_sum2[k] / n_total - mu^2, 0.0)
+            ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(n_total))
+            indv_low[k] = mu - ci
+            indv_high[k] = mu + ci
+        end
+
+        cl, ch = bound_fun(f, indv_low, indv_high)
+        comb_low = collect(Float64, cl)
+        comb_high = collect(Float64, ch)
+        sol_comb = collect(Float64, combine_fun(f, solution_indv))
+
+        halfwidth = (comb_high .- comb_low) ./ 2
+        tol_c = max.(sc.abs_tol, sc.rel_tol .* abs.(sol_comb))
+        err_comb = maximum(halfwidth)
+        converged = all(halfwidth .<= tol_c)
+
+        if sc.trace_iterations
+            push!(
+                log;
+                n=n_total,
+                solution=sol_comb[1],
+                error_bound=err_comb,
+                tol=maximum(tol_c),
+                elapsed=time() - t_start,
+            )
+        end
+
+        converged && break
+        n = min(2 * n, sc.n_max - n_total)
+        n <= 0 && break
+    end
+
+    t_elapsed = time() - t_start
+    data = Dict{Symbol, Any}(
+        :n_total => n_total,
+        :error_bound => err_comb,
+        :time_integrate => prev_time + t_elapsed,
+        :converged => converged,
+        :solution_indv => Array{Float64}(reshape(copy(solution_indv), ishape)),
+        :comb_bound_low => Array{Float64}(reshape(comb_low, cshape)),
+        :comb_bound_high => Array{Float64}(reshape(comb_high, cshape)),
+        :_running_sum => running_sum,
+        :_running_sum2 => running_sum2,
+    )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
+    return QMCVecResult(Array{Float64}(reshape(sol_comb, cshape)), data)
 end
 
 function Base.show(io::IO, sc::CubMCCLTVec)

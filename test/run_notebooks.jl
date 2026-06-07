@@ -5,6 +5,7 @@
 #     julia --project=. test/run_notebooks.jl quickstart    # run one by name
 
 using Pkg
+Pkg.resolve()
 Pkg.instantiate()
 
 import NBInclude: @nbinclude
