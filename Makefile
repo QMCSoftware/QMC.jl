@@ -14,8 +14,12 @@ QMCPY_PYTHON_AUTO := $(shell \
 		fi; \
 	done)
 PYTHON ?= $(if $(QMCPY_PYTHON_AUTO),$(QMCPY_PYTHON_AUTO),python)
+TEST_JOBS ?= 1
+TEST_THREADS ?= 1
+NOTEBOOK_JOBS ?= 1
+NOTEBOOK_THREADS ?= 1
 BENCH_COVERAGE ?= 0
-BENCH_BLAS_THREADS ?= 1
+BENCH_BLAS_THREADS ?= 2
 JULIA_BENCH_COVERAGE_FLAG := $(if $(filter 1,$(BENCH_COVERAGE)),--code-coverage=user,)
 BENCH_THREAD_ENV := QMC_BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) OPENBLAS_NUM_THREADS=$(BENCH_BLAS_THREADS) MKL_NUM_THREADS=$(BENCH_BLAS_THREADS) OMP_NUM_THREADS=$(BENCH_BLAS_THREADS) NUMEXPR_NUM_THREADS=$(BENCH_BLAS_THREADS)
 
@@ -78,15 +82,16 @@ clean:
 # Testing and coverage
 # ============================================================================
 
-# Run all tests
+# Run all tests. Override file-level process sharding with TEST_JOBS=... and
+# Julia threads inside each test process with TEST_THREADS=...
 test: 
-	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
 
-# Run tests with Julia coverage instrumentation
+# Run tests with Julia coverage instrumentation.
 coverage:
 	find src test -name '*.cov' -delete
 	rm -f lcov.info
-	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(coverage=true)'
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; coverage=true, julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
 	julia --project=. devtools/process_coverage.jl
 	find src test -name '*.cov' -delete
 
@@ -122,13 +127,15 @@ format-check:
 smoke:
 	julia --project=. -e 'using QMC; dd = Lattice(3; randomize=true); tm = Uniform(dd); f = Genz(tm; kind=:continuous); sc = CubQMCLatticeG(f; abs_tol=0.01); r = integrate(sc); println(r)'
 
-# Run all demo notebooks (like Python's booktest)
+# Run all demo notebooks (like Python's booktest). Override process sharding
+# with NOTEBOOK_JOBS=... and Julia threads inside each notebook process with
+# NOTEBOOK_THREADS=...
 notebook:
-	julia --project=. test/run_notebooks.jl
+	julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS)
 
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
-	julia --project=. test/run_notebooks.jl $*
+	julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) $*
 
 # ============================================================================
 # Benchmarking

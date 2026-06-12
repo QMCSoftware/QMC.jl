@@ -25,7 +25,8 @@ and via manual dispatch.
 
 - Runs on `ubuntu-latest` with Julia 1.12.
 - Installs Python 3.13 and `qmctoolscl` (required by `DigitalNetB2`, `Lattice`, etc.).
-- Executes `Pkg.test(coverage=true)`, which runs `test/runtests.jl` with Julia coverage instrumentation enabled.
+- Executes `make coverage`, which runs `test/runtests.jl` with Julia coverage instrumentation enabled.
+- Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each shard to avoid oversubscription.
 - Processes the resulting coverage data into `lcov.info`.
 - Uploads `lcov.info` both to Codecov and as a GitHub Actions artifact.
 
@@ -35,7 +36,8 @@ and via manual dispatch.
 - Only executes when `demos/`, `src/`, or `test/run_notebooks.jl` changed
   in the triggering commit, keeping CI fast for documentation-only or
   workflow-only changes.
-- Runs all `.ipynb` demo notebooks via `test/run_notebooks.jl`.
+- Runs all `.ipynb` demo notebooks via `make notebook`.
+- Shards notebooks across `NOTEBOOK_JOBS` Julia subprocesses (default GitHub Actions variable fallback: `2`) while keeping `NOTEBOOK_THREADS=1` inside each shard.
 
 ## CI Full (`ci-full.yml`)
 
@@ -69,6 +71,8 @@ Builds the Documenter.jl documentation and deploys to GitHub Pages.
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'
+# or
+make test TEST_JOBS=2 TEST_THREADS=1
 ```
 
 **Unit tests with coverage instrumentation:**
@@ -76,7 +80,7 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
 # or
-make coverage
+make coverage TEST_JOBS=2 TEST_THREADS=1
 ```
 
 **A single demo notebook:**
@@ -89,6 +93,8 @@ julia --project=. test/run_notebooks.jl quickstart
 
 ```bash
 julia --project=. test/run_notebooks.jl
+# or
+make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 ```
 
 **Build documentation:**
