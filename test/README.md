@@ -23,17 +23,26 @@ This directory contains the automated test suite for QMC.jl.
 ```bash
 # Standard unit tests
 julia --project=. -e 'using Pkg; Pkg.test()'
+# or, via the Makefile with file-level process sharding
+make test TEST_JOBS=2 TEST_THREADS=1
 
 # Unit tests with coverage instrumentation
 julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
 # or
-make coverage
+make coverage TEST_JOBS=2 TEST_THREADS=1
 
 # Notebook regression tests
 julia --project=. test/run_notebooks.jl
+# or, sharded across multiple Julia processes
+make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 ```
 
 `make coverage` also processes the raw `*.cov` files locally, writes
 `lcov.info`, and prints a source-coverage summary for `src/`.
 CI uploads the same LCOV-style output to Codecov and stores it as a workflow
 artifact.
+
+`TEST_JOBS` and `NOTEBOOK_JOBS` shard whole test files or notebooks across
+multiple Julia processes. `TEST_THREADS` and `NOTEBOOK_THREADS` control Julia
+threads inside each shard. The conservative default is `1` thread per shard to
+avoid oversubscribing CI runners.
