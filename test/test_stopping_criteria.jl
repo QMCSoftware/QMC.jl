@@ -12,6 +12,39 @@ function QMC.evaluate(f::_VecCLTIntegrand, x::AbstractMatrix)
     return Y
 end
 
+# Top-level ratio integrand for the non-identity combine_fun test. Two individual
+# outputs over U[0,1]: numerator = x₁ (mean 0.5), denominator = 1 + x₁ (mean 1.5);
+# one combined output = numerator / denominator (ratio of means = 1/3).
+struct _RatioIntegrand{TM} <: QMC.AbstractIntegrand
+    true_measure::TM
+end
+QMC.d_indv(::_RatioIntegrand) = (2,)
+QMC.d_comb(::_RatioIntegrand) = (1,)
+function QMC.evaluate(f::_RatioIntegrand, x::AbstractMatrix)
+    Y = Matrix{Float64}(undef, size(x, 1), 2)
+    @views Y[:, 1] .= x[:, 1]
+    @views Y[:, 2] .= 1.0 .+ x[:, 1]
+    return Y
+end
+QMC.combine_fun(::_RatioIntegrand, sol) = [sol[1] / sol[2]]
+QMC.bound_fun(::_RatioIntegrand, lo, hi) = ([lo[1] / hi[2]], [hi[1] / lo[2]])
+QMC.dependency(::_RatioIntegrand, comb_flags) = [comb_flags[1], comb_flags[1]]
+
+# Top-level fast/slow integrand for the compute_flags freezing test. Output 1 is
+# constant (0.5, zero variance → converges at n_init and freezes); output 2 is
+# 3·x₁ (mean 1.5, needs many more samples). With per-output freezing the constant
+# output stops drawing samples far earlier than the variable one.
+struct _FreezeIntegrand{TM} <: QMC.AbstractIntegrand
+    true_measure::TM
+end
+QMC.d_indv(::_FreezeIntegrand) = (2,)
+function QMC.evaluate(f::_FreezeIntegrand, x::AbstractMatrix)
+    Y = Matrix{Float64}(undef, size(x, 1), 2)
+    @views Y[:, 1] .= 0.5
+    @views Y[:, 2] .= 3.0 .* x[:, 1]
+    return Y
+end
+
 @testset "Stopping Criteria" begin
     @testset "CubMCCLT" begin
         dd = IIDStdUniform(2; seed=500)
@@ -352,6 +385,39 @@ end
         rs = integrate(CubMCCLTVec(fs; abs_tol=0.05))
         @test rs isa QMCResult
         @test rs.solution isa Float64
+    end
+
+    @testset "CubMCCLTVec (non-identity combine_fun)" begin
+        # Ratio combine_fun: drive E[x]/E[1+x] = 1/3 to tolerance on the combined
+        # output, with alpha split across the two individuals it depends on.
+        dd = IIDStdUniform(1; seed=55)
+        tm = Uniform(dd)
+        f = _RatioIntegrand(tm)
+        r = integrate(CubMCCLTVec(f; abs_tol=0.01, n_max=2^22))
+        @test r isa QMCVecResult
+        @test length(r.solution) == 1                          # one combined output
+        @test isapprox(r.solution[1], 1 / 3; atol=0.02)        # ratio of means
+        @test r.data[:converged]
+        @test r.data[:error_bound] <= 0.01 + 1e-9              # combined output within tol
+        @test size(r.data[:solution_indv]) == (2,)             # two individual outputs
+        @test size(r.data[:comb_bound_low]) == (1,)
+        @test r.data[:comb_bound_low][1] <= r.solution[1] <= r.data[:comb_bound_high][1]
+    end
+
+    @testset "CubMCCLTVec (compute_flags freezing)" begin
+        # A zero-variance output converges at n_init and freezes while the
+        # variable output keeps doubling, so their per-output sample counts differ.
+        dd = IIDStdUniform(1; seed=11)
+        tm = Uniform(dd)
+        f = _FreezeIntegrand(tm)
+        r = integrate(CubMCCLTVec(f; abs_tol=0.02, n_max=2^20))
+        @test r isa QMCVecResult
+        @test r.data[:converged]
+        @test isapprox(r.solution[1], 0.5; atol=0.02)          # constant output
+        @test isapprox(r.solution[2], 1.5; atol=0.05)          # variable output
+        @test r.data[:n_indv][1] == 256                        # froze at n_init
+        @test r.data[:n_indv][2] > r.data[:n_indv][1]          # variable output grew
+        @test r.data[:n_total] == maximum(r.data[:n_indv])
     end
 
     @testset "Resume/Checkpoint" begin

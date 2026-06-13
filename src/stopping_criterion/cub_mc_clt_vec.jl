@@ -195,54 +195,80 @@ function _integrate_cubmccltvec_multi(
     ishape = d_indv(f)
     cshape = d_comb(f)
     m = prod(ishape)
+    mc = prod(cshape)
 
+    # Per-output accumulators and sample counts so converged outputs can freeze
+    # (stop drawing new samples) while the rest keep doubling. `n_max` doubles
+    # each iteration; an active output's count grows toward it, a frozen one keeps
+    # the count it had when it converged — mirroring QMCPy's per-output `n`.
+    n_min = 0
+    n_max = sc.n_init
+    recheck_only = false
     if resume !== nothing
         running_sum = collect(Float64, resume[:_running_sum])
         running_sum2 = collect(Float64, resume[:_running_sum2])
-        n_total = Int(resume[:n_total])
-        n = 2 * n_total
+        n_indv = collect(Int, resume[:_n_indv])
         prev_time = Float64(get(resume, :time_integrate, 0.0))
+        # Re-evaluate the (possibly tighter) tolerance from existing samples before
+        # drawing more: unfreeze everything and skip generation on the first pass.
+        n_min = maximum(n_indv)
+        n_max = n_min
+        recheck_only = true
     else
         running_sum = zeros(Float64, m)
         running_sum2 = zeros(Float64, m)
-        n_total = 0
-        n = sc.n_init
+        n_indv = zeros(Int, m)
         prev_time = 0.0
     end
+    compute_flags = trues(m)
 
     solution_indv = zeros(Float64, m)
     indv_low = zeros(Float64, m)
     indv_high = zeros(Float64, m)
-    comb_low = zeros(Float64, m)
-    comb_high = zeros(Float64, m)
-    sol_comb = zeros(Float64, m)
+    comb_low = zeros(Float64, mc)
+    comb_high = zeros(Float64, mc)
+    sol_comb = zeros(Float64, mc)
+    comb_flags = falses(mc)
     err_comb = Inf
     converged = false
 
-    while n_total < sc.n_max
-        n_batch = min(n, sc.n_max - n_total)
-        x = transform(tm, gen_samples(dd, n_batch))
-        Y = reshape(evaluate(f, x), n_batch, m)
-        @inbounds for k in 1:m
-            sk = 0.0
-            sk2 = 0.0
-            for i in 1:n_batch
-                v = Y[i, k]
-                sk += v
-                sk2 += v * v
+    while true
+        if !recheck_only
+            n_new = n_max - n_min
+            if n_new > 0
+                x = transform(tm, gen_samples(dd, n_new))
+                Y = reshape(evaluate(f, x, compute_flags), n_new, m)
+                @inbounds for k in 1:m
+                    compute_flags[k] || continue
+                    sk = 0.0
+                    sk2 = 0.0
+                    for i in 1:n_new
+                        v = Y[i, k]
+                        sk += v
+                        sk2 += v * v
+                    end
+                    running_sum[k] += sk
+                    running_sum2[k] += sk2
+                    n_indv[k] += n_new
+                end
             end
-            running_sum[k] += sk
-            running_sum2[k] += sk2
         end
-        n_total += n_batch
+        recheck_only = false
 
         @inbounds for k in 1:m
-            mu = running_sum[k] / n_total
-            solution_indv[k] = mu
-            var_k = max(running_sum2[k] / n_total - mu^2, 0.0)
-            ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(n_total))
-            indv_low[k] = mu - ci
-            indv_high[k] = mu + ci
+            nk = n_indv[k]
+            if nk > 0
+                mu = running_sum[k] / nk
+                solution_indv[k] = mu
+                var_k = max(running_sum2[k] / nk - mu^2, 0.0)
+                ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(nk))
+                indv_low[k] = mu - ci
+                indv_high[k] = mu + ci
+            else
+                solution_indv[k] = NaN
+                indv_low[k] = -Inf
+                indv_high[k] = Inf
+            end
         end
 
         cl, ch = bound_fun(f, indv_low, indv_high)
@@ -250,15 +276,27 @@ function _integrate_cubmccltvec_multi(
         comb_high = collect(Float64, ch)
         sol_comb = collect(Float64, combine_fun(f, solution_indv))
 
-        halfwidth = (comb_high .- comb_low) ./ 2
         tol_c = max.(sc.abs_tol, sc.rel_tol .* abs.(sol_comb))
-        err_comb = maximum(halfwidth)
-        converged = all(halfwidth .<= tol_c)
+        err_comb = 0.0
+        @inbounds for kc in 1:mc
+            hw = (comb_high[kc] - comb_low[kc]) / 2
+            comb_flags[kc] = isfinite(hw) && hw <= tol_c[kc]
+            if isfinite(hw) && hw > err_comb
+                err_comb = hw
+            end
+        end
+
+        # Freeze the individuals that feed only converged combined outputs.
+        flags_indv = vec(collect(Bool, dependency(f, reshape(comb_flags, cshape))))
+        @inbounds for k in 1:m
+            compute_flags[k] = !flags_indv[k]
+        end
+        converged = all(comb_flags)
 
         if sc.trace_iterations
             push!(
                 log;
-                n=n_total,
+                n=maximum(n_indv),
                 solution=sol_comb[1],
                 error_bound=err_comb,
                 tol=maximum(tol_c),
@@ -266,14 +304,16 @@ function _integrate_cubmccltvec_multi(
             )
         end
 
-        converged && break
-        n = min(2 * n, sc.n_max - n_total)
-        n <= 0 && break
+        count(compute_flags) == 0 && break        # all outputs sufficiently estimated
+        2 * maximum(n_indv) > sc.n_max && break    # next doubling would exceed n_max
+        n_min = n_max
+        n_max = 2 * n_max
     end
 
     t_elapsed = time() - t_start
     data = Dict{Symbol, Any}(
-        :n_total => n_total,
+        :n_total => maximum(n_indv),
+        :n_indv => Array{Int}(reshape(copy(n_indv), ishape)),
         :error_bound => err_comb,
         :time_integrate => prev_time + t_elapsed,
         :converged => converged,
@@ -282,6 +322,7 @@ function _integrate_cubmccltvec_multi(
         :comb_bound_high => Array{Float64}(reshape(comb_high, cshape)),
         :_running_sum => running_sum,
         :_running_sum2 => running_sum2,
+        :_n_indv => copy(n_indv),
     )
     if sc.trace_iterations
         data[:iteration_log] = log

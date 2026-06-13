@@ -158,6 +158,19 @@ QMCPy's `dependency`.
 dependency(::AbstractIntegrand, comb_flags) = comb_flags
 
 """
+    evaluate(f::AbstractIntegrand, x, compute_flags) -> y
+
+Flag-aware evaluation used by multi-output stopping criteria: `compute_flags`
+marks which individual outputs still need to be computed (converged outputs are
+frozen). The default ignores the flags and computes every output — the criterion
+simply discards the frozen columns — so existing two-argument `evaluate` methods
+keep working unchanged. Integrands whose outputs are expensive may override this
+three-argument form to skip the frozen outputs. Mirrors QMCPy threading
+`compute_flags` into the integrand.
+"""
+evaluate(f::AbstractIntegrand, x::AbstractMatrix, compute_flags) = evaluate(f, x)
+
+"""
 Result type returned by `integrate`.
 
 # Fields
