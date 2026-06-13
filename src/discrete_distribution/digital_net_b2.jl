@@ -6,10 +6,11 @@
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 
 Generates Sobol' points using the published Joe-Kuo direction numbers,
-supporting up to 1024 raw Sobol' dimensions and 2^32 points with the bundled
-Joe-Kuo table. When `alpha > 1`, those raw dimensions are interlaced in groups
-of `alpha`, so the bundled effective-dimension limit becomes `floor(1024/alpha)`
-unless custom generating matrices are supplied explicitly.
+supporting up to 21201 raw Sobol' dimensions and 2^32 points with the bundled
+Joe-Kuo table (the "new-joe-kuo-6" set, matching QMCPy). When `alpha > 1`, those
+raw dimensions are interlaced in groups of `alpha`, so the bundled
+effective-dimension limit becomes `floor(21201/alpha)` unless custom generating
+matrices are supplied explicitly.
 
 This generator currently relies on the QMCToolsCL shared library. Install
 `qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
@@ -24,7 +25,7 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Arguments
 - `dimension::Int`: number of output dimensions. With the bundled Joe-Kuo
-  table, the raw Sobol' dimension cap is 1024, so higher-order
+  table, the raw Sobol' dimension cap is 21201, so higher-order
   `alpha > 1` nets have a correspondingly lower effective-dimension limit
   unless custom matrices are supplied.
 - `randomize::String`: randomization method.
@@ -79,6 +80,36 @@ const _DEFAULT_DNET_SOURCE_NAME = "joe_kuo.6.21201.txt"
 const _DEFAULT_DNET_1024_SOURCE_NAME = "joe_kuo.6.1024.txt"
 const _DNET_LDDATA_RAW_BASE = "https://raw.githubusercontent.com/QMCSoftware/LDData/main/dnet/"
 
+# Maximum raw Sobol' dimension available offline. Dimensions 1..1024 come from the
+# embedded `_JK_DIRECTION_MATRIX` (a fast path with no file I/O); dimensions
+# 1025..21201 come from the bundled compact binary `joe_kuo.6.21201.bin`, whose
+# first 1024 dimensions are bit-for-bit identical to the embedded table. Both are
+# the "new-joe-kuo-6" direction numbers, matching QMCPy's bundled
+# `joe_kuo.6.21201.npy`. Beyond 21201, an explicit larger LDData source is needed.
+const _DNET_MAX_SOURCE_DIMS = 21201
+const _DNET_EXTENDED_TABLE_FILE = joinpath(@__DIR__, "..", "data", "joe_kuo.6.21201.bin")
+# Lazily-loaded, cached flat UInt32 table (dim-major, 21201 × 32), read on first
+# use for dimensions above the embedded 1024 so low-dimensional jobs never pay the
+# ~2.7 MB read or carry it in the precompiled image.
+const _JK_EXTENDED_MATRIX = Ref{Union{Nothing, Vector{UInt32}}}(nothing)
+
+function _extended_direction_matrix()
+    cached = _JK_EXTENDED_MATRIX[]
+    cached === nothing || return cached
+    bytes = read(_DNET_EXTENDED_TABLE_FILE)
+    n = length(bytes) ÷ 4
+    v = Vector{UInt32}(undef, n)
+    @inbounds for i in 1:n
+        b = (i - 1) * 4
+        # stored little-endian; decode explicitly so the result is host-independent
+        v[i] =
+            UInt32(bytes[b + 1]) | (UInt32(bytes[b + 2]) << 8) | (UInt32(bytes[b + 3]) << 16) |
+            (UInt32(bytes[b + 4]) << 24)
+    end
+    _JK_EXTENDED_MATRIX[] = v
+    return v
+end
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Load precomputed direction numbers from data file
 # The data file defines _JK_DIRECTION_MATRIX (flat UInt32 array),
@@ -91,14 +122,23 @@ const _DNET_LDDATA_RAW_BASE = "https://raw.githubusercontent.com/QMCSoftware/LDD
 Load the precomputed Joe-Kuo direction numbers for dimensions 1..ndim.
 Returns a ndim × 32 matrix V where V[j,k] is the k-th direction number
 for dimension j, already left-shifted so that the point value is V/2^32.
+Dimensions up to $(_JK_DIRECTION_MATRIX_DIMS) use the embedded table; up to
+$(_DNET_MAX_SOURCE_DIMS) use the bundled binary extension.
 """
 function _load_direction_numbers(ndim::Int)
     B = _SOBOL_BITS
+    ndim <= _DNET_MAX_SOURCE_DIMS || throw(
+        ArgumentError(
+            "dimension $ndim exceeds the maximum bundled Joe-Kuo dimension ($_DNET_MAX_SOURCE_DIMS); supply a larger generating_matrices source explicitly",
+        ),
+    )
+    src =
+        ndim <= _JK_DIRECTION_MATRIX_DIMS ? _JK_DIRECTION_MATRIX : _extended_direction_matrix()
     V = Matrix{UInt64}(undef, ndim, B)
     @inbounds for j in 1:ndim
         base = (j - 1) * B
         for k in 1:B
-            V[j, k] = UInt64(_JK_DIRECTION_MATRIX[base + k])
+            V[j, k] = UInt64(src[base + k])
         end
     end
     return V
@@ -247,7 +287,7 @@ end
     DigitalNetB2 <: AbstractDiscreteDistribution
 
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
-Supports up to 1024 raw Sobol' dimensions when using the bundled Joe-Kuo
+Supports up to 21201 raw Sobol' dimensions when using the bundled Joe-Kuo
 direction numbers.
 See the outer constructor for full documentation.
 
@@ -379,8 +419,13 @@ function _resolve_direction_numbers(dimension::Int, generating_matrices, msb)
         _looks_like_lddata_digital_net_reference(generating_matrices) ||
             throw(ArgumentError("generating_matrices file \"$generating_matrices\" not found"))
         filename = _canonical_digital_net_matrix_filename(generating_matrices)
-        if filename in (_DEFAULT_DNET_SOURCE_NAME, _DEFAULT_DNET_1024_SOURCE_NAME) &&
-           dimension <= _JK_DIRECTION_MATRIX_DIMS
+        # The default Joe-Kuo sources are bundled offline: the 21201 table via the
+        # embedded + binary tables, the 1024 table via the embedded one. Other
+        # LDData names (and dimensions past what is bundled) download on demand.
+        if filename == _DEFAULT_DNET_SOURCE_NAME && dimension <= _DNET_MAX_SOURCE_DIMS
+            return _load_direction_numbers(dimension), Int(1) << _SOBOL_BITS, _SOBOL_BITS
+        elseif filename == _DEFAULT_DNET_1024_SOURCE_NAME &&
+               dimension <= _JK_DIRECTION_MATRIX_DIMS
             return _load_direction_numbers(dimension), Int(1) << _SOBOL_BITS, _SOBOL_BITS
         end
         return _download_digital_net_matrix_from_lddata(filename, dimension)
@@ -408,10 +453,10 @@ function DigitalNetB2(
     alpha > 0 || throw(ArgumentError("alpha must be positive, got $alpha"))
     raw_dimension = Base.checked_mul(dimension, alpha)
     isnothing(generating_matrices) &&
-        raw_dimension > _JK_DIRECTION_MATRIX_DIMS &&
+        raw_dimension > _DNET_MAX_SOURCE_DIMS &&
         throw(
             ArgumentError(
-                "dimension $dimension with alpha=$alpha requires $raw_dimension raw dimensions, exceeding the maximum supported ($_JK_DIRECTION_MATRIX_DIMS)",
+                "dimension $dimension with alpha=$alpha requires $raw_dimension raw dimensions, exceeding the maximum bundled ($_DNET_MAX_SOURCE_DIMS); supply a larger generating_matrices source explicitly",
             ),
         )
     if !isnothing(replications)
