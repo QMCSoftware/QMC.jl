@@ -117,7 +117,9 @@ end
 
 function child_cmd(notebooks::Vector{String})
     script = joinpath(@__DIR__, "run_notebooks.jl")
-    cmd = `$(Base.julia_cmd()) $script --jobs=1 $notebooks`
+    base_argv = collect(Base.julia_cmd())
+    argv = vcat(base_argv, [script, "--jobs=1"], notebooks)
+    cmd = Cmd(argv)
     return addenv(
         cmd,
         "JULIA_PROJECT" => current_project_dir(),

@@ -1,8 +1,10 @@
 name: Nightly
 
 on:
-  schedule:
-    - cron: '30 5 * * *'   # 05:30 UTC daily
+  push:
+    branches: [choi] # temp
+  #schedule:
+  #  - cron: '30 5 * * *'   # 05:30 UTC daily
   workflow_dispatch:
 
 concurrency:
