@@ -387,7 +387,7 @@ end
         @test rs.solution isa Float64
     end
 
-    @testset "CubMCCLTVec (non-identity combine_fun)" begin
+    @testset "CubMCCLTVec (ratio integrand, bound-derived solution)" begin
         # Ratio combine_fun: drive E[x]/E[1+x] = 1/3 to tolerance on the combined
         # output, with alpha split across the two individuals it depends on.
         dd = IIDStdUniform(1; seed=55)
@@ -402,6 +402,13 @@ end
         @test size(r.data[:solution_indv]) == (2,)             # two individual outputs
         @test size(r.data[:comb_bound_low]) == (1,)
         @test r.data[:comb_bound_low][1] <= r.solution[1] <= r.data[:comb_bound_high][1]
+        # QMCPy derives the solution from the combined bounds, not combine_fun;
+        # with rel_tol = 0 it is exactly the bound midpoint.
+        @test isapprox(
+            r.solution[1],
+            0.5 * (r.data[:comb_bound_low][1] + r.data[:comb_bound_high][1]);
+            atol=1e-9,
+        )
     end
 
     @testset "CubMCCLTVec (compute_flags freezing)" begin
