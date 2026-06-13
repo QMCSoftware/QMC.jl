@@ -1,0 +1,39 @@
+name: Format Check
+
+on:
+  pull_request:
+    branches: [develop, master]
+  workflow_dispatch:
+
+concurrency:
+  group: format-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: JuliaFormatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+
+      - name: Install JuliaFormatter
+        run: julia -e 'using Pkg; Pkg.add("JuliaFormatter")'
+
+      - name: Check formatting
+        run: |
+          julia -e '
+            using JuliaFormatter
+            result = format("src", overwrite=false)
+            result &= format("test", overwrite=false)
+            if !result
+                @error "Some files are not formatted. Run: julia -e '\''using JuliaFormatter; format(\".\")'\'' locally."
+                exit(1)
+            end
+            @info "All files formatted correctly."
+          '

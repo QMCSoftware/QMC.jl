@@ -35,18 +35,14 @@ The first several Bernoulli numbers are:
   B_0 = 1, B_1 = -1/2, B_2 = 1/6, B_3 = 0,
   B_4 = -1/30, B_5 = 0, B_6 = 1/42.
 """
-function bernoulli_number(k::Int)
-    return bernoulli_poly(k, 0.0)
-end
+bernoulli_number(k::Int) = bernoulli_poly(k, 0.0)
 
 """
     bernoulli_poly_vec(k::Int, x::AbstractVector)
 
 Vectorized Bernoulli polynomial evaluation: compute B_k(x_i) for each element.
 """
-function bernoulli_poly_vec(k::Int, x::AbstractVector{<:Real})
-    return bernoulli_poly.(k, x)
-end
+bernoulli_poly_vec(k::Int, x::AbstractVector{<:Real}) = bernoulli_poly.(k, x)
 
 """
     lattice_kernel_component(x::Real, alpha::Int=2)

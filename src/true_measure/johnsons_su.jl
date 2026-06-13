@@ -1,5 +1,5 @@
 """
-    JohnsonsSU(dd; xi=0.0, lambda=1.0, gamma=0.0, delta=1.0)
+    JohnsonsSU(dd; xi=1.0, lambda=2.0, gamma=1.0, delta=2.0)
 
 Johnson's SU distribution measure via inverse CDF.
 
@@ -9,13 +9,17 @@ where Φ⁻¹ is the standard normal quantile function.
 
 # Arguments
 - `dd`: discrete distribution.
-- `xi`: location parameter ξ (scalar or d-vector).
-- `lambda`: scale parameter λ > 0 (scalar or d-vector).
-- `gamma`: shape parameter γ (scalar or d-vector).
-- `delta`: shape parameter δ > 0 (scalar or d-vector).
+- `xi`: location parameter ξ (scalar or d-vector). Default `1.0`.
+- `lambda`: scale parameter λ > 0 (scalar or d-vector). Default `2.0`
+  (QMCPy's `lam`).
+- `gamma`: shape parameter γ (scalar or d-vector). Default `1.0`.
+- `delta`: shape parameter δ > 0 (scalar or d-vector). Default `2.0`.
+
+The defaults match QMC v2.3 (`gamma=1, xi=1, delta=2, lam=2`); QMC.jl's `lambda`
+corresponds to QMCPy's `lam`.
 """
-struct JohnsonsSU <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     xi::Vector{Float64}
     lambda::Vector{Float64}
@@ -23,8 +27,7 @@ struct JohnsonsSU <: AbstractTrueMeasure
     delta::Vector{Float64}
 end
 
-function JohnsonsSU(dd::AbstractDiscreteDistribution;
-                    xi=0.0, lambda=1.0, gamma=0.0, delta=1.0)
+function JohnsonsSU(dd::AbstractDiscreteDistribution; xi=1.0, lambda=2.0, gamma=1.0, delta=2.0)
     d = dd.dimension
     _xi = xi isa Number ? fill(Float64(xi), d) : Float64.(collect(xi))
     _lam = lambda isa Number ? fill(Float64(lambda), d) : Float64.(collect(lambda))
@@ -36,18 +39,17 @@ function JohnsonsSU(dd::AbstractDiscreteDistribution;
 end
 
 function transform(tm::JohnsonsSU, x::AbstractMatrix)
-    n, d = size(x)
-    ndist = Distributions.Normal()
-    y = Matrix{Float64}(undef, n, d)
-    @inbounds for j in 1:d
-        for i in 1:n
-            z = quantile(ndist, x[i, j])
-            y[i, j] = tm.xi[j] + tm.lambda[j] * sinh((z - tm.gamma[j]) / tm.delta[j])
-        end
-    end
-    return y
+    # Phi^-1(u) = sqrt(2) * erfinv(2u - 1): the same fast standard-normal quantile the Gaussian
+    # transform uses, applied over the whole n x d input as a fused broadcast rather
+    # than a per-element Distributions.quantile call. The Johnson S_u map
+    # y = xi + lambda * sinh((Phi^-1(u) - gamma)/delta) is then broadcast column-wise
+    # (parameters are 1 x d rows). Numerically equivalent to the scalar form.
+    xi = transpose(tm.xi)
+    lam = transpose(tm.lambda)
+    gam = transpose(tm.gamma)
+    del = transpose(tm.delta)
+    z = @. sqrt(2.0) * SpecialFunctions.erfinv(2.0 * _open_unit_interval(x) - 1.0)
+    return @. xi + lam * sinh((z - gam) / del)
 end
 
-function Base.show(io::IO, tm::JohnsonsSU)
-    print(io, "JohnsonsSU(d=$(tm.dimension))")
-end
+Base.show(io::IO, tm::JohnsonsSU) = print(io, "JohnsonsSU(d=$(tm.dimension))")

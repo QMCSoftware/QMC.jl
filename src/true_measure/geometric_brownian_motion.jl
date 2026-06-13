@@ -23,24 +23,49 @@ x = gen_samples(dd, 256)
 paths = transform(gbm, x)  # 256×4 stock price paths
 ```
 """
-struct GeometricBrownianMotion <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct GeometricBrownianMotion{D <: AbstractDiscreteDistribution, B <: BrownianMotion} <:
+       AbstractTrueMeasure
+    dd::D
     dimension::Int
     time_vector::Vector{Float64}
     initial_value::Float64
     drift::Float64
     diffusion::Float64
-    _bm::BrownianMotion
+    _bm::B
 end
 
-function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
-                                  t_final::Float64=1.0,
-                                  initial_value::Float64=1.0,
-                                  drift::Float64=0.0,
-                                  diffusion::Float64=1.0,
-                                  decomp_type::Symbol=:PCA)
+function GeometricBrownianMotion(
+    dd::AbstractDiscreteDistribution;
+    t_final::Float64=1.0,
+    initial_value::Union{Nothing, Float64}=nothing,
+    drift::Union{Nothing, Float64}=nothing,
+    diffusion::Union{Nothing, Float64}=nothing,
+    volatility::Union{Nothing, Float64}=nothing,
+    start_price::Union{Nothing, Float64}=nothing,
+    interest_rate::Union{Nothing, Float64}=nothing,
+    decomp_type::Symbol=:PCA,
+)
+    if !isnothing(initial_value) && !isnothing(start_price) && initial_value != start_price
+        throw(ArgumentError("initial_value and start_price must match when both are provided"))
+    end
+    if !isnothing(drift) && !isnothing(interest_rate) && drift != interest_rate
+        throw(ArgumentError("drift and interest_rate must match when both are provided"))
+    end
+    if !isnothing(volatility) && volatility < 0.0
+        throw(ArgumentError("volatility must be non-negative, got $volatility"))
+    end
+    if !isnothing(diffusion) && !isnothing(volatility) && diffusion != volatility^2
+        throw(ArgumentError("diffusion and volatility must satisfy diffusion = volatility^2"))
+    end
+
+    initial_value = Float64(something(initial_value, start_price, 1.0))
+    drift = Float64(something(drift, interest_rate, 0.0))
+    diffusion =
+        Float64(isnothing(diffusion) ? (isnothing(volatility) ? 1.0 : volatility^2) : diffusion)
+
     t_final >= 0.0 || throw(ArgumentError("t_final must be non-negative, got $t_final"))
-    initial_value > 0.0 || throw(ArgumentError("initial_value must be positive, got $initial_value"))
+    initial_value > 0.0 ||
+        throw(ArgumentError("initial_value must be positive, got $initial_value"))
     diffusion > 0.0 || throw(ArgumentError("diffusion must be positive, got $diffusion"))
 
     d = dd.dimension
@@ -53,7 +78,7 @@ function GeometricBrownianMotion(dd::AbstractDiscreteDistribution;
     end
 
     gauss = Gaussian(dd; mean=0.0, covariance=cov, decomp_type=decomp_type)
-    bm = BrownianMotion(dd, d, tv, 0.0, gauss)
+    bm = BrownianMotion(dd, d, tv, 0.0, 0.0, diffusion, gauss)
 
     return GeometricBrownianMotion(dd, d, tv, initial_value, drift, diffusion, bm)
 end
@@ -63,17 +88,15 @@ function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
     bm_samples = transform(tm._bm, x)
     # S(t) = S₀ exp[(γ - σ²/2) t + BM(t)]
     # where BM(t) already has variance σ² t from the covariance
-    n, d = size(bm_samples)
-    result = Matrix{Float64}(undef, n, d)
-    @inbounds for j in 1:d
-        exponent_drift = (tm.drift - 0.5 * tm.diffusion) * tm.time_vector[j]
-        for i in 1:n
-            result[i, j] = tm.initial_value * exp(exponent_drift + bm_samples[i, j])
-        end
-    end
-    return result
+    # offsets is 1×d; broadcast fuses + and exp into one 
+    # Single Instruction, Multiple Data (SIMD) pass over the n×d array.
+    offsets = transpose((tm.drift - 0.5 * tm.diffusion) .* tm.time_vector)
+    return @. tm.initial_value * exp(offsets + bm_samples)
 end
 
 function Base.show(io::IO, tm::GeometricBrownianMotion)
-    print(io, "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))")
+    print(
+        io,
+        "GeometricBrownianMotion(d=$(tm.dimension), S₀=$(tm.initial_value), γ=$(tm.drift), σ²=$(tm.diffusion))",
+    )
 end

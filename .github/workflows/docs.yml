@@ -2,18 +2,24 @@ name: Docs
 
 on:
   push:
-    branches: [master]
+    branches: [develop, master]
     paths:
-      - 'qmcju/docs/**'
-      - 'qmcju/src/**'
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
+      - '.github/workflows/docs.yml'
   pull_request:
+    branches: [develop, master]
     paths:
-      - 'qmcju/docs/**'
-      - 'qmcju/src/**'
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: qmcju
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -28,19 +34,28 @@ jobs:
 
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
+          version: '1.12'
 
       - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install qmctoolscl
+        run: pip install -r test/requirements.txt
 
       - name: Install dependencies
         run: |
           julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path="."))
+            import Pkg
+            Pkg.develop(Pkg.PackageSpec(path="."))
             Pkg.instantiate()
+            Pkg.precompile()
           '
 
       - name: Build and deploy docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: "true"
         run: julia --project=docs docs/make.jl

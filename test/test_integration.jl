@@ -1,5 +1,4 @@
 @testset "End-to-End Integration Pipelines" begin
-
     @testset "IID MC: Uniform integral" begin
         # ∫₀¹ x² dx = 1/3
         dd = IIDStdUniform(1; seed=1000)
@@ -22,11 +21,11 @@
     end
 
     @testset "Digital Net QMC: Genz continuous" begin
-        dd = DigitalNetB2(2; randomize="DS", seed=3000)
+        dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=3000)
         tm = Uniform(dd)
         f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
         exact = genz_exact(f)
-        sc = CubQMCNetG(f; abs_tol=0.1, n_init=2^10, n_reps=16)
+        sc = CubQMCNetG(f; abs_tol=0.1, n_init=2^10)
         result = integrate(sc)
         @test abs(result.solution - exact) < 1.0
         @test result.data[:n] >= 2^10
@@ -35,9 +34,15 @@
     @testset "Asian option (smoke test)" begin
         dd = Lattice(8; randomize=true, seed=4000)
         tm = BrownianMotion(dd)
-        f = AsianOption(tm; volatility=0.2, start_price=100.0,
-                        strike_price=100.0, interest_rate=0.05,
-                        call_put=:call, mean_type=:arithmetic)
+        f = AsianOption(
+            tm;
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+            call_put=:call,
+            mean_type=:arithmetic,
+        )
         sc = CubQMCLatticeG(f; abs_tol=0.5, n_init=2^8, n_reps=4)
         result = integrate(sc)
         @test result.solution > 0.0
@@ -46,11 +51,22 @@
 
     @testset "GBM + FinancialOption pipeline" begin
         dd = IIDStdUniform(4; seed=5000)
-        gbm = GeometricBrownianMotion(dd; t_final=1.0, initial_value=100.0,
-                                        drift=0.05, diffusion=0.04)
-        f = FinancialOption(gbm; option_type=:european, volatility=0.2,
-                           start_price=100.0, strike_price=100.0,
-                           interest_rate=0.05, call_put=:call)
+        gbm = GeometricBrownianMotion(
+            dd;
+            t_final=1.0,
+            initial_value=100.0,
+            drift=0.05,
+            diffusion=0.04,
+        )
+        f = FinancialOption(
+            gbm;
+            option_type=:european,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+            call_put=:call,
+        )
         y = sample_and_evaluate(f, 2000)
         @test all(y .>= 0.0)
         @test mean(y) > 0  # ATM call has positive value
@@ -66,5 +82,4 @@
             end
         end
     end
-
 end

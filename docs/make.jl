@@ -1,15 +1,15 @@
 using Documenter
-using QMCJu
+using QMC
 
 makedocs(
-    sitename = "QMCJu",
+    sitename = "QMC.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
-    modules = [QMCJu],
+    modules = [QMC],
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://qmcsoftware.github.io/QMCSoftware/qmcju/",
-        repolink = "https://github.com/QMCSoftware/QMCSoftware",
+        canonical = "https://qmcsoftware.github.io/QMC.jl/",
+        repolink = "https://github.com/QMCSoftware/QMC.jl",
         edit_link = nothing,
         assets = String[],
     ),
@@ -26,6 +26,7 @@ makedocs(
             "Internals" => "api/internals.md",
         ],
         "Demos" => "demos.md",
+        "CI/CD Testing" => "ci-testing.md",
         "Contributing" => "contributing.md",
         "Community" => "community.md",
     ],
@@ -34,7 +35,7 @@ makedocs(
 # Only deploy from CI
 if get(ENV, "CI", nothing) == "true"
     deploydocs(
-        repo = "github.com/QMCSoftware/QMCSoftware.git",
+        repo = "github.com/QMCSoftware/QMC.jl.git",
         devbranch = "develop",
         push_preview = true,
     )

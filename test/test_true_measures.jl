@@ -1,5 +1,4 @@
 @testset "True Measures" begin
-
     @testset "Uniform" begin
         dd = IIDStdUniform(2; seed=10)
         tm = Uniform(dd; lower_bound=-1.0, upper_bound=2.0)
@@ -31,6 +30,28 @@
         @test abs(mean(xt[:, 2]) - (-1.0)) < 0.2
     end
 
+    @testset "Deterministic inverse-CDF boundaries" begin
+        dd = DigitalNetB2(2; randomize="none", seed=31)
+        x = gen_samples(dd, 8)
+        @test x[1, :] == [0.0, 0.0]
+
+        gauss = transform(Gaussian(dd; mean=0.0, covariance=1.0), x)
+        stud = transform(StudentT(dd; df=5.0), x)
+        jsu = transform(JohnsonsSU(dd), x)
+        bm = transform(BrownianMotion(dd), x)
+        gbm = transform(
+            GeometricBrownianMotion(dd; initial_value=100.0, drift=0.05, diffusion=0.04),
+            x,
+        )
+
+        for y in (gauss, stud, jsu, bm, gbm)
+            @test size(y) == size(x)
+            @test all(isfinite, y)
+            @test all(isfinite, y[1, :])
+        end
+        @test all(gbm .> 0.0)
+    end
+
     @testset "BrownianMotion" begin
         dd = IIDStdUniform(4; seed=40)
         tm = BrownianMotion(dd)
@@ -39,6 +60,25 @@
         @test size(xt) == (2000, 4)
         @test abs(mean(xt[:, end])) < 0.1
         @test abs(var(xt[:, end]) - 1.0) < 0.3
+
+        # t_final sets the grid [T/d, …, T] (QMCPy convention)
+        @test BrownianMotion(IIDStdUniform(4); t_final=2.0).time_vector ≈ [0.5, 1.0, 1.5, 2.0]
+        # default call is unchanged (t_final = 1)
+        @test BrownianMotion(IIDStdUniform(4)).time_vector ≈ [0.25, 0.5, 0.75, 1.0]
+        @test_throws ArgumentError BrownianMotion(
+            IIDStdUniform(4);
+            time_vector=[0.5, 1, 1.5, 2],
+            t_final=2.0,
+        )
+        @test_throws ArgumentError BrownianMotion(IIDStdUniform(4); diffusion=0.0)
+
+        # initial_value + drift·t mean, diffusion·min(tᵢ,tⱼ) covariance (QMCPy semantics)
+        dd2 = DigitalNetB2(4; seed=1)
+        bm = BrownianMotion(dd2; t_final=2.0, initial_value=3.0, drift=1.0, diffusion=4.0)
+        paths = transform(bm, gen_samples(dd2, 2^14))
+        tv = [0.5, 1.0, 1.5, 2.0]
+        @test maximum(abs.(vec(mean(paths; dims=1)) .- (3.0 .+ 1.0 .* tv))) < 0.1
+        @test abs(var(paths[:, end]) - 4.0 * 2.0) < 0.8      # diffusion · t_final = 8
     end
 
     @testset "Lebesgue" begin
@@ -52,8 +92,13 @@
 
     @testset "GeometricBrownianMotion" begin
         dd = IIDStdUniform(4; seed=60)
-        gbm = GeometricBrownianMotion(dd; t_final=1.0, initial_value=100.0,
-                                        drift=0.05, diffusion=0.04)
+        gbm = GeometricBrownianMotion(
+            dd;
+            t_final=1.0,
+            initial_value=100.0,
+            drift=0.05,
+            diffusion=0.04,
+        )
         x = gen_samples(dd, 5000)
         paths = transform(gbm, x)
         @test size(paths) == (5000, 4)
@@ -72,6 +117,45 @@
         @test size(xt) == (5000, 2)
         # Student-t with df=5 has mean 0 and variance df/(df-2) = 5/3
         @test abs(mean(xt)) < 0.15
+    end
+
+    @testset "StudentT df=2 closed form" begin
+        dd = DigitalNetB2(2; randomize="none", seed=71)
+        x = gen_samples(dd, 16)
+
+        tm_std = StudentT(dd)
+        xt_std = transform(tm_std, x)
+        expected_std = Matrix{Float64}(undef, size(x))
+        @inbounds for j in axes(x, 2), i in axes(x, 1)
+            p = QMC._open_unit_interval(x[i, j])
+            expected_std[i, j] = (2.0 * p - 1.0) / sqrt(2.0 * p * (1.0 - p))
+        end
+        @test xt_std ≈ expected_std
+
+        loc = [1.0, -2.0]
+        scale = [0.5, 2.0]
+        tm_affine = StudentT(dd; df=2.0, loc=loc, scale=scale)
+        xt_affine = transform(tm_affine, x)
+        @test xt_affine ≈ expected_std .* transpose(scale) .+ transpose(loc)
+    end
+
+    @testset "StudentT df=1 closed form" begin
+        dd = DigitalNetB2(2; randomize="none", seed=72)
+        x = gen_samples(dd, 16)
+
+        tm_std = StudentT(dd; df=1.0)
+        xt_std = transform(tm_std, x)
+        expected_std = Matrix{Float64}(undef, size(x))
+        @inbounds for j in axes(x, 2), i in axes(x, 1)
+            expected_std[i, j] = tanpi(QMC._open_unit_interval(x[i, j]) - 0.5)
+        end
+        @test xt_std ≈ expected_std
+
+        loc = [0.25, -1.5]
+        scale = [1.5, 0.25]
+        tm_affine = StudentT(dd; df=1.0, loc=loc, scale=scale)
+        xt_affine = transform(tm_affine, x)
+        @test xt_affine ≈ expected_std .* transpose(scale) .+ transpose(loc)
     end
 
     @testset "Triangular" begin
@@ -103,6 +187,33 @@
         @test !any(isnan, xt)
     end
 
+    @testset "Kumaraswamy/JohnsonsSU defaults match QMCPy 2.3" begin
+        # Default-constructed measures must reproduce QMCPy 2.3's defaults exactly
+        # (oracle values computed from qmcpy==2.3 on the same uniforms).
+        u = [0.1 0.3; 0.5 0.7; 0.9 0.25]
+        dd = IIDStdUniform(2; seed=1)
+
+        km = Kumaraswamy(dd)                       # QMCPy: a=2, b=2
+        @test km.alpha == [2.0, 2.0]
+        @test km.beta == [2.0, 2.0]
+        @test transform(km, u) ≈ [
+            0.226532 0.404153
+            0.541196 0.672516
+            0.826905 0.366025
+        ] atol = 1e-5
+
+        js = JohnsonsSU(dd)                        # QMCPy: gamma=1, xi=1, delta=2, lam=2
+        @test js.xi == [1.0, 1.0]
+        @test js.lambda == [2.0, 2.0]
+        @test js.gamma == [1.0, 1.0]
+        @test js.delta == [2.0, 2.0]
+        @test transform(js, u) ≈ [
+            -1.809624 -0.676348
+            -0.042191 0.519905
+            1.282482 -0.877092
+        ] atol = 1e-5
+    end
+
     @testset "BernoulliCont" begin
         dd = IIDStdUniform(2; seed=92)
         tm = BernoulliCont(dd; lam=0.3)
@@ -117,4 +228,100 @@
         @test xt2 ≈ x2 atol=1e-10
     end
 
+    @testset "AcceptanceRejection" begin
+        dd = IIDStdUniform(2; seed=7)
+        ar = AcceptanceRejection(
+            dd;
+            pdf_func=x -> exp(-x[1]^2/2) / sqrt(2π),
+            proposal_pdf=x -> 1.0,
+            M=1.0 / sqrt(2π) + 0.01,
+        )
+        @test ar isa AcceptanceRejection
+    end
+
+    @testset "AcceptanceRejectionReal" begin
+        logit(u) = log(u / (1 - u))
+        lpdf(z) = exp(-z) / (1 + exp(-z))^2
+
+        dd = DigitalNetB2(2; randomize="none", seed=7)
+        tm = AcceptanceRejectionReal(
+            dd;
+            target_density=z -> lpdf(z[1]),
+            inv_cdfs=[logit],
+            H_func=z -> lpdf(z[1]),
+            upper_bound=1.0,
+            density_integral=1.0,
+        )
+        @test tm isa AcceptanceRejectionReal
+        @test tm.dimension == 1
+        @test tm.acceptance_rate ≈ 1.0
+        x = gen_samples(dd, 64)
+        s = transform(tm, x)
+        @test size(s, 2) == 1
+        @test size(s, 1) == 64
+        @test all(isfinite, s)
+
+        tm2 = AcceptanceRejectionReal(
+            dd;
+            target_density=z -> 0.5 * lpdf(z[1]),
+            inv_cdfs=[logit],
+            H_func=z -> lpdf(z[1]),
+            upper_bound=1.0,
+            density_integral=0.5,
+        )
+        @test tm2.acceptance_rate ≈ 0.5
+        s2 = transform(tm2, x)
+        @test 0 < size(s2, 1) < 64
+        @test all(isfinite, s2)
+
+        @test_throws ArgumentError AcceptanceRejectionReal(
+            dd;
+            target_density=z -> lpdf(z[1]),
+            inv_cdfs=[logit, logit],
+            H_func=z -> lpdf(z[1]),
+            upper_bound=1.0,
+            density_integral=1.0,
+        )
+        @test_throws ArgumentError AcceptanceRejectionReal(
+            dd;
+            target_density=z -> lpdf(z[1]),
+            inv_cdfs=[logit],
+            H_func=z -> lpdf(z[1]),
+            upper_bound=-1.0,
+            density_integral=1.0,
+        )
+        @test_throws ArgumentError AcceptanceRejectionReal(
+            DigitalNetB2(1; seed=1);
+            target_density=z -> lpdf(z[1]),
+            inv_cdfs=Function[],
+            H_func=z -> lpdf(z[1]),
+            upper_bound=1.0,
+            density_integral=1.0,
+        )
+    end
+
+    @testset "DistributionsWrapper" begin
+        dd = IIDStdUniform(2; seed=7)
+        dw = DistributionsWrapper(
+            dd;
+            marginals=[Distributions.Normal(0, 1), Distributions.Exponential(1.0)],
+        )
+        x = gen_samples(dd, 100)
+        y = transform(dw, x)
+        @test size(y) == (100, 2)
+        @test abs(mean(y[:, 1])) < 0.5
+    end
+
+    @testset "Open unit interval helper" begin
+        @test QMC._open_unit_interval(0.0f0) == eps(Float32)
+        @test QMC._open_unit_interval(1.0f0) == 1.0f0 - eps(Float32)
+        @test QMC._open_unit_interval(0) == eps(Float64)
+
+        dd = IIDStdUniform(2; seed=101)
+        tm = JohnsonsSU(dd)
+        x = Float32.(gen_samples(dd, 8))
+        y = transform(tm, x)
+        @test size(y) == size(x)
+        @test all(isfinite, y)
+    end
 end

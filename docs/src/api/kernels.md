@@ -21,6 +21,8 @@ KernelMatern12
 KernelMatern32
 KernelMatern52
 KernelGaussian
+KernelRationalQuadratic
+KernelSquaredExponential
 ```
 
 ## Combined Kernels
@@ -28,6 +30,7 @@ KernelGaussian
 ```@docs
 SumKernel
 ProductKernel
+KernelMultiTask
 ```
 
 ## Kernel Operations

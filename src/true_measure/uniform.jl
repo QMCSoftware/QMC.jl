@@ -19,19 +19,19 @@ x = gen_samples(dd, 100)
 y = transform(tm, x)  # 100×3 matrix in [-2, 2]^3
 ```
 """
-struct Uniform <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Uniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     lower_bound::Vector{Float64}
     upper_bound::Vector{Float64}
 end
 
-function Uniform(dd::AbstractDiscreteDistribution;
-                 lower_bound=0.0, upper_bound=1.0)
+function Uniform(dd::AbstractDiscreteDistribution; lower_bound=0.0, upper_bound=1.0)
     d = dd.dimension
     lb = _expand_bounds(lower_bound, d)
     ub = _expand_bounds(upper_bound, d)
-    all(lb .< ub) || throw(ArgumentError("lower_bound must be less than upper_bound in every dimension"))
+    all(lb .< ub) ||
+        throw(ArgumentError("lower_bound must be less than upper_bound in every dimension"))
     return Uniform(dd, d, lb, ub)
 end
 
@@ -40,7 +40,9 @@ function _expand_bounds(val, d::Int)
     if val isa Real
         return fill(Float64(val), d)
     else
-        length(val) == d || throw(ArgumentError("bound vector length ($(length(val))) must match dimension ($d)"))
+        length(val) == d || throw(
+            ArgumentError("bound vector length ($(length(val))) must match dimension ($d)"),
+        )
         return Float64.(collect(val))
     end
 end

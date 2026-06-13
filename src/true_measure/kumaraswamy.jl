@@ -1,5 +1,5 @@
 """
-    Kumaraswamy(dd; alpha=2.0, beta=5.0)
+    Kumaraswamy(dd; alpha=2.0, beta=2.0)
 
 Kumaraswamy distribution measure via inverse CDF.
 
@@ -10,18 +10,18 @@ inverse CDF, making it efficient for QMC.
 
 # Arguments
 - `dd`: discrete distribution.
-- `alpha`: shape parameter α > 0 (scalar or d-vector).
-- `beta`: shape parameter β > 0 (scalar or d-vector).
+- `alpha`: shape parameter α > 0 (scalar or d-vector). Default `2.0`.
+- `beta`: shape parameter β > 0 (scalar or d-vector). Default `2.0` (matches
+  QMC v2.3's `a=2, b=2`; QMC.jl's `alpha`/`beta` correspond to QMCPy's `a`/`b`).
 """
-struct Kumaraswamy <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Kumaraswamy{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     alpha::Vector{Float64}
     beta::Vector{Float64}
 end
 
-function Kumaraswamy(dd::AbstractDiscreteDistribution;
-                     alpha=2.0, beta=5.0)
+function Kumaraswamy(dd::AbstractDiscreteDistribution; alpha=2.0, beta=2.0)
     d = dd.dimension
     a = alpha isa Number ? fill(Float64(alpha), d) : Float64.(collect(alpha))
     b = beta isa Number ? fill(Float64(beta), d) : Float64.(collect(beta))

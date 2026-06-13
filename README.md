@@ -1,163 +1,172 @@
-# QMCJu: Quasi-Monte Carlo Community Software in Julia
+# QMC.jl: Quasi-Monte Carlo Community Software in Julia
 
-> A Julia translation of [QMCJu](https://github.com/QMCSoftware/QMCSoftware) (v2.3) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
+[![CI](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci.yml)
+[![CI Full](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml)
+[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://qmcsoftware.github.io/QMC.jl/)
+[![codecov](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
-## Overview
-
-QMCJu provides four building blocks that snap together to solve integration problems:
-
-| Component | Purpose | Available types |
-|---|---|---|
-| **Discrete Distribution** | Low-discrepancy point generators | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Halton` |
-| **True Measure** | Probability measure / variable transform | `Uniform`, `Gaussian`, `BrownianMotion`, `Lebesgue`, `GeometricBrownianMotion`, `StudentT`, `Triangular`, `Kumaraswamy`, `JohnsonsSU`, `BernoulliCont` |
-| **Integrand** | Function to integrate | `Keister`, `Genz`, `AsianOption`, `FinancialOption`, `BoxIntegral`, `Linear0`, `Sin1D`, `Ishigami`, `Hartmann6D`, `Multimodal2D`, `FourBranch2D`, `CustomFun` |
-| **Stopping Criterion** | Adaptive error control | `CubMCCLT`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCBayesLatticeG`, `CubQMCBayesNetG` |
-
-Additional modules provide shift-invariant and Matérn kernels (`KernelShiftInvar`, `KernelMatern12/32/52`, `KernelGaussian`), periodization transforms, and utility functions.
-
-## Prerequisites
-
-| Tool | Version | Notes |
-|---|---|---|
-| [Conda](https://docs.conda.io/en/latest/miniconda.html) (Miniconda or Anaconda) | any recent | manages the Python environment |
-| [Julia](https://julialang.org/downloads/) | ≥ 1.10 | the language runtime |
-| Git | any recent | to clone the repo |
-
-## Setup (from scratch)
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/QMCSoftware/QMCSoftware.git
-cd QMCSoftware/qmcju_software
-```
-
-### 2. Create and activate a Conda environment
-
-If your project sits alongside the Python QMCJu package, reuse its environment. Otherwise create a fresh one:
-
-```bash
-conda create -n qmcju python=3.12 -y
-conda activate qmcju
-```
-
-### 3. Install Julia (if not already installed)
-
-On macOS (Homebrew):
-
-```bash
-brew install julia
-```
-
-Or download from [julialang.org](https://julialang.org/downloads/). Verify:
-
-```bash
-julia --version   # should print 1.10+
-```
-
-### 4. Install Julia package dependencies
-
-```bash
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
-```
-
-This reads `Project.toml` and installs all Julia dependencies (Distributions, FFTW, SpecialFunctions, etc.).
-
-### 5. Install IJulia and register the `QMCJu` notebook kernel
-
-```bash
-julia -e 'using Pkg; Pkg.add("IJulia")'
-julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
-```
-
-Run those commands from the repository root. This installs IJulia and creates a `QMCJu` kernel pinned to this repository's Julia environment, so notebooks can load `QMCJu`, `Plots`, and the rest of the project dependencies.
-
-### 6. Verify the installation
-
-```bash
-julia --project=. -e 'using Pkg; Pkg.test()'
-```
-
-All tests should pass.
+A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 ## Quick Start
 
-In terminal, start Julia:
-
-```bash
-julia
-```
-
-In Julia, run the following commands:
-
 ```julia
-using QMCJu
+using QMC
 
-# Integrate the Keister function over a 3D Gaussian measure
 dd = Lattice(3; randomize=true, seed=7)
 tm = Gaussian(dd; covariance=0.5)
 f  = Keister(tm)
 sc = CubQMCLatticeG(f; abs_tol=1e-3)
 
 result = integrate(sc)
-println("Estimate: $(result.solution)")
+println("Estimate: $(result.solution)")   # ≈ 2.168
 println("Exact:    $(keister_exact(3))")
+```
+
+## Components
+
+QMC.jl provides four core building blocks, plus related kernel types:
+
+| Component | Types |
+|---|---|
+| **Discrete Distribution** | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Halton`, `Kronecker`, `DigitalNetAnyBases`, `Faure` |
+| **True Measure** | `Uniform`, `Gaussian`, `BrownianMotion`, `Lebesgue`, `GeometricBrownianMotion`, `StudentT`, `Triangular`, `Kumaraswamy`, `JohnsonsSU`, `BernoulliCont`, `AcceptanceRejection`, `AcceptanceRejectionReal`, `DistributionsWrapper`, `MaternGP`, `UniformTriangle`, `ZeroInflatedExpUniform` |
+| **Integrand** | `Keister`, `Genz`, `AsianOption`, `FinancialOption`, `FinancialOptionML`, `BoxIntegral`, `Linear0`, `Sin1D`, `Ishigami`, `Hartmann6D`, `Multimodal2D`, `FourBranch2D`, `SensitivityIndices`, `BayesianLRCoeffs`, `UMBridgeWrapper`, `CustomFun` |
+| **Stopping Criterion** | `CubMCCLT`, `CubMCCLTVec`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCNetGRep`, `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubQMCRepStudentT`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont`, `PFGPCI` |
+| **Kernel** | `KernelShiftInvar`, `KernelDigShiftInvar`, `KernelMatern12`, `KernelMatern32`, `KernelMatern52`, `KernelGaussian`, `KernelRationalQuadratic`, `KernelSquaredExponential`, `KernelMultiTask`, `SumKernel`, `ProductKernel` |
+
+Additional utilities include periodization transforms, iteration diagnostics (`IterationLog`), resume/checkpoint support, Walsh-Hadamard and BRO-FFT transforms, and a LatNetBuilder linker.
+
+Advanced status notes: `PFGPCI` is currently exported as a parity placeholder,
+but `integrate(::PFGPCI)` intentionally errors until a Julia GP backend is
+implemented. Likewise, `gpu_fwht!` is currently a CPU-fallback stub rather than
+a real GPU acceleration path.
+
+## Installation
+
+### Prerequisites
+
+| Tool | Version | Notes |
+|---|---|---|
+| [Julia](https://julialang.org/downloads/) | ≥ 1.10 | Language runtime |
+| Python | ≥ 3.9 | Required for QMCToolsCL-backed generators |
+
+### Steps
+
+```bash
+# Clone the repository
+git clone https://github.com/QMCSoftware/QMC.jl.git
+cd QMC.jl
+
+# Install Julia dependencies
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+# Install QMCToolsCL (for Lattice, DigitalNetB2, Halton)
+pip install qmctoolscl
+
+# Run tests
+julia --project=. -e 'using Pkg; Pkg.test()'
+```
+
+If Julia should use a specific Python interpreter:
+
+```julia
+ENV["QMC_PYTHON"] = "/path/to/python"
+```
+
+### Optional: Jupyter Notebook Kernel
+
+```bash
+julia -e 'using Pkg; Pkg.add("IJulia")'
+julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 ```
 
 ## Demos
 
-Nine demo notebooks live in `demos/`. Launch them with:
+26 Jupyter notebooks in `demos/` cover topics from basic sampling to multilevel QMC, Bayesian optimization, sensitivity analysis, and UMBridge integration. See [`demos/README.md`](demos/README.md) for the full list.
 
 ```bash
+# Run all demos
+julia --project=. test/run_notebooks.jl
+
+# Run a single demo
+julia --project=. test/run_notebooks.jl quickstart
+
+# Launch in Jupyter
 julia -e 'using IJulia; notebook(dir="demos")'
 ```
 
-If you have not created the project-bound kernel yet, run this once from the repository root:
+## Benchmarks
+
+Run the benchmark suite:
 
 ```bash
-julia -e 'using IJulia; IJulia.installkernel("QMCJu", "--project=$(pwd())")'
+make bench
+# or
+julia benchmark/runbenchmarks.jl
 ```
 
-Then select the `QMCJu` kernel in Jupyter or VS Code once.
+This benchmarks sampling, transforms, integrand evaluation, and end-to-end integration across all DD types. Results are saved under `benchmark/results/`. See [`benchmark/README.md`](benchmark/README.md) for the full workflow, comparison scripts, and the Julia-vs-QMCPy accuracy sidecars.
 
-To run a notebook in VS Code:
+## Repository Layout
 
-1. Install the VS Code `Julia` and `Jupyter` extensions.
-2. Open this repository in VS Code and open a notebook from `demos/`.
-3. Click the notebook kernel picker in the top-right corner.
-4. Select `QMCJu`.
-5. Restart the notebook kernel if the notebook was previously attached to another kernel.
+Most top-level and source subdirectories now include a local `README.md` describing
+their purpose and the files they contain. Useful starting points:
 
-If VS Code selects `qmcju (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMCJu` kernel, switch it before running cells. Julia code such as `using QMCJu` will fail under a Python kernel, and a generic Julia kernel may miss this repository's dependencies.
-
-See [`demos/README.md`](demos/README.md) for the notebook list and topic summaries.
+- [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and comparison tooling
+- [`demos/README.md`](demos/README.md) — notebook demos and how to run them
+- [`docs/README.md`](docs/README.md) — Documenter build/deploy layout
+- [`src/README.md`](src/README.md) — package source tree and component folders
+- [`test/README.md`](test/README.md) — unit tests, notebook tests, and coverage commands
 
 ## Documentation
 
-See the [QMCJu documentation](https://qmcsoftware.github.io/QMCSoftware/) for mathematical background. Julia-specific API docs are available via `@doc` in scripts and notebooks:
+Full API documentation: [qmcsoftware.github.io/QMC.jl](https://qmcsoftware.github.io/QMC.jl/)
+
+In the Julia REPL:
 
 ```julia
-using QMCJu
-@doc Lattice
-@doc CubQMCBayesLatticeG
+using QMC
+?Lattice               # help mode
+@doc CubQMCBayesNetG   # docstring
 ```
 
-In the interactive Julia REPL, press `?` to enter help mode, then type `Lattice` or `CubQMCBayesLatticeG`.
+## Testing
+
+```bash
+# Unit tests
+julia --project=. -e 'using Pkg; Pkg.test()'
+
+# Unit tests with coverage instrumentation
+julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
+# or
+make coverage
+
+# Demo notebooks
+julia --project=. test/run_notebooks.jl
+
+# Build documentation locally
+julia --project=docs docs/make.jl
+```
+
+CI uploads LCOV coverage reports to Codecov and stores the generated `lcov.info`
+as a workflow artifact. See [`test/README.md`](test/README.md) and
+[CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for details.
 
 ## Citation
 
 ```bibtex
-@misc{qmcju2026,
+@misc{qmcjl2026,
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
-  title  = {{QMCJu}: Quasi-Monte Carlo Community Software in Julia},
+  title  = {{QMC.jl}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
-  url    = {https://github.com/QMCSoftware/QMCSoftware}
+  url    = {https://github.com/QMCSoftware/QMC.jl}
 }
 ```
 
 ## Editorial Note
 
-Some repository content was initially and partially produced with the help of AI tools and was reviewed and published by the authors.
+Some repository content was partially produced with the help of AI tools (e.g., Claude and GPT) and was reviewed by the authors and contributors.
 
 ## License
 

@@ -16,14 +16,15 @@ reliability analysis.
 
 The true measure should be a `Gaussian` with mean 0 and appropriate covariance.
 """
-struct FourBranch2D <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct FourBranch2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     k::Float64
 end
 
 function FourBranch2D(tm::AbstractTrueMeasure; k::Float64=6.0)
-    tm.dimension == 2 || throw(ArgumentError("FourBranch2D requires dimension 2, got $(tm.dimension)"))
+    tm.dimension == 2 ||
+        throw(ArgumentError("FourBranch2D requires dimension 2, got $(tm.dimension)"))
     return FourBranch2D(tm, 2, k)
 end
 
@@ -39,6 +40,4 @@ function evaluate(f::FourBranch2D, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::FourBranch2D)
-    print(io, "FourBranch2D(k=$(f.k))")
-end
+Base.show(io::IO, f::FourBranch2D) = print(io, "FourBranch2D(k=$(f.k))")

@@ -20,21 +20,23 @@ tm = Uniform(dd)
 f = Genz(tm; kind=:oscillatory)
 ```
 """
-struct Genz <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Genz{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
     kind::Symbol
     a::Vector{Float64}
     u::Vector{Float64}
 end
 
-const GENZ_KINDS = (:oscillatory, :product_peak, :corner_peak,
-                     :gaussian_peak, :continuous, :discontinuous)
+const GENZ_KINDS =
+    (:oscillatory, :product_peak, :corner_peak, :gaussian_peak, :continuous, :discontinuous)
 
-function Genz(tm::AbstractTrueMeasure;
-              kind::Symbol=:oscillatory,
-              a::Union{Nothing,Vector{Float64}}=nothing,
-              u::Union{Nothing,Vector{Float64}}=nothing)
+function Genz(
+    tm::AbstractTrueMeasure;
+    kind::Symbol=:oscillatory,
+    a::Union{Nothing, Vector{Float64}}=nothing,
+    u::Union{Nothing, Vector{Float64}}=nothing,
+)
     @assert kind in GENZ_KINDS "kind must be one of $GENZ_KINDS, got :$kind"
     d = tm.dimension
     a_vec = isnothing(a) ? ones(d) : a
@@ -51,62 +53,85 @@ function evaluate(f::Genz, x::AbstractMatrix)
     y = Vector{Float64}(undef, n)
 
     if f.kind == :oscillatory
-        for i in 1:n
-            s = 2π * u[1]
-            for j in 1:d
-                s += a[j] * x[i, j]
-            end
-            y[i] = cos(s)
-        end
+        # x * a is BLAS GEMV (O(n·d) but vectorised): much faster than a row loop
+        # for large n; @. fuses cos into one broadcast pass.
+        s = x * a
+        @. y = cos(2π * u[1] + s)
 
     elseif f.kind == :product_peak
-        for i in 1:n
-            p = 1.0
-            for j in 1:d
-                p *= 1.0 / (a[j]^(-2) + (x[i, j] - u[j])^2)
+        # Julia matrices are column-major, so keeping `i` outer and `j` inner
+        # would make the inner loop stride by `n`. Swapping to `j` outer / `i`
+        # inner reads each column contiguously while preserving the per-row
+        # product order.
+        fill!(y, 1.0)
+        @inbounds for j in 1:d
+            aj_m2 = a[j]^(-2)
+            uj = u[j]
+            @simd for i in 1:n
+                y[i] *= 1.0 / (aj_m2 + (x[i, j] - uj)^2)
             end
-            y[i] = p
         end
 
     elseif f.kind == :corner_peak
-        for i in 1:n
-            s = 1.0
-            for j in 1:d
-                s += a[j] * x[i, j]
+        # Same column-major cache argument as above: `j` outer / `i` inner keeps
+        # reads contiguous instead of stride-`n` across columns.
+        s = ones(n)
+        @inbounds for j in 1:d
+            aj = a[j]
+            @simd for i in 1:n
+                s[i] += aj * x[i, j]
             end
-            y[i] = s^(-(d + 1))
         end
+        @inbounds @. y = s^(-(d + 1))
 
     elseif f.kind == :gaussian_peak
-        for i in 1:n
-            s = 0.0
-            for j in 1:d
-                s += a[j]^2 * (x[i, j] - u[j])^2
+        # Column reduction avoids the stride-`n` access pattern of a row-major
+        # loop nest on Julia's column-major arrays.
+        s = zeros(n)
+        @inbounds for j in 1:d
+            aj2 = a[j]^2
+            uj = u[j]
+            @simd for i in 1:n
+                s[i] += aj2 * (x[i, j] - uj)^2
             end
-            y[i] = exp(-s)
         end
+        @. y = exp(-s)
 
     elseif f.kind == :continuous
-        for i in 1:n
-            s = 0.0
-            for j in 1:d
-                s += a[j] * abs(x[i, j] - u[j])
+        # Same column-major tip: loop over columns outside, rows inside, so each
+        # column is read contiguously and accumulated into a length-`n` vector.
+        s = zeros(n)
+        @inbounds for j in 1:d
+            aj = a[j]
+            uj = u[j]
+            @simd for i in 1:n
+                s[i] += aj * abs(x[i, j] - uj)
             end
-            y[i] = exp(-s)
         end
+        @. y = exp(-s)
 
     elseif f.kind == :discontinuous
-        for i in 1:n
-            discont = false
-            s = 0.0
-            for j in 1:d
-                if x[i, j] > u[j]
-                    discont = true
-                    break
+        # Preserve the early-stop semantics with a per-row activity mask while
+        # iterating in column-major order; once a row crosses the discontinuity,
+        # later coordinates are ignored exactly as in the row loop.
+        active = trues(n)
+        s = zeros(n)
+        @inbounds for j in 1:d
+            aj = a[j]
+            uj = u[j]
+            for i in 1:n
+                if active[i]
+                    xij = x[i, j]
+                    if xij > uj
+                        active[i] = false
+                    else
+                        s[i] += aj * xij
+                    end
                 end
-                s += a[j] * x[i, j]
             end
-            y[i] = discont ? 0.0 : exp(s)
+        end
+        @inbounds for i in 1:n
+            y[i] = active[i] ? exp(s[i]) : 0.0
         end
     end
 
@@ -124,16 +149,17 @@ function genz_exact(f::Genz)
     u = f.u
 
     if f.kind == :oscillatory
-        # Exact: product of sinc-like terms (complex)
-        # For a_j, u_1: cos(2π u_1) * ∏ sin(a_j) / a_j  (simplified for a ≠ 0)
-        val = cos(2π * u[1])
+        # ∫_{[0,1]^d} cos(2π u₁ + Σ aⱼ xⱼ) dx
+        #   = cos(2π u₁ + Σ aⱼ/2) · ∏ sinc(aⱼ/2),  sinc(t) = sin(t)/t (→ 1 as t→0).
+        phase = 2π * u[1]
+        val = 1.0
         for j in 1:d
-            if abs(a[j]) < 1e-15
-                continue
+            phase += a[j] / 2
+            if abs(a[j]) >= 1e-15
+                val *= sin(a[j] / 2) / (a[j] / 2)
             end
-            val *= sin(a[j]) / a[j]
         end
-        return val
+        return cos(phase) * val
 
     elseif f.kind == :product_peak
         val = 1.0
@@ -143,8 +169,29 @@ function genz_exact(f::Genz)
         return val
 
     elseif f.kind == :corner_peak
-        # Recursive formula — use simple numeric integration for now
-        return NaN  # Exact formula is complex; not implemented
+        # ∫_{[0,1]^d} (1 + Σ aⱼ xⱼ)^{-(d+1)} dx
+        #   = 1/(d! ∏ aⱼ) · Σ_{v∈{0,1}^d} (-1)^{|v|} (1 + Σ vⱼ aⱼ)^{-1}
+        # (inclusion–exclusion over the cube corners). Requires every aⱼ ≠ 0;
+        # the 2^d sum is only practical for modest d.
+        any(aj -> abs(aj) < 1e-15, a) && return NaN
+        d > 20 && return NaN
+        total = 0.0
+        for mask in 0:(2 ^ d - 1)
+            s = 1.0
+            bits = 0
+            for j in 1:d
+                if (mask >> (j - 1)) & 1 == 1
+                    s += a[j]
+                    bits += 1
+                end
+            end
+            total += (iseven(bits) ? 1.0 : -1.0) / s
+        end
+        fact = 1.0
+        for k in 2:d
+            fact *= k
+        end
+        return total / (fact * prod(a))
 
     elseif f.kind == :gaussian_peak
         val = 1.0
@@ -186,6 +233,4 @@ function genz_exact(f::Genz)
     end
 end
 
-function Base.show(io::IO, f::Genz)
-    print(io, "Genz(:$(f.kind), d=$(f.dimension))")
-end
+Base.show(io::IO, f::Genz) = print(io, "Genz(:$(f.kind), d=$(f.dimension))")

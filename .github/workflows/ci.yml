@@ -2,32 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
-    paths:
-      - 'qmcju/**'
+    branches-ignore: [develop, master]
   pull_request:
-    branches: [master, develop]
-    paths:
-      - 'qmcju/**'
+  workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: qmcju
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    name: Julia ${{ matrix.julia-version }} - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Julia ${{ matrix.julia-version }} – Linux
+    runs-on: ubuntu-latest
+    env:
+      TEST_JOBS: ${{ vars.TEST_JOBS || '2' }}
+      TEST_THREADS: ${{ vars.TEST_THREADS || '1' }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        julia-version: ['1.10', '1.11', 'nightly']
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        exclude:
-          - julia-version: 'nightly'
-            os: macos-latest
-          - julia-version: 'nightly'
-            os: windows-latest
+        julia-version: ['1.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -38,16 +31,75 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
-      - name: Install dependencies
-        run: |
-          julia --project=. -e '
-            using Pkg
-            Pkg.instantiate()
-          '
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
-      - name: Run tests
+      - name: Install qmctoolscl
+        run: pip install -r test/requirements.txt
+
+      - name: Install dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run unit tests with coverage
+        run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
+
+      - name: Upload LCOV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-julia-${{ matrix.julia-version }}-linux
+          path: lcov.info
+          if-no-files-found: warn
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  notebooks:
+    name: Notebooks – Linux
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      NOTEBOOK_JOBS: ${{ vars.NOTEBOOK_JOBS || '2' }}
+      NOTEBOOK_THREADS: ${{ vars.NOTEBOOK_THREADS || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for notebook/src changes
+        id: changes
         run: |
-          julia --project=. -e '
-            using Pkg
-            Pkg.test()
-          '
+          if git diff --name-only HEAD~1 HEAD | grep -qE '^(demos/|src/|test/run_notebooks\.jl)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: julia-actions/setup-julia@v2
+        if: steps.changes.outputs.run == 'true'
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+        if: steps.changes.outputs.run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.changes.outputs.run == 'true'
+        with:
+          python-version: '3.13'
+
+      - name: Install qmctoolscl
+        if: steps.changes.outputs.run == 'true'
+        run: pip install -r test/requirements.txt
+
+      - name: Install dependencies
+        if: steps.changes.outputs.run == 'true'
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run demo notebooks
+        if: steps.changes.outputs.run == 'true'
+        run: make notebook NOTEBOOK_JOBS=$NOTEBOOK_JOBS NOTEBOOK_THREADS=$NOTEBOOK_THREADS

@@ -11,16 +11,15 @@ Each dimension is independently transformed through the triangular PPF.
 - `upper`: upper bound (scalar or d-vector).
 - `mode`: peak/mode (scalar or d-vector), must satisfy lower ≤ mode ≤ upper.
 """
-struct Triangular <: AbstractTrueMeasure
-    dd::AbstractDiscreteDistribution
+struct Triangular{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+    dd::D
     dimension::Int
     lower::Vector{Float64}
     upper::Vector{Float64}
     mode::Vector{Float64}
 end
 
-function Triangular(dd::AbstractDiscreteDistribution;
-                    lower=0.0, upper=1.0, mode=0.5)
+function Triangular(dd::AbstractDiscreteDistribution; lower=0.0, upper=1.0, mode=0.5)
     d = dd.dimension
     lo = lower isa Number ? fill(Float64(lower), d) : Float64.(collect(lower))
     hi = upper isa Number ? fill(Float64(upper), d) : Float64.(collect(upper))
@@ -51,6 +50,4 @@ function transform(tm::Triangular, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, tm::Triangular)
-    print(io, "Triangular(d=$(tm.dimension))")
-end
+Base.show(io::IO, tm::Triangular) = print(io, "Triangular(d=$(tm.dimension))")

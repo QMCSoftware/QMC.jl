@@ -1,10 +1,14 @@
 """
     CubQMCBayesNetG(integrand; abs_tol=0.01, rel_tol=0.0,
                     n_init=2^8, n_max=2^22, order=2,
-                    ptransform=:NONE, errbd_type=:MLE, alpha=0.01)
+                    ptransform=:NONE, errbd_type=:MLE, alpha=0.01,
+                    trace_iterations=false)
 
 Bayesian QMC cubature for digital net (Sobol') rules with digitally
 shift-invariant kernels, diagonalized by the Walsh-Hadamard Transform.
+
+Set `trace_iterations=true` to record an `IterationLog` in
+`result.data[:iteration_log]`.
 
 # Example
 ```julia
@@ -15,8 +19,8 @@ sc = CubQMCBayesNetG(f; abs_tol=1e-4)
 result = integrate(sc)
 ```
 """
-mutable struct CubQMCBayesNetG <: AbstractStoppingCriterion
-    integrand::AbstractIntegrand
+mutable struct CubQMCBayesNetG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
+    integrand::I
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
@@ -25,20 +29,38 @@ mutable struct CubQMCBayesNetG <: AbstractStoppingCriterion
     ptransform::Symbol
     errbd_type::Symbol
     alpha::Float64
+    trace_iterations::Bool
 end
 
-function CubQMCBayesNetG(integrand::AbstractIntegrand;
-                         abs_tol::Float64=0.01, rel_tol::Float64=0.0,
-                         n_init::Int=2^8, n_max::Int=2^22, order::Int=2,
-                         ptransform::Symbol=:NONE, errbd_type::Symbol=:MLE,
-                         alpha::Float64=0.01)
+function CubQMCBayesNetG(
+    integrand::AbstractIntegrand;
+    abs_tol::Float64=0.01,
+    rel_tol::Float64=0.0,
+    n_init::Int=2^8,
+    n_max::Int=2^22,
+    order::Int=2,
+    ptransform::Symbol=:NONE,
+    errbd_type::Symbol=:MLE,
+    alpha::Float64=0.01,
+    trace_iterations::Bool=false,
+)
     @assert ispow2(n_init) "n_init must be a power of 2"
     @assert ispow2(n_max) "n_max must be a power of 2"
     @assert order in (1, 2, 3)
     @assert errbd_type in (:MLE, :GCV, :FULL)
     @assert 0 < alpha < 1
-    return CubQMCBayesNetG(integrand, abs_tol, rel_tol, n_init, n_max,
-                            order, ptransform, errbd_type, alpha)
+    return CubQMCBayesNetG(
+        integrand,
+        abs_tol,
+        rel_tol,
+        n_init,
+        n_max,
+        order,
+        ptransform,
+        errbd_type,
+        alpha,
+        trace_iterations,
+    )
 end
 
 # ── Digitally shift-invariant kernel for digital nets ────────────────────────
@@ -78,10 +100,10 @@ function _dsi_kernel_eigenvalues(xun::AbstractMatrix, order::Int, theta::Float64
 
     # Cancellation-safe product
     Km1 = theta * const_mult .* bvals[:, 1]
-    Kj  = 1.0 .+ Km1
+    Kj = 1.0 .+ Km1
     for j in 2:d
         Km1 = theta * const_mult .* bvals[:, j] .* Kj .+ Km1
-        Kj  = 1.0 .+ Km1
+        Kj = 1.0 .+ Km1
     end
 
     lf = max(maximum(abs, Km1), eps(Float64))
@@ -97,9 +119,13 @@ end
 
 # ── MLE objective (same structure as lattice, different kernel) ──────────────
 
-function _mle_objective_net(theta::Float64, xun::AbstractMatrix,
-                            ftilde::Vector{Float64}, order::Int,
-                            errbd_type::Symbol)
+function _mle_objective_net(
+    theta::Float64,
+    xun::AbstractMatrix,
+    ftilde::Vector{Float64},
+    order::Int,
+    errbd_type::Symbol,
+)
     n = length(ftilde)
     fudge = 100eps(Float64)
 
@@ -116,8 +142,9 @@ function _mle_objective_net(theta::Float64, xun::AbstractMatrix,
             lam[k] > fudge && (temp_gcv[k] = (ftilde[k] / lam[k])^2)
         end
         RKHS_norm = sum(@view temp_gcv[2:end]) / (lf * n)
-        loss = log(max(sum(@view temp_gcv[2:end]), eps(Float64))) -
-               2log(max(sum(1.0/l for l in lam if l > fudge), eps(Float64)))
+        loss =
+            log(max(sum(@view temp_gcv[2:end]), eps(Float64))) -
+            2log(max(sum(1.0/l for l in lam if l > fudge), eps(Float64)))
     else
         RKHS_norm = sum(@view temp[2:end]) / (lf * n)
         temp_1 = sum(@view temp[2:end]) / lf
@@ -132,69 +159,94 @@ end
 # ── Stopping criterion ───────────────────────────────────────────────────────
 
 function _bayes_net_stop(xun, ftilde, n, order, errbd_type, alpha)
-    uncert = errbd_type == :FULL ?
-        -quantile(TDist(n-1), alpha/2) :
-        -quantile(Normal(), alpha/2)
+    uncert = errbd_type == :FULL ? -quantile(TDist(n-1), alpha/2) : -quantile(Normal(), alpha/2)
 
     best_lna, best_loss = -5.0, Inf
     for lna in range(-5.0, 0.0; length=21)
         l, _, _, _ = _mle_objective_net(exp(lna), xun, ftilde, order, errbd_type)
-        isfinite(l) && l < best_loss && (best_loss = l; best_lna = lna)
+        isfinite(l) && l < best_loss && (best_loss=l; best_lna=lna)
     end
     step = 5.0 / 21
     for lna in range(best_lna - step, best_lna + step; length=21)
         l, _, _, _ = _mle_objective_net(exp(lna), xun, ftilde, order, errbd_type)
-        isfinite(l) && l < best_loss && (best_loss = l; best_lna = lna)
+        isfinite(l) && l < best_loss && (best_loss=l; best_lna=lna)
     end
 
     _, lam, lam_ring, rkhs = _mle_objective_net(exp(best_lna), xun, ftilde, order, errbd_type)
 
-    DSC = errbd_type == :FULL ?
-        abs(lam_ring[1] / n) :
-        abs(lam_ring[1] / (n + lam_ring[1]))
+    DSC = errbd_type == :FULL ? abs(lam_ring[1] / n) : abs(lam_ring[1] / (n + lam_ring[1]))
 
-    err_bd = errbd_type == :FULL ?
-        uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
+    err_bd =
+        errbd_type == :FULL ? uncert * sqrt(abs(DSC * rkhs / (n - 1))) :
         uncert * sqrt(abs(DSC * rkhs / n))
 
-    return abs(ftilde[1] / n), err_bd
+    # `ftilde` is normalized as fwht(y) / sqrt(n), so the first coefficient is
+    # sum(y) / sqrt(n). Divide by sqrt(n) again to recover the sample mean.
+    return real(ftilde[1]) / sqrt(n), err_bd
 end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
-function integrate(sc::CubQMCBayesNetG)
-    n = sc.n_init
-    mu_hat = 0.0; err = Inf; n_iter = 0
+function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+    t_start = time()
+    if resume !== nothing
+        n_prev =
+            haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
+            haskey(resume, :n) ? Int(resume[:n]) : Int(resume[:n_total])
+        n = 2 * n_prev
+    else
+        n = sc.n_init
+    end
+    mu_hat = 0.0;
+    err = Inf;
+    n_iter = 0
+    log = IterationLog()
 
     while n <= sc.n_max
         n_iter += 1
         dd = sc.integrand.true_measure.dd
         x_uniform = gen_samples(dd, n)
 
-        x_period = periodize(x_uniform, sc.ptransform)
-        x_trans  = transform(sc.integrand.true_measure, x_period)
-        y = evaluate(sc.integrand, x_trans)
+        x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
+        x_trans = transform(sc.integrand.true_measure, x_period)
+        y = evaluate(sc.integrand, x_trans) .* weight
 
         # WHT of function values (normalized)
         ftilde = fwht(y) ./ sqrt(n)
 
-        mu_hat, err = _bayes_net_stop(
-            x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
+        mu_hat, err = _bayes_net_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
 
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
+        if sc.trace_iterations
+            push!(log; n=n, solution=mu_hat, error_bound=err, tol=tol, elapsed=time() - t_start)
+        end
         err <= tol && break
 
-        2n > sc.n_max && (@warn "CubQMCBayesNetG: n_max=$(sc.n_max) reached. err=$err tol=$tol"; break)
+        2n > sc.n_max &&
+            (@warn "CubQMCBayesNetG: n_max=$(sc.n_max) reached. err=$err tol=$tol"; break)
         n *= 2
     end
 
-    data = Dict{Symbol,Any}(
-        :n => n, :error_bound => err, :n_iterations => n_iter,
+    data = Dict{Symbol, Any}(
+        :n => n,
+        :n_per_rep => n,
+        :n_total => n,
+        :error_bound => err,
+        :n_iterations => n_iter,
         :converged => err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat)),
-        :order => sc.order, :ptransform => sc.ptransform, :errbd_type => sc.errbd_type)
+        :order => sc.order,
+        :ptransform => sc.ptransform,
+        :errbd_type => sc.errbd_type,
+    )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
     return QMCResult(mu_hat, data)
 end
 
 function Base.show(io::IO, sc::CubQMCBayesNetG)
-    print(io, "CubQMCBayesNetG(abs_tol=$(sc.abs_tol), order=$(sc.order), ptransform=$(sc.ptransform))")
+    print(
+        io,
+        "CubQMCBayesNetG(abs_tol=$(sc.abs_tol), order=$(sc.order), ptransform=$(sc.ptransform))",
+    )
 end

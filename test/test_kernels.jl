@@ -1,5 +1,4 @@
 @testset "Kernels" begin
-
     @testset "KernelShiftInvar" begin
         k = KernelShiftInvar(order=1)
         @test k.order == 1
@@ -40,7 +39,7 @@
         K = kernel_matrix(k, x)
         @test size(K) == (3, 3)
         @test K ≈ K'  # symmetric
-        @test all(eigvals(K) .>= -1e-10)  # PSD
+        @test all(eigvals(K) .>= -1e-8)  # PSD up to numerical roundoff
     end
 
     @testset "KernelMatern32" begin
@@ -60,6 +59,35 @@
         @test kernel_eval(k, 1.0) ≈ 2.0 * exp(-0.5)
     end
 
+    @testset "KernelRationalQuadratic" begin
+        k = KernelRationalQuadratic(lengthscale=1.0, outputscale=2.0, alpha=1.0)
+        @test kernel_eval(k, 0.0) ≈ 2.0
+        @test kernel_eval(k, 1.0) ≈ 2.0 * (1.0 + 0.5)^(-1.0)
+        k2 = KernelRationalQuadratic(lengthscale=1.5, outputscale=1.0, alpha=0.5)
+        @test kernel_eval(k2, 2.0) ≈ 0.6
+        klim = KernelRationalQuadratic(lengthscale=1.0, outputscale=1.0, alpha=1e8)
+        @test kernel_eval(klim, 1.0) ≈ exp(-0.5) atol = 1e-6
+        x = [0.0 0.0; 0.5 0.5; 1.0 1.0]
+        K = kernel_matrix(k, x)
+        @test size(K) == (3, 3)
+        @test K ≈ K'
+        @test all(eigvals(K) .>= -1e-8)
+        @test_throws ArgumentError KernelRationalQuadratic(alpha=0.0)
+        @test_throws ArgumentError KernelRationalQuadratic(lengthscale=-1.0)
+    end
+
+    @testset "KernelSquaredExponential" begin
+        k = KernelSquaredExponential(lengthscale=1.0, outputscale=2.0)
+        @test kernel_eval(k, 0.0) ≈ 2.0
+        @test kernel_eval(k, 1.0) ≈ 2.0 * exp(-0.5)
+        kg = KernelGaussian(lengthscale=1.3, outputscale=0.7)
+        kse = KernelSquaredExponential(lengthscale=1.3, outputscale=0.7)
+        for r in (0.0, 0.5, 1.0, 2.5)
+            @test kernel_eval(kse, r) ≈ kernel_eval(kg, r)
+        end
+        @test_throws ArgumentError KernelSquaredExponential(lengthscale=0.0)
+    end
+
     @testset "Combined Kernels" begin
         k1 = KernelMatern32(lengthscale=1.0, outputscale=1.0)
         k2 = KernelGaussian(lengthscale=2.0, outputscale=0.5)
@@ -69,5 +97,4 @@
         @test kernel_eval(kp, 0.0) ≈ kernel_eval(k1, 0.0) * kernel_eval(k2, 0.0)
         @test kernel_eval(ks, 1.0) ≈ kernel_eval(k1, 1.0) + kernel_eval(k2, 1.0)
     end
-
 end

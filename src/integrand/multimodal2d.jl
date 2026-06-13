@@ -8,13 +8,14 @@
 where x ∈ [0,1]². This is useful for testing QMC on functions with
 multiple local features.
 """
-struct Multimodal2D <: AbstractIntegrand
-    true_measure::AbstractTrueMeasure
+struct Multimodal2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
+    true_measure::TM
     dimension::Int
 end
 
 function Multimodal2D(tm::AbstractTrueMeasure)
-    tm.dimension == 2 || throw(ArgumentError("Multimodal2D requires dimension 2, got $(tm.dimension)"))
+    tm.dimension == 2 ||
+        throw(ArgumentError("Multimodal2D requires dimension 2, got $(tm.dimension)"))
     return Multimodal2D(tm, 2)
 end
 
@@ -39,6 +40,4 @@ function evaluate(f::Multimodal2D, x::AbstractMatrix)
     return y
 end
 
-function Base.show(io::IO, f::Multimodal2D)
-    print(io, "Multimodal2D()")
-end
+Base.show(io::IO, f::Multimodal2D) = print(io, "Multimodal2D()")

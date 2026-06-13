@@ -1,8 +1,13 @@
-# Julia
+# Julia artifacts and local lockfiles
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-Manifest.toml
+lcov.info
+
+# Ignore the root package lockfile and the formatter tool lockfile.
+# Keep docs/Manifest.toml trackable for reproducible documentation builds.
+/Manifest.toml
+/devtools/formatter/Manifest.toml
 
 # Documentation build
 docs/build/
@@ -22,9 +27,19 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
+# Python bytecode caches
+__pycache__/
+*.pyc
+
 # Julia compilation artifacts
 *.ji
 deps/build.log
 
+# Benchmark outputs — machine-specific
+benchmark/Manifest.toml
+benchmark/tune.json
+benchmark/results/
+
 # Developer-specific files
 sc_*
+

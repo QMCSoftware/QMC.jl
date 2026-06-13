@@ -2,12 +2,15 @@
 
 ## Quick Start
 
+Examples using `Lattice` require the QMCToolsCL shared library. Install
+`qmctoolscl` into a Python visible to Julia before running them.
+
 ```julia
 # In terminal, run `julia`. Issue the following command:
-#   import Pkg; Pkg.add("QMCJu")
+#   import Pkg; Pkg.add("QMC")
 # If the package is not on path and you started Julia from the repository root:
 #   import Pkg; Pkg.develop(path=pwd())
-using QMCJu
+using QMC
 
 # 1. IID Monte Carlo for a simple integral
 dd = IIDStdUniform(2; seed=42)
@@ -35,13 +38,43 @@ result = integrate(sc)
 println("Asian call price: $(result.solution)")
 ```
 
-## Pluto Notebooks
+## Jupyter Notebooks
 
-Interactive Pluto notebooks are available in the `demos/` directory:
+The `demos/` directory currently contains 26 notebooks. Current inventory:
 
-```julia
-using Pkg; Pkg.add("Pluto")
-using Pluto
-Pluto.run()
-# Then open demos/qmcju_intro.jl
+- `acceptance_rejection.ipynb`
+- `asian_option_mlqmc.ipynb`
+- `control_variates.ipynb`
+- `digital_net_b2.ipynb`
+- `elliptic_pde.ipynb`
+- `financial_option_ml.ipynb`
+- `gbm_demo.ipynb`
+- `iris.ipynb`
+- `kronecker.ipynb`
+- `lattice.ipynb`
+- `lattice_random_generator.ipynb`
+- `lebesgue_integration.ipynb`
+- `linear_scrambled_halton.ipynb`
+- `nei_demo.ipynb`
+- `plot_proj_function.ipynb`
+- `pricing_options.ipynb`
+- `qei_demo.ipynb`
+- `qmc.jl_intro.ipynb`
+- `quickstart.ipynb`
+- `ray_tracing.ipynb`
+- `sample_scatter_plots.ipynb`
+- `sensitivity_indices.ipynb`
+- `some_true_measures.ipynb`
+- `umbridge.ipynb`
+- `vectorized_qmc.ipynb`
+- `vectorized_qmc_bayes.ipynb`
+
+To run a notebook:
+```bash
+jupyter notebook demos/quickstart.ipynb
+```
+
+To run all notebooks non-interactively (as a test):
+```bash
+julia --project=. test/run_notebooks.jl
 ```

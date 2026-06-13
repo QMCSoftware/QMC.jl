@@ -33,9 +33,48 @@ function periodize(x::AbstractMatrix, ptransform::Symbol)
     elseif ptransform == :BAKER
         return clamp.(_baker.(x), 0.0, 1.0)
     else
-        error("Unknown periodization transform: :$ptransform. " *
-              "Use :C1SIN, :C1, :C2SIN, :C3, :BAKER, or :NONE.")
+        error(
+            "Unknown periodization transform: :$ptransform. " *
+            "Use :C1SIN, :C1, :C2SIN, :C3, :BAKER, or :NONE.",
+        )
     end
+end
+
+"""
+    _periodize_with_weight(x, ptransform) -> (x_periodized, weight)
+
+Apply the periodization map and return the product Jacobian weight needed to
+preserve the original integral. Baker's transform is measure-preserving as
+implemented here, so its weight is identically one.
+"""
+function _periodize_with_weight(x::AbstractMatrix, ptransform::Symbol)
+    xp = periodize(x, ptransform)
+    n, d = size(x)
+    w = ones(Float64, n)
+
+    if ptransform == :NONE || ptransform == :none || ptransform == :BAKER
+        return xp, w
+    end
+
+    deriv = if ptransform == :C1SIN
+        _c1sin_deriv
+    elseif ptransform == :C1
+        _c1_deriv
+    elseif ptransform == :C2SIN
+        _c2sin_deriv
+    elseif ptransform == :C3
+        _c3_deriv
+    else
+        error(
+            "Unknown periodization transform: :$ptransform. " *
+            "Use :C1SIN, :C1, :C2SIN, :C3, :BAKER, or :NONE.",
+        )
+    end
+
+    @inbounds for j in 1:d, i in 1:n
+        w[i] *= deriv(x[i, j])
+    end
+    return xp, w
 end
 
 @inline _c1sin(x::Float64) = x - sin(2π * x) / (2π)
@@ -43,3 +82,7 @@ end
 @inline _c2sin(x::Float64) = x - sin(2π*x)/(2π) * (8.0/3.0) + sin(4π*x)/(4π) * (1.0/3.0)
 @inline _c3(x::Float64) = x^3 * (10.0 - 15.0*x + 6.0*x^2)
 @inline _baker(x::Float64) = 1.0 - abs(2.0*x - 1.0)
+@inline _c1sin_deriv(x::Float64) = 1.0 - cos(2π * x)
+@inline _c1_deriv(x::Float64) = 6.0 * x * (1.0 - x)
+@inline _c2sin_deriv(x::Float64) = 1.0 - (8.0 / 3.0) * cos(2π * x) + (1.0 / 3.0) * cos(4π * x)
+@inline _c3_deriv(x::Float64) = 30.0 * x^2 * (1.0 - x)^2
