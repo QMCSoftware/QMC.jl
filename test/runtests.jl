@@ -110,8 +110,9 @@ coverage_flags() = Base.JLOptions().code_coverage == 0 ? String[] : ["--code-cov
 
 function child_cmd(files::Vector{String})
     script = joinpath(@__DIR__, "runtests.jl")
-    args = vcat(coverage_flags(), [script, "--jobs=1"], files)
-    cmd = `$(Base.julia_cmd()) $args`
+    base_argv = collect(Base.julia_cmd())
+    argv = vcat(base_argv, coverage_flags(), [script, "--jobs=1"], files)
+    cmd = Cmd(argv)
     return addenv(
         cmd,
         "JULIA_PROJECT" => current_project_dir(),
