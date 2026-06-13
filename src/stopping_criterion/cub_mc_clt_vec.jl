@@ -8,9 +8,11 @@ Theorem with doubling sample sizes.
 Handles both **scalar** integrands (`d_indv == ()`, returning a `QMCResult`) and
 **vector-valued / multi-output** integrands (`d_indv != ()`, returning a
 [`QMCVecResult`](@ref)). For a multi-output integrand it tracks a per-output
-running mean and CLT interval, combines them through the integrand's `bound_fun`
-/ `combine_fun` (identity by default), and stops once **every** combined output's
-half-width meets its tolerance — mirroring QMCPy's `CubMCCLTVec`.
+running mean and CLT interval (with `ddof=1` sample variance), maps them to
+combined outputs through the integrand's `bound_fun`, and stops once **every**
+combined output's bound width meets its tolerance — mirroring QMCPy's
+`CubMCCLTVec`, which derives the solution and convergence from the combined
+bounds via `error_fun` and does not use `combine_fun`.
 
 Supports **resume**: pass the `data` dict from a previous `QMCResult` as
 `resume` to continue integration from where it left off.
@@ -136,16 +138,6 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=no
     return QMCResult(solution, data)
 end
 
-# Multi-output doubling path: per-individual-output running mean/variance and a
-# CLT confidence interval, combined via the integrand's `bound_fun`/`combine_fun`
-# (identity by default), stopping once every combined output's half-width meets
-# its tolerance. Mirrors the doubling structure of QMCPy's `CubMCCLTVec`. The
-# per-output variance uses the same uncorrected estimator as the scalar path
-# above, for internal consistency. All outputs are recomputed each iteration:
-# `compute_flags` short-circuiting (freezing converged outputs) would require
-# `evaluate` to accept per-output flags, which the integrand interface does not
-# yet expose; recomputing is correct (every output still meets tolerance), just
-# not the work-saving optimization.
 # Distribute the combined confidence level `alpha` down to the individual outputs
 # using the integrand's `dependency` map (mirrors QMCPy's `_compute_indv_alphas`).
 # For each combined output, the individuals it depends on share its alpha budget
@@ -257,10 +249,11 @@ function _integrate_cubmccltvec_multi(
 
         @inbounds for k in 1:m
             nk = n_indv[k]
-            if nk > 0
+            if nk > 1
                 mu = running_sum[k] / nk
                 solution_indv[k] = mu
-                var_k = max(running_sum2[k] / nk - mu^2, 0.0)
+                # corrected (ddof=1) sample variance, matching QMCPy's std(ddof=1)
+                var_k = max((running_sum2[k] - nk * mu^2) / (nk - 1), 0.0)
                 ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(nk))
                 indv_low[k] = mu - ci
                 indv_high[k] = mu + ci
@@ -274,15 +267,30 @@ function _integrate_cubmccltvec_multi(
         cl, ch = bound_fun(f, indv_low, indv_high)
         comb_low = collect(Float64, cl)
         comb_high = collect(Float64, ch)
-        sol_comb = collect(Float64, combine_fun(f, solution_indv))
 
-        tol_c = max.(sc.abs_tol, sc.rel_tol .* abs.(sol_comb))
+        # Solution, convergence, and tolerance are derived from the combined
+        # bounds via error_fun (QMCPy's "EITHER" rule: max(abs_tol, |s|*rel_tol)),
+        # matching CubMCCLTVec exactly — it does not use combine_fun. A combined
+        # output converges when its bound width is within error_fun(low) +
+        # error_fun(high), and the reported solution is the tolerance-adjusted
+        # bound midpoint.
         err_comb = 0.0
+        tol_max = 0.0
         @inbounds for kc in 1:mc
-            hw = (comb_high[kc] - comb_low[kc]) / 2
-            comb_flags[kc] = isfinite(hw) && hw <= tol_c[kc]
-            if isfinite(hw) && hw > err_comb
-                err_comb = hw
+            lo = comb_low[kc]
+            hi = comb_high[kc]
+            if isfinite(lo) && isfinite(hi)
+                el = max(sc.abs_tol, abs(lo) * sc.rel_tol)
+                eh = max(sc.abs_tol, abs(hi) * sc.rel_tol)
+                sol_comb[kc] = 0.5 * (lo + hi + el - eh)
+                hw = (hi - lo) / 2
+                tol_kc = (el + eh) / 2
+                comb_flags[kc] = hw <= tol_kc
+                hw > err_comb && (err_comb = hw)
+                tol_kc > tol_max && (tol_max = tol_kc)
+            else
+                sol_comb[kc] = NaN
+                comb_flags[kc] = false
             end
         end
 
@@ -299,7 +307,7 @@ function _integrate_cubmccltvec_multi(
                 n=maximum(n_indv),
                 solution=sol_comb[1],
                 error_bound=err_comb,
-                tol=maximum(tol_c),
+                tol=tol_max,
                 elapsed=time() - t_start,
             )
         end
