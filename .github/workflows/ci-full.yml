@@ -1,12 +1,14 @@
 name: CI Full
 
 on:
+  push:
+    branches: [develop, master]
   pull_request:
     branches: [develop, master]
   workflow_dispatch:
 
 concurrency:
-  group: ci-full-${{ github.ref }}
+  group: ci-full-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,52 +42,3 @@ jobs:
 
       - name: Run unit tests
         run: julia --project=. -e 'using Pkg; Pkg.test()'
-
-  notebooks:
-    name: Notebooks – ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    needs: test
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Check for notebook/src changes
-        id: changes
-        shell: bash
-        run: |
-          if git diff --name-only HEAD~1 HEAD | grep -qE '^(demos/|src/|test/run_notebooks\.jl)'; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - uses: julia-actions/setup-julia@v2
-        if: steps.changes.outputs.run == 'true'
-        with:
-          version: '1.11'
-
-      - uses: julia-actions/cache@v2
-        if: steps.changes.outputs.run == 'true'
-
-      - uses: actions/setup-python@v5
-        if: steps.changes.outputs.run == 'true'
-        with:
-          python-version: '3.13'
-
-      - name: Install qmctoolscl
-        if: steps.changes.outputs.run == 'true'
-        run: pip install -r test/requirements.txt
-
-      - name: Install dependencies
-        if: steps.changes.outputs.run == 'true'
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
-
-      - name: Run demo notebooks
-        if: steps.changes.outputs.run == 'true'
-        run: julia --project=. test/run_notebooks.jl

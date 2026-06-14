@@ -8,7 +8,7 @@
 # upstream change can't flip the active path and break a build without a code
 # change of our own.
 #
-# Bump this deliberately (and let the unpinned Nightly workflow surface new
-# releases first). Last reviewed against qmctoolscl 1.2.3.
+# Bump this deliberately. Benchmarking uses its own pinned
+# `benchmark/requirements.txt` so benchmark artifacts remain comparable across
+# repository commits. Last reviewed against qmctoolscl 1.2.3.
 qmctoolscl==1.2.3
- 

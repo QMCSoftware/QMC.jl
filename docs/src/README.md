@@ -8,6 +8,7 @@ This folder contains the Markdown pages that make up the QMC.jl documentation si
 - `components.md`: conceptual overview of the package building blocks.
 - `demos.md`: notebook and example guide.
 - `ci-testing.md`: CI, notebooks, and coverage workflow documentation.
+- `workflow-debugging.md`: local linting and smoke-run workflow debugging guide.
 - `contributing.md`: contributor guidance.
 - `community.md`: project/community information.
 

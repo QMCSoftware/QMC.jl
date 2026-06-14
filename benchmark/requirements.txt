@@ -1,0 +1,6 @@
+# Python dependencies required by the Julia-vs-QMCPy benchmark workflow.
+#
+# Keep these pinned so benchmark artifacts remain comparable across repository
+# commits instead of silently drifting with upstream Python package releases.
+-r ../test/requirements.txt
+qmcpy==2.3

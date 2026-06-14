@@ -1,59 +1,95 @@
 # CI/CD Testing
 
-QMC.jl uses GitHub Actions for continuous integration. Four workflow files
-live in `.github/workflows/` and serve distinct purposes.
+QMC.jl uses GitHub Actions for continuous integration and benchmark collection.
+Four workflow files in `.github/workflows/` handle the main feedback paths.
+For local linting and repeatable smoke runs of those workflows, see
+[Workflow Debugging](workflow-debugging.md).
 
 ## Workflow Overview
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **CI** | `ci.yml` | Feature-branch pushes, PRs, manual | Linux | Unit tests + notebooks + coverage |
-| **CI Full** | `ci-full.yml` | PRs to `develop`/`master` | Linux, macOS, Windows | Unit tests |
-| **Nightly** | `nightly.yml` | Daily at 05:30 UTC | macOS, Windows | Unit tests |
-| **Docs** | `docs.yml` | Push to `develop`/`master` (docs/src paths) | Linux | Documenter build + deploy |
+| **CI** | `ci.yml` | Every `push`; every `pull_request`; manual | Linux | Unit tests + notebooks + coverage |
+| **CI Full** | `ci-full.yml` | `push` to `develop`/`master`; PR into `develop`/`master`; manual | Linux, macOS, Windows | Unit tests |
+| **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
+| **Docs** | `docs.yml` | `push` / PR on docs-related paths; manual | Linux | Documenter build + deploy |
 
-All workflows use **concurrency groups** with `cancel-in-progress: true`
-so that superseded pushes do not waste CI minutes.
+## Policy
+
+- Linux is the default feedback path and runs on every push via `ci.yml`.
+- macOS and Windows are reserved for `develop`/`master` pushes, pull requests
+  into those branches, and manual runs via `ci-full.yml`.
+- Notebook regression tests run only on Linux. They are skipped unless
+  `demos/`, `src/`, or `test/run_notebooks.jl` changed.
+- Benchmark collection is separated from unit testing. `benchmarking.yml` is
+  Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
+- The benchmarking workflow pins its Python dependencies through
+  `benchmark/requirements.txt` so cross-commit comparisons are not invalidated
+  by unrelated upstream package releases. Changes to the shared
+  `test/requirements.txt` pin file also retrigger the benchmark workflow.
+- On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the
+  previous pushed commit as the reference revision when GitHub provides one;
+  manual runs fall back to `REV=HEAD`.
+- `concurrency` cancels superseded runs, and the `ci.yml`, `ci-full.yml`, and
+  `benchmarking.yml` groups include the event name so a pull request run does
+  not cancel the sibling push run for the same ref.
+- There is no nightly CI schedule.
 
 ## CI (`ci.yml`)
 
-The primary fast-feedback workflow, triggered on feature-branch pushes
-(`develop`/`master` are handled by the other workflows), on all pull requests,
-and via manual dispatch.
+The primary fast-feedback workflow runs on every push, every pull request, and
+manual dispatch.
 
 **Unit tests job:**
 
 - Runs on `ubuntu-latest` with Julia 1.12.
-- Installs Python 3.13 and `qmctoolscl` (required by `DigitalNetB2`, `Lattice`, etc.).
-- Executes `make coverage`, which runs `test/runtests.jl` with Julia coverage instrumentation enabled.
-- Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each shard to avoid oversubscription.
+- Installs Python 3.13 and pinned `qmctoolscl` from `test/requirements.txt`.
+- Executes `make coverage`, which runs `test/runtests.jl` with Julia coverage
+  instrumentation enabled.
+- Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub
+  Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each
+  shard to avoid oversubscription.
 - Processes the resulting coverage data into `lcov.info`.
 - Uploads `lcov.info` both to Codecov and as a GitHub Actions artifact.
 
 **Notebooks job:**
 
 - Runs after the unit tests pass.
-- Only executes when `demos/`, `src/`, or `test/run_notebooks.jl` changed
-  in the triggering commit, keeping CI fast for documentation-only or
+- Only executes when `demos/`, `src/`, or `test/run_notebooks.jl` changed in
+  the triggering commit, keeping CI fast for documentation-only or
   workflow-only changes.
 - Runs all `.ipynb` demo notebooks via `make notebook`.
-- Shards notebooks across `NOTEBOOK_JOBS` Julia subprocesses (default GitHub Actions variable fallback: `2`) while keeping `NOTEBOOK_THREADS=1` inside each shard.
+- Shards notebooks across `NOTEBOOK_JOBS` Julia subprocesses (default GitHub
+  Actions variable fallback: `2`) while keeping `NOTEBOOK_THREADS=1` inside
+  each shard.
 
 ## CI Full (`ci-full.yml`)
 
-A cross-platform sweep triggered on pull requests targeting `develop` or `master`.
+A cross-platform sweep for protected branches.
 
-- Tests Julia 1.10 and 1.11 on Linux, macOS, and Windows (6 jobs total).
-- Runs unit tests only (no notebooks or doctests) to keep macOS/Windows
-  jobs fast and avoid platform-specific rendering issues.
+- Triggers on pushes to `develop` or `master`, on pull requests targeting those
+  branches, and via manual dispatch.
+- Tests Julia 1.10 and 1.11 on Linux, macOS, and Windows.
+- Runs unit tests only. Notebook regression tests stay in the Linux `ci.yml`
+  path so macOS/Windows jobs remain relatively fast and less brittle.
 
-## Nightly (`nightly.yml`)
+## Benchmarking (`benchmarking.yml`)
 
-A scheduled workflow that runs daily at 05:30 UTC, testing macOS and Windows
-with Julia 1.11. This catches breakages from upstream Julia or dependency
-updates without blocking day-to-day development.
+The benchmark workflow is separate from the test workflows.
 
-Can also be triggered manually via `workflow_dispatch`.
+- Triggers on pushes to `develop` or `master` when benchmark-relevant files
+  change, and via manual dispatch.
+- Runs on `ubuntu-latest` with Julia 1.12 and Python 3.13.
+- Checks out full git history so `make bench-all REV=<previous-commit>` can
+  materialize the baseline revision in a temporary worktree.
+- Installs pinned benchmark Python dependencies from
+  `benchmark/requirements.txt`, including `qmcpy==2.3`.
+- Runs `make bench-all`, not the broader `make ci`, so benchmark artifacts
+  measure the checked-in sources rather than a formatter-mutated worktree.
+- Uses `BENCH_BLAS_THREADS` for both Julia and Python-side native-kernel thread
+  settings.
+- Uploads the generated `benchmark/results/` directory as a GitHub Actions
+  artifact for later inspection.
 
 ## Docs (`docs.yml`)
 
@@ -101,6 +137,13 @@ make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 
 ```bash
 julia --project=docs docs/make.jl
+```
+
+**Benchmark locally:**
+
+```bash
+pip install -r benchmark/requirements.txt
+make bench-all REV=HEAD~1 BENCH_BLAS_THREADS=2
 ```
 
 ## Coverage Reports

@@ -27,6 +27,7 @@ makedocs(
         ],
         "Demos" => "demos.md",
         "CI/CD Testing" => "ci-testing.md",
+        "Workflow Debugging" => "workflow-debugging.md",
         "Contributing" => "contributing.md",
         "Community" => "community.md",
     ],

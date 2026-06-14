@@ -1,4 +1,4 @@
-.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python
 
 # ============================================================================
 # Configuration and helpers
@@ -14,12 +14,18 @@ QMCPY_PYTHON_AUTO := $(shell \
 		fi; \
 	done)
 PYTHON ?= $(if $(QMCPY_PYTHON_AUTO),$(QMCPY_PYTHON_AUTO),python)
+ACTIONLINT ?= actionlint
 TEST_JOBS ?= 2
 TEST_THREADS ?= 1
 NOTEBOOK_JOBS ?= 2
 NOTEBOOK_THREADS ?= 1
 BENCH_COVERAGE ?= 0
 BENCH_BLAS_THREADS ?= 2
+WORKFLOW_SMOKE_NOTEBOOKS ?= 0
+WORKFLOW_SMOKE_DOCS ?= 0
+WORKFLOW_SMOKE_BENCH ?= 0
+WORKFLOW_SMOKE_REV ?= HEAD
+WORKFLOW_SMOKE_LABEL ?= workflow-smoke
 JULIA_BENCH_COVERAGE_FLAG := $(if $(filter 1,$(BENCH_COVERAGE)),--code-coverage=user,)
 BENCH_THREAD_ENV := QMC_BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) OPENBLAS_NUM_THREADS=$(BENCH_BLAS_THREADS) MKL_NUM_THREADS=$(BENCH_BLAS_THREADS) OMP_NUM_THREADS=$(BENCH_BLAS_THREADS) NUMEXPR_NUM_THREADS=$(BENCH_BLAS_THREADS)
 
@@ -188,7 +194,7 @@ bench-compare-py-label: check-qmcpy-python
 #   - $(BENCH_COMPARE_PY_OUT)   with ratio = Python ÷ Julia
 # Usage: make bench-all LABEL=base
 bench-all:
-	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && printf '\n[bench-all] wrote %s (ratio = reference ÷ local) and %s (ratio = Python ÷ Julia)\n' "$(BENCH_COMPARE_OUT)" "$(BENCH_COMPARE_PY_OUT)",bench-all)
+	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) REV=$(REV) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && printf '\n[bench-all] wrote %s (ratio = reference ÷ local) and %s (ratio = Python ÷ Julia)\n' "$(BENCH_COMPARE_OUT)" "$(BENCH_COMPARE_PY_OUT)",bench-all)
 
 # Run the benchmark suite with coverage enabled and produce an lcov report over
 # both src/ and benchmark/ coverage files.
@@ -216,6 +222,37 @@ bench-compare-labels:
 # ============================================================================
 # Combination of above targets
 # ============================================================================
+
+# Lint workflow YAML (when actionlint is installed) and run the core Linux CI
+# body locally. Opt into the slower workflow legs with:
+#   WORKFLOW_SMOKE_NOTEBOOKS=1
+#   WORKFLOW_SMOKE_DOCS=1
+#   WORKFLOW_SMOKE_BENCH=1 [WORKFLOW_SMOKE_REV=HEAD~1]
+workflow-smoke:
+	$(call RUN_TIMED,\
+		if $(ACTIONLINT) -version >/dev/null 2>&1; then \
+			$(ACTIONLINT) .github/workflows/*.yml; \
+		else \
+			echo "[workflow-smoke] actionlint not found on PATH; skipping workflow YAML lint."; \
+			echo "[workflow-smoke] See docs/src/workflow-debugging.md for install options."; \
+		fi && \
+		$(MAKE) coverage TEST_JOBS=$(TEST_JOBS) TEST_THREADS=$(TEST_THREADS) && \
+		if [ "$(WORKFLOW_SMOKE_NOTEBOOKS)" = "1" ]; then \
+			$(MAKE) notebook NOTEBOOK_JOBS=$(NOTEBOOK_JOBS) NOTEBOOK_THREADS=$(NOTEBOOK_THREADS); \
+		else \
+			echo "[workflow-smoke] skipping notebooks (set WORKFLOW_SMOKE_NOTEBOOKS=1 to enable)."; \
+		fi && \
+		if [ "$(WORKFLOW_SMOKE_DOCS)" = "1" ]; then \
+			$(MAKE) doc; \
+		else \
+			echo "[workflow-smoke] skipping docs (set WORKFLOW_SMOKE_DOCS=1 to enable)."; \
+		fi && \
+		if [ "$(WORKFLOW_SMOKE_BENCH)" = "1" ]; then \
+			$(MAKE) bench-all REV=$(WORKFLOW_SMOKE_REV) LABEL=$(WORKFLOW_SMOKE_LABEL) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS); \
+		else \
+			echo "[workflow-smoke] skipping benchmarks (set WORKFLOW_SMOKE_BENCH=1 to enable)."; \
+		fi,\
+	workflow-smoke)
 
 # Run the full-check pipeline: format code, collect unit-test,
 # then collect full benchmark. Pass LABEL=... through to the benchmark step.
