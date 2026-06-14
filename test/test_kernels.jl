@@ -97,4 +97,122 @@
         @test kernel_eval(kp, 0.0) ≈ kernel_eval(k1, 0.0) * kernel_eval(k2, 0.0)
         @test kernel_eval(ks, 1.0) ≈ kernel_eval(k1, 1.0) + kernel_eval(k2, 1.0)
     end
+
+    @testset "SI/DSI value kernels (QMCPy parity)" begin
+        # Values pinned from QMCPy 2.3's KernelShiftInvarCombined,
+        # KernelDigShiftInvarAdaptiveAlpha, and KernelDigShiftInvarCombined at
+        # default parameters (validated against qmcpy __call__ to ~1e-13).
+        x0 = [0.1, 0.2, 0.3]
+        x1 = [0.4, 0.5, 0.6]
+
+        ksic = KernelShiftInvarCombined(3)
+        @test kernel_eval(ksic, x0, x1) ≈ 4.54177582569934 atol = 1e-10
+        @test kernel_eval(ksic, x0, x0) ≈ -57.35803352414608 atol = 1e-9
+
+        kaa = KernelDigShiftInvarAdaptiveAlpha(3, 32)
+        @test kernel_eval(kaa, x0, x1) ≈ 0.6188984220477008 atol = 1e-10
+        @test kernel_eval(kaa, x0, x0) ≈ 3.510713675750846 atol = 1e-10
+
+        kdc = KernelDigShiftInvarCombined(3, 32)
+        @test kernel_eval(kdc, x0, x1) ≈ 0.2002448027423651 atol = 1e-10
+        @test kernel_eval(kdc, x0, x0) ≈ 13.322617152151405 atol = 1e-10
+
+        # Gram matrix: symmetric, diagonal matches the self-kernel value
+        X = [0.1 0.2 0.3; 0.4 0.5 0.6; 0.7 0.8 0.9]
+        for k in (ksic, kaa, kdc)
+            K = kernel_matrix(k, X)
+            @test size(K) == (3, 3)
+            @test K ≈ K'
+            @test K[2, 2] ≈ kernel_eval(k, X[2, :], X[2, :])
+        end
+
+        # constructor + helper validation
+        @test_throws ArgumentError KernelShiftInvarCombined(3; lengthscales=[1.0, 2.0])
+        @test_throws ArgumentError KernelDigShiftInvarCombined(3, 32; alpha=ones(4, 2))
+        @test_throws ArgumentError KernelDigShiftInvarAdaptiveAlpha(3, 32; alpha=[1.0, 2.0])
+        @test_throws ArgumentError QMC._weighted_walsh_funcs(5, UInt64(3), 32)
+    end
+
+    @testset "KernelShiftInvarDeriv (derivative orders)" begin
+        # Values pinned from QMCPy 2.3's base KernelShiftInvar.__call__ with
+        # derivative orders (validated to ~1e-12). d=2, alpha=2, default params.
+        x0 = [0.1, 0.2]
+        x1 = [0.4, 0.7]
+        k = KernelShiftInvarDeriv(2)
+
+        @test kernel_eval(k, x0, x1) ≈ 0.1530551333681213 atol = 1e-10
+        # ∂/∂x0₁
+        @test kernel_eval_deriv(k, x0, x1, [1, 0], [0, 0]) ≈ 0.973627865517581 atol = 1e-10
+        # ∂/∂x1₂ — exactly 0 here since B₃(0.5) = 0
+        @test kernel_eval_deriv(k, x0, x1, [0, 0], [0, 1]) ≈ 0.0 atol = 1e-12
+        # mixed ∂²/∂x0₁∂x1₁
+        @test kernel_eval_deriv(k, x0, x1, [1, 0], [1, 0]) ≈ -3.013610059935374 atol = 1e-10
+        # 2nd order in dim 2
+        @test kernel_eval_deriv(k, x0, x1, [0, 2], [0, 0]) ≈ 19.108618045798185 atol = 1e-9
+        # two-term coefficient combination: 2·∂/∂x0₁ − 0.5·∂/∂x0₂
+        @test kernel_eval_deriv(k, x0, x1, [1 0; 0 1], [0 0; 0 0], [2.0, -0.5]) ≈
+              1.947255731035162 atol = 1e-10
+
+        # non-derivative call agrees with the undifferentiated value kernel
+        @test kernel_eval(k, x0, x1) ≈ kernel_eval_deriv(k, x0, x1, [0, 0], [0, 0])
+        # Gram matrix symmetric
+        X = [0.1 0.2; 0.4 0.7; 0.6 0.9]
+        K = kernel_matrix(k, X)
+        @test K ≈ K'
+        @test K[2, 2] ≈ kernel_eval(k, X[2, :], X[2, :])
+
+        # validation
+        @test_throws ArgumentError KernelShiftInvarDeriv(2; alpha=[0, 2])
+        @test_throws ArgumentError kernel_eval_deriv(k, x0, x1, [3, 0], [0, 0])  # order 2α-β = 1 < 2
+    end
+
+    @testset "KernelDigShiftInvarDeriv (derivative orders)" begin
+        # Values pinned from QMCPy 2.3's base KernelDigShiftInvar.__call__ with
+        # derivative orders (validated to 0 error). d=2, t=32, x0=[.1,.2], x1=[.4,.7].
+        x0 = [0.1, 0.2]
+        x1 = [0.4, 0.7]
+
+        k2 = KernelDigShiftInvarDeriv(2, 32; alpha=[2, 2])
+        @test kernel_eval(k2, x0, x1) ≈ 0.8500315666346804 atol = 1e-10
+
+        k4 = KernelDigShiftInvarDeriv(2, 32; alpha=[4, 4])
+        @test kernel_eval(k4, x0, x1) ≈ 0.8643230465442825 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [1, 0], [0, 0]) ≈ -0.6553193188872999 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [0, 0], [0, 1]) ≈ -0.6195565625635286 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [1, 0], [1, 0]) ≈ 1.3264294648165356 atol = 1e-10
+        # DSI derivative depends only on β0+β1, so ∂²/∂x0₁² equals the mixed ∂²/∂x0₁∂x1₁
+        @test kernel_eval_deriv(k4, x0, x1, [2, 0], [0, 0]) ≈ 1.3264294648165356 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [1 0; 0 1], [0 0; 0 0], [1.5, -0.7]) ≈
+              -0.5492893845364798 atol = 1e-10
+
+        K = kernel_matrix(k4, [0.1 0.2; 0.4 0.7; 0.6 0.9])
+        @test K ≈ K'
+
+        # validation: differentiating the α=2 DSI kernel is unsupported
+        @test_throws ArgumentError kernel_eval_deriv(k2, x0, x1, [1, 0], [0, 0])
+        @test_throws ArgumentError KernelDigShiftInvarDeriv(2, 32; alpha=[5, 2])
+    end
+
+    @testset "KernelMultiTaskDerivs (all-ones task wrapper)" begin
+        x0 = [0.1, 0.2]
+        x1 = [0.4, 0.7]
+        base = KernelShiftInvarDeriv(2)
+        mt = KernelMultiTaskDerivs(base, 3)
+
+        # all-ones task matrix ⇒ value equals the base kernel for any task indices
+        for (t0, t1) in ((1, 1), (1, 3), (3, 2))
+            @test kernel_eval(mt, t0, t1, x0, x1) ≈ kernel_eval(base, x0, x1)
+            @test kernel_eval_deriv(mt, t0, t1, x0, x1, [1, 0], [0, 0]) ≈
+                  kernel_eval_deriv(base, x0, x1, [1, 0], [0, 0])
+        end
+        # equals the pinned base values from the SI-deriv testset
+        @test kernel_eval(mt, 1, 2, x0, x1) ≈ 0.1530551333681213 atol = 1e-10
+        @test kernel_eval_deriv(mt, 2, 3, x0, x1, [1, 0], [0, 0]) ≈ 0.973627865517581 atol =
+            1e-10
+
+        # task-index bounds
+        @test_throws ArgumentError kernel_eval(mt, 0, 1, x0, x1)
+        @test_throws ArgumentError kernel_eval(mt, 1, 4, x0, x1)
+        @test_throws ArgumentError KernelMultiTaskDerivs(base, 0)
+    end
 end

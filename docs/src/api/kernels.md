@@ -12,6 +12,12 @@ AbstractStationaryKernel
 ```@docs
 KernelShiftInvar
 KernelDigShiftInvar
+KernelShiftInvarCombined
+KernelDigShiftInvarAdaptiveAlpha
+KernelDigShiftInvarCombined
+KernelShiftInvarDeriv
+KernelDigShiftInvarDeriv
+KernelMultiTaskDerivs
 ```
 
 ## Matérn and Gaussian Kernels
@@ -39,4 +45,5 @@ KernelMultiTask
 compute_kernel_eigenvalues
 kernel_eval
 kernel_matrix
+kernel_eval_deriv
 ```
