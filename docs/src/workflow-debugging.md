@@ -7,6 +7,18 @@ bodies directly.
 
 ## YAML Linting
 
+For local workflow debugging on macOS, installing the full Conda tool bundle is
+useful:
+
+- `actionlint` checks GitHub Actions syntax, expressions, and structure
+- `shellcheck` lets `actionlint` lint Bash inside `run:` blocks
+- `pyflakes` lets `actionlint` lint embedded Python snippets
+- `yamllint` adds a generic YAML-focused pass
+- `act` can execute many GitHub Actions jobs locally
+
+Those are developer-only local tools, not package/runtime dependencies, so they
+live in a dedicated Conda manifest under `devtools/`.
+
 If `actionlint` is on `PATH`, lint all workflow files with:
 
 ```bash
@@ -27,6 +39,14 @@ conda install -n qmcpy conda-forge::actionlint -y
 conda run -n qmcpy actionlint .github/workflows/*.yml
 ```
 
+To install the whole local workflow-debug bundle into `qmcpy`:
+
+```bash
+conda env update -n qmcpy -f devtools/environment-workflow-tools.yml
+conda run -n qmcpy actionlint .github/workflows/*.yml
+conda run -n qmcpy yamllint .github/workflows
+```
+
 `actionlint` catches YAML, expression, and common shell mistakes, but it does
 not execute the jobs.
 
@@ -39,6 +59,8 @@ workflow files, install `act`:
 conda install -n qmcpy conda-forge::act -y
 conda run -n qmcpy act --version
 ```
+
+Or install it through the shared Conda manifest shown above.
 
 `act` usually runs jobs through the Docker Engine API. On macOS that generally
 means Docker Desktop must also be installed and running. If Docker is not
