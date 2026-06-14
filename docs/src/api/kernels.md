@@ -12,6 +12,9 @@ AbstractStationaryKernel
 ```@docs
 KernelShiftInvar
 KernelDigShiftInvar
+KernelShiftInvarCombined
+KernelDigShiftInvarAdaptiveAlpha
+KernelDigShiftInvarCombined
 ```
 
 ## Matérn and Gaussian Kernels
