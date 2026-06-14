@@ -132,4 +132,37 @@
         @test_throws ArgumentError KernelDigShiftInvarAdaptiveAlpha(3, 32; alpha=[1.0, 2.0])
         @test_throws ArgumentError QMC._weighted_walsh_funcs(5, UInt64(3), 32)
     end
+
+    @testset "KernelShiftInvarDeriv (derivative orders)" begin
+        # Values pinned from QMCPy 2.3's base KernelShiftInvar.__call__ with
+        # derivative orders (validated to ~1e-12). d=2, alpha=2, default params.
+        x0 = [0.1, 0.2]
+        x1 = [0.4, 0.7]
+        k = KernelShiftInvarDeriv(2)
+
+        @test kernel_eval(k, x0, x1) ≈ 0.1530551333681213 atol = 1e-10
+        # ∂/∂x0₁
+        @test kernel_eval_deriv(k, x0, x1, [1, 0], [0, 0]) ≈ 0.973627865517581 atol = 1e-10
+        # ∂/∂x1₂ — exactly 0 here since B₃(0.5) = 0
+        @test kernel_eval_deriv(k, x0, x1, [0, 0], [0, 1]) ≈ 0.0 atol = 1e-12
+        # mixed ∂²/∂x0₁∂x1₁
+        @test kernel_eval_deriv(k, x0, x1, [1, 0], [1, 0]) ≈ -3.013610059935374 atol = 1e-10
+        # 2nd order in dim 2
+        @test kernel_eval_deriv(k, x0, x1, [0, 2], [0, 0]) ≈ 19.108618045798185 atol = 1e-9
+        # two-term coefficient combination: 2·∂/∂x0₁ − 0.5·∂/∂x0₂
+        @test kernel_eval_deriv(k, x0, x1, [1 0; 0 1], [0 0; 0 0], [2.0, -0.5]) ≈
+              1.947255731035162 atol = 1e-10
+
+        # non-derivative call agrees with the undifferentiated value kernel
+        @test kernel_eval(k, x0, x1) ≈ kernel_eval_deriv(k, x0, x1, [0, 0], [0, 0])
+        # Gram matrix symmetric
+        X = [0.1 0.2; 0.4 0.7; 0.6 0.9]
+        K = kernel_matrix(k, X)
+        @test K ≈ K'
+        @test K[2, 2] ≈ kernel_eval(k, X[2, :], X[2, :])
+
+        # validation
+        @test_throws ArgumentError KernelShiftInvarDeriv(2; alpha=[0, 2])
+        @test_throws ArgumentError kernel_eval_deriv(k, x0, x1, [3, 0], [0, 0])  # order 2α-β = 1 < 2
+    end
 end
