@@ -97,4 +97,39 @@
         @test kernel_eval(kp, 0.0) ≈ kernel_eval(k1, 0.0) * kernel_eval(k2, 0.0)
         @test kernel_eval(ks, 1.0) ≈ kernel_eval(k1, 1.0) + kernel_eval(k2, 1.0)
     end
+
+    @testset "SI/DSI value kernels (QMCPy parity)" begin
+        # Values pinned from QMCPy 2.3's KernelShiftInvarCombined,
+        # KernelDigShiftInvarAdaptiveAlpha, and KernelDigShiftInvarCombined at
+        # default parameters (validated against qmcpy __call__ to ~1e-13).
+        x0 = [0.1, 0.2, 0.3]
+        x1 = [0.4, 0.5, 0.6]
+
+        ksic = KernelShiftInvarCombined(3)
+        @test kernel_eval(ksic, x0, x1) ≈ 4.54177582569934 atol = 1e-10
+        @test kernel_eval(ksic, x0, x0) ≈ -57.35803352414608 atol = 1e-9
+
+        kaa = KernelDigShiftInvarAdaptiveAlpha(3, 32)
+        @test kernel_eval(kaa, x0, x1) ≈ 0.6188984220477008 atol = 1e-10
+        @test kernel_eval(kaa, x0, x0) ≈ 3.510713675750846 atol = 1e-10
+
+        kdc = KernelDigShiftInvarCombined(3, 32)
+        @test kernel_eval(kdc, x0, x1) ≈ 0.2002448027423651 atol = 1e-10
+        @test kernel_eval(kdc, x0, x0) ≈ 13.322617152151405 atol = 1e-10
+
+        # Gram matrix: symmetric, diagonal matches the self-kernel value
+        X = [0.1 0.2 0.3; 0.4 0.5 0.6; 0.7 0.8 0.9]
+        for k in (ksic, kaa, kdc)
+            K = kernel_matrix(k, X)
+            @test size(K) == (3, 3)
+            @test K ≈ K'
+            @test K[2, 2] ≈ kernel_eval(k, X[2, :], X[2, :])
+        end
+
+        # constructor + helper validation
+        @test_throws ArgumentError KernelShiftInvarCombined(3; lengthscales=[1.0, 2.0])
+        @test_throws ArgumentError KernelDigShiftInvarCombined(3, 32; alpha=ones(4, 2))
+        @test_throws ArgumentError KernelDigShiftInvarAdaptiveAlpha(3, 32; alpha=[1.0, 2.0])
+        @test_throws ArgumentError QMC._weighted_walsh_funcs(5, UInt64(3), 32)
+    end
 end

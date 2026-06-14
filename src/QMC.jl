@@ -73,6 +73,7 @@ include("kernel/shift_invariant.jl")
 include("kernel/dig_shift_invariant.jl")
 include("kernel/matern.jl")
 include("kernel/multitask.jl")
+include("kernel/si_dsi_value_kernels.jl")
 
 # Stopping Criteria
 include("stopping_criterion/control_variates.jl")
@@ -123,6 +124,7 @@ export KernelRationalQuadratic
 export KernelSquaredExponential
 export SumKernel, ProductKernel, kernel_eval, kernel_matrix
 export KernelMultiTask
+export KernelShiftInvarCombined, KernelDigShiftInvarAdaptiveAlpha, KernelDigShiftInvarCombined
 
 # Exports — stopping criteria
 export CubMCCLT, CubQMCLatticeG, CubQMCNetG, CubQMCNetGRep, CubQMCNetGSingle
