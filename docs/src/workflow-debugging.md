@@ -20,8 +20,30 @@ conda create -n gha-tools -c conda-forge actionlint -y
 conda run -n gha-tools actionlint .github/workflows/*.yml
 ```
 
+To install it into an existing environment such as `qmcpy`:
+
+```bash
+conda install -n qmcpy conda-forge::actionlint -y
+conda run -n qmcpy actionlint .github/workflows/*.yml
+```
+
 `actionlint` catches YAML, expression, and common shell mistakes, but it does
 not execute the jobs.
+
+## Optional Local Runner
+
+If you want to execute GitHub Actions jobs locally instead of only linting the
+workflow files, install `act`:
+
+```bash
+conda install -n qmcpy conda-forge::act -y
+conda run -n qmcpy act --version
+```
+
+`act` usually runs jobs through the Docker Engine API. On macOS that generally
+means Docker Desktop must also be installed and running. If Docker is not
+available, use `actionlint` plus the local `make` targets below as the primary
+workflow-debug path.
 
 ## Repeatable Smoke Run
 
