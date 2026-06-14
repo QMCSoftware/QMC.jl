@@ -1,0 +1,16 @@
+# Conda environment fragment for local GitHub Actions workflow debugging.
+#
+# Example:
+#   conda env update -n qmcpy -f devtools/environment-workflow-tools.yml
+#
+# These tools are intentionally kept out of the main package, test, benchmark,
+# and docs dependency files because they are developer-only local workflow
+# helpers rather than runtime or CI job dependencies.
+channels:
+  - conda-forge
+dependencies:
+  - actionlint
+  - act
+  - pyflakes
+  - shellcheck
+  - yamllint

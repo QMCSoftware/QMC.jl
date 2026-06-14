@@ -4,11 +4,11 @@ This folder contains the repository's GitHub Actions workflows.
 
 ## Files
 
-- `ci.yml`: fast Linux CI for unit tests, notebooks, and coverage upload.
-- `ci-full.yml`: broader matrix CI for pull requests to `develop` and `master`.
+- `ci.yml`: fast Linux CI for unit tests, notebooks, and coverage upload on every push and pull request.
+- `ci-full.yml`: broader cross-platform unit-test matrix for `develop`/`master` pushes, pull requests into those branches, and manual runs.
 - `docs.yml`: Documenter build and deployment workflow.
 - `TagBot.yml`: release-tag automation.
-- `nightly.yml`: scheduled benchmarking on non-Linux platforms.
+- `benchmarking.yml`: Linux benchmark collection for benchmark-relevant `develop`/`master` pushes and manual runs.
 
 ### Disabled
 
@@ -16,4 +16,4 @@ This folder contains the repository's GitHub Actions workflows.
 - `CompatHelper.yml.disabled`: dependency update automation. 
 
 
-See [`../../docs/src/ci-testing.md`](../../docs/src/ci-testing.md) for the user-facing workflow overview.
+See [`../../docs/src/ci-testing.md`](../../docs/src/ci-testing.md) for the user-facing workflow overview and policy details.

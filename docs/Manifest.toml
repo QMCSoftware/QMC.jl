@@ -411,6 +411,13 @@ path = ".."
 uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
 version = "0.1.0"
 
+    [deps.QMC.extensions]
+    QMCAbstractGPsExt = ["AbstractGPs", "Optim"]
+
+    [deps.QMC.weakdeps]
+    AbstractGPs = "99985d1d-32ba-4be9-9821-2ec096f28918"
+    Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+
 [[deps.QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
 git-tree-sha1 = "5e8e8b0ab68215d7a2b14b9921a946fee794749e"

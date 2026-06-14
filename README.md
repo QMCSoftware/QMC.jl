@@ -108,6 +108,12 @@ julia benchmark/runbenchmarks.jl
 
 This benchmarks sampling, transforms, integrand evaluation, and end-to-end integration across all DD types. Results are saved under `benchmark/results/`. See [`benchmark/README.md`](benchmark/README.md) for the full workflow, comparison scripts, and the Julia-vs-QMCPy accuracy sidecars.
 
+Remote benchmark collection is handled by `.github/workflows/benchmarking.yml`:
+it runs on Linux for benchmark-relevant `develop`/`master` pushes and manual
+dispatch, then uploads `benchmark/results/` as a workflow artifact. See
+[CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for the full
+workflow policy.
+
 ## Repository Layout
 
 Most top-level and source subdirectories now include a local `README.md` describing

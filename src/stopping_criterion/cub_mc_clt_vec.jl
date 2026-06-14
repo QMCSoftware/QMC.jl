@@ -8,9 +8,11 @@ Theorem with doubling sample sizes.
 Handles both **scalar** integrands (`d_indv == ()`, returning a `QMCResult`) and
 **vector-valued / multi-output** integrands (`d_indv != ()`, returning a
 [`QMCVecResult`](@ref)). For a multi-output integrand it tracks a per-output
-running mean and CLT interval, combines them through the integrand's `bound_fun`
-/ `combine_fun` (identity by default), and stops once **every** combined output's
-half-width meets its tolerance — mirroring QMCPy's `CubMCCLTVec`.
+running mean and CLT interval (with `ddof=1` sample variance), maps them to
+combined outputs through the integrand's `bound_fun`, and stops once **every**
+combined output's bound width meets its tolerance — mirroring QMCPy's
+`CubMCCLTVec`, which derives the solution and convergence from the combined
+bounds via `error_fun` and does not use `combine_fun`.
 
 Supports **resume**: pass the `data` dict from a previous `QMCResult` as
 `resume` to continue integration from where it left off.
@@ -136,16 +138,6 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=no
     return QMCResult(solution, data)
 end
 
-# Multi-output doubling path: per-individual-output running mean/variance and a
-# CLT confidence interval, combined via the integrand's `bound_fun`/`combine_fun`
-# (identity by default), stopping once every combined output's half-width meets
-# its tolerance. Mirrors the doubling structure of QMCPy's `CubMCCLTVec`. The
-# per-output variance uses the same uncorrected estimator as the scalar path
-# above, for internal consistency. All outputs are recomputed each iteration:
-# `compute_flags` short-circuiting (freezing converged outputs) would require
-# `evaluate` to accept per-output flags, which the integrand interface does not
-# yet expose; recomputing is correct (every output still meets tolerance), just
-# not the work-saving optimization.
 # Distribute the combined confidence level `alpha` down to the individual outputs
 # using the integrand's `dependency` map (mirrors QMCPy's `_compute_indv_alphas`).
 # For each combined output, the individuals it depends on share its alpha budget
@@ -195,85 +187,141 @@ function _integrate_cubmccltvec_multi(
     ishape = d_indv(f)
     cshape = d_comb(f)
     m = prod(ishape)
+    mc = prod(cshape)
 
+    # Per-output accumulators and sample counts so converged outputs can freeze
+    # (stop drawing new samples) while the rest keep doubling. `n_max` doubles
+    # each iteration; an active output's count grows toward it, a frozen one keeps
+    # the count it had when it converged — mirroring QMCPy's per-output `n`.
+    n_min = 0
+    n_max = sc.n_init
+    recheck_only = false
     if resume !== nothing
         running_sum = collect(Float64, resume[:_running_sum])
         running_sum2 = collect(Float64, resume[:_running_sum2])
-        n_total = Int(resume[:n_total])
-        n = 2 * n_total
+        n_indv = collect(Int, resume[:_n_indv])
         prev_time = Float64(get(resume, :time_integrate, 0.0))
+        # Re-evaluate the (possibly tighter) tolerance from existing samples before
+        # drawing more: unfreeze everything and skip generation on the first pass.
+        n_min = maximum(n_indv)
+        n_max = n_min
+        recheck_only = true
     else
         running_sum = zeros(Float64, m)
         running_sum2 = zeros(Float64, m)
-        n_total = 0
-        n = sc.n_init
+        n_indv = zeros(Int, m)
         prev_time = 0.0
     end
+    compute_flags = trues(m)
 
     solution_indv = zeros(Float64, m)
     indv_low = zeros(Float64, m)
     indv_high = zeros(Float64, m)
-    comb_low = zeros(Float64, m)
-    comb_high = zeros(Float64, m)
-    sol_comb = zeros(Float64, m)
+    comb_low = zeros(Float64, mc)
+    comb_high = zeros(Float64, mc)
+    sol_comb = zeros(Float64, mc)
+    comb_flags = falses(mc)
     err_comb = Inf
     converged = false
 
-    while n_total < sc.n_max
-        n_batch = min(n, sc.n_max - n_total)
-        x = transform(tm, gen_samples(dd, n_batch))
-        Y = reshape(evaluate(f, x), n_batch, m)
-        @inbounds for k in 1:m
-            sk = 0.0
-            sk2 = 0.0
-            for i in 1:n_batch
-                v = Y[i, k]
-                sk += v
-                sk2 += v * v
+    while true
+        if !recheck_only
+            n_new = n_max - n_min
+            if n_new > 0
+                x = transform(tm, gen_samples(dd, n_new))
+                Y = reshape(evaluate(f, x, compute_flags), n_new, m)
+                @inbounds for k in 1:m
+                    compute_flags[k] || continue
+                    sk = 0.0
+                    sk2 = 0.0
+                    for i in 1:n_new
+                        v = Y[i, k]
+                        sk += v
+                        sk2 += v * v
+                    end
+                    running_sum[k] += sk
+                    running_sum2[k] += sk2
+                    n_indv[k] += n_new
+                end
             end
-            running_sum[k] += sk
-            running_sum2[k] += sk2
         end
-        n_total += n_batch
+        recheck_only = false
 
         @inbounds for k in 1:m
-            mu = running_sum[k] / n_total
-            solution_indv[k] = mu
-            var_k = max(running_sum2[k] / n_total - mu^2, 0.0)
-            ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(n_total))
-            indv_low[k] = mu - ci
-            indv_high[k] = mu + ci
+            nk = n_indv[k]
+            if nk > 1
+                mu = running_sum[k] / nk
+                solution_indv[k] = mu
+                # corrected (ddof=1) sample variance, matching QMCPy's std(ddof=1)
+                var_k = max((running_sum2[k] - nk * mu^2) / (nk - 1), 0.0)
+                ci = z_indv[k] * sqrt(var_k) / sqrt(Float64(nk))
+                indv_low[k] = mu - ci
+                indv_high[k] = mu + ci
+            else
+                solution_indv[k] = NaN
+                indv_low[k] = -Inf
+                indv_high[k] = Inf
+            end
         end
 
         cl, ch = bound_fun(f, indv_low, indv_high)
         comb_low = collect(Float64, cl)
         comb_high = collect(Float64, ch)
-        sol_comb = collect(Float64, combine_fun(f, solution_indv))
 
-        halfwidth = (comb_high .- comb_low) ./ 2
-        tol_c = max.(sc.abs_tol, sc.rel_tol .* abs.(sol_comb))
-        err_comb = maximum(halfwidth)
-        converged = all(halfwidth .<= tol_c)
+        # Solution, convergence, and tolerance are derived from the combined
+        # bounds via error_fun (QMCPy's "EITHER" rule: max(abs_tol, |s|*rel_tol)),
+        # matching CubMCCLTVec exactly — it does not use combine_fun. A combined
+        # output converges when its bound width is within error_fun(low) +
+        # error_fun(high), and the reported solution is the tolerance-adjusted
+        # bound midpoint.
+        err_comb = 0.0
+        tol_max = 0.0
+        @inbounds for kc in 1:mc
+            lo = comb_low[kc]
+            hi = comb_high[kc]
+            if isfinite(lo) && isfinite(hi)
+                el = max(sc.abs_tol, abs(lo) * sc.rel_tol)
+                eh = max(sc.abs_tol, abs(hi) * sc.rel_tol)
+                sol_comb[kc] = 0.5 * (lo + hi + el - eh)
+                hw = (hi - lo) / 2
+                tol_kc = (el + eh) / 2
+                comb_flags[kc] = hw <= tol_kc
+                hw > err_comb && (err_comb = hw)
+                tol_kc > tol_max && (tol_max = tol_kc)
+            else
+                sol_comb[kc] = NaN
+                comb_flags[kc] = false
+            end
+        end
+
+        # Freeze the individuals that feed only converged combined outputs.
+        flags_indv = vec(collect(Bool, dependency(f, reshape(comb_flags, cshape))))
+        @inbounds for k in 1:m
+            compute_flags[k] = !flags_indv[k]
+        end
+        converged = all(comb_flags)
 
         if sc.trace_iterations
             push!(
                 log;
-                n=n_total,
+                n=maximum(n_indv),
                 solution=sol_comb[1],
                 error_bound=err_comb,
-                tol=maximum(tol_c),
+                tol=tol_max,
                 elapsed=time() - t_start,
             )
         end
 
-        converged && break
-        n = min(2 * n, sc.n_max - n_total)
-        n <= 0 && break
+        count(compute_flags) == 0 && break        # all outputs sufficiently estimated
+        2 * maximum(n_indv) > sc.n_max && break    # next doubling would exceed n_max
+        n_min = n_max
+        n_max = 2 * n_max
     end
 
     t_elapsed = time() - t_start
     data = Dict{Symbol, Any}(
-        :n_total => n_total,
+        :n_total => maximum(n_indv),
+        :n_indv => Array{Int}(reshape(copy(n_indv), ishape)),
         :error_bound => err_comb,
         :time_integrate => prev_time + t_elapsed,
         :converged => converged,
@@ -282,6 +330,7 @@ function _integrate_cubmccltvec_multi(
         :comb_bound_high => Array{Float64}(reshape(comb_high, cshape)),
         :_running_sum => running_sum,
         :_running_sum2 => running_sum2,
+        :_n_indv => copy(n_indv),
     )
     if sc.trace_iterations
         data[:iteration_log] = log

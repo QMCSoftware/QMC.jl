@@ -1,0 +1,80 @@
+name: Benchmarking
+
+on:
+  push:
+    branches: [develop, master]
+    paths:
+      - 'src/**'
+      - 'benchmark/**'
+      - 'Makefile'
+      - 'Project.toml'
+      - 'Manifest.toml'
+      - 'test/requirements.txt'
+      - '.github/workflows/benchmarking.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: benchmarking-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Benchmarking – Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      # Override with the repository/org Actions variable `BENCH_BLAS_THREADS`
+      # when you want a different native-kernel thread count.
+      BENCH_BLAS_THREADS: ${{ vars.BENCH_BLAS_THREADS || '2' }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            julia-version: '1.12'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+
+      - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install benchmark Python dependencies
+        run: pip install -r benchmark/requirements.txt
+
+      - name: Install dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Select baseline
+        shell: bash
+        run: |
+          BENCH_COMPARE_REV=HEAD
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            BENCH_COMPARE_REV="${{ github.event.before }}"
+          fi
+          echo "BENCH_COMPARE_REV=$BENCH_COMPARE_REV" >> "$GITHUB_ENV"
+          echo "BENCH_LABEL=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Run benchmarks
+        run: |
+          export QMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+          export OPENBLAS_NUM_THREADS="$BENCH_BLAS_THREADS"
+          export MKL_NUM_THREADS="$BENCH_BLAS_THREADS"
+          export OMP_NUM_THREADS="$BENCH_BLAS_THREADS"
+          export NUMEXPR_NUM_THREADS="$BENCH_BLAS_THREADS"
+          make bench-all REV="$BENCH_COMPARE_REV" LABEL="$BENCH_LABEL" BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-julia-${{ matrix.julia-version }}-${{ github.ref_name }}-${{ github.run_number }}
+          path: benchmark/results
+          if-no-files-found: error

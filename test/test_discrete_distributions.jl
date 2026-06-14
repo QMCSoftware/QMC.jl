@@ -409,13 +409,15 @@
         @test_throws ArgumentError gen_samples(dd_short, 4; n_start=5)
 
         # Higher-order bundled data uses raw Sobol' dimensions, so the default
-        # Joe-Kuo table tops out at floor(1024 / alpha) output dimensions.
+        # Joe-Kuo table tops out at floor(21201 / alpha) output dimensions. The
+        # 513-dim alpha=2 case (1026 raw dims) now resolves from the bundled
+        # table, where it previously exceeded the old 1024-dim cap.
         dd_alpha_limit = DigitalNetB2(512; randomize="none", alpha=2)
         @test size(gen_samples(dd_alpha_limit, 2)) == (2, 512)
-        @test_throws ArgumentError DigitalNetB2(513; randomize="none", alpha=2)
+        @test size(gen_samples(DigitalNetB2(513; randomize="none", alpha=2), 2)) == (2, 513)
 
-        # Explicit custom matrices can still exceed the bundled effective-dimension
-        # limit as long as enough raw rows are supplied.
+        # Explicit custom matrices remain supported for higher-order interlacing
+        # as long as enough raw rows are supplied.
         dd_alpha_custom =
             DigitalNetB2(513; randomize="none", alpha=2, generating_matrices=ones(Int, 1026, 1))
         @test size(gen_samples(dd_alpha_custom, 2)) == (2, 513)
@@ -437,6 +439,40 @@
             alpha=2,
             generating_matrices=V8,
         )
+    end
+
+    @testset "DigitalNetB2 high-dimensional (bundled 21201 table)" begin
+        # Dimensions above the embedded 1024 now come from the bundled binary
+        # table (offline), matching QMCPy's reach of 21201 raw dimensions.
+        dn_hi = DigitalNetB2(1500; randomize="none", seed=1)
+        x_hi = gen_samples(dn_hi, 8)
+        @test size(x_hi) == (8, 1500)
+        @test all(0 .<= x_hi .< 1)
+
+        # Nesting: the binary extension's first 1024 dimensions are bit-for-bit
+        # identical to the embedded table, so a 1500-dim net's first 1024 columns
+        # equal a 1024-dim net's columns exactly (deterministic, randomize="none").
+        x_lo = gen_samples(DigitalNetB2(1024; randomize="none", seed=1), 8)
+        @test x_hi[:, 1:1024] == x_lo
+
+        # Higher-order interlacing past the old 1024 raw-dimension cap.
+        dn_ho = DigitalNetB2(600; randomize="none", seed=1, alpha=2)  # 1200 raw dims
+        @test size(gen_samples(dn_ho, 8)) == (8, 600)
+
+        # The maximum bundled dimension constructs; one past it throws.
+        @test size(gen_samples(DigitalNetB2(21201; randomize="none"), 2)) == (2, 21201)
+        @test_throws ArgumentError DigitalNetB2(21202)
+        @test_throws ArgumentError DigitalNetB2(10601; alpha=2)  # 21202 raw dims
+
+        # Explicitly naming the default 21201 LDData table stays offline (uses the
+        # bundle, no download) for dimensions within the bundled range.
+        dn_named = DigitalNetB2(
+            1500;
+            randomize="none",
+            seed=1,
+            generating_matrices="joe_kuo.6.21201.txt",
+        )
+        @test gen_samples(dn_named, 8) == x_hi
     end
 
     @testset "Halton" begin

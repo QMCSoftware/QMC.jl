@@ -43,10 +43,17 @@ This writes:
 benchmark/results/latest.json
 ```
 
-By default the benchmark targets now pin BLAS-style thread env vars to `1` for more stable dense-transform timings on both the Julia and QMCPy sides. Override that when needed:
+By default the benchmark targets now pin BLAS-style thread env vars to `2` for more stable dense-transform timings on both the Julia and QMCPy sides while keeping CI wall time reasonable. Override that when needed:
 
 ```bash
 make bench BENCH_BLAS_THREADS=4
+```
+
+For the Julia-vs-QMCPy comparison flow, install the pinned benchmark Python
+dependencies:
+
+```bash
+pip install -r benchmark/requirements.txt
 ```
 
 To save to a labeled file instead:
@@ -218,6 +225,23 @@ The Python harness also mirrors most of the newer Julia-only benchmark rows:
 - `Genz(gaussian_peak)` and `Genz(continuous)` via direct NumPy formulas with the same default parameters Julia uses, since QMCPy exposes only oscillatory and corner-peak Genz variants
 
 If `compare_python*.md` still shows `n/a` rows after regenerating `qmcpy_<label>.json`, those rows do not currently have a meaningful Python counterpart in the harness.
+
+## CI Benchmarking Workflow
+
+The repository's GitHub Actions benchmark workflow lives in
+`.github/workflows/benchmarking.yml`.
+
+- It runs on Linux for pushes to `develop` or `master` when benchmark-relevant
+  files change, and on manual dispatch.
+- It compares the pushed commit against the previous pushed commit when GitHub
+  provides one; manual runs fall back to `REV=HEAD`.
+- It checks out full git history so the previous-commit baseline is available
+  for `git worktree`-based Julia-to-Julia comparisons.
+- It uploads `benchmark/results/` as an artifact instead of committing machine-
+  specific outputs back into the repository.
+- It installs pinned Python dependencies from `benchmark/requirements.txt` so
+  benchmark reports stay comparable across repository commits. Changes to the
+  shared `test/requirements.txt` pin file also retrigger the workflow.
 
 If the Python interpreter should be overridden:
 

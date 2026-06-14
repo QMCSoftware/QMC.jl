@@ -12,6 +12,7 @@ const TEST_FILES = [
     "test_integrands.jl",
     "test_kernels.jl",
     "test_stopping_criteria.jl",
+    "test_pf_gp_ci.jl",
     "test_integration.jl",
     "test_multilevel.jl",
     "test_utils.jl",
