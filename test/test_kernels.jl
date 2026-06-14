@@ -165,4 +165,54 @@
         @test_throws ArgumentError KernelShiftInvarDeriv(2; alpha=[0, 2])
         @test_throws ArgumentError kernel_eval_deriv(k, x0, x1, [3, 0], [0, 0])  # order 2α-β = 1 < 2
     end
+
+    @testset "KernelDigShiftInvarDeriv (derivative orders)" begin
+        # Values pinned from QMCPy 2.3's base KernelDigShiftInvar.__call__ with
+        # derivative orders (validated to 0 error). d=2, t=32, x0=[.1,.2], x1=[.4,.7].
+        x0 = [0.1, 0.2]
+        x1 = [0.4, 0.7]
+
+        k2 = KernelDigShiftInvarDeriv(2, 32; alpha=[2, 2])
+        @test kernel_eval(k2, x0, x1) ≈ 0.8500315666346804 atol = 1e-10
+
+        k4 = KernelDigShiftInvarDeriv(2, 32; alpha=[4, 4])
+        @test kernel_eval(k4, x0, x1) ≈ 0.8643230465442825 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [1, 0], [0, 0]) ≈ -0.6553193188872999 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [0, 0], [0, 1]) ≈ -0.6195565625635286 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [1, 0], [1, 0]) ≈ 1.3264294648165356 atol = 1e-10
+        # DSI derivative depends only on β0+β1, so ∂²/∂x0₁² equals the mixed ∂²/∂x0₁∂x1₁
+        @test kernel_eval_deriv(k4, x0, x1, [2, 0], [0, 0]) ≈ 1.3264294648165356 atol = 1e-10
+        @test kernel_eval_deriv(k4, x0, x1, [1 0; 0 1], [0 0; 0 0], [1.5, -0.7]) ≈
+              -0.5492893845364798 atol = 1e-10
+
+        K = kernel_matrix(k4, [0.1 0.2; 0.4 0.7; 0.6 0.9])
+        @test K ≈ K'
+
+        # validation: differentiating the α=2 DSI kernel is unsupported
+        @test_throws ArgumentError kernel_eval_deriv(k2, x0, x1, [1, 0], [0, 0])
+        @test_throws ArgumentError KernelDigShiftInvarDeriv(2, 32; alpha=[5, 2])
+    end
+
+    @testset "KernelMultiTaskDerivs (all-ones task wrapper)" begin
+        x0 = [0.1, 0.2]
+        x1 = [0.4, 0.7]
+        base = KernelShiftInvarDeriv(2)
+        mt = KernelMultiTaskDerivs(base, 3)
+
+        # all-ones task matrix ⇒ value equals the base kernel for any task indices
+        for (t0, t1) in ((1, 1), (1, 3), (3, 2))
+            @test kernel_eval(mt, t0, t1, x0, x1) ≈ kernel_eval(base, x0, x1)
+            @test kernel_eval_deriv(mt, t0, t1, x0, x1, [1, 0], [0, 0]) ≈
+                  kernel_eval_deriv(base, x0, x1, [1, 0], [0, 0])
+        end
+        # equals the pinned base values from the SI-deriv testset
+        @test kernel_eval(mt, 1, 2, x0, x1) ≈ 0.1530551333681213 atol = 1e-10
+        @test kernel_eval_deriv(mt, 2, 3, x0, x1, [1, 0], [0, 0]) ≈ 0.973627865517581 atol =
+            1e-10
+
+        # task-index bounds
+        @test_throws ArgumentError kernel_eval(mt, 0, 1, x0, x1)
+        @test_throws ArgumentError kernel_eval(mt, 1, 4, x0, x1)
+        @test_throws ArgumentError KernelMultiTaskDerivs(base, 0)
+    end
 end

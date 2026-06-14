@@ -16,6 +16,8 @@ KernelShiftInvarCombined
 KernelDigShiftInvarAdaptiveAlpha
 KernelDigShiftInvarCombined
 KernelShiftInvarDeriv
+KernelDigShiftInvarDeriv
+KernelMultiTaskDerivs
 ```
 
 ## Matérn and Gaussian Kernels
