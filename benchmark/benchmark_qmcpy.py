@@ -370,6 +370,26 @@ def main():
                                 volatility=0.2, start_price=100, strike_price=100,
                                 interest_rate=0.05, t_final=1), abs_tol=0.5),
          False),
+        # Replication + Student-t cubature. QMCPy's CubQMCRepStudentT is the analog
+        # of Julia's CubQMCNetGRep: it averages `replications` independently
+        # randomized digital nets and stops on a Student-t half-width across the
+        # replication means. n_reps=16 matches the Julia default.
+        ("CubQMCNetGRep Keister",
+         lambda: qp.CubQMCRepStudentT(
+             qp.Keister(qp.DigitalNetB2(3, seed=SEED, replications=16)), abs_tol=0.01),
+         False),
+        ("CubQMCNetGRep EuropeanOption",
+         lambda: qp.CubQMCRepStudentT(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED, replications=16), option="EUROPEAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
+        ("CubQMCNetGRep AsianOption",
+         lambda: qp.CubQMCRepStudentT(
+             qp.FinancialOption(qp.DigitalNetB2(50, seed=SEED, replications=16), option="ASIAN",
+                                volatility=0.2, start_price=100, strike_price=100,
+                                interest_rate=0.05, t_final=1), abs_tol=0.5),
+         False),
     ]
 
     for name, make_sc, warm in integrate_cases:
