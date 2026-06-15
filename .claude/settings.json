@@ -8,7 +8,8 @@
       "Bash(wait 59000)",
       "Bash(echo \"Exit: $?\")",
       "Bash(julia --project test/run_notebooks.jl pydata_chi_2023)",
-      "Bash(julia --project=. test/run_notebooks.jl pydata_chi_2023)"
+      "Bash(julia --project=. test/run_notebooks.jl pydata_chi_2023)",
+      "Bash(julia --project=. test/run_notebooks.jl --overwrite=1 pydata_chi_2023)"
     ]
   }
 }
