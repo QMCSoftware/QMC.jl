@@ -4,6 +4,7 @@
 *.jl.mem
 lcov.info
 *.jls
+settings.json
 
 # Ignore the root package lockfile and the formatter tool lockfile.
 # Keep docs/Manifest.toml trackable for reproducible documentation builds.
