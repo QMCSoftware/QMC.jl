@@ -1,9 +1,11 @@
 # Run all demo notebooks end-to-end (analogous to Python's booktest).
 #
 # Usage:
-#     julia --project=. test/run_notebooks.jl                  # run all
-#     julia --project=. test/run_notebooks.jl quickstart       # run one by name
-#     julia --project=. test/run_notebooks.jl --jobs=2         # shard notebooks
+#     julia --project=. test/run_notebooks.jl                            # run all
+#     julia --project=. test/run_notebooks.jl quickstart                 # run one by name
+#     julia --project=. test/run_notebooks.jl --jobs=2                   # shard notebooks
+#     julia --project=. test/run_notebooks.jl --overwrite=1              # execute with Jupyter and write outputs back
+#     julia --project=. test/run_notebooks.jl --overwrite=1 --kernel=qmc-1.12
 
 using Pkg
 if get(ENV, "QMC_SKIP_PKG_SETUP", "0") != "1"
@@ -13,6 +15,23 @@ end
 
 import NBInclude: @nbinclude
 using Logging
+
+Base.@kwdef struct NotebookOptions
+    jobs::Int = 1
+    overwrite::Bool = false
+    kernel::String = "qmc-1.12"
+    timeout::Int = 1800
+end
+
+function with_updates(
+    opts::NotebookOptions;
+    jobs::Int=opts.jobs,
+    overwrite::Bool=opts.overwrite,
+    kernel::String=opts.kernel,
+    timeout::Int=opts.timeout,
+)
+    return NotebookOptions(; jobs, overwrite, kernel, timeout)
+end
 
 # A logger that counts warnings while forwarding them to the console
 struct CountingLogger <: AbstractLogger
@@ -56,8 +75,8 @@ fmt_duration(s::Real) =
         return "$(round(s; digits = 2))s"
     end
 
-function parse_jobs(argv::Vector{String})
-    jobs = 1
+function parse_args(argv::Vector{String})
+    opts = NotebookOptions()
     selectors = String[]
     for arg in argv
         if startswith(arg, "--jobs=")
@@ -72,11 +91,40 @@ function parse_jobs(argv::Vector{String})
                 )
             end
             jobs > 0 || throw(ArgumentError("--jobs must be >= 1, got $jobs"))
+            opts = with_updates(opts; jobs)
+        elseif startswith(arg, "--overwrite=")
+            raw = lowercase(split(arg, "="; limit=2)[2])
+            overwrite =
+                raw in ("1", "true", "yes") ? true :
+                raw in ("0", "false", "no") ? false :
+                throw(
+                    ArgumentError(
+                        "invalid --overwrite value $(repr(raw)); expected 0/1 or true/false",
+                    ),
+                )
+            opts = with_updates(opts; overwrite)
+        elseif startswith(arg, "--kernel=")
+            kernel = String(split(arg, "="; limit=2)[2])
+            isempty(kernel) && throw(ArgumentError("--kernel must not be empty"))
+            opts = with_updates(opts; kernel)
+        elseif startswith(arg, "--timeout=")
+            raw = split(arg, "="; limit=2)[2]
+            timeout = try
+                parse(Int, raw)
+            catch
+                throw(
+                    ArgumentError(
+                        "invalid --timeout value $(repr(raw)); expected a positive integer",
+                    ),
+                )
+            end
+            timeout > 0 || throw(ArgumentError("--timeout must be >= 1, got $timeout"))
+            opts = with_updates(opts; timeout)
         else
             push!(selectors, arg)
         end
     end
-    return jobs, selectors
+    return opts, selectors
 end
 
 function select_notebooks(all_notebooks::Vector{String}, selectors::Vector{String})
@@ -115,10 +163,20 @@ function current_project_dir()
     return dirname(active_project)
 end
 
-function child_cmd(notebooks::Vector{String})
+function child_cmd(notebooks::Vector{String}, opts::NotebookOptions)
     script = joinpath(@__DIR__, "run_notebooks.jl")
     base_argv = collect(Base.julia_cmd())
-    argv = vcat(base_argv, [script, "--jobs=1"], notebooks)
+    argv = vcat(
+        base_argv,
+        [
+            script,
+            "--jobs=1",
+            "--overwrite=$(Int(opts.overwrite))",
+            "--kernel=$(opts.kernel)",
+            "--timeout=$(opts.timeout)",
+        ],
+        notebooks,
+    )
     cmd = Cmd(argv)
     return addenv(
         cmd,
@@ -129,12 +187,17 @@ function child_cmd(notebooks::Vector{String})
     )
 end
 
-function run_child_shard(notebooks::Vector{String}, shard_idx::Int, shard_count::Int)
+function run_child_shard(
+    notebooks::Vector{String},
+    shard_idx::Int,
+    shard_count::Int,
+    opts::NotebookOptions,
+)
     output = ""
     ok = false
     elapsed = @elapsed begin
         mktemp() do _, io
-            proc = run(pipeline(ignorestatus(child_cmd(notebooks)), stdout=io, stderr=io))
+            proc = run(pipeline(ignorestatus(child_cmd(notebooks, opts)), stdout=io, stderr=io))
             flush(io)
             seekstart(io)
             output = read(io, String)
@@ -161,6 +224,78 @@ function print_child_result(result)
         print(result.output)
         endswith(result.output, '\n') || println()
     end
+end
+
+function notebook_python()
+    py = get(ENV, "QMC_NOTEBOOK_PYTHON", "")
+    return isempty(py) ? "python3" : py
+end
+
+function notebook_jupyter()
+    py = notebook_python()
+    sibling = joinpath(dirname(py), "jupyter")
+    return isfile(sibling) ? sibling : "jupyter"
+end
+
+function run_one_notebook_inplace(
+    nb::String,
+    demos_dir::AbstractString,
+    kernel::AbstractString,
+    timeout::Int,
+)
+    print("Executing ", nb, " with kernel ", kernel, " ... ")
+    notebook_path = joinpath(demos_dir, nb)
+    captured = ""
+    failed = false
+    err_text = ""
+    elapsed = @elapsed try
+        mktempdir() do ipython_dir
+            mktemp() do _, io
+                cmd = Cmd([
+                    notebook_jupyter(),
+                    "nbconvert",
+                    "--to",
+                    "notebook",
+                    "--execute",
+                    "--inplace",
+                    "--ExecutePreprocessor.kernel_name=$(kernel)",
+                    "--ExecutePreprocessor.timeout=$(timeout)",
+                    basename(notebook_path),
+                ],)
+                cmd = Cmd(cmd; dir=dirname(notebook_path))
+                proc = run(
+                    pipeline(
+                        ignorestatus(addenv(cmd, "IPYTHONDIR" => ipython_dir)),
+                        stdout=io,
+                        stderr=io,
+                    ),
+                )
+                flush(io)
+                seekstart(io)
+                captured = read(io, String)
+                success(proc) || error("nbconvert exited with code $(proc.exitcode)")
+            end
+        end
+    catch e
+        failed = true
+        err_text = sprint(io -> showerror(io, e, catch_backtrace()))
+    end
+
+    if failed
+        println("FAILED")
+        if !isempty(strip(captured))
+            println("---- captured nbconvert output ----")
+            print(captured)
+            endswith(captured, '\n') || println()
+            println("---- end captured nbconvert output ----")
+        end
+        println("  x FAILED: ", err_text)
+        println("  time: ", fmt_duration(elapsed))
+        return false, elapsed, 0
+    end
+
+    println("ok [$(fmt_duration(elapsed))]")
+    return true, elapsed, 0
 end
 
 function run_one_notebook(
@@ -212,7 +347,7 @@ function run_one_notebook(
     return true, elapsed, warnings
 end
 
-function run_serial(notebooks::Vector{String}, demos_dir::AbstractString)
+function run_serial(notebooks::Vector{String}, demos_dir::AbstractString, opts::NotebookOptions)
     times = Dict{String, Float64}()
     warnings_by_notebook = Dict{String, Int}()
     errors = String[]
@@ -220,7 +355,10 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString)
     verbose = get(ENV, "QMC_NOTEBOOK_VERBOSE", "0") == "1"
 
     for nb in notebooks
-        ok, elapsed, warnings = run_one_notebook(nb, demos_dir, clogger, verbose)
+        ok, elapsed, warnings =
+            opts.overwrite ?
+            run_one_notebook_inplace(nb, demos_dir, opts.kernel, opts.timeout) :
+            run_one_notebook(nb, demos_dir, clogger, verbose)
         times[nb] = elapsed
         warnings_by_notebook[nb] = warnings
         ok || push!(errors, nb)
@@ -252,15 +390,15 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString)
     end
 end
 
-function run_parallel(notebooks::Vector{String}, jobs::Int)
-    shards = split_work(notebooks, jobs)
+function run_parallel(notebooks::Vector{String}, opts::NotebookOptions)
+    shards = split_work(notebooks, opts.jobs)
     println(
         "Running $(length(notebooks)) notebook(s) across $(length(shards)) " *
         "parallel shard(s)...",
     )
     wall = @elapsed begin
         tasks = [
-            @async run_child_shard(shard, idx, length(shards)) for
+            @async run_child_shard(shard, idx, length(shards), opts) for
             (idx, shard) in enumerate(shards)
         ]
         results = fetch.(tasks)
@@ -269,7 +407,21 @@ function run_parallel(notebooks::Vector{String}, jobs::Int)
             print_child_result(result)
             failed |= !result.ok
         end
-        failed && exit(1)
+        println()
+        println("Parallel shard summary")
+        println("-"^60)
+        for result in results
+            status = result.ok ? "passed" : "FAILED"
+            println(
+                "  shard $(result.idx)/$(result.count): $status " *
+                "($(length(result.notebooks)) notebook(s), $(fmt_duration(result.elapsed)))",
+            )
+        end
+        if failed
+            println("-"^60)
+            println("One or more notebook shards failed; see shard logs above.")
+            exit(1)
+        end
     end
     println()
     println(
@@ -278,13 +430,30 @@ function run_parallel(notebooks::Vector{String}, jobs::Int)
     )
 end
 
+function collect_notebooks(demos_dir::AbstractString)
+    notebooks = String[]
+    for (root, _, files) in walkdir(demos_dir)
+        rel_root = relpath(root, demos_dir)
+        path_parts =
+            rel_root == "." ? String[] : split(rel_root, Base.Filesystem.path_separator)
+        any(startswith(part, ".") for part in path_parts) && continue
+        for file in files
+            endswith(file, ".ipynb") || continue
+            startswith(file, ".") && continue
+            endswith(file, "-checkpoint.ipynb") && continue
+            push!(notebooks, relpath(joinpath(root, file), demos_dir))
+        end
+    end
+    return sort(notebooks)
+end
+
 demos_dir = joinpath(@__DIR__, "..", "demos")
-all_notebooks = sort(filter(f -> endswith(f, ".ipynb"), readdir(demos_dir)))
-jobs, selectors = parse_jobs(ARGS)
+all_notebooks = collect_notebooks(demos_dir)
+opts, selectors = parse_args(ARGS)
 notebooks = select_notebooks(all_notebooks, selectors)
 
-if jobs == 1 || length(notebooks) <= 1
-    run_serial(notebooks, demos_dir)
+if opts.jobs == 1 || length(notebooks) <= 1
+    run_serial(notebooks, demos_dir, opts)
 else
-    run_parallel(notebooks, jobs)
+    run_parallel(notebooks, opts)
 end

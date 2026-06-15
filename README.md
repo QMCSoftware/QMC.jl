@@ -88,12 +88,22 @@ julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 ```bash
 # Run all demos
 julia --project=. test/run_notebooks.jl
+# or
+make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 
 # Run a single demo
 julia --project=. test/run_notebooks.jl quickstart
+# or
+make notebook-quickstart
 
 # Launch in Jupyter
 julia -e 'using IJulia; notebook(dir="demos")'
+
+# Execute notebooks with the qmc-1.12 kernel and overwrite output cells in place
+make notebook-update NOTEBOOK_KERNEL=qmc-1.12
+
+# Update a single notebook in place
+make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
 ```
 
 ## Benchmarks
@@ -150,6 +160,8 @@ make coverage
 
 # Demo notebooks
 julia --project=. test/run_notebooks.jl
+# or, to overwrite notebooks with fresh executed outputs
+make notebook-update NOTEBOOK_KERNEL=qmc-1.12
 
 # Build documentation locally
 julia --project=docs docs/make.jl

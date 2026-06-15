@@ -97,10 +97,18 @@ For `:Cholesky`: lower Cholesky factor L where Σ = L Lᵀ.
 function _compute_decomp(cov::Matrix{Float64}, decomp_type::Symbol)
     if decomp_type == :PCA
         eig = eigen(Symmetric(cov))
+        vecs = Matrix{Float64}(eig.vectors)
+        # Match QMCPy's PCA sign convention so plotted samples have the same
+        # orientation instead of an arbitrary reflected basis.
+        for j in axes(vecs, 2)
+            if vecs[1, j] < 0.0
+                @views vecs[:, j] .*= -1.0
+            end
+        end
         # Sort eigenvalues descending
         idx = sortperm(eig.values; rev=true)
         vals = eig.values[idx]
-        vecs = eig.vectors[:, idx]
+        vecs = vecs[:, idx]
         # Clamp small negative eigenvalues to zero (numerical tolerance)
         vals = max.(vals, 0.0)
         A = vecs * Diagonal(sqrt.(vals))

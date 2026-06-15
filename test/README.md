@@ -35,6 +35,12 @@ make coverage TEST_JOBS=2 TEST_THREADS=1
 julia --project=. test/run_notebooks.jl
 # or, sharded across multiple Julia processes
 make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
+
+# Execute notebooks with Jupyter and overwrite output cells in place
+make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=qmc-1.12
+
+# Update a single notebook in place
+make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
 ```
 
 `make coverage` also processes the raw `*.cov` files locally, writes
@@ -46,3 +52,11 @@ artifact.
 multiple Julia processes. `TEST_THREADS` and `NOTEBOOK_THREADS` control Julia
 threads inside each shard. The conservative default is `1` thread per shard to
 avoid oversubscribing CI runners.
+
+`make notebook` is the fast regression-test path and does not modify `.ipynb`
+files. `make notebook-update` switches to Jupyter `nbconvert --execute --inplace`
+using the kernel named by `NOTEBOOK_KERNEL` and writes fresh output cells back
+into the notebooks. Both commands shard the runnable notebook list across
+`NOTEBOOK_JOBS` Julia processes; for example, if there are 34 runnable notebooks
+and `NOTEBOOK_JOBS=2`, each shard handles 17 notebooks. Use `NOTEBOOK_JOBS=1`
+to force one sequential pass over the full list.

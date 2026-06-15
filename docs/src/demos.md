@@ -77,4 +77,15 @@ jupyter notebook demos/quickstart.ipynb
 To run all notebooks non-interactively (as a test):
 ```bash
 julia --project=. test/run_notebooks.jl
+# or
+make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 ```
+
+To execute notebooks with the `qmc-1.12` kernel and overwrite output cells in place:
+```bash
+make notebook-update NOTEBOOK_KERNEL=qmc-1.12
+```
+
+Both `make notebook` and `make notebook-update` shard the runnable notebook list
+across `NOTEBOOK_JOBS` processes. Set `NOTEBOOK_JOBS=1` if you want a single
+sequential pass over all runnable notebooks.
