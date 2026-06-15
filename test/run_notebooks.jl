@@ -16,6 +16,22 @@ end
 import NBInclude: @nbinclude
 using Logging
 
+# NBInclude executes notebook display calls through Base.display, which can hit
+# backend-specific rendering assertions in headless CI. Suppress display during
+# regression runs so we still execute the plotting code without requiring a GUI.
+struct NullNotebookDisplay <: AbstractDisplay end
+Base.display(::NullNotebookDisplay, @nospecialize x) = nothing
+
+function with_suppressed_display(f::F) where {F <: Function}
+    notebook_display = NullNotebookDisplay()
+    pushdisplay(notebook_display)
+    try
+        return f()
+    finally
+        popdisplay(notebook_display)
+    end
+end
+
 Base.@kwdef struct NotebookOptions
     jobs::Int = 1
     overwrite::Bool = false
@@ -314,10 +330,14 @@ function run_one_notebook(
             @nbinclude(joinpath(demos_dir, nb))
         end
         if verbose
-            runner()
+            with_suppressed_display() do
+                runner()
+            end
         else
             mktemp() do _, io
-                redirect_stdout(runner, io)
+                with_suppressed_display() do
+                    redirect_stdout(runner, io)
+                end
                 flush(io)
                 seekstart(io)
                 captured = read(io, String)
