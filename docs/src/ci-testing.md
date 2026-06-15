@@ -9,14 +9,15 @@ For local linting and repeatable smoke runs of those workflows, see
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **CI** | `ci.yml` | Every `push`; every `pull_request`; manual | Linux | Unit tests + notebooks + coverage |
+| **CI** | `ci.yml` | `push` / PR except `develop`/`master`; manual | Linux | Unit tests + notebooks + coverage |
 | **CI Full** | `ci-full.yml` | `push` to `develop`/`master`; PR into `develop`/`master`; manual | Linux, macOS, Windows | Unit tests |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
 | **Docs** | `docs.yml` | `push` / PR on docs-related paths; manual | Linux | Documenter build + deploy |
 
 ## Policy
 
-- Linux is the default feedback path and runs on every push via `ci.yml`.
+- Linux is the default feedback path and runs on pushes and pull requests except
+  for `develop`/`master` via `ci.yml`.
 - macOS and Windows are reserved for `develop`/`master` pushes, pull requests
   into those branches, and manual runs via `ci-full.yml`.
 - Notebook regression tests run only on Linux. They are skipped unless
@@ -37,8 +38,8 @@ For local linting and repeatable smoke runs of those workflows, see
 
 ## CI (`ci.yml`)
 
-The primary fast-feedback workflow runs on every push, every pull request, and
-manual dispatch.
+The primary fast-feedback workflow runs on pushes and pull requests except for
+`develop` and `master`, plus manual dispatch.
 
 **Unit tests job:**
 

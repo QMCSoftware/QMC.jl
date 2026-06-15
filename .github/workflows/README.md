@@ -4,7 +4,7 @@ This folder contains the repository's GitHub Actions workflows.
 
 ## Files
 
-- `ci.yml`: fast Linux CI for unit tests, notebooks, and coverage upload on every push and pull request.
+- `ci.yml`: fast Linux CI for unit tests, notebooks, and coverage upload on pushes and pull requests except `develop`/`master`.
 - `ci-full.yml`: broader cross-platform unit-test matrix for `develop`/`master` pushes, pull requests into those branches, and manual runs.
 - `docs.yml`: Documenter build and deployment workflow.
 - `TagBot.yml`: release-tag automation.
