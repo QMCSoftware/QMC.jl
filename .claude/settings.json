@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(jupyter nbconvert *)",
+      "Bash(julia --project test/run_notebooks.jl joss2026)",
+      "Bash(echo \"joss2026 check started in background \\(PID $!\\)\")",
+      "Bash(wait 59000)",
+      "Bash(echo \"Exit: $?\")"
     ]
   }
 }

@@ -407,7 +407,21 @@ function run_parallel(notebooks::Vector{String}, opts::NotebookOptions)
             print_child_result(result)
             failed |= !result.ok
         end
-        failed && exit(1)
+        println()
+        println("Parallel shard summary")
+        println("-"^60)
+        for result in results
+            status = result.ok ? "passed" : "FAILED"
+            println(
+                "  shard $(result.idx)/$(result.count): $status " *
+                "($(length(result.notebooks)) notebook(s), $(fmt_duration(result.elapsed)))",
+            )
+        end
+        if failed
+            println("-"^60)
+            println("One or more notebook shards failed; see shard logs above.")
+            exit(1)
+        end
     end
     println()
     println(
