@@ -133,6 +133,14 @@ julia --project=. test/run_notebooks.jl
 make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 ```
 
+**Overwrite notebooks with fresh executed outputs:**
+
+```bash
+make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=qmc-1.12
+# or
+make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
+```
+
 **Build documentation:**
 
 ```bash

@@ -197,9 +197,7 @@ function run_child_shard(
     ok = false
     elapsed = @elapsed begin
         mktemp() do _, io
-            proc = run(
-                pipeline(ignorestatus(child_cmd(notebooks, opts)), stdout=io, stderr=io),
-            )
+            proc = run(pipeline(ignorestatus(child_cmd(notebooks, opts)), stdout=io, stderr=io))
             flush(io)
             seekstart(io)
             output = read(io, String)
@@ -253,22 +251,24 @@ function run_one_notebook_inplace(
     elapsed = @elapsed try
         mktempdir() do ipython_dir
             mktemp() do _, io
-                cmd = Cmd(
-                    [
-                        notebook_jupyter(),
-                        "nbconvert",
-                        "--to",
-                        "notebook",
-                        "--execute",
-                        "--inplace",
-                        "--ExecutePreprocessor.kernel_name=$(kernel)",
-                        "--ExecutePreprocessor.timeout=$(timeout)",
-                        basename(notebook_path),
-                    ],
-                )
+                cmd = Cmd([
+                    notebook_jupyter(),
+                    "nbconvert",
+                    "--to",
+                    "notebook",
+                    "--execute",
+                    "--inplace",
+                    "--ExecutePreprocessor.kernel_name=$(kernel)",
+                    "--ExecutePreprocessor.timeout=$(timeout)",
+                    basename(notebook_path),
+                ],)
                 cmd = Cmd(cmd; dir=dirname(notebook_path))
                 proc = run(
-                    pipeline(ignorestatus(addenv(cmd, "IPYTHONDIR" => ipython_dir)), stdout=io, stderr=io),
+                    pipeline(
+                        ignorestatus(addenv(cmd, "IPYTHONDIR" => ipython_dir)),
+                        stdout=io,
+                        stderr=io,
+                    ),
                 )
                 flush(io)
                 seekstart(io)
@@ -356,7 +356,8 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString, opts::
 
     for nb in notebooks
         ok, elapsed, warnings =
-            opts.overwrite ? run_one_notebook_inplace(nb, demos_dir, opts.kernel, opts.timeout) :
+            opts.overwrite ?
+            run_one_notebook_inplace(nb, demos_dir, opts.kernel, opts.timeout) :
             run_one_notebook(nb, demos_dir, clogger, verbose)
         times[nb] = elapsed
         warnings_by_notebook[nb] = warnings
@@ -418,8 +419,14 @@ end
 function collect_notebooks(demos_dir::AbstractString)
     notebooks = String[]
     for (root, _, files) in walkdir(demos_dir)
+        rel_root = relpath(root, demos_dir)
+        path_parts =
+            rel_root == "." ? String[] : split(rel_root, Base.Filesystem.path_separator)
+        any(startswith(part, ".") for part in path_parts) && continue
         for file in files
             endswith(file, ".ipynb") || continue
+            startswith(file, ".") && continue
+            endswith(file, "-checkpoint.ipynb") && continue
             push!(notebooks, relpath(joinpath(root, file), demos_dir))
         end
     end
