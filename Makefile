@@ -156,6 +156,10 @@ notebook-update-%:
 notebook-%:
 	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
+# Audit QMC.jl demos against QMCPy sources
+check-demos:
+	$(PYTHON) devtools/check_demo_parity.py --jl-root demos --py-root ../QMCPy/demos
+
 # ============================================================================
 # Benchmarking
 # ============================================================================
