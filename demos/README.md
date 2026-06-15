@@ -1,10 +1,6 @@
 # QMC.jl Demo Notebooks
 
-These notebooks contain Julia code for the QMC.jl package. Most demos use `Lattice`
-or `DigitalNetB2`, so Python is currently required because those generators depend on
-the `qmctoolscl` Python package. Conda is optional; it is only one way to provide that
-Python environment or to launch Jupyter. The notebooks themselves must run with a Julia
-kernel, not a Python kernel.
+These notebooks contain Julia code for the QMC.jl package. Most demos use `Lattice` or `DigitalNetB2`, so Python is currently required because those generators depend on the `qmctoolscl` Python package. Conda is optional; it is only one way to provide that Python environment or to launch Jupyter. The notebooks themselves must run with a Julia kernel, not a Python kernel.
 
 Install `qmctoolscl` into a Python visible to Julia before running the low-discrepancy demos:
 
@@ -47,7 +43,7 @@ jupyter notebook demos/quickstart.ipynb
 
 When Jupyter opens, choose the `QMC` Julia kernel for the notebook. The Python environment only launches Jupyter; it does not run the notebook code.
 
-Current notebook inventory (26 notebooks):
+Current notebook inventory:
 
 - `acceptance_rejection.ipynb`
 - `asian_option_mlqmc.ipynb`
