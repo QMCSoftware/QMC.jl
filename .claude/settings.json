@@ -6,7 +6,9 @@
       "Bash(julia --project test/run_notebooks.jl joss2026)",
       "Bash(echo \"joss2026 check started in background \\(PID $!\\)\")",
       "Bash(wait 59000)",
-      "Bash(echo \"Exit: $?\")"
+      "Bash(echo \"Exit: $?\")",
+      "Bash(julia --project test/run_notebooks.jl pydata_chi_2023)",
+      "Bash(julia --project=. test/run_notebooks.jl pydata_chi_2023)"
     ]
   }
 }

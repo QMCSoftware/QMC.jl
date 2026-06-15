@@ -142,19 +142,19 @@ smoke:
 # write fresh output cells back into each notebook, and force the requested
 # kernel via NOTEBOOK_KERNEL=...
 notebook:
-	QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
 
 # Update notebooks in place with fresh output cells using Jupyter execution.
 notebook-update:
-	QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
 
 # Update a single notebook in place: make notebook-update-quickstart
 notebook-update-%:
-	QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
-	QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
 # ============================================================================
 # Benchmarking
