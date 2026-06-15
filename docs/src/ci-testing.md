@@ -141,6 +141,11 @@ make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=qmc-1.12
 make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
 ```
 
+`NOTEBOOK_JOBS` shards the runnable notebook list across separate Julia
+processes. If there are 34 runnable notebooks and `NOTEBOOK_JOBS=2`, the run is
+split into two 17-notebook shards. Set `NOTEBOOK_JOBS=1` when you want one
+sequential pass over the entire notebook set.
+
 **Build documentation:**
 
 ```bash

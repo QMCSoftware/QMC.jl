@@ -56,4 +56,7 @@ avoid oversubscribing CI runners.
 `make notebook` is the fast regression-test path and does not modify `.ipynb`
 files. `make notebook-update` switches to Jupyter `nbconvert --execute --inplace`
 using the kernel named by `NOTEBOOK_KERNEL` and writes fresh output cells back
-into the notebooks.
+into the notebooks. Both commands shard the runnable notebook list across
+`NOTEBOOK_JOBS` Julia processes; for example, if there are 34 runnable notebooks
+and `NOTEBOOK_JOBS=2`, each shard handles 17 notebooks. Use `NOTEBOOK_JOBS=1`
+to force one sequential pass over the full list.

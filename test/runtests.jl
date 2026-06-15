@@ -156,9 +156,21 @@ function print_shard_result(result)
 end
 
 function run_parallel(files::Vector{String}, jobs::Int)
-    shards = split_work(files, jobs)
+    serial_only = String[]
+    parallel_files = String[]
+    for file in files
+        if file == "test_aqua.jl"
+            push!(serial_only, file)
+        else
+            push!(parallel_files, file)
+        end
+    end
+
+    isempty(parallel_files) && return run_serial(serial_only)
+
+    shards = split_work(parallel_files, jobs)
     println(
-        "Running $(length(files)) test file(s) across $(length(shards)) " *
+        "Running $(length(parallel_files)) test file(s) across $(length(shards)) " *
         "parallel shard(s)...",
     )
     wall = @elapsed begin
@@ -176,9 +188,15 @@ function run_parallel(files::Vector{String}, jobs::Int)
     end
     println()
     println(
-        "Completed parallel test run for $(length(files)) file(s) in " *
+        "Completed parallel test run for $(length(parallel_files)) file(s) in " *
         "$(fmt_duration(wall)).",
     )
+
+    if !isempty(serial_only)
+        println()
+        println("Running serial-only test file(s): ", join(serial_only, ", "))
+        run_serial(serial_only)
+    end
 end
 
 jobs, selectors = parse_jobs(ARGS)
