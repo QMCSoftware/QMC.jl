@@ -66,7 +66,6 @@ jobs:
       matrix:
         shard_index: [1, 2]
 
-
     steps:
       - uses: actions/checkout@v4
 
@@ -87,4 +86,5 @@ jobs:
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
       - name: Run demo notebooks
-        run: make notebook NOTEBOOK_SHARD_COUNT=2 NOTEBOOK_SHARD_INDEX=${{ matrix.shard_index }} NOTEBOOK_JOBS=1
+        timeout-minutes: 60
+        run: make notebook NOTEBOOK_SHARD_COUNT=2 NOTEBOOK_SHARD_INDEX=${{ matrix.shard_index }} NOTEBOOK_JOBS=1 NOTEBOOK_THREADS=2
