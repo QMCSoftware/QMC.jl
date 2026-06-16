@@ -5,14 +5,17 @@ on:
     branches: [develop, master]
     paths:
       - 'src/**'
-      - 'benchmark/**'
+      - 'benchmark/*.jl'
+      - 'benchmark/*.py'
+      - 'benchmark/Project.toml'
+      - 'benchmark/Manifest.toml'
+      - 'benchmark/requirements.txt'
+      - 'benchmark/tune.json'
       - 'Makefile'
       - 'Project.toml'
       - 'Manifest.toml'
       - 'test/requirements.txt'
       - '.github/workflows/benchmarking.yml'
-    paths-ignore:
-      - 'benchmark/results/**'
   workflow_dispatch:
 
 concurrency:
