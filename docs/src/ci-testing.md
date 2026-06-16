@@ -9,10 +9,10 @@ For local linting and repeatable smoke runs of those workflows, see
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **CI** | `ci.yml` | `push` / PR except `develop`/`master`; manual | Linux | Unit tests + notebooks + coverage |
-| **CI Full** | `ci-full.yml` | `push` to `develop`/`master`; PR into `develop`/`master`; manual | Linux, macOS, Windows | Unit tests |
+| **Fast CI** | `ci.yml` | `push` / PR except `develop`/`master`; manual | Linux | Unit tests + coverage |
+| **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PR into `develop`/`master`; manual | Linux, macOS, Windows | Unit tests |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
-| **Docs** | `docs.yml` | `push` / PR on docs-related paths; manual | Linux | Documenter build + deploy |
+| **Docs and Demos** | `docs.yml` | `push` / PR on docs, demo, and source paths; manual | Linux | Documenter build + deploy + notebook regression |
 
 ## Policy
 
@@ -20,8 +20,6 @@ For local linting and repeatable smoke runs of those workflows, see
   for `develop`/`master` via `ci.yml`.
 - macOS and Windows are reserved for `develop`/`master` pushes, pull requests
   into those branches, and manual runs via `ci-full.yml`.
-- Notebook regression tests run only on Linux. They are skipped unless
-  `demos/`, `src/`, or `test/run_notebooks.jl` changed.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is
   Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - The benchmarking workflow pins its Python dependencies through
@@ -36,7 +34,7 @@ For local linting and repeatable smoke runs of those workflows, see
   not cancel the sibling push run for the same ref.
 - There is no nightly CI schedule.
 
-## CI (`ci.yml`)
+## Fast CI (`ci.yml`)
 
 The primary fast-feedback workflow runs on pushes and pull requests except for
 `develop` and `master`, plus manual dispatch.
@@ -53,26 +51,15 @@ The primary fast-feedback workflow runs on pushes and pull requests except for
 - Processes the resulting coverage data into `lcov.info`.
 - Uploads `lcov.info` both to Codecov and as a GitHub Actions artifact.
 
-**Notebooks job:**
-
-- Runs after the unit tests pass.
-- Only executes when `demos/`, `src/`, or `test/run_notebooks.jl` changed in
-  the triggering commit, keeping CI fast for documentation-only or
-  workflow-only changes.
-- Runs all `.ipynb` demo notebooks via `make notebook`.
-- Shards notebooks across `NOTEBOOK_JOBS` Julia subprocesses (default GitHub
-  Actions variable fallback: `2`) while keeping `NOTEBOOK_THREADS=1` inside
-  each shard.
-
-## CI Full (`ci-full.yml`)
+## Full CI (`ci-full.yml`)
 
 A cross-platform sweep for protected branches.
 
 - Triggers on pushes to `develop` or `master`, on pull requests targeting those
   branches, and via manual dispatch.
 - Tests Julia 1.10 and 1.11 on Linux, macOS, and Windows.
-- Runs unit tests only. Notebook regression tests stay in the Linux `ci.yml`
-  path so macOS/Windows jobs remain relatively fast and less brittle.
+- Runs unit tests only so macOS/Windows jobs remain relatively fast and less
+  brittle.
 
 ## Benchmarking (`benchmarking.yml`)
 
@@ -92,15 +79,19 @@ The benchmark workflow is separate from the test workflows.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions
   artifact for later inspection.
 
-## Docs (`docs.yml`)
+## Docs and Demos (`docs.yml`)
 
-Builds the Documenter.jl documentation and deploys to GitHub Pages.
+Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 
-- Triggered on pushes to `develop`/`master` when `docs/`, `src/`,
-  `Project.toml`, or the workflow file itself changes.
-- Also runs on matching PRs (build-only, no deploy).
-- Uses `julia --project=docs` to resolve the docs-specific dependency set.
-- Deploys via `deploydocs()` when `CI=true` (only on push, not PR).
+- Triggered on pushes to `develop`/`master` when `docs/`, `demos/`, `src/`,
+  `test/run_notebooks.jl`, `Makefile`, `Project.toml`, `Manifest.toml`,
+  `test/requirements.txt`, or the workflow file itself changes.
+- Also runs on matching PRs (docs build only, no deploy).
+- The documentation job uses `julia --project=docs` to resolve the docs-specific
+  dependency set and deploys via `deploydocs()` when `CI=true` (only on push,
+  not PR).
+- The demos job runs `make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1` on
+  Linux with Julia 1.12 and Python 3.13.
 
 ## Running Tests Locally
 
