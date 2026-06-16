@@ -13,18 +13,6 @@ on:
       - 'Manifest.toml'
       - 'test/requirements.txt'
       - '.github/workflows/docs.yml'
-  pull_request:
-    branches: [develop, master]
-    paths:
-      - 'docs/**'
-      - 'demos/**'
-      - 'src/**'
-      - 'test/run_notebooks.jl'
-      - 'Makefile'
-      - 'Project.toml'
-      - 'Manifest.toml'
-      - 'test/requirements.txt'
-      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 concurrency:
