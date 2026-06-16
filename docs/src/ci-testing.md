@@ -12,7 +12,7 @@ For local linting and repeatable smoke runs of those workflows, see
 | **Fast CI** | `ci.yml` | `push` except `develop`/`master`; manual | Linux | Unit tests + coverage |
 | **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PR into `develop`/`master`; manual | Linux, macOS, Windows | Unit tests |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
-| **Docs and Demos** | `docs.yml` | `push` / PR on docs, demo, and source paths; manual | Linux | Documenter build + deploy + notebook regression |
+| **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; manual | Linux | Documenter build + deploy + notebook regression |
 
 ## Policy
 
@@ -80,14 +80,13 @@ The benchmark workflow is separate from the test workflows.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions
   artifact for later inspection.
 
-## Docs and Demos (`docs.yml`)
+## Docs and Demos (`doc_demo.yml`)
 
 Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 
 - Triggered on pushes to `develop`/`master` when `docs/`, `demos/`, `src/`,
   `test/run_notebooks.jl`, `Makefile`, `Project.toml`, `Manifest.toml`,
   `test/requirements.txt`, or the workflow file itself changes.
-- Also runs on matching PRs (docs build only, no deploy).
 - The documentation job uses `julia --project=docs` to resolve the docs-specific
   dependency set and deploys via `deploydocs()` when `CI=true` (only on push,
   not PR).
