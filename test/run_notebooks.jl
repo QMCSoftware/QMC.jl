@@ -203,42 +203,89 @@ function child_cmd(notebooks::Vector{String}, opts::NotebookOptions)
     )
 end
 
-function run_child_shard(
+Base.@kwdef mutable struct ShardRun
+    idx::Int
+    count::Int
+    notebooks::Vector{String}
+    log_path::String
+    task::Task
+    started_at::Float64 = time()
+    last_pos::Int = 0
+    last_output_at::Float64 = time()
+    last_heartbeat_at::Float64 = 0.0
+    announced::Bool = false
+end
+
+function start_child_shard(
     notebooks::Vector{String},
     shard_idx::Int,
     shard_count::Int,
     opts::NotebookOptions,
 )
-    output = ""
-    ok = false
-    elapsed = @elapsed begin
-        mktemp() do _, io
-            proc = run(pipeline(ignorestatus(child_cmd(notebooks, opts)), stdout=io, stderr=io))
-            flush(io)
-            seekstart(io)
-            output = read(io, String)
-            ok = success(proc)
+    log_path, io = mktemp()
+    close(io)
+    task = @async begin
+        ok = false
+        elapsed = @elapsed begin
+            open(log_path, "w") do log_io
+                proc = run(
+                    pipeline(ignorestatus(child_cmd(notebooks, opts)), stdout=log_io, stderr=log_io),
+                )
+                ok = success(proc)
+            end
         end
+        return (
+            idx=shard_idx,
+            count=shard_count,
+            notebooks=notebooks,
+            ok=ok,
+            log_path=log_path,
+            elapsed=elapsed,
+        )
     end
-    return (
-        idx=shard_idx,
-        count=shard_count,
-        notebooks=notebooks,
-        ok=ok,
-        output=output,
-        elapsed=elapsed,
-    )
+    return ShardRun(; idx=shard_idx, count=shard_count, notebooks, log_path, task)
 end
 
-function print_child_result(result)
+function announce_shard!(shard::ShardRun)
+    shard.announced && return
     println()
     println(
-        "[notebook shard $(result.idx)/$(result.count)] " *
-        "$(join(result.notebooks, ", ")) ($(fmt_duration(result.elapsed)))",
+        "[notebook shard $(shard.idx)/$(shard.count)] " *
+        "$(join(shard.notebooks, ", "))",
     )
-    if !isempty(strip(result.output))
-        print(result.output)
-        endswith(result.output, '\n') || println()
+    shard.announced = true
+end
+
+function drain_shard_output!(shard::ShardRun)
+    ispath(shard.log_path) || return false
+    filesize(shard.log_path) > shard.last_pos || return false
+    announce_shard!(shard)
+    open(shard.log_path, "r") do io
+        seek(io, shard.last_pos)
+        chunk = read(io, String)
+        if !isempty(chunk)
+            print(chunk)
+            endswith(chunk, '\n') || println()
+            shard.last_pos = position(io)
+            shard.last_output_at = time()
+            return true
+        end
+    end
+    return false
+end
+
+function maybe_print_shard_heartbeat!(shard::ShardRun; interval::Real=30)
+    istaskdone(shard.task) && return
+    now = time()
+    since_output = now - shard.last_output_at
+    since_heartbeat = shard.last_heartbeat_at == 0.0 ? Inf : now - shard.last_heartbeat_at
+    if since_output >= interval && since_heartbeat >= interval
+        announce_shard!(shard)
+        println(
+            "  ... still running after $(fmt_duration(now - shard.started_at)) " *
+            "($(length(shard.notebooks)) notebook(s))",
+        )
+        shard.last_heartbeat_at = now
     end
 end
 
@@ -411,21 +458,29 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString, opts::
 end
 
 function run_parallel(notebooks::Vector{String}, opts::NotebookOptions)
-    shards = split_work(notebooks, opts.jobs)
+    shard_notebooks = split_work(notebooks, opts.jobs)
     println(
-        "Running $(length(notebooks)) notebook(s) across $(length(shards)) " *
+        "Running $(length(notebooks)) notebook(s) across $(length(shard_notebooks)) " *
         "parallel shard(s)...",
     )
     wall = @elapsed begin
-        tasks = [
-            @async run_child_shard(shard, idx, length(shards), opts) for
-            (idx, shard) in enumerate(shards)
+        shards = [
+            start_child_shard(shard, idx, length(shard_notebooks), opts) for
+            (idx, shard) in enumerate(shard_notebooks)
         ]
-        results = fetch.(tasks)
+        while any(!istaskdone(shard.task) for shard in shards)
+            for shard in shards
+                drain_shard_output!(shard)
+                maybe_print_shard_heartbeat!(shard)
+            end
+            sleep(1)
+        end
+        results = map(fetch, getfield.(shards, :task))
         failed = false
-        for result in results
-            print_child_result(result)
+        for (shard, result) in zip(shards, results)
+            drain_shard_output!(shard)
             failed |= !result.ok
+            rm(result.log_path; force=true)
         end
         println()
         println("Parallel shard summary")
