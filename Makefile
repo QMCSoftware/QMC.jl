@@ -19,6 +19,8 @@ TEST_JOBS ?= 2
 TEST_THREADS ?= 1
 NOTEBOOK_JOBS ?= 2
 NOTEBOOK_THREADS ?= 1
+NOTEBOOK_SHARD_COUNT ?= 1
+NOTEBOOK_SHARD_INDEX ?= 1
 NOTEBOOK_OVERWRITE ?= 0
 NOTEBOOK_KERNEL ?= qmc-1.12
 NOTEBOOK_TIMEOUT ?= 1800
@@ -138,23 +140,24 @@ smoke:
 
 # Run all demo notebooks (like Python's booktest). Override process sharding
 # with NOTEBOOK_JOBS=... and Julia threads inside each notebook process with
-# NOTEBOOK_THREADS=.... Set NOTEBOOK_OVERWRITE=1 to execute with Jupyter,
-# write fresh output cells back into each notebook, and force the requested
-# kernel via NOTEBOOK_KERNEL=...
+# NOTEBOOK_THREADS=.... Use NOTEBOOK_SHARD_COUNT=... and NOTEBOOK_SHARD_INDEX=...
+# to deterministically select a subset before any local process sharding. Set
+# NOTEBOOK_OVERWRITE=1 to execute with Jupyter, write fresh output cells back
+# into each notebook, and force the requested kernel via NOTEBOOK_KERNEL=...
 notebook:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
 
 # Update notebooks in place with fresh output cells using Jupyter execution.
 notebook-update:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
 
 # Update a single notebook in place: make notebook-update-quickstart
 notebook-update-%:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
 # Audit QMC.jl demos against QMCPy sources
 check-demos:

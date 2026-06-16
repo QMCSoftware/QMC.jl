@@ -4,6 +4,7 @@
 #     julia --project=. test/run_notebooks.jl                            # run all
 #     julia --project=. test/run_notebooks.jl quickstart                 # run one by name
 #     julia --project=. test/run_notebooks.jl --jobs=2                   # shard notebooks
+#     julia --project=. test/run_notebooks.jl --shard-count=2 --shard-index=1
 #     julia --project=. test/run_notebooks.jl --overwrite=1              # execute with Jupyter and write outputs back
 #     julia --project=. test/run_notebooks.jl --overwrite=1 --kernel=qmc-1.12
 
@@ -34,6 +35,8 @@ end
 
 Base.@kwdef struct NotebookOptions
     jobs::Int = 1
+    shard_count::Int = 1
+    shard_index::Int = 1
     overwrite::Bool = false
     kernel::String = "qmc-1.12"
     timeout::Int = 1800
@@ -42,11 +45,13 @@ end
 function with_updates(
     opts::NotebookOptions;
     jobs::Int=opts.jobs,
+    shard_count::Int=opts.shard_count,
+    shard_index::Int=opts.shard_index,
     overwrite::Bool=opts.overwrite,
     kernel::String=opts.kernel,
     timeout::Int=opts.timeout,
 )
-    return NotebookOptions(; jobs, overwrite, kernel, timeout)
+    return NotebookOptions(; jobs, shard_count, shard_index, overwrite, kernel, timeout)
 end
 
 # A logger that counts warnings while forwarding them to the console
@@ -108,6 +113,34 @@ function parse_args(argv::Vector{String})
             end
             jobs > 0 || throw(ArgumentError("--jobs must be >= 1, got $jobs"))
             opts = with_updates(opts; jobs)
+        elseif startswith(arg, "--shard-count=")
+            raw = split(arg, "="; limit=2)[2]
+            shard_count = try
+                parse(Int, raw)
+            catch
+                throw(
+                    ArgumentError(
+                        "invalid --shard-count value $(repr(raw)); expected a positive integer",
+                    ),
+                )
+            end
+            shard_count > 0 ||
+                throw(ArgumentError("--shard-count must be >= 1, got $shard_count"))
+            opts = with_updates(opts; shard_count)
+        elseif startswith(arg, "--shard-index=")
+            raw = split(arg, "="; limit=2)[2]
+            shard_index = try
+                parse(Int, raw)
+            catch
+                throw(
+                    ArgumentError(
+                        "invalid --shard-index value $(repr(raw)); expected a positive integer",
+                    ),
+                )
+            end
+            shard_index > 0 ||
+                throw(ArgumentError("--shard-index must be >= 1, got $shard_index"))
+            opts = with_updates(opts; shard_index)
         elseif startswith(arg, "--overwrite=")
             raw = lowercase(split(arg, "="; limit=2)[2])
             overwrite =
@@ -140,6 +173,11 @@ function parse_args(argv::Vector{String})
             push!(selectors, arg)
         end
     end
+    opts.shard_index <= opts.shard_count || throw(
+        ArgumentError(
+            "--shard-index must be <= --shard-count; got $(opts.shard_index) > $(opts.shard_count)",
+        ),
+    )
     return opts, selectors
 end
 
@@ -164,13 +202,26 @@ function select_notebooks(all_notebooks::Vector{String}, selectors::Vector{Strin
     return selected
 end
 
-function split_work(items::Vector{String}, jobs::Int)
-    nshards = min(jobs, length(items))
-    shards = [String[] for _ in 1:nshards]
+function split_work(items::Vector{String}, nshards::Int; allow_empty::Bool=false)
+    nshards > 0 || throw(ArgumentError("number of shards must be >= 1, got $nshards"))
+    shard_total = allow_empty ? nshards : max(1, min(nshards, length(items)))
+    shards = [String[] for _ in 1:shard_total]
+    isempty(items) && return shards
     for (idx, item) in enumerate(items)
-        push!(shards[1 + mod(idx - 1, nshards)], item)
+        push!(shards[1 + mod(idx - 1, shard_total)], item)
     end
     return shards
+end
+
+function select_shard(notebooks::Vector{String}, opts::NotebookOptions)
+    opts.shard_count == 1 && return notebooks
+    shards = split_work(notebooks, opts.shard_count; allow_empty=true)
+    selected = shards[opts.shard_index]
+    println(
+        "Selected notebook shard $(opts.shard_index)/$(opts.shard_count): " *
+        "$(length(selected)) of $(length(notebooks)) notebook(s).",
+    )
+    return selected
 end
 
 function current_project_dir()
@@ -526,7 +577,7 @@ end
 demos_dir = joinpath(@__DIR__, "..", "demos")
 all_notebooks = collect_notebooks(demos_dir)
 opts, selectors = parse_args(ARGS)
-notebooks = select_notebooks(all_notebooks, selectors)
+notebooks = select_shard(select_notebooks(all_notebooks, selectors), opts)
 
 if opts.jobs == 1 || length(notebooks) <= 1
     run_serial(notebooks, demos_dir, opts)
