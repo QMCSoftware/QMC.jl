@@ -229,7 +229,11 @@ function start_child_shard(
         elapsed = @elapsed begin
             open(log_path, "w") do log_io
                 proc = run(
-                    pipeline(ignorestatus(child_cmd(notebooks, opts)), stdout=log_io, stderr=log_io),
+                    pipeline(
+                        ignorestatus(child_cmd(notebooks, opts)),
+                        stdout=log_io,
+                        stderr=log_io,
+                    ),
                 )
                 ok = success(proc)
             end
@@ -249,10 +253,7 @@ end
 function announce_shard!(shard::ShardRun)
     shard.announced && return
     println()
-    println(
-        "[notebook shard $(shard.idx)/$(shard.count)] " *
-        "$(join(shard.notebooks, ", "))",
-    )
+    println("[notebook shard $(shard.idx)/$(shard.count)] " * "$(join(shard.notebooks, ", "))")
     shard.announced = true
 end
 
