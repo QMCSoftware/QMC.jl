@@ -58,13 +58,13 @@ jobs:
           CI: "true"
         run: julia --project=docs docs/make.jl
 
-demos:
-  name: Run Demo Notebooks
-  runs-on: ubuntu-latest
-  timeout-minutes: 90        # explicit job timeout
-  strategy:
-    matrix:
-      shard_index: [1, 2]
+  demos:
+    name: Run Demo Notebooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 90        # explicit job timeout
+    strategy:
+      matrix:
+        shard_index: [1, 2]
 
 
     steps:
