@@ -57,7 +57,8 @@ A cross-platform sweep for protected branches.
 
 - Triggers on pushes to `develop` or `master`, on pull requests targeting those
   branches, and via manual dispatch.
-- Tests Julia 1.10 and 1.11 on Linux, macOS, and Windows.
+- Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and
+  Windows on Julia 1.12.
 - Runs unit tests only so macOS/Windows jobs remain relatively fast and less
   brittle.
 

@@ -1,4 +1,4 @@
-name: Fast CI
+name: "Unit Tests: Linux"
 
 on:
   push:
