@@ -14,7 +14,7 @@ if get(ENV, "QMC_SKIP_PKG_SETUP", "0") != "1"
     Pkg.instantiate()
 end
 
-import NBInclude: @nbinclude
+import NBInclude: @nbinclude, nbinclude
 using Logging
 
 # NBInclude executes notebook display calls through Base.display, which can hit
@@ -426,9 +426,11 @@ function run_one_notebook(
     failed = false
     err_text = ""
     elapsed = @elapsed begin
+        nb_module = Module()
+        Core.eval(nb_module, :(using Base))
         task = Threads.@spawn begin
             runner = () -> with_logger(clogger) do
-                @nbinclude(joinpath(demos_dir, nb))
+                nbinclude(nb_module, joinpath(demos_dir, nb))
             end
             if verbose
                 with_suppressed_display() do
@@ -495,6 +497,7 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString, opts::
         times[nb] = elapsed
         warnings_by_notebook[nb] = warnings
         ok || push!(errors, nb)
+        GC.gc()
     end
 
     total_warnings = sum(values(warnings_by_notebook); init=0)
