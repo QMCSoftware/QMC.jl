@@ -1,19 +1,29 @@
-name: Docs
+name: Docs and Demos
 
 on:
   push:
     branches: [develop, master]
     paths:
       - 'docs/**'
+      - 'demos/**'
       - 'src/**'
+      - 'test/run_notebooks.jl'
+      - 'Makefile'
       - 'Project.toml'
+      - 'Manifest.toml'
+      - 'test/requirements.txt'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [develop, master]
     paths:
       - 'docs/**'
+      - 'demos/**'
       - 'src/**'
+      - 'test/run_notebooks.jl'
+      - 'Makefile'
       - 'Project.toml'
+      - 'Manifest.toml'
+      - 'test/requirements.txt'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -59,3 +69,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: "true"
         run: julia --project=docs docs/make.jl
+
+  demos:
+    name: Run Demo Notebooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install qmctoolscl
+        run: pip install -r test/requirements.txt
+
+      - name: Install dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run demo notebooks
+        run: make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
