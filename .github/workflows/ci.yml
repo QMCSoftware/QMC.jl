@@ -3,8 +3,6 @@ name: "Unit Tests: Linux"
 on:
   push:
     branches-ignore: [develop, master]
-  pull_request:
-    branches-ignore: [develop, master]
   workflow_dispatch:
 
 concurrency:

@@ -4,7 +4,7 @@ This folder contains the repository's GitHub Actions workflows.
 
 ## Files
 
-- `ci.yml` (`Fast CI`): fast Linux feedback for feature branches; runs unit tests with coverage.
+- `ci.yml` (`Fast CI`): fast Linux feedback for feature-branch pushes; runs unit tests with coverage.
 - `ci-full.yml` (`Full CI`): orthogonal cross-platform validation for `develop`/`master`; runs Linux on Julia 1.10/1.11 and macOS/Windows on Julia 1.12.
 - `docs.yml`: Linux workflow for Documenter build/deploy plus demo-notebook regression runs on `develop`/`master`.
 - `TagBot.yml`: release-tag automation.
