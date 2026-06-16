@@ -1,4 +1,4 @@
-name: Unit Tests: 3 OSes
+name: "Unit Tests: 3 OSes"
 
 on:
   push:
