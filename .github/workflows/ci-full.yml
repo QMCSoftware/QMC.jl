@@ -1,4 +1,4 @@
-name: Full CI
+name: Unit Tests: 3 OSes
 
 on:
   push:

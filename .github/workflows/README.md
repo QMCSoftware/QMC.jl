@@ -10,10 +10,5 @@ This folder contains the repository's GitHub Actions workflows.
 - `TagBot.yml`: release-tag automation.
 - `benchmarking.yml`: Linux benchmark collection for benchmark-relevant `develop`/`master` pushes and manual runs.
 
-### Disabled
-
-- `format.yml.disabled`: disabled formatter workflow kept for reference.
-- `CompatHelper.yml.disabled`: dependency update automation. 
-
 
 See [`../../docs/src/ci-testing.md`](../../docs/src/ci-testing.md) for the user-facing workflow overview and policy details.
