@@ -16,8 +16,6 @@ on:
       - 'Manifest.toml'
       - 'test/requirements.txt'
       - '.github/workflows/benchmarking.yml'
-    paths-ignore:
-      - 'benchmark/results/**'
   workflow_dispatch:
 
 concurrency:
