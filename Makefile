@@ -1,4 +1,4 @@
-.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python
+.PHONY: test coverage doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
 
 # ============================================================================
 # Configuration and helpers
@@ -18,7 +18,7 @@ ACTIONLINT ?= actionlint
 TEST_JOBS ?= 2
 TEST_THREADS ?= 1
 NOTEBOOK_JOBS ?= 2
-NOTEBOOK_THREADS ?= 1
+NOTEBOOK_THREADS ?= 2
 NOTEBOOK_SHARD_COUNT ?= 1
 NOTEBOOK_SHARD_INDEX ?= 1
 NOTEBOOK_OVERWRITE ?= 0
@@ -93,12 +93,12 @@ clean:
 # Testing and coverage
 # ============================================================================
 
-# Run all tests. Override file-level process sharding with TEST_JOBS=... and
+# Run all unit tests. Override file-level process sharding with TEST_JOBS=... and
 # Julia threads inside each test process with TEST_THREADS=...
 test: 
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
 
-# Run tests with Julia coverage instrumentation.
+# Run unit tests with Julia coverage instrumentation.
 coverage:
 	find src test -name '*.cov' -delete
 	rm -f lcov.info
@@ -278,3 +278,21 @@ workflow-smoke:
 # then collect full benchmark. Pass LABEL=... through to the benchmark step.
 ci:
 	$(call RUN_TIMED,$(MAKE) format && $(MAKE) test && $(MAKE) bench-all LABEL=$(LABEL),local-ci)
+
+# ============================================================================
+# Per-workflow local equivalents (sanity-check before pushing)
+# ============================================================================
+# ci.yml (Fast CI)      → make coverage
+# ci-full.yml (Full CI) → make test  (current Julia/OS only; cross-platform matrix is CI-only)
+# doc_demo.yml          → make notebook / make ci-doc-demo
+# benchmarking.yml      → make ci-bench
+
+# doc_demo.yml – full workflow: build docs then run all demo notebooks.
+ci-doc-demo:
+	$(call RUN_TIMED,$(MAKE) doc && $(MAKE) notebook,ci-doc-demo)
+
+# benchmarking.yml: compare working tree against HEAD~1 (mirrors CI's comparison
+# against the pre-push commit). Override baseline: make ci-bench CI_BENCH_REV=<sha>
+CI_BENCH_REV ?= HEAD~1
+ci-bench:
+	$(call RUN_TIMED,$(MAKE) bench-all REV=$(CI_BENCH_REV) LABEL=ci-local BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS),ci-bench)
