@@ -5,7 +5,12 @@ on:
     branches: [develop, master]
     paths:
       - 'src/**'
-      - 'benchmark/**'
+      - 'benchmark/*.jl'
+      - 'benchmark/*.py'
+      - 'benchmark/Project.toml'
+      - 'benchmark/Manifest.toml'
+      - 'benchmark/requirements.txt'
+      - 'benchmark/tune.json'
       - 'Makefile'
       - 'Project.toml'
       - 'Manifest.toml'
