@@ -94,15 +94,10 @@ julia> round.(gen_samples(DigitalNetB2(2; randomize="none", order="RADICAL INVER
  0.75  0.25
 ```
 
-```julia
-# Higher-order interlacing
-dn_alpha = DigitalNetB2(3; seed=7, alpha=2)
-x = gen_samples(dn_alpha, 256)  # 256×3 interlaced Sobol' points
-
-# High-dimensional problems
-dn_hd = DigitalNetB2(52; seed=42)
-x = gen_samples(dn_hd, 4096)  # 4096×52 for e.g. Asian option with 52 timesteps
-```
+Typical larger-scale use cases include higher-order interlacing, e.g.
+`DigitalNetB2(3; seed=7, alpha=2)` for interlaced Sobol' points, and
+high-dimensional settings such as `DigitalNetB2(52; seed=42)` for
+path-dependent problems with many timesteps.
 """
 
 const _SOBOL_BITS = 32

@@ -23,10 +23,28 @@ target distribution. The discrete distribution must have dimension `d + 1`.
 - `envelope_multiplier`: M such that `pdf_func(x) ≤ M * proposal_pdf_func(x)`.
 
 # Example
-```julia
-dd = DigitalNetB2(3; seed=7)  # 2 target dims + 1 acceptance dim
-pdf_func(x) = 6.0 * x[1] * x[2]  # target: f(x,y) = 6xy on [0,1]^2
-tm = AcceptanceRejection(dd; pdf_func=pdf_func, envelope_multiplier=6.0)
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(3; randomize="none", seed=7);  # 2 target dims + 1 acceptance dim
+
+julia> pdf_func(x) = 6.0 * x[1] * x[2];  # target: f(x,y) = 6xy on [0,1]^2
+
+julia> tm = AcceptanceRejection(dd; pdf_func=pdf_func, envelope_multiplier=6.0)
+AcceptanceRejection(d=2, M=6.0)
+
+julia> z = transform(tm, gen_samples(dd, 16));
+
+julia> size(z)
+(5, 2)
+
+julia> z
+5×2 Matrix{Float64}:
+ 0.0     0.0
+ 0.875   0.875
+ 0.6875  0.8125
+ 0.4375  0.5625
+ 0.5625  0.4375
 ```
 
 # References
@@ -158,14 +176,39 @@ distribution must therefore have dimension `d + 1` and mimic StdUniform.
   supplied driver batch.
 
 # Example
-```julia
-dd = DigitalNetB2(2; seed=7)            # 1 target dim + 1 acceptance dim
-logit(u) = log(u / (1 - u))
-lpdf(z) = exp(-z) / (1 + exp(-z))^2     # logistic density (proposal H)
-tm = AcceptanceRejectionReal(dd;
-    target_density = z -> lpdf(z[1]), inv_cdfs = [logit],
-    H_func = z -> lpdf(z[1]), upper_bound = 1.0, density_integral = 1.0)
-z = transform(tm, gen_samples(dd, 64))  # accepted samples (variable row count)
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; randomize="none", seed=7);  # 1 target dim + 1 acceptance dim
+
+julia> logit(u) = log(u / (1 - u));
+
+julia> lpdf(z) = exp(-z) / (1 + exp(-z))^2;  # logistic density (proposal H)
+
+julia> tm = AcceptanceRejectionReal(dd;
+           target_density = z -> 0.5 * lpdf(z[1]),
+           inv_cdfs = [logit],
+           H_func = z -> lpdf(z[1]),
+           upper_bound = 1.0,
+           density_integral = 0.5)
+AcceptanceRejectionReal(d=1, L=1.0, acceptance_rate=0.5)
+
+julia> z = transform(tm, gen_samples(dd, 16));
+
+julia> size(z)
+(9, 1)
+
+julia> round.(z; digits=6)
+9×1 Matrix{Float64}:
+ -18.420681
+   0.0
+   1.098612
+  -0.510826
+   0.510826
+  -1.466337
+   2.70805
+  -0.788457
+   0.251314
 ```
 
 # References

@@ -6,7 +6,7 @@ snapshots (n, solution estimate, error bound, elapsed time, etc.) and can
 print a formatted table or return a vector of NamedTuples.
 
 # Usage inside a stopping criterion
-```julia
+```text
 log = IterationLog()
 
 # Inside the doubling loop:

@@ -82,11 +82,25 @@ Sobol' sensitivity indices for the three inputs (as length-3 vectors).
 Mirrors QMCPy's `Ishigami._exact_sensitivity_indices` for the singleton subsets.
 Useful as an analytical reference when validating [`SensitivityIndices`](@ref).
 
-```julia
-ref = ishigami_exact()
-ref.mean      # 3.5
-ref.closed    # first-order Sobol' indices S₁, S₂, S₃
-ref.total     # total Sobol' indices T₁, T₂, T₃
+```jldoctest
+julia> using QMC
+
+julia> ref = ishigami_exact();
+
+julia> round(ref.mean; digits=4)
+3.5
+
+julia> round.(ref.closed; digits=4)
+3-element Vector{Float64}:
+ 0.3139
+ 0.4424
+ 0.0
+
+julia> round.(ref.total; digits=4)
+3-element Vector{Float64}:
+ 0.5576
+ 0.4424
+ 0.2437
 ```
 """
 function ishigami_exact(; a::Float64=7.0, b::Float64=0.1)

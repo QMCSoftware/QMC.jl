@@ -20,12 +20,23 @@ left untouched. The single-level `Cub*` criteria expose `abs_tol`/`rel_tol`; the
 multilevel criteria expose `rmse_tol` or `target_tol`. Throws if the criterion
 has no field for a requested tolerance. Returns `sc`.
 
-```julia
-sc = CubQMCNetG(
-    Keister(Gaussian(DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=7); covariance=0.5));
-    abs_tol=0.05,
-)
-set_tolerance!(sc; abs_tol=0.01, rel_tol=0.0)
+```jldoctest
+julia> using QMC
+
+julia> dd = IIDStdUniform(3; seed=42);
+
+julia> f = Keister(Gaussian(dd; covariance=0.5));
+
+julia> sc = CubMCCLT(f; abs_tol=0.05);
+
+julia> set_tolerance!(sc; abs_tol=0.2, rel_tol=0.01) === sc
+true
+
+julia> sc.abs_tol
+0.2
+
+julia> sc.rel_tol
+0.01
 ```
 """
 function set_tolerance!(

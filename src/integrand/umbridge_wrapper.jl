@@ -8,7 +8,7 @@ client library.
 
 # Requirements
 
-```julia
+```text
 import Pkg; Pkg.add("UMBridge")   # installs HTTP.jl, JSON.jl as deps
 ```
 
@@ -27,7 +27,7 @@ docker run -d -p 4243:4243 linusseelinger/benchmark-muq-beam-propagation:latest
   (e.g. `Dict("d" => 3)`).
 
 # Example
-```julia
+```text
 using QMC
 import QMC: Uniform
 
