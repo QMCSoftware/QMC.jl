@@ -17,6 +17,23 @@ where Φ⁻¹ is the standard normal quantile function.
 
 The defaults match QMC v2.3 (`gamma=1, xi=1, delta=2, lam=2`); QMC.jl's `lambda`
 corresponds to QMCPy's `lam`.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> tm = JohnsonsSU(dd; xi=2.0, lambda=4.0, gamma=1.0, delta=3.0)
+JohnsonsSU(d=2)
+
+julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+  2.03858    0.105267
+  0.079548   2.07577
+  0.987912  -1.29824
+ -1.36142    1.01091
+```
 """
 struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     dd::D

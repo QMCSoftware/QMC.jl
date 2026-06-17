@@ -13,6 +13,23 @@ where C(λ) is the normalizing constant. The inverse CDF is:
 # Arguments
 - `dd`: discrete distribution.
 - `lam`: parameter λ ∈ (0,1), scalar or d-vector.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> tm = BernoulliCont(dd; lam=0.2)
+BernoulliCont(d=2)
+
+julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+ 0.232318  0.088239
+ 0.086532  0.234408
+ 0.155748  0.024943
+ 0.023379  0.157627
+```
 """
 struct BernoulliCont{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     dd::D
