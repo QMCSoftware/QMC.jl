@@ -18,6 +18,7 @@ point function / quantile function).
 # Examples
 ```jldoctest
 julia> using QMC
+
 julia> import Distributions
 
 julia> dd = Lattice(2; seed=7);

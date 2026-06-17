@@ -30,6 +30,23 @@ abstract type AbstractStationaryKernel <: AbstractKernel end
     KernelMatern12(; lengthscale=1.0, outputscale=1.0)
 
 Matérn-1/2 (exponential) kernel: k(r) = σ² exp(-r/ℓ).
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> k = KernelMatern12(; lengthscale=1.0, outputscale=1.0)
+KernelMatern12(ℓ=1.0, σ²=1.0)
+
+julia> round.(kernel_matrix(k, [0.1 0.2; 0.5 0.6; 0.9 0.1]); digits=6)
+3×3 Matrix{Float64}:
+ 1.0       0.567971  0.44654
+ 0.567971  1.0       0.527128
+ 0.44654   0.527128  1.0
+
+julia> round(kernel_eval(k, 1.0); digits=6)
+0.367879
+```
 """
 struct KernelMatern12 <: AbstractStationaryKernel
     lengthscale::Float64
