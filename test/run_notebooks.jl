@@ -605,25 +605,26 @@ demos_dir = joinpath(@__DIR__, "..", "demos")
 # per-notebook timeout by killing the process — the only reliable way to stop a
 # notebook stuck inside a native `ccall` (e.g. qmctoolscl).
 if haskey(ENV, "QMC_NB_ONE")
-    one_nb = ENV["QMC_NB_ONE"]
-    one_clog = CountingLogger()
-    one_clog.current_nb[] = one_nb
-    one_ok = true
-    try
-        with_suppressed_display() do
-            with_logger(one_clog) do
-                @nbinclude(joinpath(demos_dir, one_nb))
+    # `let` keeps these names local so the `one_ok` assignment in the `catch`
+    # below is unambiguous; at global scope it would trip a soft-scope warning.
+    let one_nb = ENV["QMC_NB_ONE"], one_clog = CountingLogger(), one_ok = true
+        one_clog.current_nb[] = one_nb
+        try
+            with_suppressed_display() do
+                with_logger(one_clog) do
+                    @nbinclude(joinpath(demos_dir, one_nb))
+                end
             end
+        catch e
+            one_ok = false
+            showerror(stderr, e, catch_backtrace())
+            println(stderr)
         end
-    catch e
-        one_ok = false
-        showerror(stderr, e, catch_backtrace())
-        println(stderr)
+        flush(stdout)
+        flush(stderr)
+        println("##QMC_NB_RESULT ok=$(one_ok) warnings=$(get(one_clog.counts, one_nb, 0))")
+        exit(one_ok ? 0 : 1)
     end
-    flush(stdout)
-    flush(stderr)
-    println("##QMC_NB_RESULT ok=$(one_ok) warnings=$(get(one_clog.counts, one_nb, 0))")
-    exit(one_ok ? 0 : 1)
 end
 
 all_notebooks = collect_notebooks(demos_dir)
