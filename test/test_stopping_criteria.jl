@@ -227,6 +227,29 @@ end
         @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
     end
 
+    @testset "CubQMCLatticeG (multi-output)" begin
+        dd = Lattice(1; randomize=true, seed=601)
+        tm = Uniform(dd)
+        f = _VecCLTIntegrand(tm)
+        r = integrate(CubQMCLatticeG(f; abs_tol=0.02, n_init=2^8, n_max=2^18, n_reps=16))
+        @test r isa QMCVecResult
+        @test length(r.solution) == 2
+        @test isapprox(r.solution[1], 0.5; atol=0.05)
+        @test isapprox(r.solution[2], 1 / 3; atol=0.05)
+        @test r.data[:converged]
+        @test r.data[:error_bound] <= 0.02 + 1e-9
+        @test size(r.data[:solution_indv]) == (2,)
+        @test size(r.data[:comb_bound_low]) == (2,)
+        @test all(r.data[:comb_bound_low] .<= r.solution .<= r.data[:comb_bound_high])
+
+        @test_throws ArgumentError CubQMCLatticeG(
+            f;
+            abs_tol=0.02,
+            control_variates=f,
+            control_variate_means=0.5,
+        )
+    end
+
     @testset "CubQMCNetG" begin
         # Single-net guaranteed cubature (QMCPy CubQMCNetG). Requires a
         # non-replicated DigitalNetB2 in natural (radical-inverse) order.
@@ -245,6 +268,46 @@ end
         # Guard: a default (graycode=true) net is rejected at construction.
         dd_gc = DigitalNetB2(3; randomize="LMS_DS", seed=1)
         @test_throws ErrorException CubQMCNetG(Keister(Gaussian(dd_gc; covariance=0.5)))
+    end
+
+    @testset "CubQMCNetG (multi-output)" begin
+        dd = DigitalNetB2(1; randomize="LMS_DS", graycode=false, seed=602)
+        tm = Uniform(dd)
+        f = _VecCLTIntegrand(tm)
+        r = integrate(CubQMCNetG(f; abs_tol=0.02, n_init=2^8, n_max=2^18))
+        @test r isa QMCVecResult
+        @test length(r.solution) == 2
+        @test isapprox(r.solution[1], 0.5; atol=0.05)
+        @test isapprox(r.solution[2], 1 / 3; atol=0.05)
+        @test r.data[:converged]
+        @test r.data[:error_bound] <= 0.02 + 1e-9
+        @test size(r.data[:solution_indv]) == (2,)
+        @test size(r.data[:comb_bound_low]) == (2,)
+        @test all(r.data[:comb_bound_low] .<= r.solution .<= r.data[:comb_bound_high])
+
+        ratio = integrate(CubQMCNetG(_RatioIntegrand(tm); abs_tol=0.03, n_init=2^8, n_max=2^18))
+        @test ratio isa QMCVecResult
+        @test length(ratio.solution) == 1
+        @test isapprox(ratio.solution[1], 1 / 3; atol=0.05)
+        @test ratio.data[:converged]
+        @test ratio.data[:error_bound] <= 0.03 + 1e-9
+        @test size(ratio.data[:solution_indv]) == (2,)
+        @test size(ratio.data[:comb_bound_low]) == (1,)
+        @test ratio.data[:comb_bound_low][1] <=
+              ratio.solution[1] <=
+              ratio.data[:comb_bound_high][1]
+        @test isapprox(
+            ratio.solution[1],
+            0.5 * (ratio.data[:comb_bound_low][1] + ratio.data[:comb_bound_high][1]);
+            atol=1e-9,
+        )
+
+        @test_throws ArgumentError CubQMCNetG(
+            f;
+            abs_tol=0.02,
+            control_variates=f,
+            control_variate_means=0.5,
+        )
     end
 
     @testset "CubQMCNetGRep" begin
@@ -287,6 +350,22 @@ end
         )
         @test haskey(traced.data, :iteration_log)
         @test length(traced.data[:iteration_log]) >= 1
+    end
+
+    @testset "CubQMCBayesLatticeG (multi-output)" begin
+        dd = Lattice(1; randomize=true, seed=603)
+        tm = Uniform(dd)
+        f = _VecCLTIntegrand(tm)
+        r = integrate(CubQMCBayesLatticeG(f; abs_tol=0.02, n_init=2^8, n_max=2^12))
+        @test r isa QMCVecResult
+        @test length(r.solution) == 2
+        @test isapprox(r.solution[1], 0.5; atol=0.05)
+        @test isapprox(r.solution[2], 1 / 3; atol=0.05)
+        @test r.data[:converged]
+        @test r.data[:error_bound] <= 0.02 + 1e-9
+        @test size(r.data[:solution_indv]) == (2,)
+        @test size(r.data[:comb_bound_low]) == (2,)
+        @test all(r.data[:comb_bound_low] .<= r.solution .<= r.data[:comb_bound_high])
     end
 
     @testset "CubQMCBayesNetG (smoke)" begin

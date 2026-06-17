@@ -273,14 +273,8 @@ function _integrate_cubqmcbayeslatticeg_multi(
 
         @inbounds for j in 1:m_indv
             ftilde = real.(FFTW.fft(@view Y[:, j])) ./ sqrt(n)
-            mu, err = _bayes_lattice_stop(
-                x_uniform,
-                ftilde,
-                n,
-                sc.order,
-                sc.errbd_type,
-                sc.alpha,
-            )
+            mu, err =
+                _bayes_lattice_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
             solution_indv[j] = mu
             indv_low[j] = mu - err
             indv_high[j] = mu + err
@@ -304,8 +298,10 @@ function _integrate_cubqmcbayeslatticeg_multi(
         end
 
         converged && break
-        2n > sc.n_max &&
-            (@warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err_comb tol=$tol_max"; break)
+        2n > sc.n_max && (
+            @warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err_comb tol=$tol_max";
+            break
+        )
         n *= 2
     end
 
