@@ -94,13 +94,6 @@ function CubQMCLatticeG(
     control_variate_means=nothing,
 )
     cv_spec = _make_control_variate_spec(integrand, control_variates, control_variate_means)
-    if cv_spec !== nothing && d_indv(integrand) != ()
-        throw(
-            ArgumentError(
-                "CubQMCLatticeG currently supports control variates only for scalar integrands.",
-            ),
-        )
-    end
     return CubQMCLatticeG(
         integrand,
         abs_tol,
@@ -137,6 +130,15 @@ function _integrate_cubqmclatticeg_multi(
     m_indv = prod(ishape)
     dd = f.true_measure.dd
     log = IterationLog()
+    cv = sc.cv_spec
+    cv_beta = nothing
+
+    if cv !== nothing
+        xu_pilot = _sample_uniform_points(dd, sc.n_init)
+        y_pilot = reshape(evaluate_on_uniform(f, xu_pilot), size(xu_pilot, 1), m_indv)
+        ycv_pilot = _control_variate_values(cv, xu_pilot)
+        cv_beta = _fit_control_variate_beta(y_pilot, ycv_pilot)
+    end
 
     solution_indv = zeros(Float64, m_indv)
     indv_low = zeros(Float64, m_indv)
@@ -172,9 +174,23 @@ function _integrate_cubqmclatticeg_multi(
             end
             y_group =
                 reshape(evaluate(f, transform(f.true_measure, x_group)), g * m_rows, m_indv)
-            @inbounds for k in 1:g, j in 1:m_indv
-                estimates[r0 + k - 1, j] =
-                    mean(@view y_group[((k - 1) * m_rows + 1):(k * m_rows), j])
+            ycv_group = cv === nothing ? nothing : _control_variate_values(cv, x_group)
+            @inbounds for k in 1:g
+                rows = ((k - 1) * m_rows + 1):(k * m_rows)
+                if cv === nothing
+                    for j in 1:m_indv
+                        estimates[r0 + k - 1, j] = mean(@view y_group[rows, j])
+                    end
+                else
+                    cv_shift = vec(mean(@view ycv_group[rows, :]; dims=1)) .- cv.means
+                    for j in 1:m_indv
+                        est = mean(@view y_group[rows, j])
+                        for ell in eachindex(cv.means)
+                            est -= cv_beta[ell, j] * cv_shift[ell]
+                        end
+                        estimates[r0 + k - 1, j] = est
+                    end
+                end
             end
             r0 += g
         end
@@ -231,6 +247,10 @@ function _integrate_cubqmclatticeg_multi(
     )
     if sc.trace_iterations
         data[:iteration_log] = log
+    end
+    if cv_beta !== nothing
+        data[:control_variate_beta] =
+            Array{Float64}(reshape(vec(permutedims(cv_beta)), ishape..., length(cv.means)))
     end
     return QMCVecResult(Array{Float64}(reshape(sol_comb, cshape)), data)
 end

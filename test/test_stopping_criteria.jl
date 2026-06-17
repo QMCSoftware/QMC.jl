@@ -242,12 +242,24 @@ end
         @test size(r.data[:comb_bound_low]) == (2,)
         @test all(r.data[:comb_bound_low] .<= r.solution .<= r.data[:comb_bound_high])
 
-        @test_throws ArgumentError CubQMCLatticeG(
-            f;
-            abs_tol=0.02,
-            control_variates=f,
-            control_variate_means=0.5,
+        cv1 = CustomFun(tm, x -> x[:, 1])
+        cv2 = CustomFun(tm, x -> x[:, 1] .^ 2)
+        rcv = integrate(
+            CubQMCLatticeG(
+                f;
+                abs_tol=1e-3,
+                n_init=2^8,
+                n_max=2^18,
+                n_reps=16,
+                control_variates=[cv1, cv2],
+                control_variate_means=[0.5, 1 / 3],
+            ),
         )
+        @test isapprox(rcv.solution[1], 0.5; atol=1e-10)
+        @test isapprox(rcv.solution[2], 1 / 3; atol=1e-10)
+        @test rcv.data[:error_bound] < 1e-10
+        @test haskey(rcv.data, :control_variate_beta)
+        @test rcv.data[:control_variate_beta] ≈ [1.0 0.0; 0.0 1.0] atol = 1e-8
     end
 
     @testset "CubQMCNetG" begin
@@ -302,12 +314,23 @@ end
             atol=1e-9,
         )
 
-        @test_throws ArgumentError CubQMCNetG(
-            f;
-            abs_tol=0.02,
-            control_variates=f,
-            control_variate_means=0.5,
+        cv1 = CustomFun(tm, x -> x[:, 1])
+        cv2 = CustomFun(tm, x -> x[:, 1] .^ 2)
+        rcv = integrate(
+            CubQMCNetG(
+                f;
+                abs_tol=1e-3,
+                n_init=2^8,
+                n_max=2^18,
+                control_variates=[cv1, cv2],
+                control_variate_means=[0.5, 1 / 3],
+            ),
         )
+        @test isapprox(rcv.solution[1], 0.5; atol=1e-10)
+        @test isapprox(rcv.solution[2], 1 / 3; atol=1e-10)
+        @test rcv.data[:error_bound] < 1e-10
+        @test haskey(rcv.data, :control_variate_beta)
+        @test rcv.data[:control_variate_beta] ≈ [1.0 0.0; 0.0 1.0] atol = 1e-8
     end
 
     @testset "CubQMCNetGRep" begin

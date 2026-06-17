@@ -79,6 +79,7 @@ function _make_control_variate_spec(
                 "each control variate must share the main integrand's discrete distribution",
             ),
         )
+        d_indv(cv) == () || throw(ArgumentError("control variates must be scalar integrands"))
     end
     return _ControlVariateSpec(cvs, means)
 end
@@ -94,7 +95,13 @@ function _control_variate_values(spec::_ControlVariateSpec, x_uniform::AbstractM
     n = size(x_uniform, 1)
     out = Matrix{Float64}(undef, n, ncv)
     for j in 1:ncv
-        out[:, j] .= evaluate_on_uniform(spec.integrands[j], x_uniform)
+        vals = vec(collect(Float64, evaluate_on_uniform(spec.integrands[j], x_uniform)))
+        length(vals) == n || throw(
+            ArgumentError(
+                "control variate $(j) returned $(length(vals)) values for $n sample points",
+            ),
+        )
+        out[:, j] .= vals
     end
     return out
 end
@@ -113,6 +120,25 @@ function _fit_control_variate_beta(y_pilot::AbstractVector, ycv_pilot::AbstractM
 end
 
 """
+    _fit_control_variate_beta(y_pilot, ycv_pilot) -> Β
+
+Multi-output OLS fit for vector-valued main integrands. `y_pilot` is an
+`n × m_indv` matrix of centered pilot values and the returned coefficient
+matrix `Β` has shape `ncv × m_indv`, one control-variate coefficient vector per
+individual output.
+"""
+function _fit_control_variate_beta(y_pilot::AbstractMatrix, ycv_pilot::AbstractMatrix)
+    size(y_pilot, 1) == size(ycv_pilot, 1) || throw(
+        ArgumentError(
+            "y_pilot has $(size(y_pilot, 1)) rows but ycv_pilot has $(size(ycv_pilot, 1))",
+        ),
+    )
+    G = ycv_pilot .- sum(ycv_pilot; dims=1) ./ size(ycv_pilot, 1)
+    Yc = y_pilot .- sum(y_pilot; dims=1) ./ size(y_pilot, 1)
+    return G \ Yc
+end
+
+"""
     _apply_control_variates(y, ycv, means, β) -> ŷ
 
 Return the control-variate-adjusted values `ŷ = y - (ycv .- means') * β`.
@@ -122,6 +148,15 @@ function _apply_control_variates(
     ycv::AbstractMatrix,
     means::AbstractVector,
     beta::AbstractVector,
+)
+    return y .- (ycv .- reshape(means, 1, :)) * beta
+end
+
+function _apply_control_variates(
+    y::AbstractMatrix,
+    ycv::AbstractMatrix,
+    means::AbstractVector,
+    beta::AbstractMatrix,
 )
     return y .- (ycv .- reshape(means, 1, :)) * beta
 end

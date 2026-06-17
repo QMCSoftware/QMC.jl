@@ -110,13 +110,6 @@ function CubQMCNetG(
         n_init = n_floor
     end
     cv_spec = _make_control_variate_spec(integrand, control_variates, control_variate_means)
-    if cv_spec !== nothing && d_indv(integrand) != ()
-        throw(
-            ArgumentError(
-                "CubQMCNetG currently supports control variates only for scalar integrands.",
-            ),
-        )
-    end
     return CubQMCNetG(
         integrand,
         abs_tol,
@@ -141,6 +134,8 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
     cshape = d_comb(f)
     m_indv = prod(ishape)
     log = IterationLog()
+    cv = sc.cv_spec
+    cv_beta = nothing
 
     solution_indv = zeros(Float64, m_indv)
     indv_low = zeros(Float64, m_indv)
@@ -164,6 +159,10 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
             x_unit = reshape(x_unit, size(x_unit, 2), size(x_unit, 3))
         end
         Y = reshape(evaluate(f, transform(f.true_measure, x_unit)), n, m_indv)
+        gvals = cv === nothing ? nothing : _control_variate_values(cv, x_unit)
+        ycvtilde =
+            cv === nothing ? nothing :
+            [_ytilde_init(@view gvals[:, k]) for k in eachindex(cv.means)]
         kappanumap0 = collect(0:(n - 1))
 
         mllstart = m - r_lag - 1
@@ -173,11 +172,28 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
             y = @view Y[:, j]
             ytilde = _ytilde_init(y)
             kappanumap = _update_kappanumap!(copy(kappanumap0), ytilde, m - 1, 0, m)
+            if cv !== nothing
+                cv_beta === nothing &&
+                    (cv_beta = Matrix{Float64}(undef, length(cv.means), m_indv))
+                beta_j =
+                    _fit_control_variate_beta_transform(ytilde, ycvtilde, kappanumap, mllstart)
+                cv_beta[:, j] .= beta_j
+                for i in 1:n
+                    acc = 0.0
+                    for k in eachindex(ycvtilde)
+                        acc += beta_j[k] * ycvtilde[k][i]
+                    end
+                    ytilde[i] -= acc
+                end
+                kappanumap = _update_kappanumap!(copy(kappanumap0), ytilde, m - 1, 0, m)
+            end
             s = 0.0
             for p in (nllstart + 1):(2 * nllstart)
                 s += abs(ytilde[kappanumap[p] + 1])
             end
-            mu = mean(y)
+            mu =
+                cv === nothing ? mean(y) :
+                mean(y .- gvals * cv_beta[:, j]) + dot(cv_beta[:, j], cv.means)
             err = fudge * s
             solution_indv[j] = mu
             indv_low[j] = mu - err
@@ -226,6 +242,10 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
     )
     if sc.trace_iterations
         data[:iteration_log] = log
+    end
+    if cv_beta !== nothing
+        data[:control_variate_beta] =
+            Array{Float64}(reshape(vec(permutedims(cv_beta)), ishape..., length(cv.means)))
     end
     return QMCVecResult(Array{Float64}(reshape(sol_comb, cshape)), data)
 end
