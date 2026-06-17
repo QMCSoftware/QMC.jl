@@ -19,14 +19,38 @@ Supports **resume**: pass the `data` dict from a previous `QMCResult` as
 
 Set `trace_iterations=true` to record an `IterationLog` in `data[:iteration_log]`.
 
-# Example
-```julia
-dd = IIDStdUniform(3)
-tm = Gaussian(dd)
-f = Keister(tm)
-sc = CubMCCLTVec(f; abs_tol=0.01, trace_iterations=true)
-result = integrate(sc)
-show(result.data[:iteration_log])
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> struct VecDemo{TM} <: QMC.AbstractIntegrand
+           true_measure::TM
+       end
+
+julia> QMC.d_indv(::VecDemo) = (2,)
+
+julia> function QMC.evaluate(f::VecDemo, x::AbstractMatrix)
+           y = Matrix{Float64}(undef, size(x, 1), 2)
+           @views y[:, 1] .= x[:, 1]
+           @views y[:, 2] .= x[:, 1] .^ 2
+           y
+       end
+
+julia> f = VecDemo(Uniform(IIDStdUniform(1; seed=7)))
+VecDemo{Uniform{IIDStdUniform{Random.MersenneTwister}}}(Uniform(d=1, lower=[0.0], upper=[1.0]))
+
+julia> sc = CubMCCLTVec(f; abs_tol=0.1, n_init=128)
+CubMCCLTVec(abs_tol=1.00e-01, rel_tol=0.00e+00, n_init=128)
+
+julia> result = integrate(sc);
+
+julia> result isa QMCVecResult
+true
+
+julia> round.(result.solution; digits=4)
+2-element Vector{Float64}:
+ 0.4644
+ 0.2883
 ```
 """
 mutable struct CubMCCLTVec{I <: AbstractIntegrand} <: AbstractStoppingCriterion
