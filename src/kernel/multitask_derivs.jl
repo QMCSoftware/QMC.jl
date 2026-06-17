@@ -18,6 +18,19 @@ covariance (port of QMCPy's `KernelMultiTaskDerivs`). Use with a base kernel
 supporting [`kernel_eval_deriv`](@ref) (e.g. `KernelShiftInvarDeriv`,
 `KernelDigShiftInvarDeriv`); task indices relate derivative observations whose
 orders are supplied per evaluation.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> base = KernelShiftInvarDeriv(2);
+
+julia> k = KernelMultiTaskDerivs(base, 3)
+KernelMultiTaskDerivs(base=KernelShiftInvarDeriv, num_tasks=3)
+
+julia> round(kernel_eval(k, 1, 2, [0.1, 0.2], [0.4, 0.5]); digits=6)
+0.504654
+```
 """
 struct KernelMultiTaskDerivs{K} <: AbstractKernel
     base_kernel::K

@@ -25,6 +25,17 @@ Derivative-aware shift-invariant (Bernoulli) product kernel, port of QMCPy's bas
 scale ∏_j (1 + γ_j c_{α_j} B_{2α_j}(δ_j))`, it supports mixed partial derivatives
 via [`kernel_eval_deriv`](@ref). Smoothness `alpha` is bounded by `bernoulli_poly`
 (degree ≤ 6), so `2α_j ≤ 6` for the undifferentiated kernel.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> k = KernelShiftInvarDeriv(2)
+KernelShiftInvarDeriv(d=2, alpha=[2, 2], scale=1.0)
+
+julia> round(kernel_eval(k, [0.1, 0.2], [0.4, 0.5]); digits=6)
+0.504654
+```
 """
 struct KernelShiftInvarDeriv <: AbstractKernel
     d::Int

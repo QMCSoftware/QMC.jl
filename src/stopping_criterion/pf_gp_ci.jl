@@ -31,6 +31,18 @@ the same probability of failure). The deterministic pieces — `φ`, the estimat
 `emr`, the credible interval, the acceptance–rejection proposal — match QMCPy
 exactly.
 
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> f = FourBranch2D(Gaussian(dd));
+
+julia> sc = PFGPCI(f; abs_tol=0.05, n_init=32, n_limit=200)
+PFGPCI(failure_threshold=0.0, abs_tol=0.05, alpha=0.01, n_limit=200)
+```
+
 # References
 1. Sorokin, Aleksei G., and Vishwas Rao. "Credible Intervals for Probability of
    Failure with Gaussian Processes." arXiv:2311.07733 (2023).
