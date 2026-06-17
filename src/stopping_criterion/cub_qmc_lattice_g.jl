@@ -20,23 +20,31 @@ Supports **resume** and optional **iteration logging** (`trace_iterations=true`)
 ```jldoctest
 julia> using QMC
 
-julia> dd = Lattice(3; randomize=true, seed=7);
+julia> k = Keister(Gaussian(Lattice(1; seed=7); covariance=0.5));
 
-julia> tm = Gaussian(dd; covariance=0.5);
-
-julia> f = Keister(tm);
-
-julia> sc = CubQMCLatticeG(f; abs_tol=1e-3);
+julia> sc = CubQMCLatticeG(k; abs_tol=1e-3, rel_tol=0.0);
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=6)
-2.168409
+julia> round(result.solution; digits=8)
+1.38035581
 
-julia> round(keister_exact(3); digits=6)
-2.168309
+julia> isapprox(result.solution, 1.38037385; atol=5e-5) # QMCPy doctest reference
+true
+```
 
-julia> isapprox(result.solution, keister_exact(3); atol=5e-3)
+```jldoctest
+julia> using QMC
+
+julia> f = BoxIntegral(QMC.Uniform(Lattice(3; seed=11)); s=-1.0);
+
+julia> abs_tol = 1e-3;
+
+julia> sc = QMC.CubQMCLatticeG(f; abs_tol=abs_tol, rel_tol=0.0);
+
+julia> solution = QMC.integrate(sc).solution;
+
+julia> isapprox(solution, 1.18947477; atol=2e-4) # QMCPy doctest reference
 true
 ```
 """

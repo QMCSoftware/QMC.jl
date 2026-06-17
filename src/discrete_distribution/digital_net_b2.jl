@@ -61,20 +61,40 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 ```jldoctest
 julia> using QMC
 
-julia> dn = DigitalNetB2(3; seed=7);
+julia> discrete_distrib = DigitalNetB2(2; seed=7);
 
-julia> round.(gen_samples(dn, 4); digits=6)
-4×3 Matrix{Float64}:
- 0.848245  0.354704  0.359693
- 0.348245  0.854704  0.859693
- 0.598245  0.104704  0.609693
- 0.098245  0.604704  0.109693
+julia> round.(gen_samples(discrete_distrib, 4); digits=8)
+4×2 Matrix{Float64}:
+ 0.84824541  0.354704
+ 0.34824541  0.854704
+ 0.59824541  0.104704
+ 0.09824541  0.604704
+
+julia> round.(gen_samples(discrete_distrib, 1); digits=8) # first point in the sequence
+1×2 Matrix{Float64}:
+ 0.49777094  0.625998
+```
+
+```jldoctest
+julia> x = gen_samples(DigitalNetB2(3; seed=7, replications=2), 4);
+
+julia> size(x)
+(2, 4, 3)
+```
+
+```jldoctest
+julia> round.(gen_samples(DigitalNetB2(2; randomize="none", order="GRAY"), 2; n_start=2); digits=8)
+2×2 Matrix{Float64}:
+ 0.75  0.25
+ 0.25  0.75
+
+julia> round.(gen_samples(DigitalNetB2(2; randomize="none", order="RADICAL INVERSE"), 2; n_start=2); digits=8)
+2×2 Matrix{Float64}:
+ 0.25  0.75
+ 0.75  0.25
 ```
 
 ```julia
-dn_r = DigitalNetB2(3; seed=7, replications=16)
-x = gen_samples(dn_r, 1024)  # 16×1024×3 array
-
 # Higher-order interlacing
 dn_alpha = DigitalNetB2(3; seed=7, alpha=2)
 x = gen_samples(dn_alpha, 256)  # 256×3 interlaced Sobol' points

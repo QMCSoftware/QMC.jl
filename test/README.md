@@ -48,8 +48,9 @@ make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
 
 `make coverage` also processes the raw `*.cov` files locally, writes
 `lcov.info`, and prints a source-coverage summary for `src/`.
-`make doctest` runs the `jldoctest` examples in both `docs/src/` and the
-package docstrings under `src/` without rendering the full HTML docs.
+`make doctest` runs the `jldoctest` examples in the package docstrings under
+`src/` and any docs pages that contain doctests, without rendering the full
+HTML docs.
 CI uploads the same LCOV-style output to Codecov and stores it as a workflow
 artifact.
 

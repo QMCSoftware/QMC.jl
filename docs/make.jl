@@ -27,7 +27,6 @@ makedocs(
             "Internals" => "api/internals.md",
         ],
         "Demos" => "demos.md",
-        "Doctests" => "doctests.md",
         "CI/CD Testing" => "ci-testing.md",
         "Workflow Debugging" => "workflow-debugging.md",
         "Contributing" => "contributing.md",

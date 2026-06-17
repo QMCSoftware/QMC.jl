@@ -46,8 +46,8 @@ manual dispatch.
 - Executes `make coverage`, which runs `test/runtests.jl` with Julia coverage
   instrumentation enabled.
 - Executes `make doctest`, which runs the Documenter `jldoctest` examples from
-  both `docs/src/` and the package docstrings under `src/` without a full docs
-  render.
+  the package docstrings under `src/` and any docs pages that contain
+  doctests, without a full docs render.
 - Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub
   Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each
   shard to avoid oversubscription.
