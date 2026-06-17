@@ -17,11 +17,23 @@ with factor matrix F ∈ ℝ^{T×r} and diagonal v ∈ ℝ^T.
 - `factor::Matrix{Float64}`: factor matrix F (T × r), default zeros(T, 1)
 - `diag::Vector{Float64}`: diagonal v, default ones(T)
 
-# Example
-```julia
-base = KernelGaussian(2)
-kmt = KernelMultiTask(base, 3; diag=[1.0, 2.0, 3.0])
-# Task correlation matrix is I + diag([1,2,3])
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> kmt = KernelMultiTask(KernelGaussian(lengthscale=1.0, outputscale=1.0), 3; diag=[1.0, 2.0, 3.0])
+KernelMultiTask(T=3, rank=1, base=KernelGaussian(ℓ=1.0, σ²=1.0))
+
+julia> kmt.taskmat
+3×3 Matrix{Float64}:
+ 1.0  0.0  0.0
+ 0.0  2.0  0.0
+ 0.0  0.0  3.0
+
+julia> X = reshape([0.0, 1.0], 2, 1);
+
+julia> size(kernel_matrix(kmt, [1, 2], X))
+(4, 4)
 ```
 """
 struct KernelMultiTask{K <: AbstractKernel} <: AbstractKernel

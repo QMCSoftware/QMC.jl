@@ -9,10 +9,21 @@ Diagonalized by the Walsh-Hadamard Transform (WHT).
 where ``\\oplus`` is the bitwise XOR operation on the binary representations.
 The 1D kernel of order `r` is based on Walsh series coefficients.
 
-# Example
-```julia
-kernel = KernelDigShiftInvar(order=2)
-eigenvalues = compute_kernel_eigenvalues(kernel, sobol_points)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> x = [0.0 0.0; 0.5 0.25; 0.25 0.5; 0.75 0.75];
+
+julia> kernel = KernelDigShiftInvar(order=2)
+KernelDigShiftInvar(order=2)
+
+julia> round.(compute_kernel_eigenvalues(kernel, x); digits=6)
+4-element Vector{Float64}:
+ 3.739273
+ 0.128403
+ 0.128403
+ 0.003922
 ```
 """
 struct KernelDigShiftInvar <: AbstractKernel
