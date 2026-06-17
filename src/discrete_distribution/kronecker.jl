@@ -16,10 +16,34 @@ An optional random shift Δ ~ U[0,1)^d can be applied for randomization.
 - `seed`: optional RNG seed. If provided, applies a random shift.
 - `generator`: `:default` uses √primes; or pass a `Vector{Float64}` of length d.
 
-# Example
-```julia
-kr = Kronecker(3; seed=7)
-x = gen_samples(kr, 100)  # 100 × 3 Kronecker points
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> kr = Kronecker(2; seed=7)
+Kronecker(d=2, shifted)
+
+julia> round.(gen_samples(kr, 4); digits=6)
+4×2 Matrix{Float64}:
+ 0.01535   0.675492
+ 0.429564  0.407543
+ 0.843777  0.139594
+ 0.257991  0.871644
+
+julia> round.(gen_samples(kr, 1); digits=6) # first point in the sequence
+1×2 Matrix{Float64}:
+ 0.01535  0.675492
+```
+
+```jldoctest
+julia> using QMC
+
+julia> round.(gen_samples(Kronecker(3), 4); digits=6)
+4×3 Matrix{Float64}:
+ 0.414214  0.732051  0.236068
+ 0.828427  0.464102  0.472136
+ 0.242641  0.196152  0.708204
+ 0.656854  0.928203  0.944272
 ```
 """
 struct Kronecker <: AbstractDiscreteDistribution

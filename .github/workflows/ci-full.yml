@@ -1,4 +1,4 @@
-name: "Unit Tests: 3 OSes"
+name: "Doc &Unit Tests: 3 OSes"
 
 on:
   push:
@@ -51,5 +51,5 @@ jobs:
         run: julia --project=. -e 'using Pkg; Pkg.test()'
 
       - name: Run doctests
-        if: matrix.os == 'ubuntu-latest' && matrix.julia-version == '1.10'
+        if: matrix.os == 'windows-latest' && matrix.julia-version == '1.10'
         run: make doctest

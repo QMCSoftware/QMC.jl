@@ -9,11 +9,20 @@ The true measure should be `Gaussian` with mean 0 and covariance I/2.
 The exact integral value is:
 ``I = \\pi^{d/2} \\cdot \\frac{1}{(2\\pi)^{d/2}} \\int \\cos(\\|x\\|) e^{-\\|x\\|^2/2} dx``
 
-# Example
-```julia
-dd = Lattice(3; randomize=true)
-tm = Gaussian(dd; covariance=0.5)
-f = Keister(tm)
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = Keister(Gaussian(DigitalNetB2(2; seed=7); covariance=0.5))
+Keister(d=2)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); digits=4)
+1.806
+
+julia> round(keister_exact(2); digits=4)
+1.8082
 ```
 """
 struct Keister{TM <: AbstractTrueMeasure} <: AbstractIntegrand

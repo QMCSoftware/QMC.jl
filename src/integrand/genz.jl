@@ -13,11 +13,33 @@ Genz test integrand family — six standard test functions for numerical integra
 
 Default parameters: ``a = \\mathbf{1}``, ``u = 0.5 \\cdot \\mathbf{1}``.
 
-# Example
-```julia
-dd = Lattice(3; randomize=true)
-tm = Uniform(dd)
-f = Genz(tm; kind=:oscillatory)
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> for (kind, coeff, target) in (
+           (:oscillatory, 1, -0.351),
+           (:oscillatory, 2, -0.329),
+           (:oscillatory, 3, -0.217),
+           (:corner_peak, 1, 0.713),
+           (:corner_peak, 2, 0.714),
+           (:corner_peak, 3, 0.720),
+       )
+           d = 2
+           base = coeff == 1 ? (collect(1:d) .- 0.5) ./ d :
+               coeff == 2 ? 1.0 ./ (collect(1:d) .^ 2) :
+               exp.((collect(1:d) .* log(1e-8)) ./ d)
+           a = kind == :oscillatory ? 4.5 .* base ./ sum(base) : 0.25 .* base ./ sum(base)
+           f = Genz(Uniform(DigitalNetB2(2; seed=7)); kind=kind, a=a, u=zeros(d))
+           y = sample_and_evaluate(f, 2^14)
+           println(kind, " ", coeff, " ", round(mean(y); digits=3), " ", round(genz_exact(f); digits=3))
+       end
+oscillatory 1 -0.351 -0.351
+oscillatory 2 -0.329 -0.329
+oscillatory 3 -0.217 -0.217
+corner_peak 1 0.713 0.713
+corner_peak 2 0.714 0.714
+corner_peak 3 0.72 0.72
 ```
 """
 struct Genz{TM <: AbstractTrueMeasure} <: AbstractIntegrand
