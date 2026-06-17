@@ -88,4 +88,16 @@ jobs:
 
       - name: Run demo notebooks
         timeout-minutes: 60
-        run: make notebook NOTEBOOK_SHARD_COUNT=4 NOTEBOOK_SHARD_INDEX=${{ matrix.shard_index }} NOTEBOOK_JOBS=1 NOTEBOOK_THREADS=2
+        # Call the Julia harness directly here. On GitHub's Ubuntu runner we
+        # have seen `make notebook ...` occasionally fail with GNU make's
+        # internal `wait: No child processes` despite the underlying notebook
+        # harness still running, so bypass the wrapper in CI.
+        run: |
+          GKSwstype=100 QMC_NOTEBOOK_PYTHON="python" julia --threads=2 --project=. \
+            test/run_notebooks.jl \
+            --jobs=1 \
+            --shard-count=4 \
+            --shard-index=${{ matrix.shard_index }} \
+            --overwrite=0 \
+            --kernel=qmc-1.12 \
+            --timeout=1800
