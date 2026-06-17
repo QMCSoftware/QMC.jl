@@ -15,8 +15,8 @@ Sin1D(k=1)
 
 julia> y = sample_and_evaluate(f, 2^10);
 
-julia> round(mean(y); sigdigits=5)
--2.9273e-18
+julia> abs(mean(y)) < 1e-15
+true
 ```
 """
 struct Sin1D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
