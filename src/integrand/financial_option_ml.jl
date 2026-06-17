@@ -19,12 +19,34 @@ The number of levels is determined by `dd.dimension`: the dimension must equal
 - `option_type::Symbol=:asian`: Option type (`:european`, `:asian`, `:lookback`, `:digital`).
 - Other financial parameters match `FinancialOption`.
 
-# Example
-```julia
-dd = IIDStdUniform(32)
-f = FinancialOptionML(dd; d_coarsest=2, option_type=:asian)
-sc = CubMLMC(f; abs_tol=0.05)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = FinancialOptionML(IIDStdUniform(32; seed=7); d_coarsest=4, option_type=:asian)
+FinancialOptionML(:asian, :call, d=32, d_coarsest=4, levels=4)
+
+julia> dimension_at_level(f, 0)
+4
+
+julia> dimension_at_level(f, 1)
+8
+
+julia> cost_at_level(f, 2)
+16.0
+```
+
+```jldoctest
+julia> using QMC, Random
+
+julia> Random.seed!(7);
+
+julia> f = FinancialOptionML(IIDStdUniform(32; seed=7); d_coarsest=4, option_type=:asian);
+
+julia> qc, qf = ml_evaluate(f, randn(1, dimension_at_level(f, 1)), 1);
+
+julia> (length(qc), length(qf))
+(1, 1)
 ```
 """
 struct FinancialOptionML{TM <: AbstractTrueMeasure} <: AbstractMLIntegrand
