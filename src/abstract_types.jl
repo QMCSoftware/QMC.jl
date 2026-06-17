@@ -99,12 +99,35 @@ Returns a `QMCResult` containing the estimated integral and algorithm details.
 function integrate end
 
 """
-    transform(tm::AbstractTrueMeasure, x::AbstractMatrix)
+    transform(tm::AbstractTrueMeasure, x)
 
 Transform uniform samples `x` according to true measure `tm`.
-Returns a matrix of the same shape as `x` with transformed samples.
+
+- For matrix input `x::AbstractMatrix`, returns a transformed matrix.
+- For replicated input `x::AbstractArray{<:Real,3}` with shape `(R, n, d)`,
+  fixed-shape transforms return a dense `(R, n, d_out)` array obtained by
+  transforming each replication independently.
 """
 function transform end
+
+function transform(tm::AbstractTrueMeasure, x::AbstractArray{T, 3}) where {T <: Real}
+    R, n, d = size(x)
+    y_flat = transform(tm, reshape(x, R * n, d))
+    y_flat isa AbstractMatrix || throw(
+        ArgumentError(
+            "Replicated transform for $(typeof(tm)) requires the matrix method to return " *
+            "an AbstractMatrix, got $(typeof(y_flat))",
+        ),
+    )
+    size(y_flat, 1) == R * n || throw(
+        ArgumentError(
+            "Replicated transform for $(typeof(tm)) produced $(size(y_flat, 1)) rows " *
+            "from $R replications of $n points. This true measure has variable-length " *
+            "output per replication and needs a custom replicated transform method.",
+        ),
+    )
+    return reshape(y_flat, R, n, size(y_flat, 2))
+end
 
 """
     evaluate(f::AbstractIntegrand, x::AbstractMatrix)
@@ -180,6 +203,42 @@ three-argument form to skip the frozen outputs. Mirrors QMCPy threading
 `compute_flags` into the integrand.
 """
 evaluate(f::AbstractIntegrand, x::AbstractMatrix, compute_flags) = evaluate(f, x)
+
+"""
+    _combined_bounds_stats(abs_tol, rel_tol, comb_low, comb_high)
+
+Internal helper shared by vector-valued stopping criteria. Given lower and upper
+bounds on the combined outputs, compute the QMCPy-style reported solution,
+per-output convergence flags, the worst half-width, and the largest effective
+tolerance under the "EITHER" rule `max(abs_tol, rel_tol*abs(s))`.
+"""
+function _combined_bounds_stats(abs_tol::Float64, rel_tol::Float64, comb_low, comb_high)
+    low = vec(collect(Float64, comb_low))
+    high = vec(collect(Float64, comb_high))
+    mc = length(low)
+    sol = Vector{Float64}(undef, mc)
+    flags = falses(mc)
+    err = 0.0
+    tol = 0.0
+    @inbounds for k in 1:mc
+        lo = low[k]
+        hi = high[k]
+        if isfinite(lo) && isfinite(hi)
+            el = max(abs_tol, abs(lo) * rel_tol)
+            eh = max(abs_tol, abs(hi) * rel_tol)
+            sol[k] = 0.5 * (lo + hi + el - eh)
+            hw = (hi - lo) / 2
+            tol_k = (el + eh) / 2
+            flags[k] = hw <= tol_k
+            hw > err && (err = hw)
+            tol_k > tol && (tol = tol_k)
+        else
+            sol[k] = NaN
+            flags[k] = false
+        end
+    end
+    return low, high, sol, flags, err, tol
+end
 
 """
 Result type returned by `integrate`.

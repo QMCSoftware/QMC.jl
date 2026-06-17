@@ -9,6 +9,10 @@ orthonormal Walsh coefficients of the integrand rather than a replication-based
 confidence interval, so it samples far fewer points than the replicated
 [`CubQMCNetGRep`](@ref).
 
+For vector-valued integrands (`QMC.d_indv(f) != ()`), returns a
+[`QMCVecResult`](@ref) whose combined bounds are built through
+`QMC.bound_fun(f, low, high)`.
+
 At each step the net of size `n = 2^m` is drawn, the integrand is evaluated, the
 scaled Walsh coefficients `ytilde` are formed, their indices are decay-ordered
 (`kappanumap`), and the half-width bound is
@@ -49,6 +53,23 @@ julia> round(result.solution; digits=4)
 2.1685
 
 julia> result.data[:converged]
+true
+```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=77);
+
+julia> g = CustomFun(Uniform(dd), x -> x[:, 1].^2 .+ x[:, 2])
+CustomFun(d=2)
+
+julia> result = integrate(CubQMCNetG(g; abs_tol=1e-3, control_variates=g, control_variate_means=5 / 6));
+
+julia> isapprox(result.solution, 5 / 6; atol=1e-10)
+true
+
+julia> result.data[:error_bound] < 1e-10
 true
 ```
 """
@@ -101,7 +122,138 @@ function CubQMCNetG(
     )
 end
 
+function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict{Symbol, Any}})
+    r_lag = sc.r_lag
+    n = resume !== nothing ? 2 * Int(get(resume, :n, sc.n_init)) : sc.n_init
+    prev_time = resume !== nothing ? Float64(get(resume, :time_integrate, 0.0)) : 0.0
+
+    t_start = time()
+    f = sc.integrand
+    dd = f.true_measure.dd
+    ishape = d_indv(f)
+    cshape = d_comb(f)
+    m_indv = prod(ishape)
+    log = IterationLog()
+    cv = sc.cv_spec
+    cv_beta = nothing
+
+    solution_indv = zeros(Float64, m_indv)
+    indv_low = zeros(Float64, m_indv)
+    indv_high = zeros(Float64, m_indv)
+    comb_low = zeros(Float64, prod(cshape))
+    comb_high = zeros(Float64, prod(cshape))
+    sol_comb = zeros(Float64, prod(cshape))
+    comb_flags = falses(prod(cshape))
+    err_comb = Inf
+    converged = false
+    n_iter = 0
+    n_final = n
+
+    while n <= sc.n_max
+        n_iter += 1
+        m = round(Int, log2(n))
+
+        x_unit = gen_samples(dd, n)
+        if ndims(x_unit) == 3
+            size(x_unit, 1) == 1 || error("CubQMCNetG requires a non-replicated net.")
+            x_unit = reshape(x_unit, size(x_unit, 2), size(x_unit, 3))
+        end
+        Y = reshape(evaluate(f, transform(f.true_measure, x_unit)), n, m_indv)
+        gvals = cv === nothing ? nothing : _control_variate_values(cv, x_unit)
+        ycvtilde =
+            cv === nothing ? nothing :
+            [_ytilde_init(@view gvals[:, k]) for k in eachindex(cv.means)]
+        kappanumap0 = collect(0:(n - 1))
+
+        mllstart = m - r_lag - 1
+        nllstart = 2^mllstart
+        fudge = 5.0 * 2.0^(-m)
+        @inbounds for j in 1:m_indv
+            y = @view Y[:, j]
+            ytilde = _ytilde_init(y)
+            kappanumap = _update_kappanumap!(copy(kappanumap0), ytilde, m - 1, 0, m)
+            if cv !== nothing
+                cv_beta === nothing &&
+                    (cv_beta = Matrix{Float64}(undef, length(cv.means), m_indv))
+                beta_j =
+                    _fit_control_variate_beta_transform(ytilde, ycvtilde, kappanumap, mllstart)
+                cv_beta[:, j] .= beta_j
+                for i in 1:n
+                    acc = 0.0
+                    for k in eachindex(ycvtilde)
+                        acc += beta_j[k] * ycvtilde[k][i]
+                    end
+                    ytilde[i] -= acc
+                end
+                kappanumap = _update_kappanumap!(copy(kappanumap0), ytilde, m - 1, 0, m)
+            end
+            s = 0.0
+            for p in (nllstart + 1):(2 * nllstart)
+                s += abs(ytilde[kappanumap[p] + 1])
+            end
+            mu =
+                cv === nothing ? mean(y) :
+                mean(y .- gvals * cv_beta[:, j]) + dot(cv_beta[:, j], cv.means)
+            err = fudge * s
+            solution_indv[j] = mu
+            indv_low[j] = mu - err
+            indv_high[j] = mu + err
+        end
+
+        cl, ch = bound_fun(f, indv_low, indv_high)
+        comb_low, comb_high, sol_comb, comb_flags, err_comb, tol_max =
+            _combined_bounds_stats(sc.abs_tol, sc.rel_tol, cl, ch)
+        converged = all(comb_flags)
+        n_final = n
+
+        if sc.trace_iterations
+            push!(
+                log;
+                n=n,
+                solution=sol_comb[1],
+                error_bound=err_comb,
+                tol=tol_max,
+                elapsed=time() - t_start,
+            )
+        end
+
+        converged && break
+        n *= 2
+    end
+
+    if !converged
+        @warn "CubQMCNetG: did not converge within n_max=$(sc.n_max)."
+    end
+
+    t_elapsed = time() - t_start
+    data = Dict{Symbol, Any}(
+        :n => n_final,
+        :n_per_rep => n_final,
+        :n_total => n_final,
+        :n_reps => 1,
+        :n_indv => Array{Int}(reshape(fill(n_final, m_indv), ishape)),
+        :error_bound => err_comb,
+        :n_iterations => n_iter,
+        :converged => converged,
+        :time_integrate => prev_time + t_elapsed,
+        :solution_indv => Array{Float64}(reshape(copy(solution_indv), ishape)),
+        :comb_bound_low => Array{Float64}(reshape(comb_low, cshape)),
+        :comb_bound_high => Array{Float64}(reshape(comb_high, cshape)),
+    )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
+    if cv_beta !== nothing
+        data[:control_variate_beta] =
+            Array{Float64}(reshape(vec(permutedims(cv_beta)), ishape..., length(cv.means)))
+    end
+    return QMCVecResult(Array{Float64}(reshape(sol_comb, cshape)), data)
+end
+
 function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+    if d_indv(sc.integrand) != ()
+        return _integrate_cubqmcnetg_multi(sc, resume)
+    end
     r_lag = sc.r_lag
     n = resume !== nothing ? 2 * Int(get(resume, :n, sc.n_init)) : sc.n_init
     prev_time = resume !== nothing ? Float64(get(resume, :time_integrate, 0.0)) : 0.0

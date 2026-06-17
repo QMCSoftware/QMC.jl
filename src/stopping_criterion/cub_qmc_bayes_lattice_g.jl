@@ -10,10 +10,26 @@ Uses a Bernoulli-polynomial-based shift-invariant kernel diagonalized by FFT.
 The shape parameter θ is estimated via MLE or GCV. A periodization transform
 (default C1SIN) is applied to improve convergence for non-periodic integrands.
 
+For vector-valued integrands (`QMC.d_indv(f) != ()`), returns a
+[`QMCVecResult`](@ref) whose combined bounds are built through
+`QMC.bound_fun(f, low, high)`.
+
 Set `trace_iterations=true` to record an `IterationLog` in
 `result.data[:iteration_log]`.
 
 # Examples
+```jldoctest
+julia> using QMC
+
+julia> k = Keister(Gaussian(Lattice(2; seed=123456789); covariance=0.5))
+Keister(d=2)
+
+julia> result = integrate(CubQMCBayesLatticeG(k; abs_tol=1e-4));
+
+julia> abs(result.solution - keister_exact(2)) < 5e-4
+true
+```
+
 ```jldoctest
 julia> using QMC
 
@@ -212,7 +228,110 @@ end
 
 # ── integrate ────────────────────────────────────────────────────────────────
 
+function _integrate_cubqmcbayeslatticeg_multi(
+    sc::CubQMCBayesLatticeG,
+    resume::Union{Nothing, Dict{Symbol, Any}},
+)
+    t_start = time()
+    if resume !== nothing
+        n_prev =
+            haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) :
+            haskey(resume, :n) ? Int(resume[:n]) : Int(resume[:n_total])
+        n = 2 * n_prev
+        prev_time = Float64(get(resume, :time_integrate, 0.0))
+    else
+        n = sc.n_init
+        prev_time = 0.0
+    end
+    f = sc.integrand
+    ishape = d_indv(f)
+    cshape = d_comb(f)
+    m_indv = prod(ishape)
+    log = IterationLog()
+
+    solution_indv = zeros(Float64, m_indv)
+    indv_low = zeros(Float64, m_indv)
+    indv_high = zeros(Float64, m_indv)
+    comb_low = zeros(Float64, prod(cshape))
+    comb_high = zeros(Float64, prod(cshape))
+    sol_comb = zeros(Float64, prod(cshape))
+    comb_flags = falses(prod(cshape))
+    err_comb = Inf
+    converged = false
+    n_iter = 0
+    n_final = n
+
+    while n <= sc.n_max
+        n_iter += 1
+        dd = f.true_measure.dd
+        x_uniform = gen_samples(dd, n)
+
+        x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
+        x_trans = transform(f.true_measure, x_period)
+        Y = reshape(evaluate(f, x_trans), n, m_indv)
+        Y .*= reshape(weight, n, 1)
+
+        @inbounds for j in 1:m_indv
+            ftilde = real.(FFTW.fft(@view Y[:, j])) ./ sqrt(n)
+            mu, err =
+                _bayes_lattice_stop(x_uniform, ftilde, n, sc.order, sc.errbd_type, sc.alpha)
+            solution_indv[j] = mu
+            indv_low[j] = mu - err
+            indv_high[j] = mu + err
+        end
+
+        cl, ch = bound_fun(f, indv_low, indv_high)
+        comb_low, comb_high, sol_comb, comb_flags, err_comb, tol_max =
+            _combined_bounds_stats(sc.abs_tol, sc.rel_tol, cl, ch)
+        converged = all(comb_flags)
+        n_final = n
+
+        if sc.trace_iterations
+            push!(
+                log;
+                n=n,
+                solution=sol_comb[1],
+                error_bound=err_comb,
+                tol=tol_max,
+                elapsed=time() - t_start,
+            )
+        end
+
+        converged && break
+        2n > sc.n_max && (
+            @warn "CubQMCBayesLatticeG: n_max=$(sc.n_max) reached. err=$err_comb tol=$tol_max";
+            break
+        )
+        n *= 2
+    end
+
+    t_elapsed = time() - t_start
+    data = Dict{Symbol, Any}(
+        :n => n_final,
+        :n_per_rep => n_final,
+        :n_total => n_final,
+        :n_indv => Array{Int}(reshape(fill(n_final, m_indv), ishape)),
+        :error_bound => err_comb,
+        :n_iterations => n_iter,
+        :converged => converged,
+        :time_integrate => prev_time + t_elapsed,
+        :order => sc.order,
+        :ptransform => sc.ptransform,
+        :errbd_type => sc.errbd_type,
+        :solution_indv => Array{Float64}(reshape(copy(solution_indv), ishape)),
+        :comb_bound_low => Array{Float64}(reshape(comb_low, cshape)),
+        :comb_bound_high => Array{Float64}(reshape(comb_high, cshape)),
+    )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
+    return QMCVecResult(Array{Float64}(reshape(sol_comb, cshape)), data)
+end
+
 function integrate(sc::CubQMCBayesLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+    if d_indv(sc.integrand) != ()
+        return _integrate_cubqmcbayeslatticeg_multi(sc, resume)
+    end
     t_start = time()
     if resume !== nothing
         n_prev =

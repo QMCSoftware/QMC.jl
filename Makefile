@@ -1,4 +1,5 @@
 .PHONY: test coverage doctest doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
+.NOTPARALLEL: notebook notebook-update notebook-update-% notebook-% ci-doc-demo workflow-smoke
 
 # ============================================================================
 # Configuration and helpers

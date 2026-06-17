@@ -103,6 +103,9 @@ end
 Apply the deterministic acceptance-rejection algorithm. Input `x` has shape
 `(n, d+1)` where the last column is the acceptance threshold. Returns only
 the accepted samples (may be fewer than n rows).
+
+For replicated input `x::AbstractArray{<:Real,3}`, returns a length-`R` vector
+of accepted-sample matrices, one per replication.
 """
 function transform(tm::AcceptanceRejection, x::AbstractMatrix)
     n = size(x, 1)
@@ -136,6 +139,15 @@ function transform(tm::AcceptanceRejection, x::AbstractMatrix)
     # `flat` holds m rows of length d in row-major order; reshape to d×m (each
     # column is an accepted row) and transpose to the (m, d) result.
     return permutedims(reshape(flat, d, m))
+end
+
+function transform(tm::AcceptanceRejection, x::AbstractArray{T, 3}) where {T <: Real}
+    R = size(x, 1)
+    out = Vector{Matrix{Float64}}(undef, R)
+    @inbounds for r in 1:R
+        out[r] = transform(tm, @view x[r, :, :])
+    end
+    return out
 end
 
 function Base.show(io::IO, tm::AcceptanceRejection)
@@ -269,6 +281,9 @@ Map a driver matrix `x` of shape `(n, d+1)` to accepted real-valued samples. The
 first `d` columns are pushed through `inv_cdfs` (clamped to `[1e-8, 1-1e-8]` to
 keep quantiles finite) and the last column is the acceptance threshold. Returns
 only the accepted rows (an `(m, d)` matrix with `m ≤ n`).
+
+For replicated input `x::AbstractArray{<:Real,3}`, returns a length-`R` vector
+of accepted-sample matrices, one per replication.
 """
 function transform(tm::AcceptanceRejectionReal, x::AbstractMatrix)
     n = size(x, 1)
@@ -302,6 +317,15 @@ function transform(tm::AcceptanceRejectionReal, x::AbstractMatrix)
 
     isempty(keep) && return Matrix{Float64}(undef, 0, d)
     return zmat[keep, :]
+end
+
+function transform(tm::AcceptanceRejectionReal, x::AbstractArray{T, 3}) where {T <: Real}
+    R = size(x, 1)
+    out = Vector{Matrix{Float64}}(undef, R)
+    @inbounds for r in 1:R
+        out[r] = transform(tm, @view x[r, :, :])
+    end
+    return out
 end
 
 function Base.show(io::IO, tm::AcceptanceRejectionReal)

@@ -5,6 +5,10 @@
 
 Guaranteed QMC cubature using replicated randomized lattice rules.
 
+For vector-valued integrands (`QMC.d_indv(f) != ()`), returns a
+[`QMCVecResult`](@ref) whose combined bounds are built through
+`QMC.bound_fun(f, low, high)`.
+
 Pass `control_variates` (an integrand or vector of integrands sharing the main
 integrand's discrete distribution and dimension) with their known
 `control_variate_means` to apply linear control variates. Because this criterion
@@ -47,6 +51,23 @@ julia> solution = QMC.integrate(sc).solution;
 julia> isapprox(solution, 1.18947477; atol=2e-4) # QMCPy doctest reference
 true
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = Lattice(2; randomize=true, seed=77);
+
+julia> g = CustomFun(Uniform(dd), x -> x[:, 1].^2 .+ x[:, 2])
+CustomFun(d=2)
+
+julia> result = integrate(CubQMCLatticeG(g; abs_tol=1e-3, control_variates=g, control_variate_means=5 / 6));
+
+julia> isapprox(result.solution, 5 / 6; atol=1e-10)
+true
+
+julia> result.data[:error_bound] < 1e-10
+true
+```
 """
 mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     integrand::I
@@ -86,7 +107,158 @@ function CubQMCLatticeG(
     )
 end
 
+function _integrate_cubqmclatticeg_multi(
+    sc::CubQMCLatticeG,
+    resume::Union{Nothing, Dict{Symbol, Any}},
+)
+    R = sc.n_reps
+    t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
+
+    if resume !== nothing
+        n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) : Int(resume[:n])
+        n = 2 * n_prev
+        prev_time = Float64(get(resume, :time_integrate, 0.0))
+    else
+        n = sc.n_init
+        prev_time = 0.0
+    end
+
+    t_start = time()
+    f = sc.integrand
+    ishape = d_indv(f)
+    cshape = d_comb(f)
+    m_indv = prod(ishape)
+    dd = f.true_measure.dd
+    log = IterationLog()
+    cv = sc.cv_spec
+    cv_beta = nothing
+
+    if cv !== nothing
+        xu_pilot = _sample_uniform_points(dd, sc.n_init)
+        y_pilot = reshape(evaluate_on_uniform(f, xu_pilot), size(xu_pilot, 1), m_indv)
+        ycv_pilot = _control_variate_values(cv, xu_pilot)
+        cv_beta = _fit_control_variate_beta(y_pilot, ycv_pilot)
+    end
+
+    solution_indv = zeros(Float64, m_indv)
+    indv_low = zeros(Float64, m_indv)
+    indv_high = zeros(Float64, m_indv)
+    comb_low = zeros(Float64, prod(cshape))
+    comb_high = zeros(Float64, prod(cshape))
+    sol_comb = zeros(Float64, prod(cshape))
+    comb_flags = falses(prod(cshape))
+    err_comb = Inf
+    converged = false
+    n_iter = 0
+    n_final = n
+
+    while n <= sc.n_max
+        n_iter += 1
+        estimates = Matrix{Float64}(undef, R, m_indv)
+
+        group_size = 4
+        r0 = 1
+        while r0 <= R
+            g = min(group_size, R - r0 + 1)
+            first = gen_samples(dd, n)
+            first =
+                ndims(first) == 3 ?
+                reshape(first, size(first, 1) * size(first, 2), size(first, 3)) : first
+            m_rows = size(first, 1)
+            x_group = Matrix{Float64}(undef, g * m_rows, size(first, 2))
+            @inbounds x_group[1:m_rows, :] .= first
+            @inbounds for k in 2:g
+                xu = gen_samples(dd, n)
+                xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+                x_group[((k - 1) * m_rows + 1):(k * m_rows), :] .= xu
+            end
+            y_group =
+                reshape(evaluate(f, transform(f.true_measure, x_group)), g * m_rows, m_indv)
+            ycv_group = cv === nothing ? nothing : _control_variate_values(cv, x_group)
+            @inbounds for k in 1:g
+                rows = ((k - 1) * m_rows + 1):(k * m_rows)
+                if cv === nothing
+                    for j in 1:m_indv
+                        estimates[r0 + k - 1, j] = mean(@view y_group[rows, j])
+                    end
+                else
+                    cv_shift = vec(mean(@view ycv_group[rows, :]; dims=1)) .- cv.means
+                    for j in 1:m_indv
+                        est = mean(@view y_group[rows, j])
+                        for ell in eachindex(cv.means)
+                            est -= cv_beta[ell, j] * cv_shift[ell]
+                        end
+                        estimates[r0 + k - 1, j] = est
+                    end
+                end
+            end
+            r0 += g
+        end
+
+        @inbounds for j in 1:m_indv
+            mu = mean(@view estimates[:, j])
+            sigma_reps = std(@view estimates[:, j]; corrected=true)
+            ci = t_crit * sigma_reps / sqrt(R)
+            solution_indv[j] = mu
+            indv_low[j] = mu - ci
+            indv_high[j] = mu + ci
+        end
+
+        cl, ch = bound_fun(f, indv_low, indv_high)
+        comb_low, comb_high, sol_comb, comb_flags, err_comb, tol_max =
+            _combined_bounds_stats(sc.abs_tol, sc.rel_tol, cl, ch)
+        converged = all(comb_flags)
+        n_final = n
+
+        if sc.trace_iterations
+            push!(
+                log;
+                n=n * R,
+                solution=sol_comb[1],
+                error_bound=err_comb,
+                tol=tol_max,
+                elapsed=time() - t_start,
+            )
+        end
+
+        converged && break
+        n = min(2n, sc.n_max + 1)
+    end
+
+    if !converged
+        @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
+    end
+
+    t_elapsed = time() - t_start
+    n_total = n_final * R
+    data = Dict{Symbol, Any}(
+        :n => n_final,
+        :n_per_rep => n_final,
+        :n_total => n_total,
+        :n_reps => R,
+        :n_indv => Array{Int}(reshape(fill(n_total, m_indv), ishape)),
+        :error_bound => err_comb,
+        :n_iterations => n_iter,
+        :converged => converged,
+        :time_integrate => prev_time + t_elapsed,
+        :solution_indv => Array{Float64}(reshape(copy(solution_indv), ishape)),
+        :comb_bound_low => Array{Float64}(reshape(comb_low, cshape)),
+        :comb_bound_high => Array{Float64}(reshape(comb_high, cshape)),
+    )
+    if sc.trace_iterations
+        data[:iteration_log] = log
+    end
+    if cv_beta !== nothing
+        data[:control_variate_beta] =
+            Array{Float64}(reshape(vec(permutedims(cv_beta)), ishape..., length(cv.means)))
+    end
+    return QMCVecResult(Array{Float64}(reshape(sol_comb, cshape)), data)
+end
+
 function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
+    if d_indv(sc.integrand) != ()
+        return _integrate_cubqmclatticeg_multi(sc, resume)
+    end
     R = sc.n_reps
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
 
