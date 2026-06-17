@@ -421,55 +421,64 @@ function run_one_notebook(
     timeout::Int,
 )
     print("Running ", nb, " ... ")
-    clogger.current_nb[] = nb
-    captured = Ref("")
+    # Execute the notebook in a *child process* and enforce the timeout by
+    # killing that process. The previous in-process approach used
+    # `Threads.@spawn` + `schedule(task, InterruptException())`, which cannot
+    # interrupt a task blocked inside a native `ccall` (e.g. the qmctoolscl C
+    # library that backs `gen_samples`). When such a call ran long, the soft
+    # timeout never fired and CI hung until the GitHub step timeout cancelled
+    # the whole job. Killing the process always works.
+    cmd = addenv(
+        Cmd(vcat(collect(Base.julia_cmd()), [joinpath(@__DIR__, "run_notebooks.jl")])),
+        "JULIA_PROJECT" => current_project_dir(),
+        "JULIA_NUM_THREADS" => string(Threads.nthreads()),
+        "QMC_SKIP_PKG_SETUP" => "1",
+        "QMC_NB_ONE" => nb,
+        "QMC_NOTEBOOK_VERBOSE" => verbose ? "1" : "0",
+    )
+    buf = IOBuffer()
+    proc = run(pipeline(ignorestatus(cmd); stdout=buf, stderr=buf); wait=false)
     failed = false
     err_text = ""
     elapsed = @elapsed begin
-        task = Threads.@spawn begin
-            runner = () -> with_logger(clogger) do
-                @nbinclude(joinpath(demos_dir, nb))
+        if timedwait(() -> process_exited(proc), float(timeout); pollint=1.0) == :timed_out
+            kill(proc)                                   # SIGTERM
+            if timedwait(() -> process_exited(proc), 10.0; pollint=0.5) == :timed_out
+                kill(proc, 9)                            # SIGKILL
             end
-            if verbose
-                with_suppressed_display() do
-                    runner()
-                end
-                ""
-            else
-                mktemp() do _, io
-                    with_suppressed_display() do
-                        redirect_stdout(runner, io)
-                    end
-                    flush(io)
-                    seekstart(io)
-                    read(io, String)
-                end
-            end
-        end
-        timed_out = timedwait(() -> istaskdone(task), timeout; pollint=1.0) == :timed_out
-        if timed_out
-            schedule(task, InterruptException(); error=true)
+            wait(proc)
             failed = true
-            err_text = "timed out after $(fmt_duration(timeout))"
+            err_text = "timed out after $(fmt_duration(timeout)) (process killed)"
         else
-            try
-                captured[] = fetch(task)
-            catch e
-                failed = true
-                err_text = sprint(io -> showerror(io, e, catch_backtrace()))
-            end
+            failed = !success(proc)
+            failed && (err_text = "notebook process exited with code $(proc.exitcode)")
         end
     end
 
-    warnings = get(clogger.counts, nb, 0)
+    # The child appends a machine-readable result line; parse and strip it so
+    # warning counts still feed the run summary.
+    warnings = 0
+    kept = String[]
+    for ln in split(String(take!(buf)), '\n')
+        m = match(r"^##QMC_NB_RESULT ok=(\w+) warnings=(\d+)$", ln)
+        if m === nothing
+            push!(kept, ln)
+        else
+            m.captures[1] == "false" && (failed = true)
+            warnings = parse(Int, m.captures[2])
+        end
+    end
+    captured = join(kept, '\n')
+
     if failed
         println("FAILED")
-        if !isempty(captured[])
-            println("---- captured notebook stdout ----")
-            print(captured[])
-            endswith(captured[], '\n') || println()
-            println("---- end captured stdout ----")
+        if !isempty(strip(captured))
+            println("---- captured notebook output ----")
+            print(captured)
+            endswith(captured, '\n') || println()
+            println("---- end captured output ----")
         end
+        isempty(err_text) && (err_text = "notebook failed")
         println("  x FAILED: ", err_text)
         println("  time: ", fmt_duration(elapsed))
         return false, elapsed, warnings
@@ -590,6 +599,33 @@ function collect_notebooks(demos_dir::AbstractString)
 end
 
 demos_dir = joinpath(@__DIR__, "..", "demos")
+
+# Child mode: execute exactly one notebook in-process and exit. The parent
+# (`run_one_notebook`) launches this with QMC_NB_ONE set and enforces the
+# per-notebook timeout by killing the process — the only reliable way to stop a
+# notebook stuck inside a native `ccall` (e.g. qmctoolscl).
+if haskey(ENV, "QMC_NB_ONE")
+    one_nb = ENV["QMC_NB_ONE"]
+    one_clog = CountingLogger()
+    one_clog.current_nb[] = one_nb
+    one_ok = true
+    try
+        with_suppressed_display() do
+            with_logger(one_clog) do
+                @nbinclude(joinpath(demos_dir, one_nb))
+            end
+        end
+    catch e
+        one_ok = false
+        showerror(stderr, e, catch_backtrace())
+        println(stderr)
+    end
+    flush(stdout)
+    flush(stderr)
+    println("##QMC_NB_RESULT ok=$(one_ok) warnings=$(get(one_clog.counts, one_nb, 0))")
+    exit(one_ok ? 0 : 1)
+end
+
 all_notebooks = collect_notebooks(demos_dir)
 opts, selectors = parse_args(ARGS)
 notebooks = select_shard(select_notebooks(all_notebooks, selectors), opts)
