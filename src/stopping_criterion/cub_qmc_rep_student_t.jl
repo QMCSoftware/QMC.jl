@@ -28,13 +28,23 @@ algorithm doubles only the components that have not yet converged.
 - `error_fun::Symbol`: `:either` (max of abs/rel), `:both` (min of abs/rel).
 - `trace_iterations::Bool`: enable iteration logging.
 
-# Example
-```julia
-dd = DigitalNetB2(3; replications=25, randomize=:LMS_DS)
-tm = Uniform(dd)
-f  = Keister(tm)
-sc = CubQMCRepStudentT(f; abs_tol=1e-3, rel_tol=0.0)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = Genz(Uniform(DigitalNetB2(2; randomize="LMS_DS", seed=901, replications=4)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+Genz(:continuous, d=2)
+
+julia> sc = CubQMCRepStudentT(f; abs_tol=0.2, n_init=32, n_limit=128)
+CubQMCRepStudentT(abs_tol=0.2, alpha=0.01, inflate=1.0)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+0.6195
+
+julia> result.data[:converged]
+true
 ```
 
 # References
