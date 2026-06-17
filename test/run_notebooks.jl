@@ -14,7 +14,7 @@ if get(ENV, "QMC_SKIP_PKG_SETUP", "0") != "1"
     Pkg.instantiate()
 end
 
-import NBInclude: @nbinclude, nbinclude
+import NBInclude: @nbinclude
 using Logging
 
 # NBInclude executes notebook display calls through Base.display, which can hit
@@ -426,11 +426,9 @@ function run_one_notebook(
     failed = false
     err_text = ""
     elapsed = @elapsed begin
-        nb_module = Module()
-        Core.eval(nb_module, :(using Base))
         task = Threads.@spawn begin
             runner = () -> with_logger(clogger) do
-                nbinclude(nb_module, joinpath(demos_dir, nb))
+                @nbinclude(joinpath(demos_dir, nb))
             end
             if verbose
                 with_suppressed_display() do
