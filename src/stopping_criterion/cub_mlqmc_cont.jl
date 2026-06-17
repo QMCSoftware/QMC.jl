@@ -30,13 +30,23 @@ Set `trace_iterations=true` to record an `IterationLog` in
 - `inflate`: Multiplication factor between successive tolerances (≥ 1).
 - `theta_init`: Initial error-splitting parameter.
 
-# Example
-```julia
-dd = Lattice(1; replications=16)
-tm = BrownianMotion(dd)
-f = FinancialOptionML(tm)
-sc = CubMLQMCCont(f; abs_tol=0.01)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = FinancialOptionML(Lattice(32; replications=8, seed=7); d_coarsest=4, option_type=:asian)
+FinancialOptionML(:asian, :call, d=32, d_coarsest=4, levels=4)
+
+julia> sc = CubMLQMCCont(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6, n_tols=5)
+CubMLQMCCont(rmse_tol=1.94e-01, n_init=64, reps=8, n_tols=5)
+
+julia> result = integrate(sc);
+
+julia> result.data[:replications]
+8
+
+julia> result.data[:n_total] > 0
+true
 ```
 
 # References
