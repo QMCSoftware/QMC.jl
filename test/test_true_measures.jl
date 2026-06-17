@@ -52,6 +52,52 @@
         @test all(gbm .> 0.0)
     end
 
+    @testset "Replicated transforms" begin
+        ddg = DigitalNetB2(3; seed=7, replications=2)
+        tmg = Gaussian(ddg; mean=0.0, covariance=3.0)
+        xg = gen_samples(ddg, 4)
+        yg = transform(tmg, xg)
+        @test size(yg) == (2, 4, 3)
+        @test @view(yg[1, :, :]) ≈ transform(tmg, @view xg[1, :, :])
+        @test @view(yg[2, :, :]) ≈ transform(tmg, @view xg[2, :, :])
+
+        ddz = DigitalNetB2(2; randomize="none", seed=8, replications=2)
+        tmz = ZeroInflatedExpUniform(ddz; p_zero=0.3, rate=2.0)
+        xz = gen_samples(ddz, 6)
+        yz = transform(tmz, xz)
+        @test size(yz) == (2, 6, 1)
+        @test @view(yz[1, :, :]) ≈ transform(tmz, @view xz[1, :, :])
+        @test @view(yz[2, :, :]) ≈ transform(tmz, @view xz[2, :, :])
+
+        ddar = DigitalNetB2(3; randomize="none", seed=7, replications=2)
+        tmar =
+            AcceptanceRejection(ddar; pdf_func=x -> 6.0 * x[1] * x[2], envelope_multiplier=6.0)
+        xar = gen_samples(ddar, 16)
+        yar = transform(tmar, xar)
+        @test yar isa Vector{Matrix{Float64}}
+        @test length(yar) == 2
+        @test yar[1] == transform(tmar, @view xar[1, :, :])
+        @test yar[2] == transform(tmar, @view xar[2, :, :])
+
+        logit(u) = log(u / (1 - u))
+        lpdf(z) = exp(-z) / (1 + exp(-z))^2
+        ddarr = DigitalNetB2(2; randomize="none", seed=7, replications=2)
+        tmarr = AcceptanceRejectionReal(
+            ddarr;
+            target_density=z -> 0.5 * lpdf(z[1]),
+            inv_cdfs=[logit],
+            H_func=z -> lpdf(z[1]),
+            upper_bound=1.0,
+            density_integral=0.5,
+        )
+        xarr = gen_samples(ddarr, 16)
+        yarr = transform(tmarr, xarr)
+        @test yarr isa Vector{Matrix{Float64}}
+        @test length(yarr) == 2
+        @test yarr[1] == transform(tmarr, @view xarr[1, :, :])
+        @test yarr[2] == transform(tmarr, @view xarr[2, :, :])
+    end
+
     @testset "BrownianMotion" begin
         dd = IIDStdUniform(4; seed=40)
         tm = BrownianMotion(dd)

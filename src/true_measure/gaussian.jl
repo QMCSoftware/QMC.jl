@@ -34,9 +34,9 @@ julia> round.(transform(true_measure, gen_samples(true_measure.dd, 4)); digits=8
 ```jldoctest
 julia> using QMC
 
-julia> x = gen_samples(DigitalNetB2(3; seed=7, replications=2), 4);
+julia> tm = Gaussian(DigitalNetB2(3; seed=7, replications=2); mean=0.0, covariance=3.0);
 
-julia> size(x)
+julia> size(transform(tm, gen_samples(tm.dd, 4)))
 (2, 4, 3)
 ```
 """
