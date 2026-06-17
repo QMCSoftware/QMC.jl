@@ -10,6 +10,23 @@ Each dimension is independently transformed through the triangular PPF.
 - `lower`: lower bound (scalar or d-vector).
 - `upper`: upper bound (scalar or d-vector).
 - `mode`: peak/mode (scalar or d-vector), must satisfy lower ≤ mode ≤ upper.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> tm = Triangular(dd; lower=0.0, upper=2.0, mode=1.0)
+Triangular(d=2)
+
+julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+ 1.44908   0.842264
+ 0.83456   1.46093
+ 1.10361   0.457611
+ 0.443273  1.11085
+```
 """
 struct Triangular{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     dd::D
