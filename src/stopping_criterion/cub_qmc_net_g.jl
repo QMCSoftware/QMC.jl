@@ -51,6 +51,23 @@ julia> round(result.solution; digits=4)
 julia> result.data[:converged]
 true
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=77);
+
+julia> g = CustomFun(Uniform(dd), x -> x[:, 1].^2 .+ x[:, 2])
+CustomFun(d=2)
+
+julia> result = integrate(CubQMCNetG(g; abs_tol=1e-3, control_variates=g, control_variate_means=5 / 6));
+
+julia> isapprox(result.solution, 5 / 6; atol=1e-10)
+true
+
+julia> result.data[:error_bound] < 1e-10
+true
+```
 """
 mutable struct CubQMCNetG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     integrand::I

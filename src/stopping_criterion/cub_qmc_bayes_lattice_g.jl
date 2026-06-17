@@ -17,6 +17,18 @@ Set `trace_iterations=true` to record an `IterationLog` in
 ```jldoctest
 julia> using QMC
 
+julia> k = Keister(Gaussian(Lattice(2; seed=123456789); covariance=0.5))
+Keister(d=2)
+
+julia> result = integrate(CubQMCBayesLatticeG(k; abs_tol=1e-4));
+
+julia> abs(result.solution - keister_exact(2)) < 5e-4
+true
+```
+
+```jldoctest
+julia> using QMC
+
 julia> f = Genz(Uniform(Lattice(2; randomize=true, seed=7)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
 Genz(:continuous, d=2)
 

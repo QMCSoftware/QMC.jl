@@ -47,6 +47,23 @@ julia> solution = QMC.integrate(sc).solution;
 julia> isapprox(solution, 1.18947477; atol=2e-4) # QMCPy doctest reference
 true
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = Lattice(2; randomize=true, seed=77);
+
+julia> g = CustomFun(Uniform(dd), x -> x[:, 1].^2 .+ x[:, 2])
+CustomFun(d=2)
+
+julia> result = integrate(CubQMCLatticeG(g; abs_tol=1e-3, control_variates=g, control_variate_means=5 / 6));
+
+julia> isapprox(result.solution, 5 / 6; atol=1e-10)
+true
+
+julia> result.data[:error_bound] < 1e-10
+true
+```
 """
 mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     integrand::I
