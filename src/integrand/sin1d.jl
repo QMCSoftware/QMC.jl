@@ -5,6 +5,19 @@ One-dimensional sinusoidal test function: f(t) = sin(t) on U[0, 2πk].
 
 The true measure should map uniform [0,1] samples to [0, 2πk].
 Exact integral = 0 for integer k.
+
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = Sin1D(Uniform(DigitalNetB2(1; seed=7); lower_bound=0.0, upper_bound=2π))
+Sin1D(k=1)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); sigdigits=5)
+-2.9273e-18
+```
 """
 struct Sin1D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

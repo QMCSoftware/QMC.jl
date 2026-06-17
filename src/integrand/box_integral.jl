@@ -10,6 +10,19 @@ is smooth; for `s < 0` it has an integrable singularity at the origin.
 
 The exact integral is known for certain values of s and d (see BoxIntegral
 tables by Bailey, Borwein, and Crandall).
+
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = BoxIntegral(Uniform(DigitalNetB2(2; seed=7)); s=7.0)
+BoxIntegral(d=2, s=7.0)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); digits=4)
+0.752
+```
 """
 struct BoxIntegral{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

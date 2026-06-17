@@ -28,13 +28,23 @@ Set `trace_iterations=true` to record an `IterationLog` in
 - `levels_max`: Maximum number of refinement levels.
 - `alpha0`, `beta0`, `gamma0`: Convergence rates. If ≤ 0, estimated automatically.
 
-# Example
-```julia
-dd = IIDStdUniform(1)
-tm = BrownianMotion(dd)
-f = FinancialOptionML(tm)  # a multilevel integrand
-sc = CubMLMC(f; abs_tol=0.05)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = FinancialOptionML(IIDStdUniform(32; seed=7); d_coarsest=4, option_type=:asian)
+FinancialOptionML(:asian, :call, d=32, levels=4)
+
+julia> sc = CubMLMC(f; abs_tol=0.5, n_init=256, levels_min=2, levels_max=6)
+CubMLMC(rmse_tol=1.94e-01, n_init=256, levels_min=2, levels_max=6)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+6.4511
+
+julia> result.data[:levels]
+4
 ```
 
 # References

@@ -1,4 +1,4 @@
-name: "Doc & Unit Tests: Linux"
+name: "Doc and Unit Tests: Linux"
 
 on:
   push:
