@@ -12,6 +12,36 @@ The true measure should map uniform [0,1]³ samples to (-π, π)³.
 # Exact Sobol' indices (known analytically)
 The exact mean, variance, and Sobol' indices are computable in closed form
 for given a, b.
+
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = Ishigami(Uniform(DigitalNetB2(3; seed=7); lower_bound=-π, upper_bound=π))
+Ishigami(a=7.0, b=0.1)
+
+julia> y = sample_and_evaluate(f, 2^12);
+
+julia> round(mean(y); digits=4)
+3.5
+
+julia> ref = ishigami_exact();
+
+julia> round(ref.mean; digits=4)
+3.5
+
+julia> round.(ref.closed; digits=4)
+3-element Vector{Float64}:
+ 0.3139
+ 0.4424
+ 0.0
+
+julia> round.(ref.total; digits=4)
+3-element Vector{Float64}:
+ 0.5576
+ 0.4424
+ 0.2437
+```
 """
 struct Ishigami{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

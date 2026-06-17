@@ -10,11 +10,21 @@ second dimension generates the value.
 
 Requires `dd.dimension == 2`.
 
-# Example
-```julia
-dd = IIDStdUniform(2; seed=7)
-tm = ZeroInflatedExpUniform(dd; p_zero=0.3, rate=2.0)
-x = transform(tm, gen_samples(dd, 1000))
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> tm = ZeroInflatedExpUniform(IIDStdUniform(2; seed=7); p_zero=0.3, rate=2.0)
+ZeroInflatedExpUniform(p_zero=0.30, rate=2.00)
+
+julia> round.(transform(tm, gen_samples(tm.dd, 6)); digits=6)
+6×1 Matrix{Float64}:
+ 0.052388
+ 0.357784
+ 0.426401
+ 0.0
+ 2.125008
+ 0.283284
 ```
 """
 struct ZeroInflatedExpUniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
