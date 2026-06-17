@@ -18,11 +18,20 @@ and finally adds the mean vector:
   `:Cholesky` (lower Cholesky factor). Default `:PCA`.
 
 # Examples
-```julia
-dd = IIDStdUniform(2; seed=7)
-tm = Gaussian(dd; mean=[1.0, 2.0], covariance=[1.0 0.5; 0.5 1.0])
-x = gen_samples(dd, 256)
-y = transform(tm, x)  # 256×2 Gaussian samples
+```jldoctest
+julia> using QMC
+
+julia> dd = IIDStdUniform(2; seed=42);
+
+julia> tm = Gaussian(dd; mean=[1.0, 2.0], covariance=[1.0 0.5; 0.5 1.0]);
+
+julia> x = gen_samples(dd, 3);
+
+julia> round.(transform(tm, x); digits=6)
+3×2 Matrix{Float64}:
+  1.01927   2.9434
+ -1.1206    1.49104
+  0.694113  2.20964
 ```
 """
 struct Gaussian{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure

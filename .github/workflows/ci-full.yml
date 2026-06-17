@@ -49,3 +49,7 @@ jobs:
 
       - name: Run unit tests
         run: julia --project=. -e 'using Pkg; Pkg.test()'
+
+      - name: Run doctests
+        if: matrix.os == 'ubuntu-latest' && matrix.julia-version == '1.10'
+        run: make doctest

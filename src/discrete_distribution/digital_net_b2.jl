@@ -58,10 +58,20 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
   each entry across the generating-matrix bit width before use.
 
 # Examples
-```julia
-dn = DigitalNetB2(3; seed=7)
-x = gen_samples(dn, 1024)  # 1024×3 scrambled Sobol' points
+```jldoctest
+julia> using QMC
 
+julia> dn = DigitalNetB2(3; seed=7);
+
+julia> round.(gen_samples(dn, 4); digits=6)
+4×3 Matrix{Float64}:
+ 0.848245  0.354704  0.359693
+ 0.348245  0.854704  0.859693
+ 0.598245  0.104704  0.609693
+ 0.098245  0.604704  0.109693
+```
+
+```julia
 dn_r = DigitalNetB2(3; seed=7, replications=16)
 x = gen_samples(dn_r, 1024)  # 16×1024×3 array
 

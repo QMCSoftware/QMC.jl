@@ -17,12 +17,27 @@ interval remains valid; each replicate's estimate becomes
 Supports **resume** and optional **iteration logging** (`trace_iterations=true`).
 
 # Example
-```julia
-dd = Lattice(3; randomize=true)
-tm = Uniform(dd)
-f = Genz(tm; kind=:oscillatory)
-sc = CubQMCLatticeG(f; abs_tol=1e-4)
-result = integrate(sc)
+```jldoctest
+julia> using QMC
+
+julia> dd = Lattice(3; randomize=true, seed=7);
+
+julia> tm = Gaussian(dd; covariance=0.5);
+
+julia> f = Keister(tm);
+
+julia> sc = CubQMCLatticeG(f; abs_tol=1e-3);
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=6)
+2.168409
+
+julia> round(keister_exact(3); digits=6)
+2.168309
+
+julia> isapprox(result.solution, keister_exact(3); atol=5e-3)
+true
 ```
 """
 mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion

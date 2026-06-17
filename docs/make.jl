@@ -5,6 +5,7 @@ makedocs(
     sitename = "QMC.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
     modules = [QMC],
+    doctest = ("doctest=only" in ARGS) ? :only : true,
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
@@ -26,6 +27,7 @@ makedocs(
             "Internals" => "api/internals.md",
         ],
         "Demos" => "demos.md",
+        "Doctests" => "doctests.md",
         "CI/CD Testing" => "ci-testing.md",
         "Workflow Debugging" => "workflow-debugging.md",
         "Contributing" => "contributing.md",

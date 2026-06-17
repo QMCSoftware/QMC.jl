@@ -45,6 +45,9 @@ manual dispatch.
 - Installs Python 3.13 and pinned `qmctoolscl` from `test/requirements.txt`.
 - Executes `make coverage`, which runs `test/runtests.jl` with Julia coverage
   instrumentation enabled.
+- Executes `make doctest`, which runs the Documenter `jldoctest` examples from
+  both `docs/src/` and the package docstrings under `src/` without a full docs
+  render.
 - Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub
   Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each
   shard to avoid oversubscription.
@@ -59,8 +62,8 @@ A cross-platform sweep for protected branches.
   branches, and via manual dispatch.
 - Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and
   Windows on Julia 1.12.
-- Runs unit tests only so macOS/Windows jobs remain relatively fast and less
-  brittle.
+- Runs unit tests on every lane and `make doctest` on the Linux Julia 1.10 lane
+  so macOS/Windows jobs remain relatively fast and less brittle.
 
 ## Benchmarking (`benchmarking.yml`)
 
@@ -109,6 +112,12 @@ make test TEST_JOBS=2 TEST_THREADS=1
 julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
 # or
 make coverage TEST_JOBS=2 TEST_THREADS=1
+```
+
+**Documenter doctests:**
+
+```bash
+make doctest
 ```
 
 **A single demo notebook:**
