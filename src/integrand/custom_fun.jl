@@ -4,11 +4,37 @@
 User-supplied integrand. Wraps any function `g(x)` where `x` is a matrix
 of transformed sample points (n×d). Returns a vector of length n.
 
-# Example
-```julia
-dd = IIDStdUniform(2)
-tm = Uniform(dd; lower_bound=0.0, upper_bound=1.0)
-f = CustomFun(tm, x -> sum(x .^ 2, dims=2)[:])
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = CustomFun(
+           Gaussian(DigitalNetB2(2; seed=7); mean=[1, 2]),
+           t -> t[:, 1].^2 .* t[:, 2],
+       )
+CustomFun(d=2)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); digits=4)
+3.9986
+```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = IIDStdUniform(2; seed=7);
+
+julia> tm = Uniform(dd; lower_bound=0.0, upper_bound=1.0);
+
+julia> f = CustomFun(tm, x -> sum(x .^ 2, dims=2)[:])
+CustomFun(d=2)
+
+julia> round.(sample_and_evaluate(f, 3); digits=4)
+3-element Vector{Float64}:
+ 0.4194
+ 1.1966
+ 0.9144
 ```
 """
 struct CustomFun{TM <: AbstractTrueMeasure, G} <: AbstractIntegrand
