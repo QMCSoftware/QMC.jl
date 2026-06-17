@@ -43,7 +43,7 @@ function DistributionsWrapper(
 )
     d = dd.dimension
     if !isnothing(distribution) && isnothing(marginals)
-        margs = fill(distribution, d)
+        margs = Vector{Distributions.UnivariateDistribution}(fill(distribution, d))
     elseif isnothing(distribution) && !isnothing(marginals)
         length(marginals) == d || throw(
             ArgumentError("marginals length ($(length(marginals))) must match dimension ($d)"),
