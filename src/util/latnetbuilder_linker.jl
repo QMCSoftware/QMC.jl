@@ -10,10 +10,27 @@ vector (for ordinary lattice rules) or generating matrices (for digital nets).
 - `n_points::Int`: number of points
 - `dim::Int`: number of dimensions
 
-# Example
-```julia
-type, gv, n, d = latnetbuilder_linker("path/to/latnetbuilder/output/")
-dd = Lattice(d; gen_vector=gv)  # if custom gen_vector support is added
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> mktempdir() do d
+           open(joinpath(d, "outputMachine.txt"), "w") do io
+               write(io, join([
+                   "Ordinary  // type",
+                   "8  // n_points",
+                   "3  // dim",
+                   "comment",
+                   "comment",
+                   "1  // gen1",
+                   "3  // gen2",
+                   "5  // gen3",
+                   "",
+               ], "\\n"))
+           end
+           latnetbuilder_linker(d)
+       end
+(:ordinary, UInt64[0x0000000000000001, 0x0000000000000003, 0x0000000000000005], 8, 3)
 ```
 
 Adapted from the LatNetBuilder Python parser:

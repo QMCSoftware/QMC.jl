@@ -17,10 +17,23 @@ data[:iteration_log] = log
 ```
 
 # User-facing
-```julia
-result = integrate(sc)
-show(result.data[:iteration_log])          # print table
-rows  = iterations(result.data[:iteration_log])  # Vector{NamedTuple}
+```jldoctest
+julia> using QMC
+
+julia> log = IterationLog()
+IterationLog (empty)
+
+julia> push!(log; n=128, solution=1.25, error_bound=0.1, tol=0.2, elapsed=0.5);
+
+julia> push!(log; n=256, solution=1.2, error_bound=0.05, tol=0.2, elapsed=0.8);
+
+julia> length(log)
+2
+
+julia> iterations(log)
+2-element Vector{@NamedTuple{iter::Int64, n::Int64, solution::Float64, error_bound::Float64, tol::Float64, elapsed::Float64}}:
+ (iter = 1, n = 128, solution = 1.25, error_bound = 0.1, tol = 0.2, elapsed = 0.5)
+ (iter = 2, n = 256, solution = 1.2, error_bound = 0.05, tol = 0.2, elapsed = 0.8)
 ```
 """
 mutable struct IterationLog

@@ -10,10 +10,27 @@ without requiring an explicit bit-reversal permutation.
 Equivalent to `fft(bitreverse_permute(x))` but potentially more efficient
 for in-place FFT implementations.
 
-# Example
-```julia
-x = [1.0, 3.0, 2.0, 4.0]  # BRO-ordered data
-X = bro_fft(x)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> bro_fft([1.0, 2.0, 3.0, 4.0])
+4-element Vector{ComplexF64}:
+ 10.0 + 0.0im
+ -1.0 + 1.0im
+ -4.0 + 0.0im
+ -1.0 - 1.0im
+```
+
+```jldoctest
+julia> using QMC
+
+julia> bro_ifft(ComplexF64[10, -1 + 1im, -4, -1 - 1im])
+4-element Vector{Float64}:
+ 1.0
+ 2.0
+ 3.0
+ 4.0
 ```
 """
 function bro_fft(x::Vector{Float64})
