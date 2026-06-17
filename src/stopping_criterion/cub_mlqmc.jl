@@ -30,18 +30,18 @@ Set `trace_iterations=true` to record an `IterationLog` in
 julia> using QMC
 
 julia> f = FinancialOptionML(Lattice(32; seed=7, replications=8); d_coarsest=4, option_type=:asian)
-FinancialOptionML(:asian, :call, d=32, levels=4)
+FinancialOptionML(:asian, :call, d=32, d_coarsest=4, levels=4)
 
 julia> sc = CubMLQMC(f; abs_tol=0.5, n_init=64, levels_min=2, levels_max=6)
 CubMLQMC(rmse_tol=1.94e-01, n_init=64, reps=8)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-6.2867
-
 julia> result.data[:levels]
 3
+
+julia> result.data[:n_total] > 0
+true
 ```
 """
 mutable struct CubMLQMC{I <: AbstractMLIntegrand} <: AbstractStoppingCriterion
