@@ -16,18 +16,24 @@ point function / quantile function).
 - `marginals`: A vector of `d` univariate distributions, one per dimension.
 
 # Examples
-```julia
-# Same distribution for all dimensions
-dd = Lattice(3; seed=7)
-tm = DistributionsWrapper(dd; distribution=Distributions.Exponential(2.0))
-x = transform(tm, gen_samples(dd, 100))  # 100 × 3 Exponential(2) samples
+```jldoctest
+julia> using QMC
 
-# Different distributions per dimension
-dd = Lattice(2; seed=7)
-tm = DistributionsWrapper(dd; marginals=[
-    Distributions.Normal(0, 1),
-    Distributions.Exponential(1.0)
-])
+julia> import Distributions
+
+julia> dd = Lattice(2; seed=7);
+
+julia> tm = DistributionsWrapper(dd; distribution=Distributions.Exponential(2.0));
+
+julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+ 2.52963   0.551409
+ 0.491055  2.70157
+ 6.86588   9.41281
+ 1.26113   1.35047
+
+julia> size(tm.marginals)
+(2,)
 ```
 """
 struct DistributionsWrapper{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
@@ -43,7 +49,7 @@ function DistributionsWrapper(
 )
     d = dd.dimension
     if !isnothing(distribution) && isnothing(marginals)
-        margs = fill(distribution, d)
+        margs = Vector{Distributions.UnivariateDistribution}(fill(distribution, d))
     elseif isnothing(distribution) && !isnothing(marginals)
         length(marginals) == d || throw(
             ArgumentError("marginals length ($(length(marginals))) must match dimension ($d)"),

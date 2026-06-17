@@ -18,6 +18,23 @@ Returns transformed samples in [0,1)^d.
 - `:C3` — C³ polynomial transform
 - `:BAKER` — Baker's (tent) transform
 - `:NONE` — identity (no transform)
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> x = [0.25 0.5; 0.75 0.1];
+
+julia> round.(periodize(x, :C1SIN); digits=6)
+2×2 Matrix{Float64}:
+ 0.090845  0.5
+ 0.909155  0.006451
+
+julia> periodize(x, :BAKER)
+2×2 Matrix{Float64}:
+ 0.5  1.0
+ 0.5  0.2
+```
 """
 function periodize(x::AbstractMatrix, ptransform::Symbol)
     if ptransform == :NONE || ptransform == :none

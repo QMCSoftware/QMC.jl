@@ -31,6 +31,9 @@ julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
 # or
 make coverage TEST_JOBS=2 TEST_THREADS=1
 
+# Documenter doctests only
+make doctest
+
 # Notebook regression tests
 julia --project=. test/run_notebooks.jl
 # or, sharded across multiple Julia processes
@@ -45,6 +48,9 @@ make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
 
 `make coverage` also processes the raw `*.cov` files locally, writes
 `lcov.info`, and prints a source-coverage summary for `src/`.
+`make doctest` runs the `jldoctest` examples in the package docstrings under
+`src/` and any docs pages that contain doctests, without rendering the full
+HTML docs.
 CI uploads the same LCOV-style output to Codecov and stores it as a workflow
 artifact.
 

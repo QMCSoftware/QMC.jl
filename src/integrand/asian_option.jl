@@ -14,11 +14,27 @@ Payoff (discounted):
 - `:arithmetic` call: ``e^{-rT} \\max(\\bar{S}_{\\mathrm{arith}} - K, 0)``
 - `:geometric` call:  ``e^{-rT} \\max(\\bar{S}_{\\mathrm{geom}} - K, 0)``
 
-# Example
-```julia
-dd = Lattice(13; randomize=true)
-tm = BrownianMotion(dd)
-f = AsianOption(tm; volatility=0.5, start_price=30.0, strike_price=25.0)
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = AsianOption(BrownianMotion(Lattice(13; randomize=true, seed=7)); volatility=0.5, start_price=30.0, strike_price=25.0)
+AsianOption(call, arithmetic, d=13, S0=30.0, K=25.0, σ=0.5)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); digits=4)
+6.3321
+```
+
+```jldoctest
+julia> using QMC
+
+julia> f = AsianOption(BrownianMotion(DigitalNetB2(8; seed=7)); mean_type=:geometric, volatility=0.5, start_price=30.0, strike_price=25.0)
+AsianOption(call, geometric, d=8, S0=30.0, K=25.0, σ=0.5)
+
+julia> round(get_exact_value(f); digits=4)
+6.0394
 ```
 """
 mutable struct AsianOption{TM <: AbstractTrueMeasure} <: AbstractIntegrand

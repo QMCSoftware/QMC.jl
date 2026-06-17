@@ -3,6 +3,21 @@
 
 Convert a float `x` in [0, 1) to its binary representation with `m` bits.
 Returns a vector of `m` integers (0 or 1).
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> to_bin(0.75, 4)
+4-element Vector{Int64}:
+ 1
+ 1
+ 0
+ 0
+
+julia> to_float([1, 1, 0, 0])
+0.75
+```
 """
 function to_bin(x::Real, m::Int)
     @assert 0.0 <= x < 1.0 "x must be in [0, 1), got x = $x"

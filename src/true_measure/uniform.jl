@@ -12,11 +12,31 @@ The Jacobian factor is `prod(upper_bound - lower_bound)`.
 - `upper_bound`: scalar or vector upper bound(s). Default `1.0`.
 
 # Examples
-```julia
-dd = IIDStdUniform(3; seed=42)
-tm = Uniform(dd; lower_bound=-2.0, upper_bound=2.0)
-x = gen_samples(dd, 100)
-y = transform(tm, x)  # 100×3 matrix in [-2, 2]^3
+```jldoctest
+julia> using QMC
+
+julia> tm = Uniform(DigitalNetB2(2; seed=7); lower_bound=[0.0, 0.5], upper_bound=[2.0, 3.0])
+Uniform(d=2, lower=[0.0, 0.5], upper=[2.0, 3.0])
+```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = IIDStdUniform(3; seed=42);
+
+julia> tm = Uniform(dd; lower_bound=-2.0, upper_bound=2.0)
+Uniform(d=3, lower=[-2.0, -2.0, -2.0], upper=[2.0, 2.0, 2.0])
+
+julia> x = gen_samples(dd, 3);
+
+julia> round.(transform(tm, x); digits=6)
+3×3 Matrix{Float64}:
+  0.843295  -1.28916   -0.20969
+ -1.74206   -1.78592   -1.42564
+ -0.088629  -0.787628  -1.16509
+
+julia> QMC.jacobian(tm)
+64.0
 ```
 """
 struct Uniform{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure

@@ -58,21 +58,46 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
   each entry across the generating-matrix bit width before use.
 
 # Examples
-```julia
-dn = DigitalNetB2(3; seed=7)
-x = gen_samples(dn, 1024)  # 1024×3 scrambled Sobol' points
+```jldoctest
+julia> using QMC
 
-dn_r = DigitalNetB2(3; seed=7, replications=16)
-x = gen_samples(dn_r, 1024)  # 16×1024×3 array
+julia> discrete_distrib = DigitalNetB2(2; seed=7);
 
-# Higher-order interlacing
-dn_alpha = DigitalNetB2(3; seed=7, alpha=2)
-x = gen_samples(dn_alpha, 256)  # 256×3 interlaced Sobol' points
+julia> round.(gen_samples(discrete_distrib, 4); digits=8)
+4×2 Matrix{Float64}:
+ 0.84824541  0.354704
+ 0.34824541  0.854704
+ 0.59824541  0.104704
+ 0.09824541  0.604704
 
-# High-dimensional problems
-dn_hd = DigitalNetB2(52; seed=42)
-x = gen_samples(dn_hd, 4096)  # 4096×52 for e.g. Asian option with 52 timesteps
+julia> round.(gen_samples(discrete_distrib, 1); digits=8) # first point in the sequence
+1×2 Matrix{Float64}:
+ 0.49777094  0.625998
 ```
+
+```jldoctest
+julia> x = gen_samples(DigitalNetB2(3; seed=7, replications=2), 4);
+
+julia> size(x)
+(2, 4, 3)
+```
+
+```jldoctest
+julia> round.(gen_samples(DigitalNetB2(2; randomize="none", order="GRAY"), 2; n_start=2); digits=8)
+2×2 Matrix{Float64}:
+ 0.75  0.25
+ 0.25  0.75
+
+julia> round.(gen_samples(DigitalNetB2(2; randomize="none", order="RADICAL INVERSE"), 2; n_start=2); digits=8)
+2×2 Matrix{Float64}:
+ 0.25  0.75
+ 0.75  0.25
+```
+
+Typical larger-scale use cases include higher-order interlacing, e.g.
+`DigitalNetB2(3; seed=7, alpha=2)` for interlaced Sobol' points, and
+high-dimensional settings such as `DigitalNetB2(52; seed=42)` for
+path-dependent problems with many timesteps.
 """
 
 const _SOBOL_BITS = 32

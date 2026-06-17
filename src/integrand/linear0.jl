@@ -7,6 +7,19 @@ The true measure should map uniform samples to [-0.5, 0.5]^d (i.e., a
 `Uniform` measure with `lower_bound=-0.5, upper_bound=0.5`).
 
 Exact integral = 0 by symmetry.
+
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = Linear0(Uniform(DigitalNetB2(100; seed=7); lower_bound=-0.5, upper_bound=0.5))
+Linear0(d=100)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); sigdigits=5)
+-0.0031028
+```
 """
 struct Linear0{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

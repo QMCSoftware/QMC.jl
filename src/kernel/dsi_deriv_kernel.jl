@@ -24,6 +24,17 @@ base `KernelDigShiftInvar`. `kernel_eval(k, x0, x1)` gives the undifferentiated
 value; [`kernel_eval_deriv`](@ref) evaluates mixed partial derivatives. DSI
 derivatives require `α ≥ 3` (the order-2 kernel cannot be differentiated) and
 depend only on `β0 + β1`.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> k = KernelDigShiftInvarDeriv(2, 32)
+KernelDigShiftInvarDeriv(d=2, t=32, alpha=[2, 2], scale=1.0)
+
+julia> round(kernel_eval(k, [0.1, 0.2], [0.4, 0.5]); digits=6)
+0.771478
+```
 """
 struct KernelDigShiftInvarDeriv <: AbstractKernel
     d::Int

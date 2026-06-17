@@ -14,6 +14,23 @@ with a dedicated standard-parameter fast path for `loc=0.0, scale=1.0`.
 - `df`: degrees of freedom (> 0).
 - `loc`: location (scalar or d-vector).
 - `scale`: scale (scalar or d-vector, positive).
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> tm = StudentT(dd; df=2.0)
+StudentT(d=2, df=2.0)
+
+julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+  1.37268   -0.429493
+ -0.450476   1.42346
+  0.283405  -1.82588
+ -1.90887    0.302863
+```
 """
 struct StudentT{D <: AbstractDiscreteDistribution, Standard, QuantileCase} <:
        AbstractTrueMeasure

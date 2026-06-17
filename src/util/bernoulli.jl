@@ -5,6 +5,20 @@ Compute the Bernoulli polynomial B_k(x) for k = 0, 1, ..., 6.
 
 Bernoulli polynomials arise in lattice rule kernel computations
 and error analysis for quasi-Monte Carlo methods.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> bernoulli_poly(0, 0.5)
+1.0
+
+julia> bernoulli_poly(2, 0.5)
+-0.08333333333333334
+
+julia> bernoulli_poly(4, 0.0)
+-0.03333333333333333
+```
 """
 function bernoulli_poly(k::Int, x::Real)
     if k == 0

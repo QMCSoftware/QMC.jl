@@ -23,11 +23,18 @@ and adding the deterministic mean `initial_value + drift * t[j]`.
 - `decomp_type`: covariance decomposition, `:PCA` (default) or `:Cholesky`.
 
 # Examples
-```julia
-dd = IIDStdUniform(64; seed=7)
-bm = BrownianMotion(dd; t_final=2.0, drift=0.05, initial_value=1.0, diffusion=0.5)
-x = gen_samples(dd, 256)
-paths = transform(bm, x)  # 256×64 Brownian motion paths
+```jldoctest
+julia> using QMC
+
+julia> bm = BrownianMotion(DigitalNetB2(4; seed=7); t_final=2.0, drift=2.0)
+BrownianMotion(d=4, drift=2.0, initial_value=0.0, diffusion=1.0, t=[0.5,…,2.0])
+
+julia> x = gen_samples(bm.dd, 2);
+
+julia> round.(transform(bm, x); digits=6)
+2×4 Matrix{Float64}:
+ -0.150693  1.30827  1.56816  1.95239
+  0.61333   1.47243  3.29425  4.92554
 ```
 """
 struct BrownianMotion{D <: AbstractDiscreteDistribution, G <: Gaussian} <: AbstractTrueMeasure

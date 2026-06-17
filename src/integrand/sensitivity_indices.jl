@@ -20,18 +20,30 @@ A matrix of size `(n, 3, k)` where k is the number of index subsets:
 - `[:, 2, j]` = (f(Z) - f(V_j))^2 / 2 — total index numerator
 - `[:, 3, j]` = f(X)^2 — for variance estimation
 
-# Example
-```julia
-dd = DigitalNetB2(8; seed=7)   # 2d = 8, so d = 4
-tm = Gaussian(dd)
-f = Keister(tm)
-si = SensitivityIndices(f)
-x = transform(tm, gen_samples(dd, 2^12))
-y = evaluate(si, x)
-# y has shape (4096, 3, 4)
-mu = mean(y[:, 1, :], dims=1)           # closed numerator means
-var_est = mean(y[:, 3, :], dims=1) .- mean(sqrt.(y[:, 3, :]), dims=1).^2
-closed_indices = mu ./ var_est
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> si = SensitivityIndices(Keister(Gaussian(DigitalNetB2(4; seed=7); covariance=0.5)); indices=:singletons)
+SensitivityIndices(d=4, subsets=4, base=Keister)
+
+julia> tm8 = Gaussian(DigitalNetB2(8; seed=7); covariance=0.5);
+
+julia> x = transform(tm8, gen_samples(tm8.dd, 2^10));
+
+julia> y = evaluate(si, x);
+
+julia> size(y)
+(1024, 3, 4)
+
+julia> closed, total = compute_sensitivity_indices(si, x);
+
+julia> round.(closed; digits=4)
+4-element Vector{Float64}:
+ 0.2369
+ 0.2389
+ 0.2318
+ 0.2483
 ```
 
 # References

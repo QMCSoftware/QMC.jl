@@ -11,13 +11,23 @@ uses a Student's t half-width across the replication means as its stopping rule.
 
 Supports **resume** and optional **iteration logging** (`trace_iterations=true`).
 
-# Example
-```julia
-dd = DigitalNetB2(3; randomize="LMS_DS", seed=7)
-tm = Uniform(dd)
-f = Genz(tm; kind=:oscillatory)
-sc = CubQMCNetGRep(f; abs_tol=1e-4)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = Genz(Uniform(DigitalNetB2(2; randomize="DS", seed=700)); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+Genz(:gaussian_peak, d=2)
+
+julia> sc = CubQMCNetGRep(f; abs_tol=0.1, n_init=2^10, n_reps=16)
+CubQMCNetGRep(abs_tol=0.1, n_reps=16)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+0.8511
+
+julia> result.data[:n_total]
+16384
 ```
 """
 mutable struct CubQMCNetGRep{I <: AbstractIntegrand} <: AbstractStoppingCriterion

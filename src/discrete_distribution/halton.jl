@@ -25,9 +25,30 @@ before `using QMC`.
   `Lattice`/`DigitalNetB2`).
 
 # Examples
-```julia
-hal = Halton(5; seed=42)
-x = gen_samples(hal, 1000)  # 1000×5 matrix
+```jldoctest
+julia> using QMC
+
+julia> hal = Halton(2; seed=7)
+Halton(d=2, randomize=true, generalize=true, replications=nothing)
+
+julia> round.(gen_samples(hal, 4); digits=6)
+4×2 Matrix{Float64}:
+ 0.922487  0.483357
+ 0.422487  0.816691
+ 0.672487  0.150024
+ 0.172487  0.594469
+
+julia> hal2 = Halton(2; randomize=false);
+
+julia> gen_samples(hal2, 4)
+4×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.5   0.333333
+ 0.25  0.666667
+ 0.75  0.111111
+
+julia> size(gen_samples(Halton(3; seed=7, replications=2), 4))
+(2, 4, 3)
 ```
 """
 

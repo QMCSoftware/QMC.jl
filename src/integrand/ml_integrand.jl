@@ -39,6 +39,19 @@ function ml_evaluate end
 
 Return the stochastic dimension needed at the given level.
 Default implementation returns `f.dimension` (same dimension at all levels).
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = FinancialOptionML(GeometricBrownianMotion(IIDStdUniform(4)); d_coarsest=4);
+
+julia> dimension_at_level(f, 0), dimension_at_level(f, 1), dimension_at_level(f, 2)
+(4, 8, 16)
+
+julia> cost_at_level(f, 0), cost_at_level(f, 2)
+(4.0, 16.0)
+```
 """
 dimension_at_level(f::AbstractMLIntegrand, level::Int) = f.dimension
 

@@ -418,42 +418,56 @@ function run_one_notebook(
     demos_dir::AbstractString,
     clogger::CountingLogger,
     verbose::Bool,
+    timeout::Int,
 )
     print("Running ", nb, " ... ")
     clogger.current_nb[] = nb
-    captured = ""
+    captured = Ref("")
     failed = false
     err_text = ""
-    elapsed = @elapsed try
-        runner = () -> with_logger(clogger) do
-            @nbinclude(joinpath(demos_dir, nb))
-        end
-        if verbose
-            with_suppressed_display() do
-                runner()
+    elapsed = @elapsed begin
+        task = Threads.@spawn begin
+            runner = () -> with_logger(clogger) do
+                @nbinclude(joinpath(demos_dir, nb))
             end
-        else
-            mktemp() do _, io
+            if verbose
                 with_suppressed_display() do
-                    redirect_stdout(runner, io)
+                    runner()
                 end
-                flush(io)
-                seekstart(io)
-                captured = read(io, String)
+                ""
+            else
+                mktemp() do _, io
+                    with_suppressed_display() do
+                        redirect_stdout(runner, io)
+                    end
+                    flush(io)
+                    seekstart(io)
+                    read(io, String)
+                end
             end
         end
-    catch e
-        failed = true
-        err_text = sprint(io -> showerror(io, e, catch_backtrace()))
+        timed_out = timedwait(() -> istaskdone(task), timeout; pollint=1.0) == :timed_out
+        if timed_out
+            schedule(task, InterruptException(); error=true)
+            failed = true
+            err_text = "timed out after $(fmt_duration(timeout))"
+        else
+            try
+                captured[] = fetch(task)
+            catch e
+                failed = true
+                err_text = sprint(io -> showerror(io, e, catch_backtrace()))
+            end
+        end
     end
 
     warnings = get(clogger.counts, nb, 0)
     if failed
         println("FAILED")
-        if !isempty(captured)
+        if !isempty(captured[])
             println("---- captured notebook stdout ----")
-            print(captured)
-            endswith(captured, '\n') || println()
+            print(captured[])
+            endswith(captured[], '\n') || println()
             println("---- end captured stdout ----")
         end
         println("  x FAILED: ", err_text)
@@ -477,10 +491,11 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString, opts::
         ok, elapsed, warnings =
             opts.overwrite ?
             run_one_notebook_inplace(nb, demos_dir, opts.kernel, opts.timeout) :
-            run_one_notebook(nb, demos_dir, clogger, verbose)
+            run_one_notebook(nb, demos_dir, clogger, verbose, opts.timeout)
         times[nb] = elapsed
         warnings_by_notebook[nb] = warnings
         ok || push!(errors, nb)
+        GC.gc()
     end
 
     total_warnings = sum(values(warnings_by_notebook); init=0)

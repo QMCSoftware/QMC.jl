@@ -7,6 +7,23 @@
 
 where x ∈ [0,1]². This is useful for testing QMC on functions with
 multiple local features.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> f = Multimodal2D(Uniform(dd))
+Multimodal2D()
+
+julia> round.(sample_and_evaluate(f, 4); digits=6)
+4-element Vector{Float64}:
+ 0.29559
+ 0.677029
+ 0.047796
+ 0.00069
+```
 """
 struct Multimodal2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

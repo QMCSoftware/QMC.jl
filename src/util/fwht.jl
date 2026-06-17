@@ -7,6 +7,31 @@ Length of `x` must be a power of 2.
 The transform computes y = H_n * x where H_n is the n x n
 Hadamard matrix. This is done in O(n log n) operations using
 the butterfly decomposition.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> x = [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0];
+
+julia> fwht!(x)
+8-element Vector{Float64}:
+  4.0
+  2.0
+  0.0
+ -2.0
+  0.0
+  2.0
+  0.0
+  2.0
+
+julia> fwht([1.0, 1.0, 1.0, 1.0])
+4-element Vector{Float64}:
+ 4.0
+ 0.0
+ 0.0
+ 0.0
+```
 """
 function fwht!(x::AbstractVector{T}) where {T <: Real}
     n = length(x)

@@ -16,13 +16,26 @@ Set `trace_iterations=true` to record an `IterationLog` in
 
 Matches QMC v2.3's `CubMCCLT` algorithm.
 
-# Example
-```julia
-dd = IIDStdUniform(3)
-tm = Uniform(dd)
-f = CustomFun(tm, x -> sum(x, dims=2)[:])
-sc = CubMCCLT(f; abs_tol=1e-3)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = CustomFun(
+           Uniform(IIDStdUniform(3; seed=7); lower_bound=0.0, upper_bound=1.0),
+           x -> sum(x, dims=2)[:],
+       )
+CustomFun(d=3)
+
+julia> sc = CubMCCLT(f; abs_tol=0.1, n_init=256, n_max=10^6)
+CubMCCLT(abs_tol=0.1, rel_tol=0.0, inflate=1.2)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+1.5488
+
+julia> result.data[:converged]
+true
 ```
 """
 mutable struct CubMCCLT{I <: AbstractIntegrand} <: AbstractStoppingCriterion

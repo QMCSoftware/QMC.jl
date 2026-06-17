@@ -18,15 +18,24 @@ coefficient space via the Gaussian true measure.
 - `feature_array`: m × p matrix of features.
 - `response_vector`: length-m vector of 0/1 responses.
 
-# Example
-```julia
-X = [1.0 2.0; 3.0 4.0; 5.0 6.0; 7.0 8.0]
-y = [0, 0, 1, 1]
-dd = DigitalNetB2(3; seed=7)
-tm = Gaussian(dd)
-f = BayesianLRCoeffs(tm; feature_array=X, response_vector=y)
-sc = CubMCCLT(f; abs_tol=0.05)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC, Statistics
+
+julia> X = [0.0 1.0; 2.0 3.0; 4.0 5.0; 6.0 7.0];
+
+julia> y = [0.0, 0.0, 1.0, 1.0];
+
+julia> f = BayesianLRCoeffs(Gaussian(DigitalNetB2(3; seed=7)); feature_array=X, response_vector=y)
+BayesianLRCoeffs(d=3, obs=4, features=2)
+
+julia> vals = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(vals); digits=6)
+0.000977
+
+julia> round(sum(vals); digits=6)
+1.0
 ```
 """
 struct BayesianLRCoeffs{TM <: AbstractTrueMeasure} <: AbstractIntegrand

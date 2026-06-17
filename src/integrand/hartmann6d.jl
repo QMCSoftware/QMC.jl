@@ -7,6 +7,23 @@
 
 where x ∈ [0,1]⁶. The global minimum is approximately -3.3224 at
 x* ≈ (0.2017, 0.1500, 0.4769, 0.2753, 0.3117, 0.6573).
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(6; seed=7);
+
+julia> f = Hartmann6D(Uniform(dd))
+Hartmann6D()
+
+julia> round.(sample_and_evaluate(f, 4); digits=6)
+4-element Vector{Float64}:
+ -0.000903
+ -1.395095
+ -0.30553
+ -0.169984
+```
 """
 struct Hartmann6D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

@@ -12,12 +12,22 @@ into the density.
 - `upper_bound`: scalar or vector upper bound(s). Default `1.0`.
 
 # Examples
-```julia
-dd = IIDStdUniform(2; seed=7)
-tm = Lebesgue(dd; lower_bound=0.0, upper_bound=2.0)
-x = gen_samples(dd, 100)
-y = transform(tm, x)        # 100×2 matrix in [0, 2]^2
-tm.volume                   # 4.0
+```jldoctest
+julia> using QMC
+
+julia> tm = Lebesgue(IIDStdUniform(2; seed=7); lower_bound=0.0, upper_bound=2.0)
+Lebesgue(d=2, volume=4.0, lower=[0.0, 0.0], upper=[2.0, 2.0])
+
+julia> x = gen_samples(tm.dd, 3);
+
+julia> round.(transform(tm, x); digits=6)
+3×2 Matrix{Float64}:
+ 1.20227  0.481926
+ 1.88688  1.1072
+ 1.43542  1.26377
+
+julia> tm.volume
+4.0
 ```
 """
 struct Lebesgue{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure

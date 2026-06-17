@@ -27,6 +27,24 @@ coefficients are fit on the pilot sample, reused for every subsequent batch
 (both the fixed-tolerance and the iterative relative-tolerance paths), and
 returned in `result.data[:control_variate_beta]`.
 
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = Keister(Gaussian(IIDStdUniform(2; seed=7)));
+
+julia> sc = CubMCG(f; abs_tol=0.05)
+CubMCG(abs_tol=5.00e-02, rel_tol=0.00e+00, n_init=1024, inflate=1.20)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+0.8483
+
+julia> result.data[:n_total]
+25693
+```
+
 # References
 1. Hickernell, Jiang, Liu, Owen. "Guaranteed conservative fixed width
    confidence intervals via Monte Carlo sampling." MCQMC 2012.

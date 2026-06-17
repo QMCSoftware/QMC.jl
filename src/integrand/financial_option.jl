@@ -29,10 +29,41 @@ For `:barrier`, set `barrier_price` and `barrier_in_out`:
 The up/down direction is determined automatically from `start_price` vs `barrier_price`.
 
 # Examples
-```julia
-dd = Lattice(13; randomize=true)
-tm = BrownianMotion(dd)
-f = FinancialOption(tm; option_type=:european, volatility=0.2, strike_price=100.0, start_price=100.0)
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = FinancialOption(
+           GeometricBrownianMotion(DigitalNetB2(3; seed=7); t_final=1.0, drift=0.0, diffusion=0.25, initial_value=30.0);
+           option_type=:european,
+           strike_price=35.0,
+           call_put=:call,
+       )
+FinancialOption(:european, :call, d=3, S₀=30.0, K=35.0, σ=0.5)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); digits=4)
+4.2482
+
+julia> round(get_exact_value(f); digits=4)
+4.2115
+```
+
+```jldoctest
+julia> using QMC, Statistics
+
+julia> f = FinancialOption(
+           GeometricBrownianMotion(DigitalNetB2(64; seed=7); t_final=1.0, drift=0.0, diffusion=0.25, initial_value=30.0);
+           option_type=:asian,
+           strike_price=35.0,
+           call_put=:call,
+       )
+FinancialOption(:asian, :call, d=64, S₀=30.0, K=35.0, σ=0.5)
+
+julia> y = sample_and_evaluate(f, 2^10);
+
+julia> round(mean(y); digits=4)
+1.8146
 ```
 """
 mutable struct FinancialOption{TM <: AbstractTrueMeasure} <: AbstractIntegrand

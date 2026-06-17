@@ -13,6 +13,23 @@ inverse CDF, making it efficient for QMC.
 - `alpha`: shape parameter α > 0 (scalar or d-vector). Default `2.0`.
 - `beta`: shape parameter β > 0 (scalar or d-vector). Default `2.0` (matches
   QMC v2.3's `a=2, b=2`; QMC.jl's `alpha`/`beta` correspond to QMCPy's `a`/`b`).
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> tm = Kumaraswamy(dd; alpha=[1.0, 2.0], beta=[3.0, 4.0])
+Kumaraswamy(d=2, α=[1.0, 2.0], β=[3.0, 4.0])
+
+julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+ 0.466607  0.322069
+ 0.132982  0.61855
+ 0.262118  0.165141
+ 0.033884  0.455058
+```
 """
 struct Kumaraswamy{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     dd::D

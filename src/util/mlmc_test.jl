@@ -13,7 +13,7 @@ Prints a formatted table with per-level statistics and regression estimates.
 - `gamma::Float64`: cost growth exponent (cost_ℓ ~ 2^{γ·ℓ})
 
 # Example
-```julia
+```text
 dd = IIDStdUniform(4; seed=7)
 tm = GeometricBrownianMotion(dd)
 fml = FinancialOptionML(tm; d_coarsest=4)

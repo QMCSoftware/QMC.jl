@@ -31,13 +31,25 @@ tail and the correction is subtracted from `ytilde` before the bound is formed;
 the mean is recovered as `mean(y − Σ β·g) + Σ β·μ`. The fitted coefficients are
 returned in `result.data[:control_variate_beta]`.
 
-# Example
-```julia
-dd = DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=7)
-tm = Gaussian(dd; covariance=0.5)
-f = Keister(tm)
-sc = CubQMCNetG(f; abs_tol=1e-3)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=2024);
+
+julia> f = Keister(Gaussian(dd; covariance=0.5))
+Keister(d=3)
+
+julia> sc = CubQMCNetG(f; abs_tol=0.01, n_init=2^10)
+CubQMCNetG(abs_tol=0.01)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+2.1685
+
+julia> result.data[:converged]
+true
 ```
 """
 mutable struct CubQMCNetG{I <: AbstractIntegrand} <: AbstractStoppingCriterion

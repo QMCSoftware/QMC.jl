@@ -15,6 +15,23 @@ region is defined by f(x) ≤ 0. This is a standard benchmark in structural
 reliability analysis.
 
 The true measure should be a `Gaussian` with mean 0 and appropriate covariance.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> dd = DigitalNetB2(2; seed=7);
+
+julia> f = FourBranch2D(Gaussian(dd))
+FourBranch2D(k=6.0)
+
+julia> round.(sample_and_evaluate(f, 4); digits=6)
+4-element Vector{Float64}:
+ 0.766402
+ 0.758852
+ 0.749333
+ 0.740474
+```
 """
 struct FourBranch2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     true_measure::TM

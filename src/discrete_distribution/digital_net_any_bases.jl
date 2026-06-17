@@ -22,12 +22,29 @@ Supports Owen (NUS) scrambling and higher-order construction via interlacing
 - `replications`: number of independent randomizations.
 
 # Example
-```julia
-C = zeros(Int, 2, 3, 3)
-C[1,:,:] = [1 0 0; 0 1 0; 1 2 1]
-C[2,:,:] = [2 0 0; 1 2 0; 0 2 2]
-dd = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none")
-x = gen_samples(dd, 9)
+```jldoctest
+julia> using QMC
+
+julia> C = zeros(Int, 2, 3, 3);
+
+julia> C[1,:,:] = [1 0 0; 0 1 0; 1 2 1];
+
+julia> C[2,:,:] = [2 0 0; 1 2 0; 0 2 2];
+
+julia> dd = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none")
+DigitalNetAnyBases(d=2, base=3, α=1)
+
+julia> round.(gen_samples(dd, 9); digits=6)
+9×2 Matrix{Float64}:
+ 0.0       0.0
+ 0.37037   0.777778
+ 0.740741  0.555556
+ 0.185185  0.296296
+ 0.444444  0.740741
+ 0.814815  0.518519
+ 0.259259  0.148148
+ 0.62963   0.925926
+ 0.888889  0.37037
 ```
 """
 mutable struct DigitalNetAnyBases{R <: AbstractRNG} <: AbstractDiscreteDistribution
@@ -205,9 +222,19 @@ Faure sequence: a digital net in a single prime base `b ≥ dimension`.
 Uses Pascal-matrix-based generating matrices.
 
 # Example
-```julia
-dd = Faure(3)
-x = gen_samples(dd, 125)  # 125 = 5^3 points in base 5
+```jldoctest
+julia> using QMC
+
+julia> dd = Faure(3; randomize="none")
+DigitalNetAnyBases(d=3, base=3, α=1)
+
+julia> round.(gen_samples(dd, 5); digits=6)
+5×3 Matrix{Float64}:
+ 0.0       0.0       0.0
+ 0.333333  0.499992  0.624989
+ 0.666667  0.999983  0.874985
+ 0.111111  0.192298  0.159325
+ 0.444444  0.576911  0.434063
 ```
 """
 function Faure(dimension::Int; seed=nothing, randomize::String="none", replications=nothing)

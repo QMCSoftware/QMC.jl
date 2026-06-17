@@ -13,13 +13,23 @@ The shape parameter θ is estimated via MLE or GCV. A periodization transform
 Set `trace_iterations=true` to record an `IterationLog` in
 `result.data[:iteration_log]`.
 
-# Example
-```julia
-dd = Lattice(3; randomize=true, seed=7)
-tm = Uniform(dd)
-f = Genz(tm; kind=:continuous)
-sc = CubQMCBayesLatticeG(f; abs_tol=1e-4)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = Genz(Uniform(Lattice(2; randomize=true, seed=7)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+Genz(:continuous, d=2)
+
+julia> sc = CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12)
+CubQMCBayesLatticeG(abs_tol=0.1, order=2, ptransform=C1SIN)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+0.6192
+
+julia> result.data[:converged]
+true
 ```
 """
 mutable struct CubQMCBayesLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion

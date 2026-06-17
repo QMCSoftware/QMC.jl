@@ -10,13 +10,23 @@ shift-invariant kernels, diagonalized by the Walsh-Hadamard Transform.
 Set `trace_iterations=true` to record an `IterationLog` in
 `result.data[:iteration_log]`.
 
-# Example
-```julia
-dd = DigitalNetB2(3; randomize="LMS_DS", seed=7)
-tm = Uniform(dd)
-f = Genz(tm; kind=:continuous)
-sc = CubQMCBayesNetG(f; abs_tol=1e-4)
-result = integrate(sc)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> f = Genz(Uniform(DigitalNetB2(3; randomize="LMS_DS", seed=7)); kind=:continuous, a=[1.0, 1.0, 1.0], u=[0.5, 0.5, 0.5])
+Genz(:continuous, d=3)
+
+julia> sc = CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_max=2^12)
+CubQMCBayesNetG(abs_tol=0.1, order=2, ptransform=NONE)
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=4)
+0.4873
+
+julia> result.data[:converged]
+true
 ```
 """
 mutable struct CubQMCBayesNetG{I <: AbstractIntegrand} <: AbstractStoppingCriterion

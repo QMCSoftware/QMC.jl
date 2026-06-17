@@ -44,12 +44,55 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
   forms (which define their own cap) raises an `ArgumentError`.
 
 # Examples
-```julia
-dd = Lattice(3; randomize=true, seed=7)
-x = gen_samples(dd, 1024)  # 1024×3 shifted lattice points
+```jldoctest
+julia> using QMC
 
-dd_r = Lattice(3; seed=7, replications=16)
-x = gen_samples(dd_r, 1024)  # 16×1024×3 array
+julia> discrete_distrib = Lattice(2; seed=7);
+
+julia> round.(gen_samples(discrete_distrib, 4); digits=8)
+4×2 Matrix{Float64}:
+ 0.717708  0.240963
+ 0.217708  0.740963
+ 0.967708  0.990963
+ 0.467708  0.490963
+
+julia> round.(gen_samples(discrete_distrib, 1); digits=8) # first point in the sequence
+1×2 Matrix{Float64}:
+ 0.5536  0.631885
+```
+
+```jldoctest
+julia> using QMC
+
+julia> x = QMC.gen_samples(Lattice(3; seed=7, replications=2), 4);
+
+julia> size(x)
+(2, 4, 3)
+```
+
+```jldoctest
+julia> using QMC
+
+julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="RADICAL INVERSE"), 4); digits=8)
+4×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.5   0.5
+ 0.25  0.75
+ 0.75  0.25
+
+julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="GRAY"), 4); digits=8)
+4×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.5   0.5
+ 0.75  0.25
+ 0.25  0.75
+
+julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="LINEAR"), 4); digits=8)
+4×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.25  0.75
+ 0.5   0.5
+ 0.75  0.25
 ```
 """
 mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution

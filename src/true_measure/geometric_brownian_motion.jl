@@ -16,11 +16,16 @@ where BM is a standard Brownian motion, γ is the drift, and σ² is the diffusi
 - `decomp_type`: `:PCA` or `:Cholesky` for the underlying BM covariance decomposition.
 
 # Examples
-```julia
-dd = DigitalNetB2(4; seed=7)
-gbm = GeometricBrownianMotion(dd; t_final=2.0, drift=0.1, diffusion=0.2)
-x = gen_samples(dd, 256)
-paths = transform(gbm, x)  # 256×4 stock price paths
+```jldoctest
+julia> using QMC
+
+julia> gbm = GeometricBrownianMotion(DigitalNetB2(4; seed=7); t_final=2.0, drift=0.1, diffusion=0.2)
+GeometricBrownianMotion(d=4, S₀=1.0, γ=0.1, σ²=0.2)
+
+julia> round.(transform(gbm, gen_samples(gbm.dd, 2)); digits=6)
+2×4 Matrix{Float64}:
+ 0.597736  0.733922  0.527114  0.400228
+ 0.841201  0.789829  1.14064   1.51273
 ```
 """
 struct GeometricBrownianMotion{D <: AbstractDiscreteDistribution, B <: BrownianMotion} <:

@@ -8,12 +8,19 @@ square-root transformation.
 
 Requires `dd.dimension == 2`.
 
-# Example
-```julia
-dd = IIDStdUniform(2; seed=7)
-tm = UniformTriangle(dd)
-x = transform(tm, gen_samples(dd, 1000))
-# x[:,1] >= x[:,2] and both in [0,1]
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> tm = UniformTriangle(IIDStdUniform(2; seed=7))
+UniformTriangle()
+
+julia> round.(transform(tm, gen_samples(tm.dd, 4)); digits=6)
+4×2 Matrix{Float64}:
+ 0.601137  0.5536
+ 0.943441  0.631885
+ 0.717708  0.099473
+ 0.357784  0.240963
 ```
 """
 struct UniformTriangle{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure

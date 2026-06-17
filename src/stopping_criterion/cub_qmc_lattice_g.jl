@@ -17,12 +17,35 @@ interval remains valid; each replicate's estimate becomes
 Supports **resume** and optional **iteration logging** (`trace_iterations=true`).
 
 # Example
-```julia
-dd = Lattice(3; randomize=true)
-tm = Uniform(dd)
-f = Genz(tm; kind=:oscillatory)
-sc = CubQMCLatticeG(f; abs_tol=1e-4)
-result = integrate(sc)
+```jldoctest
+julia> using QMC
+
+julia> k = Keister(Gaussian(Lattice(1; seed=7); covariance=0.5));
+
+julia> sc = CubQMCLatticeG(k; abs_tol=1e-3, rel_tol=0.0);
+
+julia> result = integrate(sc);
+
+julia> round(result.solution; digits=8)
+1.38035581
+
+julia> isapprox(result.solution, 1.38037385; atol=5e-5) # QMCPy doctest reference
+true
+```
+
+```jldoctest
+julia> using QMC
+
+julia> f = BoxIntegral(QMC.Uniform(Lattice(3; seed=11)); s=-1.0);
+
+julia> abs_tol = 1e-3;
+
+julia> sc = QMC.CubQMCLatticeG(f; abs_tol=abs_tol, rel_tol=0.0);
+
+julia> solution = QMC.integrate(sc).solution;
+
+julia> isapprox(solution, 1.18947477; atol=2e-4) # QMCPy doctest reference
+true
 ```
 """
 mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion

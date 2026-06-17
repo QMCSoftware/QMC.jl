@@ -12,10 +12,21 @@ The multivariate kernel is a product: ``K(\\mathbf{x}) = \\prod_j K_r(x_j)``.
 For a rank-1 lattice the kernel matrix is **circulant**, so its eigenvalues are
 obtained via a single FFT of the first column.
 
-# Example
-```julia
-kernel = KernelShiftInvar(order=2)
-eigenvalues = compute_kernel_eigenvalues(kernel, lattice_points)
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> x = [0.0 0.0; 0.5 0.25; 0.25 0.5; 0.75 0.75];
+
+julia> kernel = KernelShiftInvar(order=2)
+KernelShiftInvar(order=2)
+
+julia> round.(compute_kernel_eigenvalues(kernel, x); digits=6)
+4-element Vector{Float64}:
+ 4.002262
+ 0.098714
+ 0.07142
+ 0.098714
 ```
 """
 struct KernelShiftInvar <: AbstractKernel
