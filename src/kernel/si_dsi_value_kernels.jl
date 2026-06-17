@@ -70,6 +70,17 @@ Combined shift-invariant (lattice) product kernel
 `K(x0,x1) = scale ∏_j (1 + γ_j ∑_{a=1}^4 α_{a,j} c_a B_a(δ_j))`, where
 `δ_j = (x0_j - x1_j) mod 1`, `B_a` is the degree-`a` Bernoulli polynomial, and
 `c_a = (-1)^{a+1} (2π)^{2a} / (2a)!`. Port of QMCPy's `KernelShiftInvarCombined`.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> k = KernelShiftInvarCombined(2)
+KernelShiftInvarCombined(d=2, scale=1.0)
+
+julia> round(kernel_eval(k, [0.1, 0.2], [0.4, 0.5]); digits=6)
+4.184073
+```
 """
 struct KernelShiftInvarCombined <: AbstractKernel
     d::Int
