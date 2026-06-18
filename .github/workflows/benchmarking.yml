@@ -57,9 +57,6 @@ jobs:
       - name: Install benchmark Python dependencies
         run: pip install -r benchmark/requirements.txt
 
-      - name: Install dependencies
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
-
       - name: Select baseline
         shell: bash
         run: |
