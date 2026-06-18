@@ -1,0 +1,232 @@
+classDiagram
+  class AbstractDiscreteDistribution
+  AbstractDiscreteDistribution : <<abstract>>
+  class AbstractIntegrand
+  AbstractIntegrand : <<abstract>>
+  class AbstractStoppingCriterion
+  AbstractStoppingCriterion : <<abstract>>
+  class AbstractTrueMeasure
+  AbstractTrueMeasure : <<abstract>>
+  class CubMCCLT
+  CubMCCLT : <<mutable struct>>
+  CubMCCLT : integrand : I
+  CubMCCLT : abs_tol : Float64
+  CubMCCLT : rel_tol : Float64
+  CubMCCLT : n_init : Int
+  CubMCCLT : n_max : Int
+  CubMCCLT : alpha : Float64
+  CubMCCLT : inflate : Float64
+  CubMCCLT : trace_iterations : Bool
+  CubMCCLT : cv_spec : Union{Nothing, _ControlVariateSpec}
+  class CubMCCLTVec
+  CubMCCLTVec : <<mutable struct>>
+  CubMCCLTVec : integrand : I
+  CubMCCLTVec : abs_tol : Float64
+  CubMCCLTVec : rel_tol : Float64
+  CubMCCLTVec : n_init : Int
+  CubMCCLTVec : n_max : Int
+  CubMCCLTVec : alpha : Float64
+  CubMCCLTVec : trace_iterations : Bool
+  class CubMCG
+  CubMCG : <<mutable struct>>
+  CubMCG : integrand : I
+  CubMCG : abs_tol : Float64
+  CubMCG : rel_tol : Float64
+  CubMCG : n_init : Int
+  CubMCG : n_max : Int
+  CubMCG : alpha : Float64
+  CubMCG : inflate : Float64
+  CubMCG : alpha_sigma : Float64
+  CubMCG : kurtmax : Float64
+  CubMCG : trace_iterations : Bool
+  CubMCG : ...
+  class CubMLMC
+  CubMLMC : <<mutable struct>>
+  CubMLMC : integrand : I
+  CubMLMC : rmse_tol : Float64
+  CubMLMC : n_init : Int
+  CubMLMC : n_limit : Int
+  CubMLMC : levels_min : Int
+  CubMLMC : levels_max : Int
+  CubMLMC : theta : Float64
+  CubMLMC : alpha0 : Float64
+  CubMLMC : beta0 : Float64
+  CubMLMC : gamma0 : Float64
+  CubMLMC : ...
+  class CubMLMCCont
+  CubMLMCCont : <<mutable struct>>
+  CubMLMCCont : integrand : I
+  CubMLMCCont : target_tol : Float64
+  CubMLMCCont : n_init : Int
+  CubMLMCCont : n_limit : Int
+  CubMLMCCont : levels_min : Int
+  CubMLMCCont : levels_max : Int
+  CubMLMCCont : n_tols : Int
+  CubMLMCCont : inflate : Float64
+  CubMLMCCont : theta_init : Float64
+  CubMLMCCont : theta : Float64
+  CubMLMCCont : ...
+  class CubMLQMC
+  CubMLQMC : <<mutable struct>>
+  CubMLQMC : integrand : I
+  CubMLQMC : target_tol : Float64
+  CubMLQMC : n_init : Int
+  CubMLQMC : n_limit : Int
+  CubMLQMC : replications : Int
+  CubMLQMC : levels_min : Int
+  CubMLQMC : levels_max : Int
+  CubMLQMC : theta : Float64
+  CubMLQMC : trace_iterations : Bool
+  class CubMLQMCCont
+  CubMLQMCCont : <<mutable struct>>
+  CubMLQMCCont : integrand : I
+  CubMLQMCCont : target_tol : Float64
+  CubMLQMCCont : n_init : Int
+  CubMLQMCCont : n_limit : Int
+  CubMLQMCCont : replications : Int
+  CubMLQMCCont : levels_min : Int
+  CubMLQMCCont : levels_max : Int
+  CubMLQMCCont : n_tols : Int
+  CubMLQMCCont : inflate : Float64
+  CubMLQMCCont : theta_init : Float64
+  CubMLQMCCont : ...
+  class CubQMCBayesLatticeG
+  CubQMCBayesLatticeG : <<mutable struct>>
+  CubQMCBayesLatticeG : integrand : I
+  CubQMCBayesLatticeG : abs_tol : Float64
+  CubQMCBayesLatticeG : rel_tol : Float64
+  CubQMCBayesLatticeG : n_init : Int
+  CubQMCBayesLatticeG : n_max : Int
+  CubQMCBayesLatticeG : order : Int
+  CubQMCBayesLatticeG : ptransform : Symbol
+  CubQMCBayesLatticeG : errbd_type : Symbol
+  CubQMCBayesLatticeG : alpha : Float64
+  CubQMCBayesLatticeG : trace_iterations : Bool
+  class CubQMCBayesNetG
+  CubQMCBayesNetG : <<mutable struct>>
+  CubQMCBayesNetG : integrand : I
+  CubQMCBayesNetG : abs_tol : Float64
+  CubQMCBayesNetG : rel_tol : Float64
+  CubQMCBayesNetG : n_init : Int
+  CubQMCBayesNetG : n_max : Int
+  CubQMCBayesNetG : order : Int
+  CubQMCBayesNetG : ptransform : Symbol
+  CubQMCBayesNetG : errbd_type : Symbol
+  CubQMCBayesNetG : alpha : Float64
+  CubQMCBayesNetG : trace_iterations : Bool
+  class CubQMCLatticeG
+  CubQMCLatticeG : <<mutable struct>>
+  CubQMCLatticeG : integrand : I
+  CubQMCLatticeG : abs_tol : Float64
+  CubQMCLatticeG : rel_tol : Float64
+  CubQMCLatticeG : n_init : Int
+  CubQMCLatticeG : n_max : Int
+  CubQMCLatticeG : n_reps : Int
+  CubQMCLatticeG : alpha : Float64
+  CubQMCLatticeG : trace_iterations : Bool
+  CubQMCLatticeG : cv_spec : Union{Nothing, _ControlVariateSpec}
+  class CubQMCNetG
+  CubQMCNetG : <<mutable struct>>
+  CubQMCNetG : integrand : I
+  CubQMCNetG : abs_tol : Float64
+  CubQMCNetG : rel_tol : Float64
+  CubQMCNetG : n_init : Int
+  CubQMCNetG : n_max : Int
+  CubQMCNetG : r_lag : Int
+  CubQMCNetG : trace_iterations : Bool
+  CubQMCNetG : cv_spec : Union{Nothing, _ControlVariateSpec}
+  class CubQMCNetGRep
+  CubQMCNetGRep : <<mutable struct>>
+  CubQMCNetGRep : integrand : I
+  CubQMCNetGRep : abs_tol : Float64
+  CubQMCNetGRep : rel_tol : Float64
+  CubQMCNetGRep : n_init : Int
+  CubQMCNetGRep : n_max : Int
+  CubQMCNetGRep : n_reps : Int
+  CubQMCNetGRep : alpha : Float64
+  CubQMCNetGRep : trace_iterations : Bool
+  class CubQMCRepStudentT
+  CubQMCRepStudentT : <<mutable struct>>
+  CubQMCRepStudentT : integrand : I
+  CubQMCRepStudentT : abs_tol : Float64
+  CubQMCRepStudentT : rel_tol : Float64
+  CubQMCRepStudentT : n_init : Int
+  CubQMCRepStudentT : n_limit : Int
+  CubQMCRepStudentT : alpha : Float64
+  CubQMCRepStudentT : inflate : Float64
+  CubQMCRepStudentT : error_fun : Symbol
+  CubQMCRepStudentT : trace_iterations : Bool
+  class PFGPCI
+  PFGPCI : <<struct>>
+  PFGPCI : integrand : I
+  PFGPCI : failure_threshold : Float64
+  PFGPCI : failure_above_threshold : Bool
+  PFGPCI : abs_tol : Float64
+  PFGPCI : alpha : Float64
+  PFGPCI : n_init : Int
+  PFGPCI : n_limit : Int
+  PFGPCI : n_batch : Int
+  PFGPCI : n_approx : Int
+  class _ControlVariateSpec
+  _ControlVariateSpec : <<struct>>
+  _ControlVariateSpec : integrands : Vector{AbstractIntegrand}
+  _ControlVariateSpec : means : Vector{Float64}
+  class _MLMCState
+  _MLMCState : <<mutable struct>>
+  _MLMCState : levels : Int
+  _MLMCState : n_level : Vector{Int}
+  _MLMCState : sum_level : Matrix{Float64}
+  _MLMCState : cost_level : Vector{Float64}
+  _MLMCState : mean_level : Vector{Float64}
+  _MLMCState : var_level : Vector{Float64}
+  _MLMCState : cost_per_sample : Vector{Float64}
+  _MLMCState : alpha : Float64
+  _MLMCState : beta : Float64
+  _MLMCState : gamma : Float64
+  _MLMCState : ...
+  class _MLQMCState
+  _MLQMCState : <<mutable struct>>
+  _MLQMCState : levels : Int
+  _MLQMCState : n_level : Vector{Int}
+  _MLQMCState : eval_level : Vector{Bool}
+  _MLQMCState : mean_level_reps : Vector{Vector{Float64}}
+  _MLQMCState : mean_level : Vector{Float64}
+  _MLQMCState : var_level : Vector{Float64}
+  _MLQMCState : cost_level : Vector{Float64}
+  _MLQMCState : var_cost_ratio : Vector{Float64}
+  _MLQMCState : bias_estimate : Float64
+  _MLQMCState : level_dd : Vector{AbstractDiscreteDistribution}
+  _MLQMCState : ...
+  AbstractStoppingCriterion <|-- CubMCCLT
+  AbstractStoppingCriterion <|-- CubMCCLTVec
+  AbstractStoppingCriterion <|-- CubMCG
+  AbstractStoppingCriterion <|-- CubMLMC
+  AbstractStoppingCriterion <|-- CubMLMCCont
+  AbstractStoppingCriterion <|-- CubMLQMC
+  AbstractStoppingCriterion <|-- CubMLQMCCont
+  AbstractStoppingCriterion <|-- CubQMCBayesLatticeG
+  AbstractStoppingCriterion <|-- CubQMCBayesNetG
+  AbstractStoppingCriterion <|-- CubQMCLatticeG
+  AbstractStoppingCriterion <|-- CubQMCNetG
+  AbstractStoppingCriterion <|-- CubQMCNetGRep
+  AbstractStoppingCriterion <|-- CubQMCRepStudentT
+  AbstractStoppingCriterion <|-- PFGPCI
+  CubQMCBayesNetG --> AbstractIntegrand : integrand
+  CubMCCLTVec --> AbstractIntegrand : integrand
+  _ControlVariateSpec --> AbstractIntegrand : integrands
+  PFGPCI --> AbstractIntegrand : integrand
+  CubQMCRepStudentT --> AbstractIntegrand : integrand
+  CubQMCBayesLatticeG --> AbstractIntegrand : integrand
+  CubQMCNetGRep --> AbstractIntegrand : integrand
+  CubQMCNetG --> AbstractIntegrand : integrand
+  CubQMCNetG --> _ControlVariateSpec : cv_spec
+  _MLMCState --> AbstractDiscreteDistribution : level_dd
+  _MLMCState --> AbstractTrueMeasure : level_tm
+  CubQMCLatticeG --> AbstractIntegrand : integrand
+  CubQMCLatticeG --> _ControlVariateSpec : cv_spec
+  CubMCG --> AbstractIntegrand : integrand
+  CubMCG --> _ControlVariateSpec : cv_spec
+  _MLQMCState --> AbstractDiscreteDistribution : level_dd
+  _MLQMCState --> AbstractTrueMeasure : level_tm
+  CubMCCLT --> AbstractIntegrand : integrand
+  CubMCCLT --> _ControlVariateSpec : cv_spec

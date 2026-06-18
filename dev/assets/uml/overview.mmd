@@ -1,0 +1,295 @@
+classDiagram
+  class AbstractDiscreteDistribution
+  AbstractDiscreteDistribution : <<abstract>>
+  class AbstractTrueMeasure
+  AbstractTrueMeasure : <<abstract>>
+  class AbstractIntegrand
+  AbstractIntegrand : <<abstract>>
+  class AbstractStoppingCriterion
+  AbstractStoppingCriterion : <<abstract>>
+  class AbstractKernel
+  AbstractKernel : <<abstract>>
+  class QMCResult
+  QMCResult : <<struct>>
+  class QMCVecResult
+  QMCVecResult : <<struct>>
+  class DigitalNetAnyBases
+  DigitalNetAnyBases : <<mutable struct>>
+  class DigitalNetB2
+  DigitalNetB2 : <<mutable struct>>
+  class Halton
+  Halton : <<mutable struct>>
+  class IIDStdUniform
+  IIDStdUniform : <<mutable struct>>
+  class Kronecker
+  Kronecker : <<struct>>
+  class Lattice
+  Lattice : <<mutable struct>>
+  class AsianOption
+  AsianOption : <<mutable struct>>
+  class BayesianLRCoeffs
+  BayesianLRCoeffs : <<struct>>
+  class BoxIntegral
+  BoxIntegral : <<struct>>
+  class CustomFun
+  CustomFun : <<struct>>
+  class FinancialOption
+  FinancialOption : <<mutable struct>>
+  class FinancialOptionML
+  FinancialOptionML : <<struct>>
+  class FourBranch2D
+  FourBranch2D : <<struct>>
+  class Genz
+  Genz : <<struct>>
+  class Hartmann6D
+  Hartmann6D : <<struct>>
+  class Ishigami
+  Ishigami : <<struct>>
+  class Keister
+  Keister : <<struct>>
+  class Linear0
+  Linear0 : <<struct>>
+  class AbstractMLIntegrand
+  AbstractMLIntegrand : <<abstract>>
+  class Multimodal2D
+  Multimodal2D : <<struct>>
+  class SensitivityIndices
+  SensitivityIndices : <<struct>>
+  class Sin1D
+  Sin1D : <<struct>>
+  class UMBridgeWrapper
+  UMBridgeWrapper : <<struct>>
+  class KernelDigShiftInvar
+  KernelDigShiftInvar : <<struct>>
+  class KernelDigShiftInvarDeriv
+  KernelDigShiftInvarDeriv : <<struct>>
+  class AbstractStationaryKernel
+  AbstractStationaryKernel : <<abstract>>
+  class KernelMatern12
+  KernelMatern12 : <<struct>>
+  class KernelMatern32
+  KernelMatern32 : <<struct>>
+  class KernelMatern52
+  KernelMatern52 : <<struct>>
+  class KernelGaussian
+  KernelGaussian : <<struct>>
+  class KernelRationalQuadratic
+  KernelRationalQuadratic : <<struct>>
+  class KernelSquaredExponential
+  KernelSquaredExponential : <<struct>>
+  class SumKernel
+  SumKernel : <<struct>>
+  class ProductKernel
+  ProductKernel : <<struct>>
+  class KernelMultiTask
+  KernelMultiTask : <<struct>>
+  class KernelMultiTaskDerivs
+  KernelMultiTaskDerivs : <<struct>>
+  class KernelShiftInvar
+  KernelShiftInvar : <<struct>>
+  class KernelShiftInvarDeriv
+  KernelShiftInvarDeriv : <<struct>>
+  class KernelShiftInvarCombined
+  KernelShiftInvarCombined : <<struct>>
+  class KernelDigShiftInvarAdaptiveAlpha
+  KernelDigShiftInvarAdaptiveAlpha : <<struct>>
+  class KernelDigShiftInvarCombined
+  KernelDigShiftInvarCombined : <<struct>>
+  class _ControlVariateSpec
+  _ControlVariateSpec : <<struct>>
+  class CubMCCLT
+  CubMCCLT : <<mutable struct>>
+  class CubMCCLTVec
+  CubMCCLTVec : <<mutable struct>>
+  class CubMCG
+  CubMCG : <<mutable struct>>
+  class CubMLMC
+  CubMLMC : <<mutable struct>>
+  class _MLMCState
+  _MLMCState : <<mutable struct>>
+  class CubMLMCCont
+  CubMLMCCont : <<mutable struct>>
+  class CubMLQMC
+  CubMLQMC : <<mutable struct>>
+  class CubMLQMCCont
+  CubMLQMCCont : <<mutable struct>>
+  class _MLQMCState
+  _MLQMCState : <<mutable struct>>
+  class CubQMCBayesLatticeG
+  CubQMCBayesLatticeG : <<mutable struct>>
+  class CubQMCBayesNetG
+  CubQMCBayesNetG : <<mutable struct>>
+  class CubQMCLatticeG
+  CubQMCLatticeG : <<mutable struct>>
+  class CubQMCNetG
+  CubQMCNetG : <<mutable struct>>
+  class CubQMCNetGRep
+  CubQMCNetGRep : <<mutable struct>>
+  class CubQMCRepStudentT
+  CubQMCRepStudentT : <<mutable struct>>
+  class PFGPCI
+  PFGPCI : <<struct>>
+  class AcceptanceRejection
+  AcceptanceRejection : <<struct>>
+  class AcceptanceRejectionReal
+  AcceptanceRejectionReal : <<struct>>
+  class BernoulliCont
+  BernoulliCont : <<struct>>
+  class BrownianMotion
+  BrownianMotion : <<struct>>
+  class DistributionsWrapper
+  DistributionsWrapper : <<struct>>
+  class Gaussian
+  Gaussian : <<struct>>
+  class GeometricBrownianMotion
+  GeometricBrownianMotion : <<struct>>
+  class JohnsonsSU
+  JohnsonsSU : <<struct>>
+  class Kumaraswamy
+  Kumaraswamy : <<struct>>
+  class Lebesgue
+  Lebesgue : <<struct>>
+  class MaternGP
+  MaternGP : <<struct>>
+  class StudentT
+  StudentT : <<struct>>
+  class Triangular
+  Triangular : <<struct>>
+  class Uniform
+  Uniform : <<struct>>
+  class UniformTriangle
+  UniformTriangle : <<struct>>
+  class ZeroInflatedExpUniform
+  ZeroInflatedExpUniform : <<struct>>
+  class IterationLog
+  IterationLog : <<mutable struct>>
+  AbstractDiscreteDistribution <|-- DigitalNetAnyBases
+  AbstractDiscreteDistribution <|-- DigitalNetB2
+  AbstractDiscreteDistribution <|-- Halton
+  AbstractDiscreteDistribution <|-- IIDStdUniform
+  AbstractDiscreteDistribution <|-- Kronecker
+  AbstractDiscreteDistribution <|-- Lattice
+  AbstractIntegrand <|-- AsianOption
+  AbstractIntegrand <|-- BayesianLRCoeffs
+  AbstractIntegrand <|-- BoxIntegral
+  AbstractIntegrand <|-- CustomFun
+  AbstractIntegrand <|-- FinancialOption
+  AbstractMLIntegrand <|-- FinancialOptionML
+  AbstractIntegrand <|-- FourBranch2D
+  AbstractIntegrand <|-- Genz
+  AbstractIntegrand <|-- Hartmann6D
+  AbstractIntegrand <|-- Ishigami
+  AbstractIntegrand <|-- Keister
+  AbstractIntegrand <|-- Linear0
+  AbstractIntegrand <|-- AbstractMLIntegrand
+  AbstractIntegrand <|-- Multimodal2D
+  AbstractIntegrand <|-- Sin1D
+  AbstractIntegrand <|-- UMBridgeWrapper
+  AbstractKernel <|-- KernelDigShiftInvar
+  AbstractKernel <|-- KernelDigShiftInvarDeriv
+  AbstractKernel <|-- AbstractStationaryKernel
+  AbstractStationaryKernel <|-- KernelMatern12
+  AbstractStationaryKernel <|-- KernelMatern32
+  AbstractStationaryKernel <|-- KernelMatern52
+  AbstractStationaryKernel <|-- KernelGaussian
+  AbstractStationaryKernel <|-- KernelRationalQuadratic
+  AbstractStationaryKernel <|-- KernelSquaredExponential
+  AbstractKernel <|-- SumKernel
+  AbstractKernel <|-- ProductKernel
+  AbstractKernel <|-- KernelMultiTask
+  AbstractKernel <|-- KernelMultiTaskDerivs
+  AbstractKernel <|-- KernelShiftInvar
+  AbstractKernel <|-- KernelShiftInvarDeriv
+  AbstractKernel <|-- KernelShiftInvarCombined
+  AbstractKernel <|-- KernelDigShiftInvarAdaptiveAlpha
+  AbstractKernel <|-- KernelDigShiftInvarCombined
+  AbstractStoppingCriterion <|-- CubMCCLT
+  AbstractStoppingCriterion <|-- CubMCCLTVec
+  AbstractStoppingCriterion <|-- CubMCG
+  AbstractStoppingCriterion <|-- CubMLMC
+  AbstractStoppingCriterion <|-- CubMLMCCont
+  AbstractStoppingCriterion <|-- CubMLQMC
+  AbstractStoppingCriterion <|-- CubMLQMCCont
+  AbstractStoppingCriterion <|-- CubQMCBayesLatticeG
+  AbstractStoppingCriterion <|-- CubQMCBayesNetG
+  AbstractStoppingCriterion <|-- CubQMCLatticeG
+  AbstractStoppingCriterion <|-- CubQMCNetG
+  AbstractStoppingCriterion <|-- CubQMCNetGRep
+  AbstractStoppingCriterion <|-- CubQMCRepStudentT
+  AbstractStoppingCriterion <|-- PFGPCI
+  AbstractTrueMeasure <|-- AcceptanceRejection
+  AbstractTrueMeasure <|-- BernoulliCont
+  AbstractTrueMeasure <|-- BrownianMotion
+  AbstractTrueMeasure <|-- DistributionsWrapper
+  AbstractTrueMeasure <|-- Gaussian
+  AbstractTrueMeasure <|-- JohnsonsSU
+  AbstractTrueMeasure <|-- Kumaraswamy
+  AbstractTrueMeasure <|-- Lebesgue
+  AbstractTrueMeasure <|-- MaternGP
+  AbstractTrueMeasure <|-- Triangular
+  AbstractTrueMeasure <|-- Uniform
+  AbstractTrueMeasure <|-- UniformTriangle
+  AbstractTrueMeasure <|-- ZeroInflatedExpUniform
+  AcceptanceRejection --> AbstractDiscreteDistribution : dd
+  CubQMCBayesNetG --> AbstractIntegrand : integrand
+  ZeroInflatedExpUniform --> AbstractDiscreteDistribution : dd
+  Triangular --> AbstractDiscreteDistribution : dd
+  KernelMultiTask --> AbstractKernel : base_kernel
+  Gaussian --> AbstractDiscreteDistribution : dd
+  CubMCCLTVec --> AbstractIntegrand : integrand
+  _ControlVariateSpec --> AbstractIntegrand : integrands
+  Linear0 --> AbstractTrueMeasure : true_measure
+  Sin1D --> AbstractTrueMeasure : true_measure
+  StudentT --> AbstractDiscreteDistribution : dd
+  FourBranch2D --> AbstractTrueMeasure : true_measure
+  Hartmann6D --> AbstractTrueMeasure : true_measure
+  ProductKernel --> AbstractKernel : k1
+  ProductKernel --> AbstractKernel : k2
+  FinancialOptionML --> AbstractTrueMeasure : true_measure
+  Keister --> AbstractTrueMeasure : true_measure
+  Kumaraswamy --> AbstractDiscreteDistribution : dd
+  GeometricBrownianMotion --> AbstractDiscreteDistribution : dd
+  GeometricBrownianMotion --> BrownianMotion : _bm
+  PFGPCI --> AbstractIntegrand : integrand
+  AcceptanceRejectionReal --> AbstractDiscreteDistribution : dd
+  FinancialOption --> AbstractTrueMeasure : true_measure
+  BernoulliCont --> AbstractDiscreteDistribution : dd
+  CubMLQMC --> AbstractMLIntegrand : integrand
+  CubQMCRepStudentT --> AbstractIntegrand : integrand
+  DistributionsWrapper --> AbstractDiscreteDistribution : dd
+  Lebesgue --> AbstractDiscreteDistribution : dd
+  CubQMCBayesLatticeG --> AbstractIntegrand : integrand
+  CubQMCNetGRep --> AbstractIntegrand : integrand
+  CubMLQMCCont --> AbstractMLIntegrand : integrand
+  Genz --> AbstractTrueMeasure : true_measure
+  JohnsonsSU --> AbstractDiscreteDistribution : dd
+  MaternGP --> AbstractDiscreteDistribution : dd
+  Uniform --> AbstractDiscreteDistribution : dd
+  AsianOption --> AbstractTrueMeasure : true_measure
+  BayesianLRCoeffs --> AbstractTrueMeasure : true_measure
+  SumKernel --> AbstractKernel : k1
+  SumKernel --> AbstractKernel : k2
+  CubMLMCCont --> AbstractMLIntegrand : integrand
+  Ishigami --> AbstractTrueMeasure : true_measure
+  UniformTriangle --> AbstractDiscreteDistribution : dd
+  BoxIntegral --> AbstractTrueMeasure : true_measure
+  CubQMCNetG --> AbstractIntegrand : integrand
+  CubQMCNetG --> _ControlVariateSpec : cv_spec
+  _MLMCState --> AbstractDiscreteDistribution : level_dd
+  _MLMCState --> AbstractTrueMeasure : level_tm
+  Multimodal2D --> AbstractTrueMeasure : true_measure
+  UMBridgeWrapper --> AbstractTrueMeasure : true_measure
+  BrownianMotion --> AbstractDiscreteDistribution : dd
+  BrownianMotion --> Gaussian : _gaussian
+  CubQMCLatticeG --> AbstractIntegrand : integrand
+  CubQMCLatticeG --> _ControlVariateSpec : cv_spec
+  CustomFun --> AbstractTrueMeasure : true_measure
+  CubMCG --> AbstractIntegrand : integrand
+  CubMCG --> _ControlVariateSpec : cv_spec
+  _MLQMCState --> AbstractDiscreteDistribution : level_dd
+  _MLQMCState --> AbstractTrueMeasure : level_tm
+  CubMLMC --> AbstractMLIntegrand : integrand
+  CubMCCLT --> AbstractIntegrand : integrand
+  CubMCCLT --> _ControlVariateSpec : cv_spec
+  SensitivityIndices --> AbstractTrueMeasure : true_measure
+  SensitivityIndices --> AbstractIntegrand : base_integrand

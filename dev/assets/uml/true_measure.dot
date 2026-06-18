@@ -1,0 +1,57 @@
+digraph "true_measure" {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=10, overlap=false, splines=true];
+  node [fontname="Helvetica", fontsize=10, shape=box, style="rounded", margin=0.12];
+  edge [fontname="Helvetica", fontsize=9];
+
+  "AbstractDiscreteDistribution" [label="AbstractDiscreteDistribution", style="rounded,dashed"];
+  "AbstractTrueMeasure" [label="AbstractTrueMeasure", style="rounded,dashed"];
+  "AcceptanceRejection" [label="AcceptanceRejection\n(struct)"];
+  "AcceptanceRejectionReal" [label="AcceptanceRejectionReal\n(struct)"];
+  "BernoulliCont" [label="BernoulliCont\n(struct)"];
+  "BrownianMotion" [label="BrownianMotion\n(struct)"];
+  "DistributionsWrapper" [label="DistributionsWrapper\n(struct)"];
+  "Gaussian" [label="Gaussian\n(struct)"];
+  "GeometricBrownianMotion" [label="GeometricBrownianMotion\n(struct)"];
+  "JohnsonsSU" [label="JohnsonsSU\n(struct)"];
+  "Kumaraswamy" [label="Kumaraswamy\n(struct)"];
+  "Lebesgue" [label="Lebesgue\n(struct)"];
+  "MaternGP" [label="MaternGP\n(struct)"];
+  "StudentT" [label="StudentT\n(struct)"];
+  "Triangular" [label="Triangular\n(struct)"];
+  "Uniform" [label="Uniform\n(struct)"];
+  "UniformTriangle" [label="UniformTriangle\n(struct)"];
+  "ZeroInflatedExpUniform" [label="ZeroInflatedExpUniform\n(struct)"];
+
+  "AcceptanceRejection" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "BernoulliCont" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "BrownianMotion" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "DistributionsWrapper" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Gaussian" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "JohnsonsSU" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Kumaraswamy" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Lebesgue" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "MaternGP" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Triangular" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Uniform" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "UniformTriangle" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "ZeroInflatedExpUniform" -> "AbstractTrueMeasure" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "AcceptanceRejection" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "ZeroInflatedExpUniform" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "Triangular" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "Gaussian" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "StudentT" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "Kumaraswamy" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "GeometricBrownianMotion" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "GeometricBrownianMotion" -> "BrownianMotion" [label="_bm", color="#777777", style=dashed, arrowhead=vee];
+  "AcceptanceRejectionReal" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "BernoulliCont" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "DistributionsWrapper" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "Lebesgue" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "JohnsonsSU" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "MaternGP" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "Uniform" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "UniformTriangle" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "BrownianMotion" -> "AbstractDiscreteDistribution" [label="dd", color="#777777", style=dashed, arrowhead=vee];
+  "BrownianMotion" -> "Gaussian" [label="_gaussian", color="#777777", style=dashed, arrowhead=vee];
+}

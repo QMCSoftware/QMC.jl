@@ -1,0 +1,150 @@
+classDiagram
+  class AbstractDiscreteDistribution
+  AbstractDiscreteDistribution : <<abstract>>
+  class AbstractTrueMeasure
+  AbstractTrueMeasure : <<abstract>>
+  class AcceptanceRejection
+  AcceptanceRejection : <<struct>>
+  AcceptanceRejection : dd : D
+  AcceptanceRejection : dimension : Int
+  AcceptanceRejection : pdf_func : F1
+  AcceptanceRejection : proposal_pdf_func : F2
+  AcceptanceRejection : proposal_sample_func : F3
+  AcceptanceRejection : envelope_multiplier : Float64
+  class AcceptanceRejectionReal
+  AcceptanceRejectionReal : <<struct>>
+  AcceptanceRejectionReal : dd : D
+  AcceptanceRejectionReal : dimension : Int
+  AcceptanceRejectionReal : target_density : F1
+  AcceptanceRejectionReal : inv_cdfs : V
+  AcceptanceRejectionReal : H_func : F2
+  AcceptanceRejectionReal : upper_bound : Float64
+  AcceptanceRejectionReal : density_integral : Float64
+  AcceptanceRejectionReal : acceptance_rate : Float64
+  AcceptanceRejectionReal : max_retries : Int
+  class BernoulliCont
+  BernoulliCont : <<struct>>
+  BernoulliCont : dd : D
+  BernoulliCont : dimension : Int
+  BernoulliCont : lam : Vector{Float64}
+  class BrownianMotion
+  BrownianMotion : <<struct>>
+  BrownianMotion : dd : D
+  BrownianMotion : dimension : Int
+  BrownianMotion : time_vector : Vector{Float64}
+  BrownianMotion : drift : Float64
+  BrownianMotion : initial_value : Float64
+  BrownianMotion : diffusion : Float64
+  BrownianMotion : _gaussian : G
+  class DistributionsWrapper
+  DistributionsWrapper : <<struct>>
+  DistributionsWrapper : dd : D
+  DistributionsWrapper : dimension : Int
+  DistributionsWrapper : marginals : Vector{Distributions.UnivariateDistribution}
+  class Gaussian
+  Gaussian : <<struct>>
+  Gaussian : dd : D
+  Gaussian : dimension : Int
+  Gaussian : mean : Vector{Float64}
+  Gaussian : covariance : Matrix{Float64}
+  Gaussian : decomp_type : Symbol
+  Gaussian : _decomp : Matrix{Float64}
+  Gaussian : _decomp_diag : Union{Nothing, Vector{Float64}}
+  class GeometricBrownianMotion
+  GeometricBrownianMotion : <<struct>>
+  GeometricBrownianMotion : dd : D
+  GeometricBrownianMotion : dimension : Int
+  GeometricBrownianMotion : time_vector : Vector{Float64}
+  GeometricBrownianMotion : initial_value : Float64
+  GeometricBrownianMotion : drift : Float64
+  GeometricBrownianMotion : diffusion : Float64
+  GeometricBrownianMotion : _bm : B
+  class JohnsonsSU
+  JohnsonsSU : <<struct>>
+  JohnsonsSU : dd : D
+  JohnsonsSU : dimension : Int
+  JohnsonsSU : xi : Vector{Float64}
+  JohnsonsSU : lambda : Vector{Float64}
+  JohnsonsSU : gamma : Vector{Float64}
+  JohnsonsSU : delta : Vector{Float64}
+  class Kumaraswamy
+  Kumaraswamy : <<struct>>
+  Kumaraswamy : dd : D
+  Kumaraswamy : dimension : Int
+  Kumaraswamy : alpha : Vector{Float64}
+  Kumaraswamy : beta : Vector{Float64}
+  class Lebesgue
+  Lebesgue : <<struct>>
+  Lebesgue : dd : D
+  Lebesgue : dimension : Int
+  Lebesgue : lower_bound : Vector{Float64}
+  Lebesgue : upper_bound : Vector{Float64}
+  Lebesgue : volume : Float64
+  class MaternGP
+  MaternGP : <<struct>>
+  MaternGP : dd : D
+  MaternGP : nu : Float64
+  MaternGP : lengthscale : Float64
+  MaternGP : variance : Float64
+  MaternGP : chol_L : LowerTriangular{Float64, Matrix{Float64}}
+  class StudentT
+  StudentT : <<struct>>
+  StudentT : dd : D
+  StudentT : dimension : Int
+  StudentT : df : Float64
+  StudentT : loc : Vector{Float64}
+  StudentT : scale : Vector{Float64}
+  class Triangular
+  Triangular : <<struct>>
+  Triangular : dd : D
+  Triangular : dimension : Int
+  Triangular : lower : Vector{Float64}
+  Triangular : upper : Vector{Float64}
+  Triangular : mode : Vector{Float64}
+  class Uniform
+  Uniform : <<struct>>
+  Uniform : dd : D
+  Uniform : dimension : Int
+  Uniform : lower_bound : Vector{Float64}
+  Uniform : upper_bound : Vector{Float64}
+  class UniformTriangle
+  UniformTriangle : <<struct>>
+  UniformTriangle : dd : D
+  class ZeroInflatedExpUniform
+  ZeroInflatedExpUniform : <<struct>>
+  ZeroInflatedExpUniform : dd : D
+  ZeroInflatedExpUniform : p_zero : Float64
+  ZeroInflatedExpUniform : rate : Float64
+  ZeroInflatedExpUniform : low : Float64
+  ZeroInflatedExpUniform : high : Float64
+  AbstractTrueMeasure <|-- AcceptanceRejection
+  AbstractTrueMeasure <|-- BernoulliCont
+  AbstractTrueMeasure <|-- BrownianMotion
+  AbstractTrueMeasure <|-- DistributionsWrapper
+  AbstractTrueMeasure <|-- Gaussian
+  AbstractTrueMeasure <|-- JohnsonsSU
+  AbstractTrueMeasure <|-- Kumaraswamy
+  AbstractTrueMeasure <|-- Lebesgue
+  AbstractTrueMeasure <|-- MaternGP
+  AbstractTrueMeasure <|-- Triangular
+  AbstractTrueMeasure <|-- Uniform
+  AbstractTrueMeasure <|-- UniformTriangle
+  AbstractTrueMeasure <|-- ZeroInflatedExpUniform
+  AcceptanceRejection --> AbstractDiscreteDistribution : dd
+  ZeroInflatedExpUniform --> AbstractDiscreteDistribution : dd
+  Triangular --> AbstractDiscreteDistribution : dd
+  Gaussian --> AbstractDiscreteDistribution : dd
+  StudentT --> AbstractDiscreteDistribution : dd
+  Kumaraswamy --> AbstractDiscreteDistribution : dd
+  GeometricBrownianMotion --> AbstractDiscreteDistribution : dd
+  GeometricBrownianMotion --> BrownianMotion : _bm
+  AcceptanceRejectionReal --> AbstractDiscreteDistribution : dd
+  BernoulliCont --> AbstractDiscreteDistribution : dd
+  DistributionsWrapper --> AbstractDiscreteDistribution : dd
+  Lebesgue --> AbstractDiscreteDistribution : dd
+  JohnsonsSU --> AbstractDiscreteDistribution : dd
+  MaternGP --> AbstractDiscreteDistribution : dd
+  Uniform --> AbstractDiscreteDistribution : dd
+  UniformTriangle --> AbstractDiscreteDistribution : dd
+  BrownianMotion --> AbstractDiscreteDistribution : dd
+  BrownianMotion --> Gaussian : _gaussian
