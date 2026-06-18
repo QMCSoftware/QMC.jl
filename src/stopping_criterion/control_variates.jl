@@ -66,15 +66,16 @@ function _make_control_variate_spec(
         ),
     )
 
-    d = integrand.true_measure.dimension
-    dd = integrand.true_measure.dd
+    tm = true_measure(integrand)
+    d = dimension(tm)
+    dd = discrete_distribution(tm)
     for cv in cvs
-        cv.true_measure.dimension == d || throw(
+        dimension(true_measure(cv)) == d || throw(
             ArgumentError(
                 "each control variate must share the main integrand's dimension ($d)",
             ),
         )
-        cv.true_measure.dd === dd || throw(
+        discrete_distribution(cv) === dd || throw(
             ArgumentError(
                 "each control variate must share the main integrand's discrete distribution",
             ),

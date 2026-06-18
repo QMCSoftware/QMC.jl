@@ -43,7 +43,7 @@ struct CustomFun{TM <: AbstractTrueMeasure, G} <: AbstractIntegrand
     dimension::Int
 end
 
-CustomFun(tm::AbstractTrueMeasure, g::Function) = CustomFun(tm, g, tm.dimension)
+CustomFun(tm::AbstractTrueMeasure, g::Function) = CustomFun(tm, g, dimension(tm))
 
 function evaluate(f::CustomFun, x::AbstractMatrix)
     y = f.g(x)
@@ -63,7 +63,7 @@ are forwarded to `gen_samples`, e.g. `n_start` for extensible generators.
 Returns a vector of function values.
 """
 function sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)
-    x_uniform = _sample_uniform_points(f.true_measure.dd, n; kwargs...)
+    x_uniform = _sample_uniform_points(discrete_distribution(f), n; kwargs...)
     return evaluate_on_uniform(f, x_uniform)
 end
 
@@ -92,6 +92,6 @@ and evaluate. Pairs with [`_sample_uniform_points`](@ref) so the main integrand
 and any control variates share an identical underlying point stream.
 """
 function evaluate_on_uniform(f::AbstractIntegrand, x_uniform::AbstractMatrix)
-    x_transformed = transform(f.true_measure, x_uniform)
+    x_transformed = transform(true_measure(f), x_uniform)
     return evaluate(f, x_transformed)
 end

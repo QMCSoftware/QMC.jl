@@ -4,7 +4,38 @@
 struct _VecOutputToy <: QMC.AbstractIntegrand end
 QMC.d_indv(::_VecOutputToy) = (3,)
 
+struct _AltLayoutDD <: QMC.AbstractDiscreteDistribution
+    d::Int
+    fill_value::Float64
+end
+QMC.dimension(dd::_AltLayoutDD) = dd.d
+QMC.gen_samples(dd::_AltLayoutDD, n::Int; n_start::Int=0) = fill(dd.fill_value, n, dd.d)
+
+struct _AltLayoutTM <: QMC.AbstractTrueMeasure
+    sampler::_AltLayoutDD
+    shift::Float64
+end
+QMC.discrete_distribution(tm::_AltLayoutTM) = tm.sampler
+QMC.dimension(tm::_AltLayoutTM) = QMC.dimension(tm.sampler)
+QMC.transform(tm::_AltLayoutTM, x::AbstractMatrix) = x .+ tm.shift
+
+struct _AltLayoutIntegrand <: QMC.AbstractIntegrand
+    measure::_AltLayoutTM
+    scale::Float64
+end
+QMC.true_measure(f::_AltLayoutIntegrand) = f.measure
+QMC.dimension(f::_AltLayoutIntegrand) = QMC.dimension(f.measure)
+QMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=2)[:]
+
 @testset "Integrands" begin
+    @testset "Accessor-based extensibility" begin
+        f = _AltLayoutIntegrand(_AltLayoutTM(_AltLayoutDD(3, 0.25), 0.5), 2.0)
+        y = sample_and_evaluate(f, 4)
+        @test y == fill(4.5, 4)
+        @test QMC.dimension(f) == 3
+        @test QMC.discrete_distribution(f) isa _AltLayoutDD
+    end
+
     @testset "CustomFun" begin
         dd = IIDStdUniform(2; seed=100)
         tm = Uniform(dd)

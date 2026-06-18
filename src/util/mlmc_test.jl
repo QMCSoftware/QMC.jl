@@ -51,9 +51,9 @@ function mlmc_test(integrand::AbstractMLIntegrand; n::Int=20000, L::Int=8)
 
         sums = zeros(6)
         for _ in 1:100
-            dd = integrand.true_measure.dd
+            dd = discrete_distribution(integrand)
             x_raw = gen_samples(dd, n_batch)
-            x = transform(integrand.true_measure, x_raw)
+            x = transform(true_measure(integrand), x_raw)
 
             # Pad/truncate to d_l dimensions
             n_pts = size(x, 1)

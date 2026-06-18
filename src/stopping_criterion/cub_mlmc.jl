@@ -147,8 +147,9 @@ function _ensure_level_spawned!(sc::CubMLMC, state::_MLMCState, l::Int)
     while length(state.level_dd) <= l
         level_idx = length(state.level_dd)  # 0-based level
         d_l = dimension_at_level(sc.integrand, level_idx)
-        dd_l = spawn_dd(sc.integrand.true_measure.dd, d_l)
-        tm_l = spawn_tm(sc.integrand.true_measure, dd_l)
+        tm = true_measure(sc.integrand)
+        dd_l = spawn_dd(discrete_distribution(tm), d_l)
+        tm_l = spawn_tm(tm, dd_l)
         push!(state.level_dd, dd_l)
         push!(state.level_tm, tm_l)
     end

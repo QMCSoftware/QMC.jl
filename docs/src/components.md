@@ -74,6 +74,22 @@ methods. A multilevel integrand implements:
 Helper functions `spawn_dd` and `spawn_tm` create new samplers at each level with
 the appropriate dimension.
 
+## Extensibility Contract
+
+QMC.jl follows the same four-component architecture as QMCPy: discrete
+distributions, true measures, integrands, and stopping criteria. For extension
+work, the key framework contract is method-based rather than field-based:
+
+- `QMC.dimension(obj)` returns the stochastic dimension of a discrete
+  distribution, true measure, or integrand.
+- `QMC.discrete_distribution(obj)` returns the underlying point generator.
+- `QMC.true_measure(f)` returns the integrand's true measure.
+
+Existing built-in types satisfy this contract through their stored fields, but
+new subtype authors may overload these methods instead of reproducing the same
+field layout. That preserves encapsulation while letting the generic sampling,
+transform, and stopping-criterion pipeline remain plug-and-play.
+
 ## Stopping Criterion
 
 Adaptive algorithms that determine sample size:

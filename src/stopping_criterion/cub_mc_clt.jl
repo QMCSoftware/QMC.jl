@@ -90,7 +90,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     if cv === nothing
         y0 = sample_and_evaluate(sc.integrand, sc.n_init)
     else
-        x0_uniform = _sample_uniform_points(sc.integrand.true_measure.dd, sc.n_init)
+        x0_uniform = _sample_uniform_points(discrete_distribution(sc.integrand), sc.n_init)
         y0 = evaluate_on_uniform(sc.integrand, x0_uniform)
         ycv0 = _control_variate_values(cv, x0_uniform)
         cv_beta = _fit_control_variate_beta(y0, ycv0)
@@ -127,7 +127,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     if cv === nothing
         y = sample_and_evaluate(sc.integrand, n_mu)
     else
-        x_uniform = _sample_uniform_points(sc.integrand.true_measure.dd, n_mu)
+        x_uniform = _sample_uniform_points(discrete_distribution(sc.integrand), n_mu)
         y = evaluate_on_uniform(sc.integrand, x_uniform)
         ycv = _control_variate_values(cv, x_uniform)
         y = _apply_control_variates(y, ycv, cv.means, cv_beta)
