@@ -62,8 +62,8 @@ A cross-platform sweep for protected branches.
   branches, and via manual dispatch.
 - Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and
   Windows on Julia 1.12.
-- Runs unit tests on every lane and `make doctest` on the Linux Julia 1.10 lane
-  so macOS/Windows jobs remain relatively fast and less brittle.
+- Runs unit tests on every lane.
+- Does not run `make doctest`; doctest and full docs validation for `develop`/`master` live in `doc_demo.yml`, which already builds the documentation and therefore exercises the Documenter doctests there.
 
 ## Benchmarking (`benchmarking.yml`)
 
