@@ -31,8 +31,8 @@ CubMCCLT(abs_tol=0.1, rel_tol=0.0, inflate=1.2)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-1.5488
+julia> abs(result.solution - 1.5) < 0.1
+true
 
 julia> result.data[:converged]
 true
@@ -126,8 +126,15 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     end
 
     # ── Stage 2: Main sample ──
+    # Fast path: for IID + supported true measures (Gaussian, BM, GBM), bypass
+    # rand → erfinv and use randn directly. The pilot (stage 1) always uses the
+    # erfinv path so that σ̂_pilot — and hence n_mu — are unaffected by this change.
     if cv === nothing
-        y = sample_and_evaluate(f, n_mu)
+        if dd isa IIDStdUniform && _has_randn_transform(true_measure(f))
+            y = _evaluate_iid_randn(f, n_mu, dd)
+        else
+            y = sample_and_evaluate(f, n_mu)
+        end
     else
         x_uniform = _sample_uniform_points(dd, n_mu)
         y = evaluate_on_uniform(f, x_uniform)

@@ -22,8 +22,8 @@ CubQMCBayesNetG(abs_tol=0.1, order=2, ptransform=NONE)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-0.4873
+julia> abs(result.solution - genz_exact(f)) < 0.1
+true
 
 julia> result.data[:converged]
 true

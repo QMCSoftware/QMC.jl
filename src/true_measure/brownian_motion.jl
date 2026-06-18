@@ -112,6 +112,16 @@ function transform(tm::BrownianMotion, x::AbstractMatrix)
     return y
 end
 
+_has_randn_transform(::BrownianMotion) = true
+
+function _transform_from_randn(tm::BrownianMotion, z::AbstractMatrix)
+    y = _transform_from_randn(tm._gaussian, z)
+    if tm.initial_value != 0.0 || tm.drift != 0.0
+        y .+= (tm.initial_value .+ tm.drift .* tm.time_vector)'
+    end
+    return y
+end
+
 function Base.show(io::IO, tm::BrownianMotion)
     print(
         io,

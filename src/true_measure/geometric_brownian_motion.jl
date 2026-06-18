@@ -89,14 +89,33 @@ function GeometricBrownianMotion(
 end
 
 function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
-    # Get BM paths (these already have diffusion scaling via covariance)
     bm_samples = transform(tm._bm, x)
-    # S(t) = S₀ exp[(γ - σ²/2) t + BM(t)]
-    # where BM(t) already has variance σ² t from the covariance
-    # offsets is 1×d; broadcast fuses + and exp into one 
-    # Single Instruction, Multiple Data (SIMD) pass over the n×d array.
-    offsets = transpose((tm.drift - 0.5 * tm.diffusion) .* tm.time_vector)
-    return @. tm.initial_value * exp(offsets + bm_samples)
+    drift_offset = tm.drift - 0.5 * tm.diffusion
+    S0 = tm.initial_value
+    tv = tm.time_vector
+    @inbounds for j in axes(bm_samples, 2)
+        oj = drift_offset * tv[j]
+        @simd for i in axes(bm_samples, 1)
+            bm_samples[i, j] = S0 * exp(oj + bm_samples[i, j])
+        end
+    end
+    return bm_samples
+end
+
+_has_randn_transform(::GeometricBrownianMotion) = true
+
+function _transform_from_randn(tm::GeometricBrownianMotion, z::AbstractMatrix)
+    bm_samples = _transform_from_randn(tm._bm, z)
+    drift_offset = tm.drift - 0.5 * tm.diffusion
+    S0 = tm.initial_value
+    tv = tm.time_vector
+    @inbounds for j in axes(bm_samples, 2)
+        oj = drift_offset * tv[j]
+        @simd for i in axes(bm_samples, 1)
+            bm_samples[i, j] = S0 * exp(oj + bm_samples[i, j])
+        end
+    end
+    return bm_samples
 end
 
 function Base.show(io::IO, tm::GeometricBrownianMotion)

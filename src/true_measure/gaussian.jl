@@ -163,6 +163,20 @@ function transform(tm::Gaussian, x::AbstractMatrix)
     end
 end
 
+_has_randn_transform(::Gaussian) = true
+
+function _transform_from_randn(tm::Gaussian, z::AbstractMatrix)
+    if tm._decomp_diag !== nothing
+        dvec_t = transpose(tm._decomp_diag)
+        mean_t = transpose(tm.mean)
+        return @. z * dvec_t + mean_t
+    else
+        y = z * transpose(tm._decomp)
+        y .+= transpose(tm.mean)
+        return y
+    end
+end
+
 function Base.show(io::IO, tm::Gaussian)
     print(io, "Gaussian(d=$(tm.dimension), decomp=$(tm.decomp_type))")
 end

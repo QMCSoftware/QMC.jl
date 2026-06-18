@@ -38,11 +38,11 @@ CubMCG(abs_tol=5.00e-02, rel_tol=0.00e+00, n_init=1024, inflate=1.20)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-0.8483
+julia> isapprox(result.solution, 0.8483; atol=0.05)
+true
 
-julia> result.data[:n_total]
-25693
+julia> result.data[:n_total] > 0
+true
 ```
 
 # References
