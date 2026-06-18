@@ -33,6 +33,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: test/requirements.txt
 
       - name: Install qmctoolscl
         run: pip install -r test/requirements.txt
@@ -44,7 +46,7 @@ jobs:
         run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
 
       - name: Run doctests
-        run: make doctest
+        run: make doctest DOC_DEPOT="$HOME/.julia"
 
       - name: Upload LCOV artifact
         uses: actions/upload-artifact@v4

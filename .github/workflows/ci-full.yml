@@ -40,6 +40,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: test/requirements.txt
 
       - name: Install qmctoolscl
         run: pip install -r test/requirements.txt
@@ -51,5 +53,5 @@ jobs:
         run: julia --project=. -e 'using Pkg; Pkg.test()'
 
       - name: Run doctests
-        if: matrix.os == 'windows-latest' && matrix.julia-version == '1.10'
+        if: matrix.os == 'ubuntu-latest' && matrix.julia-version == '1.10'
         run: make doctest
