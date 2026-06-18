@@ -9,6 +9,8 @@ summary_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python_summary.json") :
     joinpath(resdir, "compare_python_summary_$(label).json")
 
+requirements_file() = joinpath(@__DIR__, "requirements.txt")
+
 function resolve_summary_outfile(label::AbstractString)
     primary = summary_outfile(label)
     if isfile(primary)
@@ -47,6 +49,22 @@ function write_badge(path, label, message, color; named_logo=nothing)
     end
 end
 
+function pinned_qmcpy_version()
+    isfile(requirements_file()) || return nothing
+    for line in eachline(requirements_file())
+        m = match(r"^qmcpy==([A-Za-z0-9._+-]+)$", strip(line))
+        m === nothing || return m.captures[1]
+    end
+    return nothing
+end
+
+function qmcpy_badge_label(summary, metric::AbstractString)
+    version = haskey(summary, "qmcpy_version") ? summary["qmcpy_version"] : nothing
+    version === nothing && (version = pinned_qmcpy_version())
+    suffix = version === nothing ? "QMCPy" : "QMCPy v$(version)"
+    return "$(metric) vs $(suffix)"
+end
+
 branch_slug(branch::AbstractString) = replace(branch, '/' => '-')
 
 function write_branch_badges(summary, branch::AbstractString)
@@ -59,7 +77,7 @@ function write_branch_badges(summary, branch::AbstractString)
 
     write_badge(
         joinpath(badgedir, "benchmark-speed-$slug.json"),
-        "time vs QMCPy ($branch)",
+        qmcpy_badge_label(summary, "Time"),
         time_msg,
         time_color;
         named_logo="julia",
@@ -74,7 +92,7 @@ function write_branch_badges(summary, branch::AbstractString)
     for filename in ("benchmark-memory-$slug.json", "benchmark-peak-$slug.json")
         write_badge(
             joinpath(badgedir, filename),
-            "memory vs QMCPy ($branch)",
+            qmcpy_badge_label(summary, "Memory"),
             peak_msg,
             peak_color;
             named_logo="julia",

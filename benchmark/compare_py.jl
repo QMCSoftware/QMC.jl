@@ -483,6 +483,7 @@ open(summary_outfile, "w") do io
             "report_generated_at" => report_generated_at,
             "jl_label" => jl_label,
             "py_label" => py_label,
+            "qmcpy_version" => py_version,
             "jl_generated_at" => jl_generated_at,
             "py_generated_at" => py_generated_at,
             "jl_file_mtime" => jl_file_mtime,
