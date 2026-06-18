@@ -13,18 +13,11 @@ Generates low-discrepancy point sets in ``[0,1)^d``. Available generators:
 - **`Kronecker`** — Kronecker / irrational-rotation low-discrepancy sequence
 - **`DigitalNetAnyBases`** / **`Faure`** — more general digital-net constructions
 
-`DigitalNetB2` also supports QMCPy-style constructor options such as
-custom generating matrices, `order` aliases, widened `t` bit depth, `msb`
-handling for custom matrices, and higher-order interlacing via `alpha > 1`.
+`DigitalNetB2` also supports QMCPy-style constructor options such as custom generating matrices, `order` aliases, widened `t` bit depth, `msb` handling for custom matrices, and higher-order interlacing via `alpha > 1`.
 
-`Lattice` also supports QMCPy-style constructor inputs such as direct custom
-generating vectors, the integer shortcut for random odd vectors, order
-aliases, and LDData-format files, names, or URLs. In multilevel workflows,
-`spawn_dd` now preserves explicit lattice-vector sources when they carry enough
-entries for the requested dimension.
+`Lattice` also supports QMCPy-style constructor inputs such as direct custom generating vectors, the integer shortcut for random odd vectors, order aliases, and LDData-format files, names, or URLs. In multilevel workflows, `spawn_dd` now preserves explicit lattice-vector sources when they carry enough entries for the requested dimension.
 
-`Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL
-shared library, so Python is a current runtime dependency for these QMC generators.
+`Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library, so Python is a current runtime dependency for these QMC generators.
 
 ## True Measure
 
@@ -63,16 +56,25 @@ The function to be integrated:
 
 ### Multilevel Integrands
 
-For problems with a natural hierarchy of discretization levels (e.g., PDE solvers
-with mesh refinement), the **`AbstractMLIntegrand`** interface supports multilevel
-methods. A multilevel integrand implements:
+For problems with a natural hierarchy of discretization levels (e.g., PDE solvers with mesh refinement), the **`AbstractMLIntegrand`** interface supports multilevel methods. A multilevel integrand implements:
 
 - `ml_evaluate(f, x, level)` — returns `(Qcoarse, Qfine)` pairs for the telescoping sum
 - `dimension_at_level(f, level)` — stochastic dimension at each level
 - `cost_at_level(f, level)` — computational cost per sample at each level
 
-Helper functions `spawn_dd` and `spawn_tm` create new samplers at each level with
-the appropriate dimension.
+Helper functions `spawn_dd` and `spawn_tm` create new samplers at each level with the appropriate dimension.
+
+## Extensibility Contract
+
+QMC.jl follows the same four-component architecture as QMCPy: discrete distributions, true measures, integrands, and stopping criteria. For extension work, the key framework contract is method-based rather than field-based:
+
+- `QMC.dimension(obj)` returns the stochastic dimension of a discrete distribution, true measure, or integrand.
+- `QMC.discrete_distribution(obj)` returns the underlying point generator.
+- `QMC.true_measure(f)` returns the integrand's true measure.
+
+Existing built-in types satisfy this contract through their stored fields, but new subtype authors may overload these methods instead of reproducing the same field layout. That preserves encapsulation while letting the generic sampling, transform, and stopping-criterion pipeline remain plug-and-play.
+
+Built-in constructors on abstract arguments are expected to honor this contract as well. In practice, that means methods like `Uniform(dd::AbstractDiscreteDistribution)` or `Keister(tm::AbstractTrueMeasure)` should query `dimension(dd)` or `dimension(tm)` instead of assuming a concrete `.dimension` field exists.
 
 ## Stopping Criterion
 
@@ -98,9 +100,7 @@ Adaptive algorithms that determine sample size:
 - **`CubMLQMC`** — multilevel quasi-Monte Carlo with replicated low-discrepancy rules
 - **`CubMLQMCCont`** — continuation multilevel quasi-Monte Carlo using replicated lattice/digital net rules
 
-The multilevel methods use the telescoping sum ``E[Q_L] = E[Q_0] + \sum_{\ell=1}^{L} E[Q_\ell - Q_{\ell-1}]``
-to efficiently allocate computational effort across levels, exploiting the
-decreasing variance of level differences.
+The multilevel methods use the telescoping sum ``E[Q_L] = E[Q_0] + \sum_{\ell=1}^{L} E[Q_\ell - Q_{\ell-1}]`` to efficiently allocate computational effort across levels, exploiting the decreasing variance of level differences.
 
 ## Integration Pipeline
 

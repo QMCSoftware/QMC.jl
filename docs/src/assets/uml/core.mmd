@@ -1,0 +1,19 @@
+classDiagram
+  class AbstractDiscreteDistribution
+  AbstractDiscreteDistribution : <<abstract>>
+  class AbstractIntegrand
+  AbstractIntegrand : <<abstract>>
+  class AbstractKernel
+  AbstractKernel : <<abstract>>
+  class AbstractStoppingCriterion
+  AbstractStoppingCriterion : <<abstract>>
+  class AbstractTrueMeasure
+  AbstractTrueMeasure : <<abstract>>
+  class QMCResult
+  QMCResult : <<struct>>
+  QMCResult : solution : Float64
+  QMCResult : data : Dict{Symbol, Any}
+  class QMCVecResult
+  QMCVecResult : <<struct>>
+  QMCVecResult : solution : Array{Float64}
+  QMCVecResult : data : Dict{Symbol, Any}

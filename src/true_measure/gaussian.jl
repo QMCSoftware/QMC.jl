@@ -58,7 +58,7 @@ function Gaussian(
     covariance=1.0,
     decomp_type::Symbol=:PCA,
 )
-    d = dd.dimension
+    d = dimension(dd)
     mu = _expand_mean(mean, d)
     cov = _expand_covariance(covariance, d)
     decomp_type in (:PCA, :Cholesky) ||

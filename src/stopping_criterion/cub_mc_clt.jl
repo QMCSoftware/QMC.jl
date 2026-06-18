@@ -83,15 +83,17 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     t_start = time()
     z_star = quantile(Normal(), 1.0 - sc.alpha / 2.0)
     log = IterationLog()
+    f = sc.integrand
+    dd = discrete_distribution(f)
 
     # ── Stage 1: Pilot sample to estimate variance ──
     cv = sc.cv_spec
     cv_beta = nothing
     if cv === nothing
-        y0 = sample_and_evaluate(sc.integrand, sc.n_init)
+        y0 = sample_and_evaluate(f, sc.n_init)
     else
-        x0_uniform = _sample_uniform_points(sc.integrand.true_measure.dd, sc.n_init)
-        y0 = evaluate_on_uniform(sc.integrand, x0_uniform)
+        x0_uniform = _sample_uniform_points(dd, sc.n_init)
+        y0 = evaluate_on_uniform(f, x0_uniform)
         ycv0 = _control_variate_values(cv, x0_uniform)
         cv_beta = _fit_control_variate_beta(y0, ycv0)
         y0 = _apply_control_variates(y0, ycv0, cv.means, cv_beta)
@@ -125,10 +127,10 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
 
     # ── Stage 2: Main sample ──
     if cv === nothing
-        y = sample_and_evaluate(sc.integrand, n_mu)
+        y = sample_and_evaluate(f, n_mu)
     else
-        x_uniform = _sample_uniform_points(sc.integrand.true_measure.dd, n_mu)
-        y = evaluate_on_uniform(sc.integrand, x_uniform)
+        x_uniform = _sample_uniform_points(dd, n_mu)
+        y = evaluate_on_uniform(f, x_uniform)
         ycv = _control_variate_values(cv, x_uniform)
         y = _apply_control_variates(y, ycv, cv.means, cv_beta)
     end

@@ -43,7 +43,7 @@ end
 
 function StudentT(dd::AbstractDiscreteDistribution; df::Float64=2.0, loc=0.0, scale=1.0)
     df > 0 || throw(ArgumentError("df must be positive"))
-    d = dd.dimension
+    d = dimension(dd)
     loc_vec = loc isa Number ? fill(Float64(loc), d) : Float64.(collect(loc))
     scale_vec = scale isa Number ? fill(Float64(scale), d) : Float64.(collect(scale))
     all(scale_vec .> 0) || throw(ArgumentError("scale must be positive"))

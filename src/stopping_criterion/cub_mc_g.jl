@@ -211,8 +211,8 @@ end
 function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     t_start = time()
     f = sc.integrand
-    tm = f.true_measure
-    dd = tm.dd
+    tm = true_measure(f)
+    dd = discrete_distribution(tm)
     log = IterationLog()
     cv = sc.cv_spec
     cv_beta = nothing

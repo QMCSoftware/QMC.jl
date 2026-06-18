@@ -53,7 +53,7 @@ julia> z
 """
 struct AcceptanceRejection{D <: AbstractDiscreteDistribution, F1, F2, F3} <: AbstractTrueMeasure
     dd::D
-    dimension::Int          # target dimension (d = dd.dimension - 1)
+    dimension::Int          # target dimension (d = dimension(dd) - 1)
     pdf_func::F1
     proposal_pdf_func::F2
     proposal_sample_func::F3
@@ -84,7 +84,7 @@ function AcceptanceRejection(
         throw(ArgumentError("envelope_multiplier and M must match when both are provided"))
     end
 
-    d = dd.dimension - 1
+    d = dimension(dd) - 1
     d > 0 || throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
     envelope_multiplier = Float64(something(envelope_multiplier, M, 1.0))
     envelope_multiplier > 0 || throw(ArgumentError("envelope_multiplier must be > 0"))
@@ -174,7 +174,7 @@ is the (unnormalised) target, `H = H_func` is an auxiliary bound density with
 `ψ(z) ≤ L · H(z)` everywhere, and `L = upper_bound`. The acceptance rate is
 `density_integral / upper_bound`.
 
-The integrand's true-measure dimension `d` equals `dd.dimension - 1`; the discrete
+The integrand's true-measure dimension `d` equals `dimension(dd) - 1`; the discrete
 distribution must therefore have dimension `d + 1` and mimic StdUniform.
 
 # Arguments
@@ -249,7 +249,7 @@ function AcceptanceRejectionReal(
     density_integral::Float64,
     max_retries::Int=4,
 )
-    d = dd.dimension - 1
+    d = dimension(dd) - 1
     d > 0 || throw(ArgumentError("DD dimension must be ≥ 2 (d target dims + 1 acceptance dim)"))
     length(inv_cdfs) == d || throw(
         ArgumentError(

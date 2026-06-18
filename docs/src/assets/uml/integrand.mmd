@@ -1,0 +1,148 @@
+classDiagram
+  class AbstractIntegrand
+  AbstractIntegrand : <<abstract>>
+  class AbstractMLIntegrand
+  AbstractMLIntegrand : <<abstract>>
+  class AbstractTrueMeasure
+  AbstractTrueMeasure : <<abstract>>
+  class AsianOption
+  AsianOption : <<mutable struct>>
+  AsianOption : true_measure : TM
+  AsianOption : dimension : Int
+  AsianOption : volatility : Float64
+  AsianOption : start_price : Float64
+  AsianOption : strike_price : Float64
+  AsianOption : interest_rate : Float64
+  AsianOption : call_put : Symbol
+  AsianOption : mean_type : Symbol
+  AsianOption : _time_vector : Vector{Float64}
+  class BayesianLRCoeffs
+  BayesianLRCoeffs : <<struct>>
+  BayesianLRCoeffs : true_measure : TM
+  BayesianLRCoeffs : dimension : Int
+  BayesianLRCoeffs : feature_array : Matrix{Float64}
+  BayesianLRCoeffs : response_vector : Vector{Float64}
+  BayesianLRCoeffs : n_features : Int
+  BayesianLRCoeffs : n_obs : Int
+  class BoxIntegral
+  BoxIntegral : <<struct>>
+  BoxIntegral : true_measure : TM
+  BoxIntegral : dimension : Int
+  BoxIntegral : s : Float64
+  class CustomFun
+  CustomFun : <<struct>>
+  CustomFun : true_measure : TM
+  CustomFun : g : G
+  CustomFun : dimension : Int
+  class FinancialOption
+  FinancialOption : <<mutable struct>>
+  FinancialOption : true_measure : TM
+  FinancialOption : dimension : Int
+  FinancialOption : volatility : Float64
+  FinancialOption : start_price : Float64
+  FinancialOption : strike_price : Float64
+  FinancialOption : interest_rate : Float64
+  FinancialOption : call_put : Symbol
+  FinancialOption : option_type : Symbol
+  FinancialOption : mean_type : Symbol
+  FinancialOption : barrier_price : Float64
+  FinancialOption : ...
+  class FinancialOptionML
+  FinancialOptionML : <<struct>>
+  FinancialOptionML : true_measure : TM
+  FinancialOptionML : dimension : Int
+  FinancialOptionML : d_coarsest : Int
+  FinancialOptionML : nb_of_levels : Int
+  FinancialOptionML : volatility : Float64
+  FinancialOptionML : start_price : Float64
+  FinancialOptionML : strike_price : Float64
+  FinancialOptionML : interest_rate : Float64
+  FinancialOptionML : call_put : Symbol
+  FinancialOptionML : option_type : Symbol
+  FinancialOptionML : ...
+  class FourBranch2D
+  FourBranch2D : <<struct>>
+  FourBranch2D : true_measure : TM
+  FourBranch2D : dimension : Int
+  FourBranch2D : k : Float64
+  class Genz
+  Genz : <<struct>>
+  Genz : true_measure : TM
+  Genz : dimension : Int
+  Genz : kind : Symbol
+  Genz : a : Vector{Float64}
+  Genz : u : Vector{Float64}
+  class Hartmann6D
+  Hartmann6D : <<struct>>
+  Hartmann6D : true_measure : TM
+  Hartmann6D : dimension : Int
+  class Ishigami
+  Ishigami : <<struct>>
+  Ishigami : true_measure : TM
+  Ishigami : dimension : Int
+  Ishigami : a : Float64
+  Ishigami : b : Float64
+  class Keister
+  Keister : <<struct>>
+  Keister : true_measure : TM
+  Keister : dimension : Int
+  class Linear0
+  Linear0 : <<struct>>
+  Linear0 : true_measure : TM
+  Linear0 : dimension : Int
+  class Multimodal2D
+  Multimodal2D : <<struct>>
+  Multimodal2D : true_measure : TM
+  Multimodal2D : dimension : Int
+  class SensitivityIndices
+  SensitivityIndices : <<struct>>
+  SensitivityIndices : true_measure : TM
+  SensitivityIndices : dimension : Int
+  SensitivityIndices : base_integrand : BI
+  SensitivityIndices : d_base : Int
+  SensitivityIndices : indices : Matrix{Bool}
+  class Sin1D
+  Sin1D : <<struct>>
+  Sin1D : true_measure : TM
+  Sin1D : dimension : Int
+  Sin1D : k : Int
+  class UMBridgeWrapper
+  UMBridgeWrapper : <<struct>>
+  UMBridgeWrapper : true_measure : TM
+  UMBridgeWrapper : url : String
+  UMBridgeWrapper : model_name : String
+  UMBridgeWrapper : config : Dict{String, Any}
+  UMBridgeWrapper : _model : Any
+  AbstractIntegrand <|-- AbstractMLIntegrand
+  AbstractIntegrand <|-- AsianOption
+  AbstractIntegrand <|-- BayesianLRCoeffs
+  AbstractIntegrand <|-- BoxIntegral
+  AbstractIntegrand <|-- CustomFun
+  AbstractIntegrand <|-- FinancialOption
+  AbstractMLIntegrand <|-- FinancialOptionML
+  AbstractIntegrand <|-- FourBranch2D
+  AbstractIntegrand <|-- Genz
+  AbstractIntegrand <|-- Hartmann6D
+  AbstractIntegrand <|-- Ishigami
+  AbstractIntegrand <|-- Keister
+  AbstractIntegrand <|-- Linear0
+  AbstractIntegrand <|-- Multimodal2D
+  AbstractIntegrand <|-- Sin1D
+  AbstractIntegrand <|-- UMBridgeWrapper
+  Linear0 --> AbstractTrueMeasure : true_measure
+  Sin1D --> AbstractTrueMeasure : true_measure
+  FourBranch2D --> AbstractTrueMeasure : true_measure
+  Hartmann6D --> AbstractTrueMeasure : true_measure
+  FinancialOptionML --> AbstractTrueMeasure : true_measure
+  Keister --> AbstractTrueMeasure : true_measure
+  FinancialOption --> AbstractTrueMeasure : true_measure
+  Genz --> AbstractTrueMeasure : true_measure
+  AsianOption --> AbstractTrueMeasure : true_measure
+  BayesianLRCoeffs --> AbstractTrueMeasure : true_measure
+  Ishigami --> AbstractTrueMeasure : true_measure
+  BoxIntegral --> AbstractTrueMeasure : true_measure
+  Multimodal2D --> AbstractTrueMeasure : true_measure
+  UMBridgeWrapper --> AbstractTrueMeasure : true_measure
+  CustomFun --> AbstractTrueMeasure : true_measure
+  SensitivityIndices --> AbstractTrueMeasure : true_measure
+  SensitivityIndices --> AbstractIntegrand : base_integrand

@@ -16,6 +16,14 @@ struct TestMLIntegrand <: AbstractMLIntegrand
     interest_rate::Float64
 end
 
+struct AccessorMLIntegrand <: AbstractMLIntegrand
+    measure::AbstractTrueMeasure
+    d0::Int
+end
+QMC.true_measure(f::AccessorMLIntegrand) = f.measure
+QMC.dimension(f::AccessorMLIntegrand) = QMC.dimension(f.measure)
+QMC.dimension_at_level(f::AccessorMLIntegrand, level::Int) = f.d0 * 2^level
+
 function TestMLIntegrand(
     dd::AbstractDiscreteDistribution;
     d_coarsest::Int=1,
@@ -178,6 +186,13 @@ end
         @test dimension_at_level(f, 1) == 2
         @test dimension_at_level(f, 2) == 4
         @test dimension_at_level(f, 3) == 8
+    end
+
+    @testset "spawn_integrand uses accessors" begin
+        f = AccessorMLIntegrand(Gaussian(IIDStdUniform(4)), 4)
+        dd_l, tm_l = spawn_integrand(f, 2)
+        @test QMC.dimension(dd_l) == 16
+        @test QMC.dimension(tm_l) == 16
     end
 end
 

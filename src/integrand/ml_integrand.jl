@@ -53,7 +53,7 @@ julia> cost_at_level(f, 0), cost_at_level(f, 2)
 (4.0, 16.0)
 ```
 """
-dimension_at_level(f::AbstractMLIntegrand, level::Int) = f.dimension
+dimension_at_level(f::AbstractMLIntegrand, level::Int) = dimension(f)
 
 """
     cost_at_level(f::AbstractMLIntegrand, level::Int)
@@ -164,7 +164,6 @@ spawn_tm(tm::Gaussian, dd_new::AbstractDiscreteDistribution) = Gaussian(dd_new)
 Create a new Uniform true measure wrapping `dd_new` with matching bounds.
 """
 function spawn_tm(tm::Uniform, dd_new::AbstractDiscreteDistribution)
-    d_new = dd_new.dimension
     lb = length(tm.lower_bound) == 1 ? tm.lower_bound[1] : tm.lower_bound[1]
     ub = length(tm.upper_bound) == 1 ? tm.upper_bound[1] : tm.upper_bound[1]
     return Uniform(dd_new; lower_bound=lb, upper_bound=ub)
@@ -177,7 +176,8 @@ Create a new BrownianMotion true measure wrapping `dd_new`.
 """
 function spawn_tm(tm::BrownianMotion, dd_new::AbstractDiscreteDistribution)
     t_final = tm.time_vector[end]
-    tv_new = collect(range(t_final / dd_new.dimension, t_final; length=dd_new.dimension))
+    d_new = dimension(dd_new)
+    tv_new = collect(range(t_final / d_new, t_final; length=d_new))
     return BrownianMotion(
         dd_new;
         time_vector=tv_new,
@@ -215,8 +215,9 @@ Returns `(integrand_at_level, true_measure_at_level, dd_at_level)`.
 """
 function spawn_integrand(f::AbstractMLIntegrand, level::Int)
     d_level = dimension_at_level(f, level)
-    dd_new = spawn_dd(f.true_measure.dd, d_level)
-    tm_new = spawn_tm(f.true_measure, dd_new)
+    tm = true_measure(f)
+    dd_new = spawn_dd(discrete_distribution(tm), d_level)
+    tm_new = spawn_tm(tm, dd_new)
     return dd_new, tm_new
 end
 

@@ -39,7 +39,7 @@ struct Kumaraswamy{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
 end
 
 function Kumaraswamy(dd::AbstractDiscreteDistribution; alpha=2.0, beta=2.0)
-    d = dd.dimension
+    d = dimension(dd)
     a = alpha isa Number ? fill(Float64(alpha), d) : Float64.(collect(alpha))
     b = beta isa Number ? fill(Float64(beta), d) : Float64.(collect(beta))
     all(a .> 0) || throw(ArgumentError("alpha must be positive"))

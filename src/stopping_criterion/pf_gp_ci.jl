@@ -194,8 +194,9 @@ function integrate(sc::PFGPCI; seed=nothing, verbose::Bool=false)
     end
 
     integrand = sc.integrand
-    d = integrand.true_measure.dimension
-    dd = integrand.true_measure.dd
+    tm = true_measure(integrand)
+    d = dimension(tm)
+    dd = discrete_distribution(tm)
     rng = isnothing(seed) ? Random.default_rng() : Random.MersenneTwister(seed)
 
     # Fixed low-discrepancy bank for approximating the estimate / credible interval,

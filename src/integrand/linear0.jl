@@ -26,7 +26,7 @@ struct Linear0{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     dimension::Int
 end
 
-Linear0(tm::AbstractTrueMeasure) = Linear0(tm, tm.dimension)
+Linear0(tm::AbstractTrueMeasure) = Linear0(tm, dimension(tm))
 
 function evaluate(f::Linear0, x::AbstractMatrix)
     n = size(x, 1)

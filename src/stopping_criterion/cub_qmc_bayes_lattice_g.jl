@@ -263,11 +263,11 @@ function _integrate_cubqmcbayeslatticeg_multi(
 
     while n <= sc.n_max
         n_iter += 1
-        dd = f.true_measure.dd
+        dd = discrete_distribution(f)
         x_uniform = gen_samples(dd, n)
 
         x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
-        x_trans = transform(f.true_measure, x_period)
+        x_trans = transform(true_measure(f), x_period)
         Y = reshape(evaluate(f, x_trans), n, m_indv)
         Y .*= reshape(weight, n, 1)
 
@@ -345,17 +345,19 @@ function integrate(sc::CubQMCBayesLatticeG; resume::Union{Nothing, Dict{Symbol, 
     err = Inf;
     n_iter = 0
     log = IterationLog()
+    f = sc.integrand
+    dd = discrete_distribution(f)
+    tm = true_measure(f)
 
     while n <= sc.n_max
         n_iter += 1
-        dd = sc.integrand.true_measure.dd
         x_uniform = gen_samples(dd, n)
 
         # Periodization changes variables in the unit cube, so preserve the
         # original integral by multiplying the integrand by the product Jacobian.
         x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
-        x_trans = transform(sc.integrand.true_measure, x_period)
-        y = evaluate(sc.integrand, x_trans) .* weight
+        x_trans = transform(tm, x_period)
+        y = evaluate(f, x_trans) .* weight
 
         ftilde = real.(FFTW.fft(y)) ./ sqrt(n)
 

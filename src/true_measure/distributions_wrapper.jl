@@ -47,7 +47,7 @@ function DistributionsWrapper(
     distribution::Union{Nothing, Distributions.UnivariateDistribution}=nothing,
     marginals::Union{Nothing, Vector}=nothing,
 )
-    d = dd.dimension
+    d = dimension(dd)
     if !isnothing(distribution) && isnothing(marginals)
         margs = Vector{Distributions.UnivariateDistribution}(fill(distribution, d))
     elseif isnothing(distribution) && !isnothing(marginals)

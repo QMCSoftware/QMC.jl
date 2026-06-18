@@ -30,7 +30,7 @@ struct BoxIntegral{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     s::Float64
 end
 
-BoxIntegral(tm::AbstractTrueMeasure; s::Float64=2.0) = BoxIntegral(tm, tm.dimension, s)
+BoxIntegral(tm::AbstractTrueMeasure; s::Float64=2.0) = BoxIntegral(tm, dimension(tm), s)
 
 function evaluate(f::BoxIntegral, x::AbstractMatrix)
     n, d = size(x)

@@ -89,8 +89,8 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=no
     end
     t_start = time()
     f = sc.integrand
-    tm = f.true_measure
-    dd = tm.dd
+    tm = true_measure(f)
+    dd = discrete_distribution(tm)
 
     z_alpha = quantile(Normal(), 1 - sc.alpha / 2)
     log = IterationLog()
@@ -197,8 +197,8 @@ function _integrate_cubmccltvec_multi(
 )
     t_start = time()
     f = sc.integrand
-    tm = f.true_measure
-    dd = tm.dd
+    tm = true_measure(f)
+    dd = discrete_distribution(tm)
     # Per-individual confidence levels via the integrand's dependency map: the
     # combined alpha is split among the individual outputs each combined output
     # depends on (identity dependency ⇒ every individual gets alpha ⇒ uniform z,

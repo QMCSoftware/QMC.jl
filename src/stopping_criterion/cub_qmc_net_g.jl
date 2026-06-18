@@ -95,7 +95,7 @@ function CubQMCNetG(
     control_variates=nothing,
     control_variate_means=nothing,
 )
-    dd = integrand.true_measure.dd
+    dd = discrete_distribution(integrand)
     dd isa DigitalNetB2 || error("CubQMCNetG requires a DigitalNetB2 discrete distribution.")
     dd.replications === nothing || error(
         "CubQMCNetG requires a non-replicated net (construct DigitalNetB2 with replications=nothing).",
@@ -129,7 +129,8 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
 
     t_start = time()
     f = sc.integrand
-    dd = f.true_measure.dd
+    dd = discrete_distribution(f)
+    tm = true_measure(f)
     ishape = d_indv(f)
     cshape = d_comb(f)
     m_indv = prod(ishape)
@@ -158,7 +159,7 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
             size(x_unit, 1) == 1 || error("CubQMCNetG requires a non-replicated net.")
             x_unit = reshape(x_unit, size(x_unit, 2), size(x_unit, 3))
         end
-        Y = reshape(evaluate(f, transform(f.true_measure, x_unit)), n, m_indv)
+        Y = reshape(evaluate(f, transform(tm, x_unit)), n, m_indv)
         gvals = cv === nothing ? nothing : _control_variate_values(cv, x_unit)
         ycvtilde =
             cv === nothing ? nothing :
@@ -259,7 +260,9 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
     prev_time = resume !== nothing ? Float64(get(resume, :time_integrate, 0.0)) : 0.0
 
     t_start = time()
-    dd = sc.integrand.true_measure.dd
+    f = sc.integrand
+    dd = discrete_distribution(f)
+    tm = true_measure(f)
 
     mu_hat = 0.0
     err = Inf
@@ -279,7 +282,7 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
             size(x_unit, 1) == 1 || error("CubQMCNetG requires a non-replicated net.")
             x_unit = reshape(x_unit, size(x_unit, 2), size(x_unit, 3))
         end
-        y = evaluate(sc.integrand, transform(sc.integrand.true_measure, x_unit))
+        y = evaluate(f, transform(tm, x_unit))
 
         # Estimate and guaranteed half-width from the Walsh-coefficient decay.
         ytilde = _ytilde_init(y)

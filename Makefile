@@ -1,4 +1,4 @@
-.PHONY: test coverage doctest doc format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
+.PHONY: test coverage doctest doc uml format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
 .NOTPARALLEL: notebook notebook-update notebook-update-% notebook-% ci-doc-demo workflow-smoke
 
 # ============================================================================
@@ -118,6 +118,10 @@ test-%:
 # Build documentation
 doc:
 	$(call RUN_TIMED,rm -rf docs/build && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl,doc)
+
+# Generate UML diagrams from the current src/ type graph.
+uml:
+	julia --project=. devtools/generate_uml.jl
 
 # Run Documenter doctests only (manual pages + src docstrings) without a full render.
 doctest:

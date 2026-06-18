@@ -53,7 +53,7 @@ function BayesianLRCoeffs(
     response_vector::AbstractVector,
 )
     m, p = size(feature_array)
-    d = tm.dimension
+    d = dimension(tm)
     length(response_vector) == m || throw(
         ArgumentError(
             "response_vector length ($(length(response_vector))) must match rows of feature_array ($m)",

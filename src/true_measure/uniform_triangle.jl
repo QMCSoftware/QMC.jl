@@ -6,7 +6,7 @@ Uniform distribution on the triangle {(x,y) : 0 ≤ y ≤ x ≤ 1}.
 Transforms 2D uniform samples to the simplex using the standard
 square-root transformation.
 
-Requires `dd.dimension == 2`.
+Requires `dimension(dd) == 2`.
 
 # Examples
 ```jldoctest
@@ -26,7 +26,7 @@ julia> round.(transform(tm, gen_samples(tm.dd, 4)); digits=6)
 struct UniformTriangle{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
     dd::D
     function UniformTriangle(dd::D) where {D <: AbstractDiscreteDistribution}
-        dd.dimension == 2 || throw(ArgumentError("UniformTriangle requires dimension=2"))
+        dimension(dd) == 2 || throw(ArgumentError("UniformTriangle requires dimension=2"))
         return new{D}(dd)
     end
 end

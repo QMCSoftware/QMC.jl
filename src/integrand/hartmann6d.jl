@@ -31,8 +31,8 @@ struct Hartmann6D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
 end
 
 function Hartmann6D(tm::AbstractTrueMeasure)
-    tm.dimension == 6 ||
-        throw(ArgumentError("Hartmann6D requires dimension 6, got $(tm.dimension)"))
+    d = dimension(tm)
+    d == 6 || throw(ArgumentError("Hartmann6D requires dimension 6, got $d"))
     return Hartmann6D(tm, 6)
 end
 

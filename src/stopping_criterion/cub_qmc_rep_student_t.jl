@@ -104,7 +104,7 @@ function _error_bound_tol(efun::Symbol, sv::Float64, abs_tol::Float64, rel_tol::
 end
 
 function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
-    dd = sc.integrand.true_measure.dd
+    dd = discrete_distribution(sc.integrand)
     R = dd.replications
     R > 1 || throw(ArgumentError("CubQMCRepStudentT requires replications > 1"))
 
@@ -124,6 +124,8 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol, An
     log = IterationLog()
     n_iter = 0
     converged = false
+    f = sc.integrand
+    tm = true_measure(f)
 
     # Accumulators: for scalar integrands, rep_means is Vector{Float64}(R)
     # We accumulate _ysums across doublings to avoid recomputing from scratch.
@@ -140,8 +142,8 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol, An
         ndims(x_uniform) == 3 ||
             throw(ArgumentError("CubQMCRepStudentT requires a replicated sampler"))
         _, m, d = size(x_uniform)
-        x_trans = transform(sc.integrand.true_measure, reshape(x_uniform, R * m, d))
-        y = evaluate(sc.integrand, x_trans)
+        x_trans = transform(tm, reshape(x_uniform, R * m, d))
+        y = evaluate(f, x_trans)
         ysums .+= vec(sum(reshape(y, R, m); dims=2))
         n_so_far = n_rep
 

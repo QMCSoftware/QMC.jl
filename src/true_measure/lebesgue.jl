@@ -39,7 +39,7 @@ struct Lebesgue{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
 end
 
 function Lebesgue(dd::AbstractDiscreteDistribution; lower_bound=0.0, upper_bound=1.0)
-    d = dd.dimension
+    d = dimension(dd)
     lb = _expand_bounds(lower_bound, d)
     ub = _expand_bounds(upper_bound, d)
     all(lb .< ub) ||

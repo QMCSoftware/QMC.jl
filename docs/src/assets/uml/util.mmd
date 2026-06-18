@@ -1,0 +1,5 @@
+classDiagram
+  class IterationLog
+  IterationLog : <<mutable struct>>
+  IterationLog : records : Vector{ NamedTuple{ (:iter, :n, :solution, :error_bound, :tol, :elapsed), Tuple{Int, Int, Float64, Float64, Float64, Float64}, }, }
+  IterationLog : count : Int

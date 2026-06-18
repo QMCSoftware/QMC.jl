@@ -79,7 +79,7 @@ function CubMLQMC(
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
     0 < alpha_ci < 1 || throw(ArgumentError("alpha_ci must be in (0,1)"))
 
-    dd = integrand.true_measure.dd
+    dd = discrete_distribution(integrand)
     has_reps = hasproperty(dd, :replications) && !isnothing(dd.replications)
     R = has_reps ? dd.replications : 4
     has_reps && R < 4 && throw(ArgumentError("CubMLQMC requires replications ≥ 4, got $R"))
@@ -128,8 +128,9 @@ function _ensure_level_spawned_mlqmc!(sc::CubMLQMC, state::_MLQMCState, l::Int)
     while length(state.level_dd) <= l
         level_idx = length(state.level_dd)
         d_l = dimension_at_level(sc.integrand, level_idx)
-        dd_l = spawn_dd(sc.integrand.true_measure.dd, d_l)
-        tm_l = spawn_tm(sc.integrand.true_measure, dd_l)
+        tm = true_measure(sc.integrand)
+        dd_l = spawn_dd(discrete_distribution(tm), d_l)
+        tm_l = spawn_tm(tm, dd_l)
         push!(state.level_dd, dd_l)
         push!(state.level_tm, tm_l)
     end

@@ -26,7 +26,8 @@ struct Sin1D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
 end
 
 function Sin1D(tm::AbstractTrueMeasure; k::Int=1)
-    tm.dimension == 1 || throw(ArgumentError("Sin1D requires dimension 1, got $(tm.dimension)"))
+    d = dimension(tm)
+    d == 1 || throw(ArgumentError("Sin1D requires dimension 1, got $d"))
     k > 0 || throw(ArgumentError("k must be positive"))
     return Sin1D(tm, 1, k)
 end

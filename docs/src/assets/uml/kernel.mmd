@@ -1,0 +1,113 @@
+classDiagram
+  class AbstractKernel
+  AbstractKernel : <<abstract>>
+  class AbstractStationaryKernel
+  AbstractStationaryKernel : <<abstract>>
+  class KernelDigShiftInvar
+  KernelDigShiftInvar : <<struct>>
+  KernelDigShiftInvar : order : Int
+  class KernelDigShiftInvarAdaptiveAlpha
+  KernelDigShiftInvarAdaptiveAlpha : <<struct>>
+  KernelDigShiftInvarAdaptiveAlpha : d : Int
+  KernelDigShiftInvarAdaptiveAlpha : t : Int
+  KernelDigShiftInvarAdaptiveAlpha : scale : Float64
+  KernelDigShiftInvarAdaptiveAlpha : lengthscales : Vector{Float64}
+  KernelDigShiftInvarAdaptiveAlpha : alpha : Vector{Float64}
+  class KernelDigShiftInvarCombined
+  KernelDigShiftInvarCombined : <<struct>>
+  KernelDigShiftInvarCombined : d : Int
+  KernelDigShiftInvarCombined : t : Int
+  KernelDigShiftInvarCombined : scale : Float64
+  KernelDigShiftInvarCombined : lengthscales : Vector{Float64}
+  KernelDigShiftInvarCombined : alpha : Matrix{Float64}
+  class KernelDigShiftInvarDeriv
+  KernelDigShiftInvarDeriv : <<struct>>
+  KernelDigShiftInvarDeriv : d : Int
+  KernelDigShiftInvarDeriv : t : Int
+  KernelDigShiftInvarDeriv : scale : Float64
+  KernelDigShiftInvarDeriv : lengthscales : Vector{Float64}
+  KernelDigShiftInvarDeriv : alpha : Vector{Int}
+  class KernelGaussian
+  KernelGaussian : <<struct>>
+  KernelGaussian : lengthscale : Float64
+  KernelGaussian : outputscale : Float64
+  class KernelMatern12
+  KernelMatern12 : <<struct>>
+  KernelMatern12 : lengthscale : Float64
+  KernelMatern12 : outputscale : Float64
+  class KernelMatern32
+  KernelMatern32 : <<struct>>
+  KernelMatern32 : lengthscale : Float64
+  KernelMatern32 : outputscale : Float64
+  class KernelMatern52
+  KernelMatern52 : <<struct>>
+  KernelMatern52 : lengthscale : Float64
+  KernelMatern52 : outputscale : Float64
+  class KernelMultiTask
+  KernelMultiTask : <<struct>>
+  KernelMultiTask : base_kernel : K
+  KernelMultiTask : num_tasks : Int
+  KernelMultiTask : factor : Matrix{Float64}
+  KernelMultiTask : diag_vec : Vector{Float64}
+  KernelMultiTask : taskmat : Matrix{Float64}
+  class KernelMultiTaskDerivs
+  KernelMultiTaskDerivs : <<struct>>
+  KernelMultiTaskDerivs : base_kernel : K
+  KernelMultiTaskDerivs : num_tasks : Int
+  KernelMultiTaskDerivs : taskmat : Matrix{Float64}
+  class KernelRationalQuadratic
+  KernelRationalQuadratic : <<struct>>
+  KernelRationalQuadratic : lengthscale : Float64
+  KernelRationalQuadratic : outputscale : Float64
+  KernelRationalQuadratic : alpha : Float64
+  class KernelShiftInvar
+  KernelShiftInvar : <<struct>>
+  KernelShiftInvar : order : Int
+  class KernelShiftInvarCombined
+  KernelShiftInvarCombined : <<struct>>
+  KernelShiftInvarCombined : d : Int
+  KernelShiftInvarCombined : scale : Float64
+  KernelShiftInvarCombined : lengthscales : Vector{Float64}
+  KernelShiftInvarCombined : alpha : Matrix{Float64}
+  KernelShiftInvarCombined : coeffs : NTuple{4, Float64}
+  class KernelShiftInvarDeriv
+  KernelShiftInvarDeriv : <<struct>>
+  KernelShiftInvarDeriv : d : Int
+  KernelShiftInvarDeriv : scale : Float64
+  KernelShiftInvarDeriv : lengthscales : Vector{Float64}
+  KernelShiftInvarDeriv : alpha : Vector{Int}
+  class KernelSquaredExponential
+  KernelSquaredExponential : <<struct>>
+  KernelSquaredExponential : lengthscale : Float64
+  KernelSquaredExponential : outputscale : Float64
+  class ProductKernel
+  ProductKernel : <<struct>>
+  ProductKernel : k1 : AbstractKernel
+  ProductKernel : k2 : AbstractKernel
+  class SumKernel
+  SumKernel : <<struct>>
+  SumKernel : k1 : AbstractKernel
+  SumKernel : k2 : AbstractKernel
+  AbstractKernel <|-- AbstractStationaryKernel
+  AbstractKernel <|-- KernelDigShiftInvar
+  AbstractKernel <|-- KernelDigShiftInvarAdaptiveAlpha
+  AbstractKernel <|-- KernelDigShiftInvarCombined
+  AbstractKernel <|-- KernelDigShiftInvarDeriv
+  AbstractStationaryKernel <|-- KernelGaussian
+  AbstractStationaryKernel <|-- KernelMatern12
+  AbstractStationaryKernel <|-- KernelMatern32
+  AbstractStationaryKernel <|-- KernelMatern52
+  AbstractKernel <|-- KernelMultiTask
+  AbstractKernel <|-- KernelMultiTaskDerivs
+  AbstractStationaryKernel <|-- KernelRationalQuadratic
+  AbstractKernel <|-- KernelShiftInvar
+  AbstractKernel <|-- KernelShiftInvarCombined
+  AbstractKernel <|-- KernelShiftInvarDeriv
+  AbstractStationaryKernel <|-- KernelSquaredExponential
+  AbstractKernel <|-- ProductKernel
+  AbstractKernel <|-- SumKernel
+  KernelMultiTask --> AbstractKernel : base_kernel
+  ProductKernel --> AbstractKernel : k1
+  ProductKernel --> AbstractKernel : k2
+  SumKernel --> AbstractKernel : k1
+  SumKernel --> AbstractKernel : k2

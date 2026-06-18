@@ -40,8 +40,8 @@ struct FourBranch2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
 end
 
 function FourBranch2D(tm::AbstractTrueMeasure; k::Float64=6.0)
-    tm.dimension == 2 ||
-        throw(ArgumentError("FourBranch2D requires dimension 2, got $(tm.dimension)"))
+    d = dimension(tm)
+    d == 2 || throw(ArgumentError("FourBranch2D requires dimension 2, got $d"))
     return FourBranch2D(tm, 2, k)
 end
 

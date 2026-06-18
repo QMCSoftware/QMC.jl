@@ -83,6 +83,77 @@ const _OPEN01_HIGH = 1.0 - eps(Float64)
 
 # Common interface functions
 """
+    dimension(obj)
+
+Return the stochastic dimension associated with a QMC component.
+
+- For a discrete distribution, this is the point dimension.
+- For a true measure, this is the transformed-domain dimension.
+- For an integrand, this is the input dimension expected by `evaluate`.
+
+Concrete subtypes may either store a `dimension` field or overload this method.
+The latter enables alternative internal layouts while preserving framework
+interoperability.
+"""
+function dimension end
+
+@inline dimension(dd::AbstractDiscreteDistribution) =
+    hasfield(typeof(dd), :dimension) ? getfield(dd, :dimension) :
+    throw(
+        ArgumentError(
+            "dimension(::$(typeof(dd))) is not defined; add a `dimension` field or overload `QMC.dimension`",
+        ),
+    )
+
+"""
+    discrete_distribution(obj)
+
+Return the underlying point generator associated with `obj`.
+
+- For a discrete distribution, returns `obj`.
+- For a true measure, returns the discrete distribution that drives it.
+- For an integrand, returns the discrete distribution of its true measure.
+
+Concrete subtypes may either store a `dd` field or overload this method.
+"""
+function discrete_distribution end
+
+@inline discrete_distribution(dd::AbstractDiscreteDistribution) = dd
+
+@inline discrete_distribution(tm::AbstractTrueMeasure) =
+    hasfield(typeof(tm), :dd) ? getfield(tm, :dd) :
+    throw(
+        ArgumentError(
+            "discrete_distribution(::$(typeof(tm))) is not defined; add a `dd` field or overload `QMC.discrete_distribution`",
+        ),
+    )
+
+@inline discrete_distribution(f::AbstractIntegrand) = discrete_distribution(true_measure(f))
+
+"""
+    true_measure(f::AbstractIntegrand)
+
+Return the true measure associated with an integrand. Concrete integrands may
+either store a `true_measure` field or overload this method.
+"""
+function true_measure end
+
+@inline true_measure(f::AbstractIntegrand) =
+    hasfield(typeof(f), :true_measure) ? getfield(f, :true_measure) :
+    throw(
+        ArgumentError(
+            "true_measure(::$(typeof(f))) is not defined; add a `true_measure` field or overload `QMC.true_measure`",
+        ),
+    )
+
+@inline dimension(tm::AbstractTrueMeasure) =
+    hasfield(typeof(tm), :dimension) ? getfield(tm, :dimension) :
+    dimension(discrete_distribution(tm))
+
+@inline dimension(f::AbstractIntegrand) =
+    hasfield(typeof(f), :dimension) ? getfield(f, :dimension) : dimension(true_measure(f))
+
+"""
     gen_samples(dd::AbstractDiscreteDistribution, n::Int; kwargs...)
 
 Generate `n` samples from the discrete distribution `dd`.
