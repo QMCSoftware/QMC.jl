@@ -49,6 +49,31 @@ a real GPU acceleration path.
 
 ## Installation
 
+### Stable Tagged Install
+
+For papers, demos, courses, and reproducible benchmarks, install QMC.jl from an immutable git tag rather than a moving branch. Replace `vX.Y.Z` with the published release tag you want to use, for example `v0.1.0` once that tag exists:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/QMCSoftware/QMC.jl", rev="vX.Y.Z")
+```
+
+For `Lattice`, `DigitalNetB2`, and `Halton`, also install the pinned QMCToolsCL runtime into a Python visible to Julia:
+
+```bash
+python3 -m pip install qmctoolscl==1.2.3
+```
+
+If Julia should use a specific Python interpreter:
+
+```julia
+ENV["QMC_PYTHON"] = "/path/to/python"
+```
+
+### Contributor And Early-Tester Setup
+
+Use the repository checkout instructions below only when working directly from the development tree.
+
 ### Prerequisites
 
 | Tool | Version | Notes |
@@ -67,7 +92,7 @@ cd QMC.jl
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # Install QMCToolsCL (for Lattice, DigitalNetB2, Halton)
-pip install qmctoolscl
+pip install qmctoolscl==1.2.3
 
 # Run tests
 julia --project=. -e 'using Pkg; Pkg.test()'
@@ -135,6 +160,7 @@ their purpose and the files they contain. Useful starting points:
 - [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and comparison tooling
 - [`demos/README.md`](demos/README.md) — notebook demos and how to run them
 - [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — Documenter build/deploy layout
+- [`RELEASING.md`](RELEASING.md) — release ladder, readiness gates, and tagging process
 - [`src/README.md`](src/README.md) — package source tree and component folders
 - [`test/README.md`](test/README.md) — unit tests, notebook tests, and coverage commands
 

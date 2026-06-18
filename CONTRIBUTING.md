@@ -6,6 +6,8 @@ Please submit **pull requests** to the `develop` branch and **issues** using a t
 
 Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@googlegroups.com). If you develop a new component, consider writing a blog for [qmcpy.org](https://qmcpy.org).
 
+For release gates, versioning policy, and the maintainer release checklist, see [RELEASING.md](RELEASING.md).
+
 ## Developer Setup
 
 ### Prerequisites

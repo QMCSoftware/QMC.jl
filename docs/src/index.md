@@ -43,16 +43,18 @@ println("Error bound: $(result.data[:error_bound])")
 
 ## Installation
 
+For reproducible use, prefer a tagged artifact rather than the moving default branch. Replace `vX.Y.Z` with the published release tag you want to use, for example `v0.1.0` once that tag exists:
+
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/QMC.jl")
+Pkg.add(url="https://github.com/QMCSoftware/QMC.jl", rev="vX.Y.Z")
 ```
 
 For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python
 visible to Julia:
 
 ```bash
-python3 -m pip install qmctoolscl
+python3 -m pip install qmctoolscl==1.2.3
 ```
 
 If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"]`
@@ -61,6 +63,6 @@ before `using QMC`.
 ## Contents
 
 ```@contents
-Pages = ["components.md", "demos.md", "contributing.md", "community.md"]
+Pages = ["components.md", "demos.md", "releasing.md", "contributing.md", "community.md"]
 Depth = 2
 ```
