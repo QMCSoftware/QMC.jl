@@ -56,6 +56,13 @@ end
 Base.show(io::IO, f::CustomFun) = print(io, "CustomFun(d=$(f.dimension))")
 
 """
+    _has_randn_transform(tm::AbstractTrueMeasure) -> Bool
+
+Return `true` if `tm` supports `_transform_from_randn`. Default is `false`.
+"""
+_has_randn_transform(::AbstractTrueMeasure) = false
+
+"""
     sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)
 
 Generate `n` samples, transform, and evaluate the integrand. Keyword arguments
@@ -65,6 +72,19 @@ Returns a vector of function values.
 @inline function sample_and_evaluate(f::AbstractIntegrand, n::Int; kwargs...)
     x_uniform = _sample_uniform_points(discrete_distribution(f), n; kwargs...)
     return evaluate_on_uniform(f, x_uniform)
+end
+
+"""
+    _evaluate_iid_randn(f::AbstractIntegrand, n::Int, dd::IIDStdUniform) -> Vector
+
+Fast-path evaluation for IID + supported true measures: bypasses `rand → erfinv`
+by calling `randn` directly. The distribution is identical (i.i.d. Gaussian or GBM
+samples) but ~13× faster for the sampling step. Only call this when
+`_has_randn_transform(true_measure(f))` is `true`.
+"""
+function _evaluate_iid_randn(f::AbstractIntegrand, n::Int, dd::IIDStdUniform)
+    z = randn(dd.rng, n, dd.dimension)
+    return evaluate(f, _transform_from_randn(true_measure(f), z))
 end
 
 """
