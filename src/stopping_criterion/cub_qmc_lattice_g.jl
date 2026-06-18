@@ -136,17 +136,17 @@ function _kappanumap_update!(
     flip_mask::Vector{Bool},
 )
     n = 1 << m
-    @inbounds for l in mfrom:-1:mto+1
+    @inbounds for l in mfrom:-1:(mto + 1)
         nl = 1 << l
         period = nl << 1
         # Step 1: determine which k positions flip (from first period, before any swaps)
-        for k in 1:nl-1
+        for k in 1:(nl - 1)
             v1 = kappanumap[k + 1]      # 0-based value → ytilde[v+1]
             v2 = kappanumap[nl + k + 1]
             flip_mask[k] = abs(ytilde[v2 + 1]) > abs(ytilde[v1 + 1])
         end
         # Step 2: apply same flips to every period
-        for k in 1:nl-1
+        for k in 1:(nl - 1)
             flip_mask[k] || continue
             p = 0
             while p + nl + k < n
@@ -165,7 +165,7 @@ function _fft_error_bound_scalar(y::AbstractVector{<:Real})
     yvec = y isa Vector{Float64} ? y : Vector{Float64}(y)
     ytilde = bro_fft(yvec) ./ n
 
-    kappanumap = collect(0:n-1)
+    kappanumap = collect(0:(n - 1))
     flip_mask = Vector{Bool}(undef, n >> 1)
     _kappanumap_update!(kappanumap, ytilde, m - 1, 0, m, flip_mask)
 
@@ -173,7 +173,7 @@ function _fft_error_bound_scalar(y::AbstractVector{<:Real})
     fudge = 5.0 * exp2(-m)
     # Python 0-indexed [nllstart:2*nllstart] → Julia 1-indexed [nllstart+1:2*nllstart]
     err = 0.0
-    @inbounds for j in nllstart + 1:2 * nllstart
+    @inbounds for j in (nllstart + 1):(2 * nllstart)
         err += abs(ytilde[kappanumap[j] + 1])
     end
     err *= fudge
@@ -289,21 +289,21 @@ function _integrate_cubqmclatticeg_fft_multi(
         m_bits = trailing_zeros(n)
         nllstart = 1 << max(0, m_bits - _FFT_R_LAG - 1)
         fudge = 5.0 * exp2(-m_bits)
-        kappanumap = collect(0:n-1)
+        kappanumap = collect(0:(n - 1))
         flip_mask = Vector{Bool}(undef, n >> 1)
 
         @inbounds for j in 1:m_indv
             yj = @view y_mat[:, j]
             ytilde = bro_fft(collect(Float64, yj)) ./ n
-            kappanumap .= 0:n-1
+            kappanumap .= 0:(n - 1)
             _kappanumap_update!(kappanumap, ytilde, m_bits - 1, 0, m_bits, flip_mask)
             err_j = 0.0
-            for k in nllstart + 1:2 * nllstart
+            for k in (nllstart + 1):(2 * nllstart)
                 err_j += abs(ytilde[kappanumap[k] + 1])
             end
             err_j *= fudge
             solution_indv[j] = real(ytilde[1])
-            indv_low[j]  = solution_indv[j] - err_j
+            indv_low[j] = solution_indv[j] - err_j
             indv_high[j] = solution_indv[j] + err_j
         end
 
