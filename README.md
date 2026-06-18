@@ -5,7 +5,7 @@
 [![Benchmarking](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 [![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 [![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
-[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://qmcsoftware.github.io/QMC.jl/)
+[![Docs](https://img.shields.io/badge/docs-source-blue.svg)](docs/src/index.md)
 [![codecov](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
@@ -148,7 +148,7 @@ julia benchmark/runbenchmarks.jl
 
 This benchmarks sampling, transforms, integrand evaluation, and end-to-end integration across all DD types. Results are saved under `benchmark/results/`. See [`benchmark/README.md`](benchmark/README.md) for the full workflow, comparison scripts, and the Julia-vs-QMCPy accuracy sidecars.
 
-Remote benchmark collection is handled by `.github/workflows/benchmarking.yml`: it runs on Linux for benchmark-relevant `develop`/`master` pushes and manual dispatch, then uploads `benchmark/results/` as a workflow artifact. See [CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for the full workflow policy.
+Remote benchmark collection is handled by `.github/workflows/benchmarking.yml`: it runs on Linux for benchmark-relevant `develop`/`master` pushes and manual dispatch, then uploads `benchmark/results/` as a workflow artifact. See [docs/src/ci-testing.md](docs/src/ci-testing.md) for the full workflow policy.
 
 The top-level benchmark badges track the latest published `develop` run. The speed badge is the weighted `Python time ÷ Julia time` ratio from the Julia-vs-QMCPy comparison. The peak-memory badge uses QMCPy's `tracemalloc` peak versus Julia's recorded allocation totals, so it is a useful signal rather than a perfectly apples-to-apples memory metric.
 
@@ -166,7 +166,7 @@ their purpose and the files they contain. Useful starting points:
 
 ## Documentation
 
-Full API documentation: [qmcsoftware.github.io/QMC.jl](https://qmcsoftware.github.io/QMC.jl/)
+Until GitHub Pages is enabled for this repository, use the in-repo documentation source: [docs/src/index.md](docs/src/index.md). API reference pages live under [docs/src/api/](docs/src/api/).
 
 In the Julia REPL:
 
@@ -175,6 +175,16 @@ using QMC
 ?Lattice               # help mode
 @doc CubQMCBayesNetG   # docstring
 ```
+
+## Validated Examples
+
+These checked-in notebooks are exercised by the demo workflow and are good starting points for common QMC.jl use cases:
+
+- [demos/quickstart.ipynb](demos/quickstart.ipynb) — `Keister`, `Gaussian`, `Lattice`, `CubQMCLatticeG`
+- [demos/sample_scatter_plots.ipynb](demos/sample_scatter_plots.ipynb) — `Gaussian`, `BrownianMotion`, transformed samples
+- [demos/pricing_options.ipynb](demos/pricing_options.ipynb) — `BrownianMotion` path construction and option-pricing workflows
+- [demos/asian_option_mlqmc.ipynb](demos/asian_option_mlqmc.ipynb) — `AsianOption`, `CubQMCNetG`, `CubMLMC`, `CubMLQMC`, continuation variants
+- [demos/elliptic_pde.ipynb](demos/elliptic_pde.ipynb) — `CubQMCLatticeG`, `CubMLMCCont`, `CubMLQMCCont`
 
 ## Testing
 
@@ -196,7 +206,7 @@ make notebook-update NOTEBOOK_KERNEL=qmc-1.12
 julia --project=docs docs/make.jl
 ```
 
-CI uploads LCOV coverage reports to Codecov and stores the generated `lcov.info` as a workflow artifact. The `develop` branch badge is fed by the Linux coverage lane in `ci-full.yml`. See [`test/README.md`](test/README.md) and [CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for details.
+CI uploads LCOV coverage reports to Codecov and stores the generated `lcov.info` as a workflow artifact. The `develop` branch badge is fed by the Linux coverage lane in `ci-full.yml`. See [`test/README.md`](test/README.md) and [docs/src/ci-testing.md](docs/src/ci-testing.md) for details.
 
 ## Citation
 
