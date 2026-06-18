@@ -1,0 +1,15 @@
+digraph "core" {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=10, overlap=false, splines=true];
+  node [fontname="Helvetica", fontsize=10, shape=box, style="rounded", margin=0.12];
+  edge [fontname="Helvetica", fontsize=9];
+
+  "AbstractDiscreteDistribution" [label="AbstractDiscreteDistribution", style="rounded,dashed"];
+  "AbstractIntegrand" [label="AbstractIntegrand", style="rounded,dashed"];
+  "AbstractKernel" [label="AbstractKernel", style="rounded,dashed"];
+  "AbstractStoppingCriterion" [label="AbstractStoppingCriterion", style="rounded,dashed"];
+  "AbstractTrueMeasure" [label="AbstractTrueMeasure", style="rounded,dashed"];
+  "QMCResult" [label="QMCResult\n(struct)"];
+  "QMCVecResult" [label="QMCVecResult\n(struct)"];
+
+}

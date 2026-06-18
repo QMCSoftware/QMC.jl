@@ -1,0 +1,9 @@
+digraph "util" {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=10, overlap=false, splines=true];
+  node [fontname="Helvetica", fontsize=10, shape=box, style="rounded", margin=0.12];
+  edge [fontname="Helvetica", fontsize=9];
+
+  "IterationLog" [label="IterationLog\n(mutable struct)"];
+
+}

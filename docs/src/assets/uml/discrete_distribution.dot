@@ -1,0 +1,21 @@
+digraph "discrete_distribution" {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=10, overlap=false, splines=true];
+  node [fontname="Helvetica", fontsize=10, shape=box, style="rounded", margin=0.12];
+  edge [fontname="Helvetica", fontsize=9];
+
+  "AbstractDiscreteDistribution" [label="AbstractDiscreteDistribution", style="rounded,dashed"];
+  "DigitalNetAnyBases" [label="DigitalNetAnyBases\n(mutable struct)"];
+  "DigitalNetB2" [label="DigitalNetB2\n(mutable struct)"];
+  "Halton" [label="Halton\n(mutable struct)"];
+  "IIDStdUniform" [label="IIDStdUniform\n(mutable struct)"];
+  "Kronecker" [label="Kronecker\n(struct)"];
+  "Lattice" [label="Lattice\n(mutable struct)"];
+
+  "DigitalNetAnyBases" -> "AbstractDiscreteDistribution" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "DigitalNetB2" -> "AbstractDiscreteDistribution" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Halton" -> "AbstractDiscreteDistribution" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "IIDStdUniform" -> "AbstractDiscreteDistribution" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Kronecker" -> "AbstractDiscreteDistribution" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "Lattice" -> "AbstractDiscreteDistribution" [arrowhead=empty, color="#38598c", penwidth=1.4];
+}

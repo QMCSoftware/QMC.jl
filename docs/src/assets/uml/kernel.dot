@@ -1,0 +1,50 @@
+digraph "kernel" {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=10, overlap=false, splines=true];
+  node [fontname="Helvetica", fontsize=10, shape=box, style="rounded", margin=0.12];
+  edge [fontname="Helvetica", fontsize=9];
+
+  "AbstractKernel" [label="AbstractKernel", style="rounded,dashed"];
+  "AbstractStationaryKernel" [label="AbstractStationaryKernel", style="rounded,dashed"];
+  "KernelDigShiftInvar" [label="KernelDigShiftInvar\n(struct)"];
+  "KernelDigShiftInvarAdaptiveAlpha" [label="KernelDigShiftInvarAdaptiveAlpha\n(struct)"];
+  "KernelDigShiftInvarCombined" [label="KernelDigShiftInvarCombined\n(struct)"];
+  "KernelDigShiftInvarDeriv" [label="KernelDigShiftInvarDeriv\n(struct)"];
+  "KernelGaussian" [label="KernelGaussian\n(struct)"];
+  "KernelMatern12" [label="KernelMatern12\n(struct)"];
+  "KernelMatern32" [label="KernelMatern32\n(struct)"];
+  "KernelMatern52" [label="KernelMatern52\n(struct)"];
+  "KernelMultiTask" [label="KernelMultiTask\n(struct)"];
+  "KernelMultiTaskDerivs" [label="KernelMultiTaskDerivs\n(struct)"];
+  "KernelRationalQuadratic" [label="KernelRationalQuadratic\n(struct)"];
+  "KernelShiftInvar" [label="KernelShiftInvar\n(struct)"];
+  "KernelShiftInvarCombined" [label="KernelShiftInvarCombined\n(struct)"];
+  "KernelShiftInvarDeriv" [label="KernelShiftInvarDeriv\n(struct)"];
+  "KernelSquaredExponential" [label="KernelSquaredExponential\n(struct)"];
+  "ProductKernel" [label="ProductKernel\n(struct)"];
+  "SumKernel" [label="SumKernel\n(struct)"];
+
+  "AbstractStationaryKernel" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelDigShiftInvar" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelDigShiftInvarAdaptiveAlpha" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelDigShiftInvarCombined" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelDigShiftInvarDeriv" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelGaussian" -> "AbstractStationaryKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelMatern12" -> "AbstractStationaryKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelMatern32" -> "AbstractStationaryKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelMatern52" -> "AbstractStationaryKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelMultiTask" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelMultiTaskDerivs" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelRationalQuadratic" -> "AbstractStationaryKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelShiftInvar" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelShiftInvarCombined" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelShiftInvarDeriv" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelSquaredExponential" -> "AbstractStationaryKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "ProductKernel" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "SumKernel" -> "AbstractKernel" [arrowhead=empty, color="#38598c", penwidth=1.4];
+  "KernelMultiTask" -> "AbstractKernel" [label="base_kernel", color="#777777", style=dashed, arrowhead=vee];
+  "ProductKernel" -> "AbstractKernel" [label="k1", color="#777777", style=dashed, arrowhead=vee];
+  "ProductKernel" -> "AbstractKernel" [label="k2", color="#777777", style=dashed, arrowhead=vee];
+  "SumKernel" -> "AbstractKernel" [label="k1", color="#777777", style=dashed, arrowhead=vee];
+  "SumKernel" -> "AbstractKernel" [label="k2", color="#777777", style=dashed, arrowhead=vee];
+}

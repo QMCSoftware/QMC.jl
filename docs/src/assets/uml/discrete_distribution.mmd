@@ -1,0 +1,66 @@
+classDiagram
+  class AbstractDiscreteDistribution
+  AbstractDiscreteDistribution : <<abstract>>
+  class DigitalNetAnyBases
+  DigitalNetAnyBases : <<mutable struct>>
+  DigitalNetAnyBases : dimension : Int
+  DigitalNetAnyBases : d_gen : Int
+  DigitalNetAnyBases : bases : Vector{Int}
+  DigitalNetAnyBases : generating_matrices : Array{Int, 3}
+  DigitalNetAnyBases : m : Int
+  DigitalNetAnyBases : randomize : String
+  DigitalNetAnyBases : alpha : Int
+  DigitalNetAnyBases : replications : Union{Nothing, Int}
+  DigitalNetAnyBases : rng : R
+  DigitalNetAnyBases : mimics : String
+  class DigitalNetB2
+  DigitalNetB2 : <<mutable struct>>
+  DigitalNetB2 : dimension : Int
+  DigitalNetB2 : randomize : String
+  DigitalNetB2 : graycode : Bool
+  DigitalNetB2 : t : Int
+  DigitalNetB2 : alpha : Int
+  DigitalNetB2 : source_bits : Int
+  DigitalNetB2 : rng : R
+  DigitalNetB2 : direction_nums : Matrix{UInt64}
+  DigitalNetB2 : n_limit : Union{Nothing, Int}
+  DigitalNetB2 : mimics : String
+  DigitalNetB2 : ...
+  class Halton
+  Halton : <<mutable struct>>
+  Halton : dimension : Int
+  Halton : randomize : Bool
+  Halton : generalize : Bool
+  Halton : replications : Union{Nothing, Int}
+  Halton : rng : R
+  Halton : mimics : String
+  class IIDStdUniform
+  IIDStdUniform : <<mutable struct>>
+  IIDStdUniform : dimension : Int
+  IIDStdUniform : rng : R
+  IIDStdUniform : mimics : String
+  class Kronecker
+  Kronecker : <<struct>>
+  Kronecker : dimension : Int
+  Kronecker : alpha : Vector{Float64}
+  Kronecker : shift : Vector{Float64}
+  Kronecker : randomize : Bool
+  Kronecker : mimics : String
+  class Lattice
+  Lattice : <<mutable struct>>
+  Lattice : dimension : Int
+  Lattice : randomize : Bool
+  Lattice : order : String
+  Lattice : replications : Union{Nothing, Int}
+  Lattice : gen_vector : Vector{UInt64}
+  Lattice : source_gen_vector : Union{Nothing, Vector{UInt64}}
+  Lattice : shift : Matrix{Float64}
+  Lattice : rng : R
+  Lattice : n_limit : Union{Nothing, Int}
+  Lattice : mimics : String
+  AbstractDiscreteDistribution <|-- DigitalNetAnyBases
+  AbstractDiscreteDistribution <|-- DigitalNetB2
+  AbstractDiscreteDistribution <|-- Halton
+  AbstractDiscreteDistribution <|-- IIDStdUniform
+  AbstractDiscreteDistribution <|-- Kronecker
+  AbstractDiscreteDistribution <|-- Lattice
