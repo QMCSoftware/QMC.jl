@@ -74,6 +74,8 @@ QMC.jl follows the same four-component architecture as QMCPy: discrete distribut
 
 Existing built-in types satisfy this contract through their stored fields, but new subtype authors may overload these methods instead of reproducing the same field layout. That preserves encapsulation while letting the generic sampling, transform, and stopping-criterion pipeline remain plug-and-play.
 
+Built-in constructors on abstract arguments are expected to honor this contract as well. In practice, that means methods like `Uniform(dd::AbstractDiscreteDistribution)` or `Keister(tm::AbstractTrueMeasure)` should query `dimension(dd)` or `dimension(tm)` instead of assuming a concrete `.dimension` field exists.
+
 ## Stopping Criterion
 
 Adaptive algorithms that determine sample size:

@@ -38,7 +38,7 @@ struct BernoulliCont{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
 end
 
 function BernoulliCont(dd::AbstractDiscreteDistribution; lam=0.5)
-    d = dd.dimension
+    d = dimension(dd)
     lam_vec = lam isa Number ? fill(Float64(lam), d) : Float64.(collect(lam))
     all(0.0 .< lam_vec .< 1.0) || throw(ArgumentError("lam must be in (0,1)"))
     return BernoulliCont(dd, d, lam_vec)

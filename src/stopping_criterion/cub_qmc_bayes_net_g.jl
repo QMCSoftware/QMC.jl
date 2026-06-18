@@ -211,15 +211,17 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
     err = Inf;
     n_iter = 0
     log = IterationLog()
+    f = sc.integrand
+    dd = discrete_distribution(f)
+    tm = true_measure(f)
 
     while n <= sc.n_max
         n_iter += 1
-        dd = discrete_distribution(sc.integrand)
         x_uniform = gen_samples(dd, n)
 
         x_period, weight = _periodize_with_weight(x_uniform, sc.ptransform)
-        x_trans = transform(true_measure(sc.integrand), x_period)
-        y = evaluate(sc.integrand, x_trans) .* weight
+        x_trans = transform(tm, x_period)
+        y = evaluate(f, x_trans) .* weight
 
         # WHT of function values (normalized)
         ftilde = fwht(y) ./ sqrt(n)

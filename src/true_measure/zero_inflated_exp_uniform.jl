@@ -8,7 +8,7 @@ probability.
 Transforms 2D uniform samples: first dimension selects the component,
 second dimension generates the value.
 
-Requires `dd.dimension == 2`.
+Requires `dimension(dd) == 2`.
 
 # Examples
 ```jldoctest
@@ -42,12 +42,14 @@ function ZeroInflatedExpUniform(
     low::Float64=0.0,
     high::Float64=1.0,
 )
-    dd.dimension == 2 || throw(ArgumentError("ZeroInflatedExpUniform requires dimension=2"))
+    dimension(dd) == 2 || throw(ArgumentError("ZeroInflatedExpUniform requires dimension=2"))
     0 <= p_zero <= 1 || throw(ArgumentError("p_zero must be in [0,1]"))
     rate > 0 || throw(ArgumentError("rate must be > 0"))
     low < high || throw(ArgumentError("low must be < high"))
     return ZeroInflatedExpUniform(dd, p_zero, rate, low, high)
 end
+
+dimension(::ZeroInflatedExpUniform) = 1
 
 function transform(tm::ZeroInflatedExpUniform, x::AbstractMatrix)
     n = size(x, 1)

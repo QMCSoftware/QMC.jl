@@ -56,7 +56,7 @@ function BrownianMotion(
     diffusion=1.0,
     decomp_type::Symbol=:PCA,
 )
-    d = dd.dimension
+    d = dimension(dd)
     diffusion > 0 || throw(ArgumentError("diffusion must be positive"))
     if !isnothing(time_vector) && !isnothing(t_final)
         throw(ArgumentError("supply either time_vector or t_final, not both"))

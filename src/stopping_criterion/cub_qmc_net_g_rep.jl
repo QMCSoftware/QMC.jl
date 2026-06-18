@@ -81,12 +81,14 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
     err = Inf
     n_iter = 0
     log = IterationLog()
+    f = sc.integrand
+    dd = discrete_distribution(f)
+    tm = true_measure(f)
 
     while n <= sc.n_max
         n_iter += 1
         estimates = Vector{Float64}(undef, R)
 
-        dd = discrete_distribution(sc.integrand)
         # Batch the R replicates' transform + evaluate in GROUPS of `group_size`
         # rather than all at once. Each group's points are still the same draws in
         # the same order (gen_samples advances the same RNG), so the per-replicate
@@ -111,7 +113,7 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
                 xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
                 x_group[((k - 1) * m + 1):(k * m), :] .= xu
             end
-            y_group = evaluate(sc.integrand, transform(true_measure(sc.integrand), x_group))
+            y_group = evaluate(f, transform(tm, x_group))
             @inbounds for k in 1:g
                 estimates[r0 + k - 1] = mean(@view y_group[((k - 1) * m + 1):(k * m)])
             end

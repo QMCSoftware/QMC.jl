@@ -31,8 +31,8 @@ struct Multimodal2D{TM <: AbstractTrueMeasure} <: AbstractIntegrand
 end
 
 function Multimodal2D(tm::AbstractTrueMeasure)
-    tm.dimension == 2 ||
-        throw(ArgumentError("Multimodal2D requires dimension 2, got $(tm.dimension)"))
+    d = dimension(tm)
+    d == 2 || throw(ArgumentError("Multimodal2D requires dimension 2, got $d"))
     return Multimodal2D(tm, 2)
 end
 

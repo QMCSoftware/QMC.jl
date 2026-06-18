@@ -125,7 +125,7 @@ function FinancialOption(
             throw(ArgumentError("barrier_in_out must be :in or :out"))
     end
 
-    d = tm.dimension
+    d = dimension(tm)
     tv = if hasproperty(tm, :time_vector)
         tm.time_vector
     else

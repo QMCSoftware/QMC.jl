@@ -130,6 +130,7 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
     t_start = time()
     f = sc.integrand
     dd = discrete_distribution(f)
+    tm = true_measure(f)
     ishape = d_indv(f)
     cshape = d_comb(f)
     m_indv = prod(ishape)
@@ -158,7 +159,7 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
             size(x_unit, 1) == 1 || error("CubQMCNetG requires a non-replicated net.")
             x_unit = reshape(x_unit, size(x_unit, 2), size(x_unit, 3))
         end
-        Y = reshape(evaluate(f, transform(true_measure(f), x_unit)), n, m_indv)
+        Y = reshape(evaluate(f, transform(tm, x_unit)), n, m_indv)
         gvals = cv === nothing ? nothing : _control_variate_values(cv, x_unit)
         ycvtilde =
             cv === nothing ? nothing :
@@ -259,7 +260,9 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
     prev_time = resume !== nothing ? Float64(get(resume, :time_integrate, 0.0)) : 0.0
 
     t_start = time()
-    dd = discrete_distribution(sc.integrand)
+    f = sc.integrand
+    dd = discrete_distribution(f)
+    tm = true_measure(f)
 
     mu_hat = 0.0
     err = Inf
@@ -279,7 +282,7 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
             size(x_unit, 1) == 1 || error("CubQMCNetG requires a non-replicated net.")
             x_unit = reshape(x_unit, size(x_unit, 2), size(x_unit, 3))
         end
-        y = evaluate(sc.integrand, transform(true_measure(sc.integrand), x_unit))
+        y = evaluate(f, transform(tm, x_unit))
 
         # Estimate and guaranteed half-width from the Walsh-coefficient decay.
         ytilde = _ytilde_init(y)

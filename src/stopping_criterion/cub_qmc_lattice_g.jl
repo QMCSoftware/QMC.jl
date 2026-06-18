@@ -129,6 +129,7 @@ function _integrate_cubqmclatticeg_multi(
     cshape = d_comb(f)
     m_indv = prod(ishape)
     dd = discrete_distribution(f)
+    tm = true_measure(f)
     log = IterationLog()
     cv = sc.cv_spec
     cv_beta = nothing
@@ -172,8 +173,7 @@ function _integrate_cubqmclatticeg_multi(
                 xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
                 x_group[((k - 1) * m_rows + 1):(k * m_rows), :] .= xu
             end
-            y_group =
-                reshape(evaluate(f, transform(true_measure(f), x_group)), g * m_rows, m_indv)
+            y_group = reshape(evaluate(f, transform(tm, x_group)), g * m_rows, m_indv)
             ycv_group = cv === nothing ? nothing : _control_variate_values(cv, x_group)
             @inbounds for k in 1:g
                 rows = ((k - 1) * m_rows + 1):(k * m_rows)
@@ -276,6 +276,9 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
     err = Inf
     n_iter = 0
     log = IterationLog()
+    f = sc.integrand
+    tm = true_measure(f)
+    dd = discrete_distribution(f)
 
     # Control variates: fit β once on a dedicated pilot draw and freeze it. A
     # frozen β is a constant w.r.t. the R replicate draws, so the per-replicate
@@ -284,9 +287,8 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
     cv = sc.cv_spec
     cv_beta = nothing
     if cv !== nothing
-        dd_pilot = discrete_distribution(sc.integrand)
-        xu_pilot = _sample_uniform_points(dd_pilot, sc.n_init)
-        y_pilot = evaluate_on_uniform(sc.integrand, xu_pilot)
+        xu_pilot = _sample_uniform_points(dd, sc.n_init)
+        y_pilot = evaluate_on_uniform(f, xu_pilot)
         ycv_pilot = _control_variate_values(cv, xu_pilot)
         cv_beta = _fit_control_variate_beta(y_pilot, ycv_pilot)
     end
@@ -295,7 +297,6 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
         n_iter += 1
         estimates = Vector{Float64}(undef, R)
 
-        dd = discrete_distribution(sc.integrand)
         # Batch the R replicates' transform + evaluate in GROUPS of `group_size`
         # rather than one `sample_and_evaluate` call per replicate. The same R
         # randomizations are drawn in the same order (gen_samples advances the
@@ -319,7 +320,7 @@ function integrate(sc::CubQMCLatticeG; resume::Union{Nothing, Dict{Symbol, Any}}
                 xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
                 x_group[((k - 1) * m + 1):(k * m), :] .= xu
             end
-            y_group = evaluate(sc.integrand, transform(true_measure(sc.integrand), x_group))
+            y_group = evaluate(f, transform(tm, x_group))
             if cv === nothing
                 @inbounds for k in 1:g
                     estimates[r0 + k - 1] = mean(@view y_group[((k - 1) * m + 1):(k * m)])

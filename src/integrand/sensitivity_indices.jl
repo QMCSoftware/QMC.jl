@@ -68,7 +68,7 @@ function Base.getproperty(si::SensitivityIndices, name::Symbol)
 end
 
 function SensitivityIndices(integrand::AbstractIntegrand; indices=:singletons)
-    d_base = integrand.dimension
+    d_base = dimension(integrand)
     d_base > 1 || throw(ArgumentError("SensitivityIndices requires dimension > 1"))
 
     if indices == :singletons
@@ -93,7 +93,7 @@ function SensitivityIndices(integrand::AbstractIntegrand; indices=:singletons)
     end
 
     # The wrapper uses 2 * d_base dimensions
-    tm = integrand.true_measure
+    tm = true_measure(integrand)
     return SensitivityIndices(tm, 2 * d_base, integrand, d_base, idx_mat)
 end
 

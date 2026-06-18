@@ -97,7 +97,7 @@ interoperability.
 """
 function dimension end
 
-dimension(dd::AbstractDiscreteDistribution) =
+@inline dimension(dd::AbstractDiscreteDistribution) =
     hasfield(typeof(dd), :dimension) ? getfield(dd, :dimension) :
     throw(
         ArgumentError(
@@ -118,9 +118,9 @@ Concrete subtypes may either store a `dd` field or overload this method.
 """
 function discrete_distribution end
 
-discrete_distribution(dd::AbstractDiscreteDistribution) = dd
+@inline discrete_distribution(dd::AbstractDiscreteDistribution) = dd
 
-discrete_distribution(tm::AbstractTrueMeasure) =
+@inline discrete_distribution(tm::AbstractTrueMeasure) =
     hasfield(typeof(tm), :dd) ? getfield(tm, :dd) :
     throw(
         ArgumentError(
@@ -128,7 +128,7 @@ discrete_distribution(tm::AbstractTrueMeasure) =
         ),
     )
 
-discrete_distribution(f::AbstractIntegrand) = discrete_distribution(true_measure(f))
+@inline discrete_distribution(f::AbstractIntegrand) = discrete_distribution(true_measure(f))
 
 """
     true_measure(f::AbstractIntegrand)
@@ -138,7 +138,7 @@ either store a `true_measure` field or overload this method.
 """
 function true_measure end
 
-true_measure(f::AbstractIntegrand) =
+@inline true_measure(f::AbstractIntegrand) =
     hasfield(typeof(f), :true_measure) ? getfield(f, :true_measure) :
     throw(
         ArgumentError(
@@ -146,11 +146,11 @@ true_measure(f::AbstractIntegrand) =
         ),
     )
 
-dimension(tm::AbstractTrueMeasure) =
+@inline dimension(tm::AbstractTrueMeasure) =
     hasfield(typeof(tm), :dimension) ? getfield(tm, :dimension) :
     dimension(discrete_distribution(tm))
 
-dimension(f::AbstractIntegrand) =
+@inline dimension(f::AbstractIntegrand) =
     hasfield(typeof(f), :dimension) ? getfield(f, :dimension) : dimension(true_measure(f))
 
 """

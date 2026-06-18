@@ -22,6 +22,8 @@ The target design is therefore:
 - field-layout-agnostic where practical
 - testable through shared contracts
 
+Concrete component types may still store convenience fields such as `dimension`, `dd`, or `true_measure`, but those are implementation details rather than the architectural contract. The contract lives at the method boundary.
+
 ## Design Principles
 
 ### 1. Stable Abstract Roles
@@ -45,6 +47,8 @@ Current preferred accessors:
 - `QMC.true_measure(f)`
 
 This keeps the pipeline compatible with existing built-in types while allowing new subtypes to choose different internal representations.
+
+In performance-sensitive code, interface methods should usually be called once near the boundary and stored in local variables. Hot inner loops should then use those local bindings rather than repeatedly re-querying the interface.
 
 ### 3. Multiple Dispatch Is the Polymorphism Mechanism
 
@@ -213,7 +217,7 @@ This should be done incrementally.
 ### Stage 1. Harden Accessor-Based Plumbing
 
 Status:
-- started
+- implemented for the generic pipeline and abstract-argument constructors
 
 Tasks:
 
@@ -240,6 +244,9 @@ Success criterion:
 
 ### Stage 3. Formalize Subtype Contracts
 
+Status:
+- in progress
+
 Tasks:
 
 - document per-family required and optional methods
@@ -247,8 +254,7 @@ Tasks:
 - provide minimal toy subtype examples in tests
 
 Success criterion:
-- extension breakage is caught as an interface regression, not only as a
-  downstream algorithm failure
+- extension breakage is caught as an interface regression, not only as a downstream algorithm failure
 
 ### Stage 4. Clarify Spawning and Multilevel Semantics
 
@@ -291,6 +297,8 @@ These tests should focus on:
 - shared-point-stream semantics
 - spawning behavior
 - failure modes for unsupported contracts
+
+The current priority is constructor- and pipeline-level interface coverage: built-in components should accept custom subtypes that overload `dimension`, `discrete_distribution`, and `true_measure` without reproducing QMC.jl's internal field names.
 
 ## Documentation Plan
 
@@ -339,7 +347,7 @@ When refactoring existing framework code:
 The next architecture-focused tasks with the best payoff are:
 
 1. finish the audit and replacement of framework-level direct field access
-2. add explicit contract tests for custom true measures and integrands
+2. expand contract tests from constructors to more stopping-criterion pathways
 3. document multilevel spawning semantics in more detail
 4. add a contributor-facing “how to implement a new component” guide
 

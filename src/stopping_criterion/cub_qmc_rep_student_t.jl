@@ -124,6 +124,8 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol, An
     log = IterationLog()
     n_iter = 0
     converged = false
+    f = sc.integrand
+    tm = true_measure(f)
 
     # Accumulators: for scalar integrands, rep_means is Vector{Float64}(R)
     # We accumulate _ysums across doublings to avoid recomputing from scratch.
@@ -140,8 +142,8 @@ function integrate(sc::CubQMCRepStudentT; resume::Union{Nothing, Dict{Symbol, An
         ndims(x_uniform) == 3 ||
             throw(ArgumentError("CubQMCRepStudentT requires a replicated sampler"))
         _, m, d = size(x_uniform)
-        x_trans = transform(true_measure(sc.integrand), reshape(x_uniform, R * m, d))
-        y = evaluate(sc.integrand, x_trans)
+        x_trans = transform(tm, reshape(x_uniform, R * m, d))
+        y = evaluate(f, x_trans)
         ysums .+= vec(sum(reshape(y, R, m); dims=2))
         n_so_far = n_rep
 

@@ -45,7 +45,7 @@ struct JohnsonsSU{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
 end
 
 function JohnsonsSU(dd::AbstractDiscreteDistribution; xi=1.0, lambda=2.0, gamma=1.0, delta=2.0)
-    d = dd.dimension
+    d = dimension(dd)
     _xi = xi isa Number ? fill(Float64(xi), d) : Float64.(collect(xi))
     _lam = lambda isa Number ? fill(Float64(lambda), d) : Float64.(collect(lambda))
     _gam = gamma isa Number ? fill(Float64(gamma), d) : Float64.(collect(gamma))

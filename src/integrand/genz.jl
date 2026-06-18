@@ -60,7 +60,7 @@ function Genz(
     u::Union{Nothing, Vector{Float64}}=nothing,
 )
     @assert kind in GENZ_KINDS "kind must be one of $GENZ_KINDS, got :$kind"
-    d = tm.dimension
+    d = dimension(tm)
     a_vec = isnothing(a) ? ones(d) : a
     u_vec = isnothing(u) ? fill(0.5, d) : u
     @assert length(a_vec) == d "a must have length $d"

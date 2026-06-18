@@ -10,7 +10,7 @@ At level ``\\ell``, uses ``d_{\\text{coarsest}} \\cdot 2^\\ell`` time steps. The
 coarse/fine pairing uses every-other-step subsampling: coarse path increments
 are obtained by summing pairs of fine-grid Brownian increments.
 
-The number of levels is determined by `dd.dimension`: the dimension must equal
+The number of levels is determined by `dimension(dd)`: the dimension must equal
 ``d_{\\text{coarsest}} \\cdot 2^{L-1}`` for some integer ``L \\geq 1``.
 
 # Arguments
@@ -85,7 +85,7 @@ function FinancialOptionML(
     interest_rate::Float64=0.0,
     call_put::Symbol=:call,
 )
-    dim = dd.dimension
+    dim = dimension(dd)
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     tm = Gaussian(dd)
     return FinancialOptionML(
@@ -114,7 +114,7 @@ function FinancialOptionML(
     interest_rate::Float64=0.0,
     call_put::Symbol=:call,
 )
-    dim = tm.dimension
+    dim = dimension(tm)
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     return FinancialOptionML(
         tm,
@@ -142,7 +142,7 @@ function FinancialOptionML(
     interest_rate::Union{Nothing, Float64}=nothing,
     call_put::Symbol=:call,
 )
-    dim = tm.dimension
+    dim = dimension(tm)
     nb_of_levels = _ml_nb_of_levels(dim, d_coarsest)
     volatility = isnothing(volatility) ? sqrt(tm.diffusion) : volatility
     start_price = isnothing(start_price) ? tm.initial_value : start_price

@@ -60,7 +60,7 @@ function AsianOption(
 )
     @assert call_put in (:call, :put) "call_put must be :call or :put"
     @assert mean_type in (:arithmetic, :geometric) "mean_type must be :arithmetic or :geometric"
-    d = tm.dimension
+    d = dimension(tm)
     # Extract time vector from BrownianMotion if available
     tv = if hasproperty(tm, :time_vector)
         tm.time_vector

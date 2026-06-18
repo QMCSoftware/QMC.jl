@@ -7,6 +7,7 @@ using Distributions
 import QMC: Uniform, Kumaraswamy
 
 const TEST_FILES = [
+    "test_interfaces.jl",
     "test_discrete_distributions.jl",
     "test_true_measures.jl",
     "test_integrands.jl",

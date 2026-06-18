@@ -42,7 +42,7 @@ function MaternGP(
     lengthscale > 0 || throw(ArgumentError("lengthscale must be > 0"))
     variance > 0 || throw(ArgumentError("variance must be > 0"))
 
-    d = dd.dimension
+    d = dimension(dd)
     # Build covariance matrix at equally spaced points on [0, 1]
     t = range(0.0, 1.0, length=d)
     K = Matrix{Float64}(undef, d, d)

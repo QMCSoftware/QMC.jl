@@ -73,7 +73,7 @@ function GeometricBrownianMotion(
         throw(ArgumentError("initial_value must be positive, got $initial_value"))
     diffusion > 0.0 || throw(ArgumentError("diffusion must be positive, got $diffusion"))
 
-    d = dd.dimension
+    d = dimension(dd)
     tv = collect(range(t_final / d, t_final; length=d))
 
     # Build BM covariance: C[i,j] = diffusion * min(t[i], t[j])

@@ -30,7 +30,7 @@ struct Keister{TM <: AbstractTrueMeasure} <: AbstractIntegrand
     dimension::Int
 end
 
-Keister(tm::AbstractTrueMeasure) = Keister(tm, tm.dimension)
+Keister(tm::AbstractTrueMeasure) = Keister(tm, dimension(tm))
 
 function evaluate(f::Keister, x::AbstractMatrix)
     coeff = π^(f.dimension / 2)
