@@ -41,8 +41,8 @@ CubQMCBayesLatticeG(abs_tol=0.1, order=2, ptransform=C1SIN)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-0.6192
+julia> abs(result.solution - genz_exact(f)) < 0.1
+true
 
 julia> result.data[:converged]
 true

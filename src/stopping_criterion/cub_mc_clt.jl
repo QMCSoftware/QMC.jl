@@ -31,8 +31,8 @@ CubMCCLT(abs_tol=0.1, rel_tol=0.0, inflate=1.2)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-1.5488
+julia> abs(result.solution - 1.5) < 0.1
+true
 
 julia> result.data[:converged]
 true

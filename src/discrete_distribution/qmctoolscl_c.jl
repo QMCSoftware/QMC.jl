@@ -31,9 +31,18 @@ function _python_candidates()
         push!(candidates, joinpath(strip(ENV["CONDA_PREFIX"]), "bin", "python"))
     end
 
-    # Fall back to common user-level Conda installs before system Python.
+    # Fall back to common user-level Conda installs, checking named environments
+    # BEFORE the base interpreter. A named env often carries a newer qmctoolscl
+    # (with fused gen+float C functions) while the base env may have an older one.
     for root in ("miniconda3", "miniforge3", "mambaforge", "anaconda3")
-        push!(candidates, joinpath(homedir(), root, "bin", "python"))
+        conda_base = joinpath(homedir(), root)
+        envs_dir = joinpath(conda_base, "envs")
+        if isdir(envs_dir)
+            for env_name in sort(readdir(envs_dir))
+                push!(candidates, joinpath(envs_dir, env_name, "bin", "python"))
+            end
+        end
+        push!(candidates, joinpath(conda_base, "bin", "python"))
     end
 
     for py_cmd in ("python3", "python")
@@ -79,18 +88,30 @@ except Exception:
     print("")
 """
     searched = String[]
+    fallback_path = ""   # best non-fused library found so far
     for exe in _python_candidates()
         push!(searched, exe)
         try
             path = strip(read(`$exe -c $py_script`, String))
             if !isempty(path) && isfile(path)
-                _QMCTOOLSCL_LIB_PATH[] = path
                 hdl = Libdl.dlopen(path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
-                _HAS_DNB2_FUSED[] = Libdl.dlsym_e(hdl, :dnb2_gen_gray_float) != C_NULL
-                return true
+                has_fused = Libdl.dlsym_e(hdl, :dnb2_gen_gray_float) != C_NULL
+                if has_fused
+                    _QMCTOOLSCL_LIB_PATH[] = path
+                    _HAS_DNB2_FUSED[] = true
+                    return true
+                end
+                Libdl.dlclose(hdl)
+                isempty(fallback_path) && (fallback_path = path)
             end
         catch
         end
+    end
+    if !isempty(fallback_path)
+        _QMCTOOLSCL_LIB_PATH[] = fallback_path
+        hdl = Libdl.dlopen(fallback_path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
+        _HAS_DNB2_FUSED[] = false
+        return true
     end
     searched_str = isempty(searched) ? "none" : join(searched, ", ")
     _QMCTOOLSCL_LAST_SEARCH[] = searched_str

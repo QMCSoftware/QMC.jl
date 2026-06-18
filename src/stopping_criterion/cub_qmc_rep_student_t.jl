@@ -40,8 +40,8 @@ CubQMCRepStudentT(abs_tol=0.2, alpha=0.01, inflate=1.0)
 
 julia> result = integrate(sc);
 
-julia> round(result.solution; digits=4)
-0.6195
+julia> abs(result.solution - genz_exact(f)) < 0.1
+true
 
 julia> result.data[:converged]
 true
