@@ -10,28 +10,18 @@ For local linting and repeatable smoke runs of those workflows, see
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
 | **Fast CI** | `ci.yml` | `push` except `develop`/`master`; manual | Linux | Unit tests + coverage |
-| **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PR into `develop`/`master`; manual | Linux, macOS, Windows | Unit tests |
+| **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
 | **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; manual | Linux | Documenter build + deploy + notebook regression |
 
 ## Policy
 
-- Linux is the default feature-branch feedback path and runs on pushes except
-  for `develop`/`master` via `ci.yml`.
-- macOS and Windows are reserved for `develop`/`master` pushes, pull requests
-  into those branches, and manual runs via `ci-full.yml`.
-- Benchmark collection is separated from unit testing. `benchmarking.yml` is
-  Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
-- The benchmarking workflow pins its Python dependencies through
-  `benchmark/requirements.txt` so cross-commit comparisons are not invalidated
-  by unrelated upstream package releases. Changes to the shared
-  `test/requirements.txt` pin file also retrigger the benchmark workflow.
-- On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the
-  previous pushed commit as the reference revision when GitHub provides one;
-  manual runs fall back to `REV=HEAD`.
-- `concurrency` cancels superseded runs, and the `ci.yml`, `ci-full.yml`, and
-  `benchmarking.yml` groups include the event name so a pull request run does
-  not cancel the sibling push run for the same ref.
+- Linux is the default feature-branch feedback path and runs on pushes except for `develop`/`master` via `ci.yml`.
+- macOS and Windows are reserved for `develop`/`master` pushes and manual runs via `ci-full.yml`.
+- Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
+- The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
+- On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
+- `concurrency` cancels superseded runs, and the `ci.yml`, `ci-full.yml`, and `benchmarking.yml` groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
 - There is no nightly CI schedule.
 
 ## Fast CI (`ci.yml`)
@@ -58,19 +48,17 @@ manual dispatch.
 
 A cross-platform sweep for protected branches.
 
-- Triggers on pushes to `develop` or `master`, on pull requests targeting those
-  branches, and via manual dispatch.
-- Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and
-  Windows on Julia 1.12.
+- Triggers on pushes to `develop` or `master` and via manual dispatch.
+- Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and Windows on Julia 1.12.
 - Runs unit tests on every lane.
+- The Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, and feeds the `develop` branch Codecov badge; the other lanes run plain `Pkg.test()`.
 - Does not run `make doctest`; doctest and full docs validation for `develop`/`master` live in `doc_demo.yml`, which already builds the documentation and therefore exercises the Documenter doctests there.
 
 ## Benchmarking (`benchmarking.yml`)
 
 The benchmark workflow is separate from the test workflows.
 
-- Triggers on pushes to `develop` or `master` when benchmark-relevant files
-  change, and via manual dispatch.
+- Triggers on pushes to `develop` or `master` when benchmark-relevant files change, and via manual dispatch.
 - Runs on `ubuntu-latest` with Julia 1.12 and Python 3.13.
 - Checks out full git history so `make bench-all REV=<previous-commit>` can
   materialize the baseline revision in a temporary worktree.
@@ -162,10 +150,11 @@ make bench-all REV=HEAD~1 BENCH_BLAS_THREADS=2
 
 ## Coverage Reports
 
-QMC.jl publishes test coverage through the fast Linux CI workflow.
+QMC.jl publishes test coverage through Linux coverage lanes in both `ci.yml` and `ci-full.yml`.
 
-- The repository README badge points at the Codecov report for the default branch.
-- `ci.yml` converts Julia's `*.cov` outputs into `lcov.info`.
+- The repository README badge points at the Codecov report for `develop`.
+- `ci.yml` converts Julia's `*.cov` outputs into `lcov.info` for feature branches.
+- The Linux Julia 1.11 lane in `ci-full.yml` does the same for `develop` and `master`.
 - The resulting LCOV file is uploaded to Codecov and also attached to the workflow run as an artifact.
 
 The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.

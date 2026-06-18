@@ -26,8 +26,11 @@ Typical files:
 - `qmcpy_<label>.json`: QMCPy benchmark results
 - `compare_*.md`: Julia-vs-Julia comparison reports
 - `compare_python*.md`: Julia-vs-QMCPy comparison reports
+- `compare_python_summary*.json`: machine-readable Julia-vs-QMCPy aggregate summaries
 
 These JSON and Markdown outputs are machine-specific benchmark artifacts and are intentionally not tracked in git.
+
+The GitHub benchmarking workflow also turns the latest Julia-vs-QMCPy summary for `develop` and `master` into Shields-compatible JSON badge payloads for time and memory and publishes them on the dedicated `benchmark-badges` branch.
 
 ## Quick Start
 

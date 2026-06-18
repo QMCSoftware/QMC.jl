@@ -1,12 +1,17 @@
 # QMC.jl: Quasi-Monte Carlo Community Software in Julia
 
-[![CI](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci.yml)
-[![CI Full](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml)
+[![Doc/Unit Tests](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml)
+[![Docs and Demos](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml)
+[![Benchmarking](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
+[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
+[![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 [![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://qmcsoftware.github.io/QMC.jl/)
 [![codecov](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
+
+The benchmark badges report the latest published `develop` branch aggregate comparison against QMCPy. The speed badge uses the weighted runtime ratio, and the memory badge uses the weighted Python `tracemalloc` peak versus Julia allocation ratio from `benchmark/compare_py.jl`.
 
 ## Quick Start
 
@@ -118,11 +123,9 @@ julia benchmark/runbenchmarks.jl
 
 This benchmarks sampling, transforms, integrand evaluation, and end-to-end integration across all DD types. Results are saved under `benchmark/results/`. See [`benchmark/README.md`](benchmark/README.md) for the full workflow, comparison scripts, and the Julia-vs-QMCPy accuracy sidecars.
 
-Remote benchmark collection is handled by `.github/workflows/benchmarking.yml`:
-it runs on Linux for benchmark-relevant `develop`/`master` pushes and manual
-dispatch, then uploads `benchmark/results/` as a workflow artifact. See
-[CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for the full
-workflow policy.
+Remote benchmark collection is handled by `.github/workflows/benchmarking.yml`: it runs on Linux for benchmark-relevant `develop`/`master` pushes and manual dispatch, then uploads `benchmark/results/` as a workflow artifact. See [CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for the full workflow policy.
+
+The top-level benchmark badges track the latest published `develop` run. The speed badge is the weighted `Python time ÷ Julia time` ratio from the Julia-vs-QMCPy comparison. The peak-memory badge uses QMCPy's `tracemalloc` peak versus Julia's recorded allocation totals, so it is a useful signal rather than a perfectly apples-to-apples memory metric.
 
 ## Repository Layout
 
@@ -167,9 +170,7 @@ make notebook-update NOTEBOOK_KERNEL=qmc-1.12
 julia --project=docs docs/make.jl
 ```
 
-CI uploads LCOV coverage reports to Codecov and stores the generated `lcov.info`
-as a workflow artifact. See [`test/README.md`](test/README.md) and
-[CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for details.
+CI uploads LCOV coverage reports to Codecov and stores the generated `lcov.info` as a workflow artifact. The `develop` branch badge is fed by the Linux coverage lane in `ci-full.yml`. See [`test/README.md`](test/README.md) and [CI/CD Testing](https://qmcsoftware.github.io/QMC.jl/ci-testing/) for details.
 
 ## Citation
 
