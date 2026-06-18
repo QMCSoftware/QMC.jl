@@ -22,6 +22,9 @@ concurrency:
   group: benchmarking-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   benchmark:
     name: Benchmarking – Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
@@ -75,6 +78,39 @@ jobs:
           export OMP_NUM_THREADS="$BENCH_BLAS_THREADS"
           export NUMEXPR_NUM_THREADS="$BENCH_BLAS_THREADS"
           make bench-all REV="$BENCH_COMPARE_REV" LABEL="$BENCH_LABEL" BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+
+      - name: Generate benchmark badges
+        if: github.ref_name == 'develop' || github.ref_name == 'master'
+        run: julia --project=benchmark benchmark/generate_badges.jl "$BENCH_LABEL" "${{ github.ref_name }}"
+
+      - name: Publish benchmark badges
+        if: github.ref_name == 'develop' || github.ref_name == 'master'
+        env:
+          BADGE_BRANCH: benchmark-badges
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmpdir="$(mktemp -d)"
+          cd "$tmpdir"
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads origin "$BADGE_BRANCH" >/dev/null 2>&1; then
+            git fetch --depth=1 origin "$BADGE_BRANCH"
+            git checkout -b "$BADGE_BRANCH" FETCH_HEAD
+          else
+            git checkout --orphan "$BADGE_BRANCH"
+          fi
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -R "$GITHUB_WORKSPACE/benchmark/results/badges" .
+          cat > README.md <<'EOF'
+          Benchmark badge JSON for Shields.io.
+          EOF
+          git add badges README.md
+          git commit -m "Update benchmark badges for ${GITHUB_SHA}" || exit 0
+          git push origin HEAD:"$BADGE_BRANCH"
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4

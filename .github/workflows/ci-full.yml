@@ -15,18 +15,25 @@ jobs:
   test:
     name: Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      TEST_JOBS: ${{ vars.TEST_JOBS || '2' }}
+      TEST_THREADS: ${{ vars.TEST_THREADS || '1' }}
     strategy:
       fail-fast: true
       matrix:
         include:
           - os: ubuntu-latest
             julia-version: '1.10'
+            coverage: false
           - os: ubuntu-latest
             julia-version: '1.11'
+            coverage: true
           - os: macos-latest
             julia-version: '1.12'
+            coverage: false
           - os: windows-latest
             julia-version: '1.12'
+            coverage: false
 
     steps:
       - uses: actions/checkout@v4
@@ -49,5 +56,26 @@ jobs:
       - name: Install dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
+      - name: Run unit tests with coverage
+        if: ${{ matrix.coverage }}
+        run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
+
       - name: Run unit tests
+        if: ${{ !matrix.coverage }}
         run: julia --project=. -e 'using Pkg; Pkg.test()'
+
+      - name: Upload LCOV artifact
+        if: ${{ matrix.coverage }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-julia-${{ matrix.julia-version }}-${{ runner.os }}
+          path: lcov.info
+          if-no-files-found: warn
+
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.coverage }}
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

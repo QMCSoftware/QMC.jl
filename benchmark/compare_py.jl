@@ -47,7 +47,12 @@ resdir = joinpath(@__DIR__, "results")
 compare_py_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python.md") :
     joinpath(resdir, "compare_python_$(label).md")
+compare_py_summary_outfile(label::AbstractString) =
+    isempty(label) ? joinpath(resdir, "compare_python_summary.json") :
+    joinpath(resdir, "compare_python_summary_$(label).json")
 const ARTIFACT_SKEW_WARNING_SECONDS = 10 * 60
+
+finite_or_nothing(x) = x isa Real && isfinite(x) ? x : nothing
 
 is_c_kernel_row(name::AbstractString) = occursin(r"Lattice|DigitalNetB2|Halton", name)
 is_student_t_row(name::AbstractString) = occursin("StudentT", name)
@@ -466,6 +471,35 @@ else
         "%d of %d integrate case(s) exceed 2×tolerance\n",
         n_flagged,
         count(r -> r.check !== nothing, accuracy_rows)
+    )
+end
+
+# ── Save machine-readable summary ─────────────────────────────────────────────
+summary_outfile = compare_py_summary_outfile(out_label)
+open(summary_outfile, "w") do io
+    JSON3.pretty(
+        io,
+        Dict(
+            "report_generated_at" => report_generated_at,
+            "jl_label" => jl_label,
+            "py_label" => py_label,
+            "jl_generated_at" => jl_generated_at,
+            "py_generated_at" => py_generated_at,
+            "jl_file_mtime" => jl_file_mtime,
+            "py_file_mtime" => py_file_mtime,
+            "artifact_skew_seconds" => artifact_skew_seconds,
+            "matched_rows" => summary.matched,
+            "total_rows" => summary.total,
+            "time_ratio" => finite_or_nothing(summary.time_ratio),
+            "time_ratio_excluding_student_t" =>
+                finite_or_nothing(summary_non_student_t.time_ratio),
+            "time_ratio_student_t" => finite_or_nothing(summary_student_t.time_ratio),
+            "peak_rows" => summary.peak_rows,
+            "peak_ratio" => finite_or_nothing(summary.peak_ratio),
+            "rss_rows" => summary.rss_rows,
+            "rss_ratio" => finite_or_nothing(summary.rss_ratio),
+            "n_flagged_accuracy_rows" => n_flagged,
+        ),
     )
 end
 

@@ -7,7 +7,7 @@ This folder contains the repository's GitHub Actions workflows.
 | Workflow | Description | Local equivalent |
 |---|---|---|
 | `ci.yml` (`Fast CI`) | Fast Linux feedback for feature-branch pushes; runs unit tests with coverage, then doctests. | `make coverage` · `make doctest` |
-| `ci-full.yml` (`Full CI`) | Cross-platform validation for `develop`/`master`; Linux Julia 1.10/1.11 and macOS/Windows Julia 1.12. | `make test` *(current Julia/OS only)* |
+| `ci-full.yml` (`Full CI`) | Cross-platform validation for `develop`/`master`; one Linux lane also uploads branch coverage for Codecov. | `make test` or `make coverage` *(current Julia/OS only)* |
 | `doc_demo.yml` | Documenter build/deploy plus demo-notebook regression runs on `develop`/`master`. | `make doc; make notebook; make ci-doc-demo` |
 | `benchmarking.yml` | Benchmark collection for benchmark-relevant `develop`/`master` pushes and manual runs. | `make ci-bench` |
 | `TagBot.yml` | Release-tag automation. |  |
