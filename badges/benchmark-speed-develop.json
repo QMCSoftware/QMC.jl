@@ -1,0 +1,7 @@
+{
+    "label": "time vs QMCPy (develop)",
+    "message": "4.42x faster",
+    "color": "brightgreen",
+    "schemaVersion": 1,
+    "namedLogo": "julia"
+}

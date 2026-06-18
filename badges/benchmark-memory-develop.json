@@ -1,0 +1,7 @@
+{
+    "label": "memory vs QMCPy (develop)",
+    "message": "4.25x lower",
+    "color": "brightgreen",
+    "schemaVersion": 1,
+    "namedLogo": "julia"
+}
