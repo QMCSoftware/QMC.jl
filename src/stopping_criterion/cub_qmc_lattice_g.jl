@@ -205,16 +205,57 @@ function _integrate_cubqmclatticeg_fft(
     err = Inf
     n_iter = 0
     converged = false
+    # All iterations must use the SAME random shift for the FFT bound to be valid.
+    locked_shift = nothing
+    # kappanumap is updated INCREMENTALLY (QMCPy style): first call runs all levels
+    # m-1..0; each subsequent doubling extends the map and runs only the new top level.
+    kappanumap = Int[]
+    ytilde = ComplexF64[]
+    flip_mask = Vector{Bool}(undef, 0)
 
     while n <= sc.n_max
         n_iter += 1
 
+        # Apply locked shift (prevents gen_samples from regenerating a new one)
+        if locked_shift !== nothing && dd isa Lattice
+            dd.randomize = false
+            dd.shift .= locked_shift
+        end
         xu = gen_samples(dd, n)
+        if dd isa Lattice
+            dd.randomize = true
+            locked_shift === nothing && (locked_shift = copy(dd.shift))
+        end
         xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
         y_raw = evaluate(f, transform(tm, xu))
         y = y_raw isa Vector{Float64} ? y_raw : Vector{Float64}(vec(y_raw))
 
-        mu_hat, err = _fft_error_bound_scalar(y)
+        m = trailing_zeros(n)
+        ytilde_new = bro_fft(y) ./ n
+
+        if isempty(kappanumap)
+            # First call: initialize identity kappanumap and run ALL levels (mto=0)
+            kappanumap = collect(0:(n - 1))
+            length(flip_mask) < (n >> 1) && resize!(flip_mask, n >> 1)
+            _kappanumap_update!(kappanumap, ytilde_new, m - 1, 0, m, flip_mask)
+        else
+            # Subsequent doubling: extend and update r_lag levels (mto = mllstart)
+            n_old = length(kappanumap)
+            append!(kappanumap, n_old .+ kappanumap)
+            length(flip_mask) < (n >> 1) && resize!(flip_mask, n >> 1)
+            mllstart = max(0, m - _FFT_R_LAG - 1)
+            _kappanumap_update!(kappanumap, ytilde_new, m - 1, mllstart, m, flip_mask)
+        end
+        ytilde = ytilde_new
+
+        nllstart = 1 << max(0, m - _FFT_R_LAG - 1)
+        fudge = 5.0 * exp2(-m)
+        err = 0.0
+        @inbounds for j in (nllstart + 1):(2 * nllstart)
+            err += abs(ytilde[kappanumap[j] + 1])
+        end
+        err *= fudge
+        mu_hat = real(ytilde[1])
         tol = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
 
         if sc.trace_iterations
@@ -278,28 +319,49 @@ function _integrate_cubqmclatticeg_fft_multi(
     converged = false
     n_iter = 0
     n_final = n
+    locked_shift = nothing
+    # Per-output kappanumap updated incrementally (one vector per integrand output)
+    kappanumaps = [Int[] for _ in 1:m_indv]
+    flip_mask = Vector{Bool}(undef, 0)
 
     while n <= sc.n_max
         n_iter += 1
 
+        if locked_shift !== nothing && dd isa Lattice
+            dd.randomize = false
+            dd.shift .= locked_shift
+        end
         xu = gen_samples(dd, n)
+        if dd isa Lattice
+            dd.randomize = true
+            locked_shift === nothing && (locked_shift = copy(dd.shift))
+        end
         xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
         y_mat = reshape(evaluate(f, transform(tm, xu)), size(xu, 1), m_indv)
 
         m_bits = trailing_zeros(n)
         nllstart = 1 << max(0, m_bits - _FFT_R_LAG - 1)
         fudge = 5.0 * exp2(-m_bits)
-        kappanumap = collect(0:(n - 1))
-        flip_mask = Vector{Bool}(undef, n >> 1)
+        length(flip_mask) < (n >> 1) && resize!(flip_mask, n >> 1)
+        first_iter = isempty(kappanumaps[1])
 
         @inbounds for j in 1:m_indv
             yj = @view y_mat[:, j]
             ytilde = bro_fft(collect(Float64, yj)) ./ n
-            kappanumap .= 0:(n - 1)
-            _kappanumap_update!(kappanumap, ytilde, m_bits - 1, 0, m_bits, flip_mask)
+            km = kappanumaps[j]
+            if first_iter
+                resize!(km, n)
+                km .= 0:(n - 1)
+                _kappanumap_update!(km, ytilde, m_bits - 1, 0, m_bits, flip_mask)
+            else
+                n_old = length(km)
+                append!(km, n_old .+ km)
+                mllstart_j = max(0, m_bits - _FFT_R_LAG - 1)
+                _kappanumap_update!(km, ytilde, m_bits - 1, mllstart_j, m_bits, flip_mask)
+            end
             err_j = 0.0
             for k in (nllstart + 1):(2 * nllstart)
-                err_j += abs(ytilde[kappanumap[k] + 1])
+                err_j += abs(ytilde[km[k] + 1])
             end
             err_j *= fudge
             solution_indv[j] = real(ytilde[1])
