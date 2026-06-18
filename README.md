@@ -134,7 +134,7 @@ their purpose and the files they contain. Useful starting points:
 
 - [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and comparison tooling
 - [`demos/README.md`](demos/README.md) — notebook demos and how to run them
-- [`docs/README.md`](docs/README.md) — Documenter build/deploy layout
+- [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — Documenter build/deploy layout
 - [`src/README.md`](src/README.md) — package source tree and component folders
 - [`test/README.md`](test/README.md) — unit tests, notebook tests, and coverage commands
 
