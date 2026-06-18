@@ -17,6 +17,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Components" => "components.md",
+        "Architecture" => "architecture.md",
         "API Reference" => [
             "Discrete Distributions" => "api/discrete_distributions.md",
             "True Measures" => "api/true_measures.md",
