@@ -441,6 +441,59 @@
         )
     end
 
+    @testset "DigitalNetB2 QMCPy cross-validation" begin
+        # 1. Unrandomized RADICAL INVERSE points must match QMCPy's defaults exactly.
+        ref_ri = [
+            0.0 0.0
+            0.5 0.5
+            0.25 0.75
+            0.75 0.25
+            0.125 0.625
+            0.625 0.125
+            0.375 0.375
+            0.875 0.875
+        ]
+        @test gen_samples(DigitalNetB2(2; randomize="none", order="RADICAL INVERSE"), 8) ≈
+              ref_ri atol = 1e-14
+        ref_gray = [0.75 0.25; 0.25 0.75]
+        @test gen_samples(DigitalNetB2(2; randomize="none", order="GRAY"), 2; n_start=2) ≈
+              ref_gray atol = 1e-14
+
+        # 2. Digital shift (DS): same constant XOR per dimension, independent across dimensions.
+        n = 64
+        base = gen_samples(DigitalNetB2(2; randomize="none", order="RADICAL INVERSE"), n)
+        dspts = gen_samples(DigitalNetB2(2; seed=7, randomize="DS", order="RADICAL INVERSE"), n)
+        base_u = floor.(UInt32, base .* 2.0^32)
+        ds_u = floor.(UInt32, dspts .* 2.0^32)
+        shifts = xor.(base_u, ds_u)
+        @test all(shifts[:, 1] .== shifts[1, 1])
+        @test all(shifts[:, 2] .== shifts[1, 2])
+        @test shifts[1, 1] != shifts[1, 2]
+
+        # 3. LMS with t=63 must preserve the (1,2)-net equidistribution property.
+        # Root cause of the visual mismatch vs QMCPy: with 32-bit LMS the first
+        # direction number 2^31 is the MSB (= e₁ in GF(2)^32), so L_j * e₁ = e₁
+        # for every lower-triangular L_j regardless of seed — all dimensions share
+        # the same scrambled first direction number, collapsing 2D projections onto
+        # the diagonal ~50% of the time.  With t=63, 31 extra fully-random rows
+        # in the scramble matrix make each dimension's output independent.
+        for seed in 1:10
+            # 1D stratification: n=8 points must cover all 8 equal subintervals
+            p1 = gen_samples(
+                DigitalNetB2(1; seed=seed, randomize="LMS", order="RADICAL INVERSE", t=63),
+                8,
+            )
+            @test sort(floor.(Int, p1[:, 1] .* 8)) == collect(0:7)
+            # 2D equidistribution: n=4 points must cover all 4 quadrants
+            p2 = gen_samples(
+                DigitalNetB2(2; seed=seed, randomize="LMS", order="RADICAL INVERSE", t=63),
+                4,
+            )
+            quads = Set((p2[i, 1] < 0.5, p2[i, 2] < 0.5) for i in 1:4)
+            @test length(quads) == 4
+        end
+    end
+
     @testset "DigitalNetB2 high-dimensional (bundled 21201 table)" begin
         # Dimensions above the embedded 1024 now come from the bundled binary
         # table (offline), matching QMCPy's reach of 21201 raw dimensions.

@@ -542,30 +542,61 @@ function _lms_direction_matrix(
     V::AbstractMatrix{<:Unsigned},
     d::Int,
     source_bits::Int,
-    rng::AbstractRNG,
+    rng::AbstractRNG;
+    t_bits::Int=source_bits,
 )
+    # t_bits is the output width of the scrambled direction numbers.
+    #
+    # Default (t_bits == source_bits): lower-triangular GF(2) matrix with random bits
+    # BELOW the diagonal — the original QMC.jl convention. Output bits are source_bits wide.
+    #
+    # Extended precision (t_bits > source_bits, e.g. t_bits=63, source_bits=32):
+    # matches qmctoolscl's convention so that MSB(V_scr[j,b]) = bit(source_bits-1)(V[j,b])
+    # deterministically. This guarantees the 2D net equidistribution property for all seeds:
+    #   • source_bits lower-triangular rows with random bits ABOVE the diagonal (rows 1..src)
+    #     produce the upper t_bits-n_extra output bits (MSB down to bit n_extra).
+    #   • n_extra = t_bits-source_bits fully-random rows at the END produce the lower bits.
+    # With the above-diagonal convention, row 1 of L = 2^(source_bits-1) (no randomness),
+    # so the MSB of each scrambled direction number equals bit(source_bits-1) of the original,
+    # which ensures the first-direction-number bias (V[j,1]=2^(src-1) for all j) does not
+    # collapse 2D projections.
     mmax = size(V, 2)
     V_scr = Matrix{UInt64}(undef, d, mmax)
+    n_extra = t_bits - source_bits
+    source_mask = source_bits < 64 ? (UInt64(1) << source_bits) - UInt64(1) : typemax(UInt64)
     for j in 1:d
-        # Random lower-triangular matrix L over GF(2): L[k] is row k,
-        # with the diagonal bit at position (source_bits-k) and random bits below it.
-        L = Vector{UInt64}(undef, source_bits)
-        for k in 1:source_bits
-            diag_bit = UInt64(1) << (source_bits - k)
-            below_mask = diag_bit - UInt64(1)
-            L[k] = diag_bit | (rand(rng, UInt64) & below_mask)
+        L = Vector{UInt64}(undef, t_bits)
+        if n_extra == 0
+            # Original QMC.jl: lower-triangular, random BELOW diagonal.
+            # Preserved exactly so the default (t=source_bits) output is backward-compatible.
+            for k in 1:source_bits
+                diag_bit = UInt64(1) << (source_bits - k)
+                below_mask = diag_bit - UInt64(1)
+                L[k] = diag_bit | (rand(rng, UInt64) & below_mask)
+            end
+        else
+            # Extended precision: lower-triangular rows FIRST with random ABOVE diagonal,
+            # then n_extra fully-random rows. Matches qmctoolscl's dnb2_get_linear_scramble_matrix.
+            for k in 1:source_bits
+                diag_bit = UInt64(1) << (source_bits - k)
+                # above_mask: bits strictly above the diagonal within source_bits range
+                above_mask = source_mask & ~(diag_bit | (diag_bit - UInt64(1)))
+                L[k] = diag_bit | (rand(rng, UInt64) & above_mask)
+            end
+            for k in 1:n_extra
+                L[source_bits + k] = rand(rng, UInt64) & source_mask
+            end
         end
         for b in 1:mmax
             v = UInt64(V[j, b])
             newv = UInt64(0)
-            for k in 1:source_bits
-                # Bit k of L*v = parity(L[k] & v)
-                t = L[k] & v
-                if isodd(count_ones(t))
-                    newv |= UInt64(1) << (source_bits - k)
+            for k in 1:t_bits
+                u = L[k] & v
+                if isodd(count_ones(u))
+                    newv |= UInt64(1) << (t_bits - k)
                 end
             end
-            V_scr[j, b] = UInt64(newv)
+            V_scr[j, b] = newv
         end
     end
     return V_scr
@@ -651,9 +682,9 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
     mmax = size(V, 2)
 
     if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
-        curr_bits =
-            dd.alpha == 1 ? dd.source_bits : _interlaced_bits(dd.alpha, dd.source_bits, dd.t)
-        V_scr = _lms_direction_matrix(V, d_raw, dd.source_bits, dd.rng)
+        lms_bits = dd.alpha == 1 ? dd.t : dd.source_bits
+        curr_bits = dd.alpha == 1 ? dd.t : _interlaced_bits(dd.alpha, dd.source_bits, dd.t)
+        V_scr = _lms_direction_matrix(V, d_raw, dd.source_bits, dd.rng; t_bits=lms_bits)
         C_flat = if dd.alpha == 1
             _direction_matrix_to_C(V_scr, d_raw)
         else
@@ -833,11 +864,11 @@ function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     mmax = size(V, 2)
 
     if dd.randomize == "LMS_DS" || dd.randomize == "LMS"
-        curr_bits =
-            dd.alpha == 1 ? dd.source_bits : _interlaced_bits(dd.alpha, dd.source_bits, dd.t)
+        lms_bits = dd.alpha == 1 ? dd.t : dd.source_bits
+        curr_bits = dd.alpha == 1 ? dd.t : _interlaced_bits(dd.alpha, dd.source_bits, dd.t)
         C_scr = Vector{UInt64}(undef, R * d_raw * mmax)
         for r in 1:R
-            V_scr = _lms_direction_matrix(V, d_raw, dd.source_bits, dd.rng)
+            V_scr = _lms_direction_matrix(V, d_raw, dd.source_bits, dd.rng; t_bits=lms_bits)
             base = (r - 1) * d_raw * mmax
             for j in 1:d_raw, b in 1:mmax
                 C_scr[base + (j - 1) * mmax + (b - 1) + 1] = UInt64(V_scr[j, b])
