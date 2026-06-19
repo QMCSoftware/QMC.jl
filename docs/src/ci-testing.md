@@ -59,16 +59,14 @@ The benchmark workflow is separate from the test workflows.
 
 - Triggers on pushes to `develop` or `master` when benchmark-relevant files change, and via manual dispatch.
 - Runs on `ubuntu-latest` with Julia 1.12 and Python 3.13.
-- Checks out full git history so `make bench-all REV=<previous-commit>` can
-  materialize the baseline revision in a temporary worktree.
+- Checks out full git history so `make bench-all REV=<previous-commit>` can materialize the baseline revision in a temporary worktree.
 - Installs pinned benchmark Python dependencies from `benchmark/requirements.txt`; the QMCPy benchmark version pin itself lives in `benchmark/qmcpy-requirements.txt`.
-- Runs `make bench-all`, not the broader `make ci`, so benchmark artifacts
-  measure the checked-in sources rather than a formatter-mutated worktree.
-- Uses `BENCH_BLAS_THREADS` for both Julia and Python-side native-kernel thread
-  settings.
+- Runs `make bench-all`, not the broader `make ci`, so benchmark artifacts measure the checked-in sources rather than a formatter-mutated worktree.
+- Uses `BENCH_BLAS_THREADS` for both Julia and Python-side native-kernel thread settings.
 - Treats the seeded Julia-vs-QMCPy parity checks as a guard: `make bench-compare-py` fails if no comparable `integrate` or deterministic transform/evaluate oracle rows are found or if any matched row exceeds its configured agreement bound.
-- Uploads the generated `benchmark/results/` directory as a GitHub Actions
-  artifact for later inspection.
+- Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
+- Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
+- The published Julia-vs-QMCPy report now exposes the headline weighted time ratio, a 95% within-run bootstrap interval, `StudentT` split summaries, grouped timing totals for `gen_samples` / `transform` / `evaluate` / end-to-end `integrate`, and approximate memory ratios with explicit provenance manifests.
 
 ## Docs and Demos (`doc_demo.yml`)
 

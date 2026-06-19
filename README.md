@@ -11,7 +11,7 @@
 
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
-The benchmark badges report the latest published `develop` branch aggregate comparison against QMCPy. The speed badge uses the weighted runtime ratio, and the memory badge uses the weighted Python `tracemalloc` peak versus Julia allocation ratio from `benchmark/compare_py.jl`.
+The benchmark badges report the latest published `develop` branch aggregate comparison against QMCPy. The speed badge uses the weighted runtime ratio, and the memory badge uses an approximate weighted Python `tracemalloc` peak versus Julia allocation ratio from `benchmark/compare_py.jl`. The exact source snapshot behind each published badge is archived on the `benchmark-badges` branch.
 
 ## Quick Start
 
@@ -158,12 +158,11 @@ This benchmarks sampling, transforms, integrand evaluation, and end-to-end integ
 
 Remote benchmark collection is handled by `.github/workflows/benchmarking.yml`: it runs on Linux for benchmark-relevant `develop`/`master` pushes and manual dispatch, then uploads `benchmark/results/` as a workflow artifact. See [docs/src/ci-testing.md](docs/src/ci-testing.md) for the full workflow policy.
 
-The top-level benchmark badges track the latest published `develop` run. The speed badge is the weighted `Python time ÷ Julia time` ratio from the Julia-vs-QMCPy comparison. The peak-memory badge uses QMCPy's `tracemalloc` peak versus Julia's recorded allocation totals, so it is a useful signal rather than a perfectly apples-to-apples memory metric.
+The top-level benchmark badges track the latest published `develop` run. The speed badge is the weighted `Python time ÷ Julia time` ratio from the Julia-vs-QMCPy comparison. The peak-memory badge uses QMCPy's `tracemalloc` peak versus Julia's recorded allocation totals, so it should be read as an approximate signal rather than a strict apples-to-apples memory metric. The benchmark reports also include `StudentT` split summaries, grouped totals for `gen_samples`, `transform`, `evaluate`, and end-to-end `integrate`, a within-run bootstrap interval for the headline time ratio, and an archived source snapshot for each published badge update. See [`benchmark/README.md`](benchmark/README.md) for the report structure and interpretation notes.
 
 ## Repository Layout
 
-Most top-level and source subdirectories now include a local `README.md` describing
-their purpose and the files they contain. Useful starting points:
+Most top-level and source subdirectories now include a local `README.md` describing their purpose and the files they contain. Useful starting points:
 
 - [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and comparison tooling
 - [`demos/README.md`](demos/README.md) — notebook demos and how to run them

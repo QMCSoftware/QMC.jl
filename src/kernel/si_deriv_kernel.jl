@@ -1,5 +1,5 @@
 # Derivative-aware shift-invariant value kernel — step 1 of the derivative
-# machinery (see sc_notes/DESIGN_kernel_multitask_derivs.md). Ports QMCPy 2.3's
+# machinery (see sc_notes/DESIGN_kernel_multitask_derivs.md). Ports QMCPy's
 # base `KernelShiftInvar.__call__` with derivative orders, evaluating the
 # coefficient-weighted sum of mixed partial derivatives
 #

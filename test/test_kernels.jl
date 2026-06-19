@@ -99,7 +99,7 @@
     end
 
     @testset "SI/DSI value kernels (QMCPy parity)" begin
-        # Values pinned from QMCPy 2.3's KernelShiftInvarCombined,
+        # Values pinned from QMCPy's KernelShiftInvarCombined,
         # KernelDigShiftInvarAdaptiveAlpha, and KernelDigShiftInvarCombined at
         # default parameters (validated against qmcpy __call__ to ~1e-13).
         x0 = [0.1, 0.2, 0.3]
@@ -134,7 +134,7 @@
     end
 
     @testset "KernelShiftInvarDeriv (derivative orders)" begin
-        # Values pinned from QMCPy 2.3's base KernelShiftInvar.__call__ with
+        # Values pinned from QMCPy's base KernelShiftInvar.__call__ with
         # derivative orders (validated to ~1e-12). d=2, alpha=2, default params.
         x0 = [0.1, 0.2]
         x1 = [0.4, 0.7]
@@ -167,7 +167,7 @@
     end
 
     @testset "KernelDigShiftInvarDeriv (derivative orders)" begin
-        # Values pinned from QMCPy 2.3's base KernelDigShiftInvar.__call__ with
+        # Values pinned from QMCPy's base KernelDigShiftInvar.__call__ with
         # derivative orders (validated to 0 error). d=2, t=32, x0=[.1,.2], x1=[.4,.7].
         x0 = [0.1, 0.2]
         x1 = [0.4, 0.7]

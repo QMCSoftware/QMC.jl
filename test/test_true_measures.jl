@@ -233,8 +233,8 @@
         @test !any(isnan, xt)
     end
 
-    @testset "Kumaraswamy/JohnsonsSU defaults match QMCPy 2.3" begin
-        # Default-constructed measures must reproduce QMCPy 2.3's defaults exactly
+    @testset "Kumaraswamy/JohnsonsSU defaults match QMCPy" begin
+        # Default-constructed measures must reproduce QMCPy's defaults exactly
         # (oracle values computed from qmcpy==2.3 on the same uniforms).
         u = [0.1 0.3; 0.5 0.7; 0.9 0.25]
         dd = IIDStdUniform(2; seed=1)

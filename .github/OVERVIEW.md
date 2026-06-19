@@ -4,6 +4,9 @@ This directory holds GitHub-specific repository automation and metadata.
 
 ## Contents
 
+- `ISSUE_TEMPLATE/`: issue templates for bugs, features, algorithm ports, docs, and performance regressions.
+- `pull_request_template.md`: contributor checklist used when opening pull requests.
+- `CODEOWNERS`: default review routing for the main scientific components plus CI and docs.
 - `workflows/`: GitHub Actions CI, docs, release, and maintenance workflows.
 
 ## Notes

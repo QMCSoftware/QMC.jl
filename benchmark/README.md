@@ -31,7 +31,7 @@ Typical files:
 
 These JSON and Markdown outputs are machine-specific benchmark artifacts and are intentionally not tracked in git.
 
-The GitHub benchmarking workflow also turns the latest Julia-vs-QMCPy summary for `develop` and `master` into Shields-compatible JSON badge payloads for time and memory and publishes them on the dedicated `benchmark-badges` branch.
+The GitHub benchmarking workflow also turns the latest Julia-vs-QMCPy summary for `develop` and `master` into Shields-compatible JSON badge payloads for time and memory and publishes them on the dedicated `benchmark-badges` branch. That branch now also keeps a `badges/benchmark-source-<branch>.json` manifest and an `archive/<branch>/<label>/` snapshot of the exact result files used for each published badge update.
 
 ## Quick Start
 
@@ -171,6 +171,8 @@ The Julia memory sidecar and the QMCPy JSON now also record lightweight benchmar
 
 The benchmark comparison also checks the seeded `integrate` cases against QMCPy solution values and compares deterministic transform/evaluate oracle outputs against QMCPy on fixed inputs. Each matched Julia/Python integrate pair is required to agree within `2 * max(abs_tol, rel_tol * |value|)`, and each oracle element is required to satisfy `abs(Δ) <= atol + rtol * |reference|`. These oracle rows are a semantically aligned parity subset rather than a second copy of every timing row, so they focus on exact cross-language counterparts. The `make bench-compare-py` and `make bench-all` flows enable this strict guard automatically and fail if no comparable parity rows are found or if any matched row exceeds its bound.
 
+`compare_python*.md` now also reports a 95% within-run bootstrap interval for the weighted time ratio. That interval is computed from the repeated timing samples already collected inside the current run, so it is a timing-sample variability estimate rather than a cross-machine or cross-workflow reproducibility guarantee.
+
 ### Coverage Caveat
 
 Do not interpret coverage-enabled benchmark runs as representative performance comparisons.
@@ -215,12 +217,29 @@ If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than 
 
 If `<label>_memory.json` is missing because the Julia benchmarks were generated before this feature was added, `compare_python*.md` will show Julia RSS delta as `n/a` until that label is rerun with `make bench` or `make bench-compare-py`.
 
-The heaviest adaptive integrate rows are intentionally timed with more samples
-than the leaf transform/evaluate rows (`samples=9` in Julia, `repeat=9` in
-QMCPy) because those rows were the main source of weighted-ratio swings.
+The heaviest adaptive integrate rows are intentionally timed with more samples than the leaf transform/evaluate rows (`samples=9` in Julia, `repeat=9` in QMCPy) because those rows were the main source of weighted-ratio swings.
 
-The QMCPy `StudentT` transform rows now also use a dedicated higher-stability setting (`repeat=21`, `warmup=3`), and the Julia `StudentT` rows use `samples=9`. Those settings are recorded in the report header so unusually large cross-run changes in that family are easier to audit. The aggregate summary in `compare_python*.md` now also breaks out `StudentT` timing separately (`all matched rows`, `excluding StudentT`, and `StudentT only`) so the headline
-cross-language ratio is easier to interpret when that transform family dominates the total.
+The QMCPy `StudentT` transform rows now also use a dedicated higher-stability setting (`repeat=21`, `warmup=3`), and the Julia `StudentT` rows use `samples=9`. Those settings are recorded in the report header so unusually large cross-run changes in that family are easier to audit. The aggregate summary in `compare_python*.md` now also breaks out `StudentT` timing separately (`all matched rows`, `excluding StudentT`, and `StudentT only`) so the headline cross-language ratio is easier to interpret when that transform family dominates the total.
+
+The grouped timing summary in `compare_python*.md` separates generator time (`gen_samples`), transform time, integrand evaluation time, and end-to-end adaptive integration (`integrate`). The `integrate` rows are intentionally mixed end-to-end timings, not isolated stopping-criterion overhead.
+
+## How To Read `compare_python*.md`
+
+The Julia-vs-QMCPy Markdown report is now organized into a small number of sections, each with a different purpose:
+
+| Report section | What it tells you | Main cautions |
+| --- | --- | --- |
+| Header metadata | Julia/Python versions, thread settings, integrate timing sample counts, and artifact labels | Use this first to confirm that you are comparing the intended run pair. |
+| Aggregate summary | Headline weighted time ratio, `StudentT` split summaries, and approximate weighted memory ratios | The memory ratios are signals, not exact cross-language equivalences. |
+| 95% bootstrap intervals | Within-run timing-sample variability for the weighted time ratios | These intervals are computed from repeated timings inside one run, not from repeated workflows across different machines. |
+| Grouped Timing Summary | Separate totals for `gen_samples`, `transform`, `evaluate`, and end-to-end `integrate` | The `integrate` group includes the whole adaptive solve, not isolated stopping-criterion overhead. |
+| Detailed Results | Per-row Julia and QMCPy timings plus memory sidecars when available | Some rows remain `n/a` if the Python harness has no meaningful counterpart. |
+| Accuracy (integrate) | Seeded Julia-vs-QMCPy solution agreement for matched adaptive runs | This is a parity guard, not a benchmark score. |
+| Deterministic oracles | Fixed-input `transform` and `evaluate` agreement against QMCPy | These rows validate mathematical correspondence, not speed. |
+
+The machine-readable companion file `compare_python_summary_<label>.json` now records the same headline ratios, bootstrap intervals, grouped summaries, and the exact source artifact filenames used to build the report.
+
+When the GitHub benchmark workflow publishes badges, it also writes a `badges/benchmark-source-<branch>.json` manifest plus an `archive/<branch>/<label>/` snapshot on the `benchmark-badges` branch. That archive is the provenance record for the exact report inputs behind the published README badge values.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
@@ -233,20 +252,14 @@ If `compare_python*.md` still shows `n/a` rows after regenerating `qmcpy_<label>
 
 ## CI Benchmarking Workflow
 
-The repository's GitHub Actions benchmark workflow lives in
-`.github/workflows/benchmarking.yml`.
+The repository's GitHub Actions benchmark workflow lives in `.github/workflows/benchmarking.yml`.
 
-- It runs on Linux for pushes to `develop` or `master` when benchmark-relevant
-  files change, and on manual dispatch.
-- It compares the pushed commit against the previous pushed commit when GitHub
-  provides one; manual runs fall back to `REV=HEAD`.
-- It checks out full git history so the previous-commit baseline is available
-  for `git worktree`-based Julia-to-Julia comparisons.
-- It uploads `benchmark/results/` as an artifact instead of committing machine-
-  specific outputs back into the repository.
-- It installs pinned Python dependencies from `benchmark/requirements.txt` so
-  benchmark reports stay comparable across repository commits. Changes to the
-  shared `test/requirements.txt` pin file also retrigger the workflow.
+- It runs on Linux for pushes to `develop` or `master` when benchmark-relevant files change, and on manual dispatch.
+- It compares the pushed commit against the previous pushed commit when GitHub provides one; manual runs fall back to `REV=HEAD`.
+- It checks out full git history so the previous-commit baseline is available for `git worktree`-based Julia-to-Julia comparisons.
+- It uploads `benchmark/results/` as an artifact instead of committing machine-specific outputs back into the repository.
+- It also archives the exact result snapshot behind each published benchmark badge on the dedicated `benchmark-badges` branch so the README badge values remain auditable after later runs.
+- It installs pinned Python dependencies from `benchmark/requirements.txt` so benchmark reports stay comparable across repository commits. Changes to the shared `test/requirements.txt` pin file also retrigger the workflow.
 
 If the Python interpreter should be overridden:
 

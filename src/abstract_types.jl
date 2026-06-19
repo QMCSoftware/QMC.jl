@@ -210,7 +210,7 @@ function evaluate end
 
 # ── Multi-output (vector-valued) integrand interface ──────────────────────────
 # Foundation for driving vector-valued integrands to per-output tolerance,
-# mirroring QMCPy 2.3's `d_indv` machinery. Scalar integrands need no changes:
+# mirroring QMCPy's `d_indv` machinery. Scalar integrands need no changes:
 # the defaults below describe a single scalar output (so `evaluate` keeps
 # returning an `n`-vector) and every map is the identity. A vector-valued
 # integrand whose `evaluate` returns an `n × s₁ × … × sₖ` array overrides

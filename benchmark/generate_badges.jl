@@ -67,6 +67,52 @@ end
 
 branch_slug(branch::AbstractString) = replace(branch, '/' => '-')
 
+function maybe_get(summary, key::AbstractString, default=nothing)
+    for candidate in (key, Symbol(key))
+        haskey(summary, candidate) && return summary[candidate]
+    end
+    return default
+end
+
+function write_source_manifest(summary, label::AbstractString, branch::AbstractString)
+    slug = branch_slug(branch)
+    manifest = Dict(
+        "branch" => branch,
+        "label" => label,
+        "report_generated_at" => maybe_get(summary, "report_generated_at", nothing),
+        "jl_label" => maybe_get(summary, "jl_label", nothing),
+        "py_label" => maybe_get(summary, "py_label", nothing),
+        "qmcpy_version" => maybe_get(summary, "qmcpy_version", pinned_qmcpy_version()),
+        "summary_filename" => maybe_get(
+            summary,
+            "summary_filename",
+            basename(resolve_summary_outfile(label)),
+        ),
+        "markdown_report_filename" =>
+            maybe_get(summary, "markdown_report_filename", nothing),
+        "jl_artifact_filename" => maybe_get(summary, "jl_artifact_filename", nothing),
+        "jl_memory_artifact_filename" =>
+            maybe_get(summary, "jl_memory_artifact_filename", nothing),
+        "jl_solution_artifact_filename" =>
+            maybe_get(summary, "jl_solution_artifact_filename", nothing),
+        "jl_oracle_artifact_filename" =>
+            maybe_get(summary, "jl_oracle_artifact_filename", nothing),
+        "py_artifact_filename" => maybe_get(summary, "py_artifact_filename", nothing),
+        "time_ratio" => maybe_get(summary, "time_ratio", nothing),
+        "time_ratio_bootstrap_95" => maybe_get(summary, "time_ratio_bootstrap_95", nothing),
+        "peak_ratio" => maybe_get(summary, "peak_ratio", nothing),
+        "rss_ratio" => maybe_get(summary, "rss_ratio", nothing),
+        "badge_files" => Dict(
+            "speed" => "badges/benchmark-speed-$slug.json",
+            "memory" => "badges/benchmark-memory-$slug.json",
+            "peak_memory" => "badges/benchmark-peak-$slug.json",
+        ),
+    )
+    open(joinpath(badgedir, "benchmark-source-$slug.json"), "w") do io
+        JSON3.pretty(io, manifest)
+    end
+end
+
 function write_branch_badges(summary, branch::AbstractString)
     slug = branch_slug(branch)
     time_ratio = Float64(summary["time_ratio"])
@@ -108,3 +154,4 @@ branch = length(ARGS) >= 2 ? ARGS[2] : "develop"
 
 summary = JSON3.read(read(resolve_summary_outfile(label), String))
 write_branch_badges(summary, branch)
+write_source_manifest(summary, label, branch)

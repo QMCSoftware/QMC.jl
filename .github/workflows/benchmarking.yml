@@ -10,6 +10,7 @@ on:
       - 'benchmark/Project.toml'
       - 'benchmark/Manifest.toml'
       - 'benchmark/requirements.txt'
+      - 'benchmark/qmcpy-requirements.txt'
       - 'benchmark/tune.json'
       - 'Makefile'
       - 'Project.toml'
@@ -103,12 +104,55 @@ jobs:
           else
             git checkout --orphan "$BADGE_BRANCH"
           fi
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          rm -rf badges
+          mkdir -p archive/${{ github.ref_name }}/${BENCH_LABEL}
           cp -R "$GITHUB_WORKSPACE/benchmark/results/badges" .
-          cat > README.md <<'EOF'
-          Benchmark badge JSON for Shields.io.
+          snapshot_dir="archive/${{ github.ref_name }}/${BENCH_LABEL}"
+          cp "$GITHUB_WORKSPACE/benchmark/results/${BENCH_LABEL}.json" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/${BENCH_LABEL}_memory.json" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/${BENCH_LABEL}_solutions.json" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/${BENCH_LABEL}_oracles.json" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/qmcpy_${BENCH_LABEL}.json" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/compare_${BENCH_LABEL}.md" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/compare_python_${BENCH_LABEL}.md" "$snapshot_dir/"
+          cp "$GITHUB_WORKSPACE/benchmark/results/compare_python_summary_${BENCH_LABEL}.json" "$snapshot_dir/"
+          cat > "$snapshot_dir/manifest.json" <<EOF
+          {
+            "branch": "${{ github.ref_name }}",
+            "label": "${BENCH_LABEL}",
+            "commit_sha": "${GITHUB_SHA}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_number": "${GITHUB_RUN_NUMBER}",
+            "run_attempt": "${GITHUB_RUN_ATTEMPT}",
+            "source_manifest": "badges/benchmark-source-${{ github.ref_name }}.json",
+            "archived_files": [
+              "${BENCH_LABEL}.json",
+              "${BENCH_LABEL}_memory.json",
+              "${BENCH_LABEL}_solutions.json",
+              "${BENCH_LABEL}_oracles.json",
+              "qmcpy_${BENCH_LABEL}.json",
+              "compare_${BENCH_LABEL}.md",
+              "compare_python_${BENCH_LABEL}.md",
+              "compare_python_summary_${BENCH_LABEL}.json"
+            ]
+          }
           EOF
-          git add badges README.md
+          mkdir -p "archive/${{ github.ref_name }}"
+          cat > "archive/${{ github.ref_name }}/latest.json" <<EOF
+          {
+            "branch": "${{ github.ref_name }}",
+            "label": "${BENCH_LABEL}",
+            "commit_sha": "${GITHUB_SHA}",
+            "snapshot_dir": "${snapshot_dir}",
+            "source_manifest": "badges/benchmark-source-${{ github.ref_name }}.json"
+          }
+          EOF
+          cat > README.md <<'EOF'
+          Benchmark badge JSON and archived source snapshots for Shields.io.
+          Latest badge source manifests live under `badges/`.
+          Historical snapshots of the exact benchmark result files used for each badge update live under `archive/<branch>/<label>/`.
+          EOF
+          git add badges archive README.md
           git commit -m "Update benchmark badges for ${GITHUB_SHA}" || exit 0
           git push origin HEAD:"$BADGE_BRANCH"
 

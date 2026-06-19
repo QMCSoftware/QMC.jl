@@ -104,7 +104,7 @@ def measure_memory(fn):
 
 
 def bench(make_call, *, repeat=DEFAULT_REPEAT, warmup=True):
-    """Return median seconds plus approximate memory metrics per call."""
+    """Return timing and approximate memory metrics per call."""
     if isinstance(warmup, bool):
         warmup_runs = 1 if warmup else 0
     else:
@@ -119,7 +119,15 @@ def bench(make_call, *, repeat=DEFAULT_REPEAT, warmup=True):
     timer = timeit.Timer(fn)
     count, _ = timer.autorange()
     samples = timer.repeat(repeat=repeat, number=count)
-    return statistics.median(samples) / count, mem
+    per_call_ms = [sample / count * 1e3 for sample in samples]
+    return {
+        "median_ms": statistics.median(per_call_ms),
+        "samples_ms": per_call_ms,
+        "repeat": repeat,
+        "inner_count": count,
+        "warmup_runs": warmup_runs,
+        **mem,
+    }
 
 
 def dense_covariance(dim):
@@ -146,14 +154,14 @@ def genz_continuous(x):
 
 def record(results, group, name, make_call, **kw):
     try:
-        secs, mem = bench(make_call, **kw)
-        results[group][name] = {"median_ms": secs * 1e3, **mem}
+        timing = bench(make_call, **kw)
+        results[group][name] = timing
         rss_msg = ""
-        if "rss_delta_kib" in mem:
-            rss_msg = f", rss Δ {mem['rss_delta_kib']:.1f} KiB"
+        if "rss_delta_kib" in timing:
+            rss_msg = f", rss Δ {timing['rss_delta_kib']:.1f} KiB"
         print(
-            f"  {name:<45s}  {secs * 1e3:10.3f} ms"
-            f"  (py peak {mem['tracemalloc_peak_kib']:.1f} KiB{rss_msg})"
+            f"  {name:<45s}  {timing['median_ms']:10.3f} ms"
+            f"  (py peak {timing['tracemalloc_peak_kib']:.1f} KiB{rss_msg})"
         )
     except Exception as e:  # noqa: BLE001 - keep one bad case from aborting the run
         results[group][name] = {"error": f"{type(e).__name__}: {e}"}
