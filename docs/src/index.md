@@ -1,16 +1,21 @@
 # QMC.jl: Quasi-Monte Carlo Software in Julia
 
-QMC.jl is a Julia port of QMCPy for Quasi-Monte Carlo (QMC) numerical
-integration.
+QMC.jl is a Julia port of QMCPy for Quasi-Monte Carlo (QMC) numerical integration.
 
-`IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`,
-`DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library,
-so Python is a current runtime dependency for full QMC functionality.
+`IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library, so Python is a current runtime dependency for full QMC functionality.
 
-Most core package families are implemented. A few advanced items remain
-partial: `PFGPCI` is currently a documented/exported stub that errors on
-`integrate`, and `gpu_fwht!` is presently a CPU-fallback placeholder rather
-than a real GPU backend.
+Most core package families are implemented. A few advanced items remain partial: `PFGPCI` is currently an exported experimental feature that depends on an optional Julia GP backend, and `gpu_fwht`/`gpu_fwht!` are presently placeholder names whose implementation is only the CPU `fwht`/`fwht!` fallback.
+
+## API Stability
+
+QMC.jl currently groups its public surface into the following stability levels:
+
+| Status | Representative symbols | Meaning |
+|---|---|---|
+| **Stable** | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Gaussian`, `BrownianMotion`, `Keister`, `Genz`, `CubMCCLT`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCNetGRep` | Expected to remain source-compatible except for deliberate documented breaking releases |
+| **Beta** | `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont` | Usable and tested, but advanced interfaces may still be refined before long-term stabilization |
+| **Experimental** | `PFGPCI`, `UMBridgeWrapper`, `KernelMultiTask`, `KernelMultiTaskDerivs` | Exported for early adopters; behavior and interfaces may change with limited compatibility guarantees |
+| **Placeholder** | `gpu_fwht`, `gpu_fwht!` | Exported names reserved for future functionality; current implementation does not provide the advertised capability |
 
 ## Overview
 
@@ -23,8 +28,7 @@ QMC methods approximate multivariate integrals using four main components:
 
 ## Quick Start
 
-This example uses `Lattice`, so `qmctoolscl` must be installed in a Python
-visible to Julia.
+This example uses `Lattice`, so `qmctoolscl` must be installed in a Python visible to Julia.
 
 ```julia
 using QMC
@@ -43,16 +47,17 @@ println("Error bound: $(result.data[:error_bound])")
 
 ## Installation
 
+For reproducible use, prefer a tagged artifact rather than the moving default branch. Replace `vX.Y.Z` with the published release tag you want to use, for example `v0.1.0` once that tag exists:
+
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/QMC.jl")
+Pkg.add(url="https://github.com/QMCSoftware/QMC.jl", rev="vX.Y.Z")
 ```
 
-For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python
-visible to Julia:
+For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python visible to Julia:
 
 ```bash
-python3 -m pip install qmctoolscl
+python3 -m pip install qmctoolscl==1.2.3
 ```
 
 If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"]`
@@ -61,6 +66,6 @@ before `using QMC`.
 ## Contents
 
 ```@contents
-Pages = ["components.md", "demos.md", "contributing.md", "community.md"]
+Pages = ["components.md", "demos.md", "releasing.md", "contributing.md", "community.md"]
 Depth = 2
 ```

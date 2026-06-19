@@ -3,4 +3,4 @@
 # Keep these pinned so benchmark artifacts remain comparable across repository
 # commits instead of silently drifting with upstream Python package releases.
 -r ../test/requirements.txt
-qmcpy==2.3
+-r qmcpy-requirements.txt

@@ -14,7 +14,7 @@ Set `trace_iterations=true` to record an `IterationLog` in
    Draw those samples and compute the final mean and confidence interval from the
    main-stage samples alone.
 
-Matches QMC v2.3's `CubMCCLT` algorithm.
+Matches QMCPy's `CubMCCLT` algorithm.
 
 # Examples
 ```jldoctest

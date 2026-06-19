@@ -1,0 +1,25 @@
+# Review routing for the main scientific components.
+# If the lead maintainer's GitHub handle changes, replace the email below with
+# the corresponding GitHub username or team slug.
+
+* sou.cheng.choi@stanfordalumni.org
+
+/src/discrete_distribution/ sou.cheng.choi@stanfordalumni.org
+/test/test_discrete_distributions.jl sou.cheng.choi@stanfordalumni.org
+
+/src/true_measure/ sou.cheng.choi@stanfordalumni.org
+/test/test_true_measures.jl sou.cheng.choi@stanfordalumni.org
+
+/src/integrand/ sou.cheng.choi@stanfordalumni.org
+/test/test_integrands.jl sou.cheng.choi@stanfordalumni.org
+
+/src/stopping_criterion/ sou.cheng.choi@stanfordalumni.org
+/test/test_stopping_criteria.jl sou.cheng.choi@stanfordalumni.org
+/test/test_integration.jl sou.cheng.choi@stanfordalumni.org
+
+/src/kernel/ sou.cheng.choi@stanfordalumni.org
+/test/test_kernels.jl sou.cheng.choi@stanfordalumni.org
+
+/.github/ sou.cheng.choi@stanfordalumni.org
+/docs/ sou.cheng.choi@stanfordalumni.org
+/benchmark/ sou.cheng.choi@stanfordalumni.org

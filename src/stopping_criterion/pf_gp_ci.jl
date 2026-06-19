@@ -7,6 +7,14 @@ Probability-of-failure estimation with adaptive Gaussian-process construction
 and credible intervals (Sorokin & Rao, arXiv:2311.07733), mirroring QMCPy's
 `PFGPCI`.
 
+# API status
+**Experimental.** `PFGPCI` is exported for early adopters and QMCPy parity, but
+it is not yet part of QMC.jl's stable API contract. The constructor and
+deterministic credible-interval helpers are supported, and end-to-end
+`integrate` works once the optional Gaussian-process backend extension is
+loaded. Expect interface and backend details to evolve until the Julia GP
+story stabilizes.
+
 The criterion repeatedly fits a GP surrogate to the affine-shifted simulation
 output `g(x) = y - failure_threshold` (or `failure_threshold - y` when
 `failure_above_threshold == false`), so that the *failure region* is `g ≥ 0`.
@@ -179,6 +187,9 @@ Run the adaptive PFGPCI loop and return the probability-of-failure estimate. The
 result's `data` carries the per-batch trajectory (`:solutions`, `:error_bounds`,
 `:ci_low`, `:ci_high`, `:n_batch`), the final credible interval (`:bound_low`,
 `:bound_high`), `:n_total`, and `:converged`.
+
+**Experimental.** This method depends on QMC.jl's optional Gaussian-process
+backend extension and may change before the API is declared stable.
 
 Requires the `AbstractGPs`/`Optim` GP backend extension to be loaded.
 """

@@ -55,6 +55,7 @@ SAMPLES = [256, 1024, 4096, 16384]
 DIMS = [3, 10]
 LARGE_DIMS = [50, 200]
 LARGE_N = [1024, 4096]
+ORACLE_ROWS = 4
 SEED = 42
 DEFAULT_REPEAT = 7
 INTEGRATE_REPEAT = 9
@@ -103,7 +104,7 @@ def measure_memory(fn):
 
 
 def bench(make_call, *, repeat=DEFAULT_REPEAT, warmup=True):
-    """Return median seconds plus approximate memory metrics per call."""
+    """Return timing and approximate memory metrics per call."""
     if isinstance(warmup, bool):
         warmup_runs = 1 if warmup else 0
     else:
@@ -118,13 +119,28 @@ def bench(make_call, *, repeat=DEFAULT_REPEAT, warmup=True):
     timer = timeit.Timer(fn)
     count, _ = timer.autorange()
     samples = timer.repeat(repeat=repeat, number=count)
-    return statistics.median(samples) / count, mem
+    per_call_ms = [sample / count * 1e3 for sample in samples]
+    return {
+        "median_ms": statistics.median(per_call_ms),
+        "samples_ms": per_call_ms,
+        "repeat": repeat,
+        "inner_count": count,
+        "warmup_runs": warmup_runs,
+        **mem,
+    }
 
 
 def dense_covariance(dim):
     cov = np.full((dim, dim), 0.5)
     np.fill_diagonal(cov, 1.0)
     return cov
+
+
+def oracle_uniform_matrix(rows, dim, offset=0):
+    ii = np.arange(1, rows + 1, dtype=np.int64)[:, None]
+    jj = np.arange(1, dim + 1, dtype=np.int64)[None, :]
+    numer = (37 * ii + 17 * jj + 13 * offset) % 997
+    return (numer.astype(np.float64) + 0.5) / 997.0
 
 
 def genz_gaussian_peak(x):
@@ -138,14 +154,14 @@ def genz_continuous(x):
 
 def record(results, group, name, make_call, **kw):
     try:
-        secs, mem = bench(make_call, **kw)
-        results[group][name] = {"median_ms": secs * 1e3, **mem}
+        timing = bench(make_call, **kw)
+        results[group][name] = timing
         rss_msg = ""
-        if "rss_delta_kib" in mem:
-            rss_msg = f", rss Δ {mem['rss_delta_kib']:.1f} KiB"
+        if "rss_delta_kib" in timing:
+            rss_msg = f", rss Δ {timing['rss_delta_kib']:.1f} KiB"
         print(
-            f"  {name:<45s}  {secs * 1e3:10.3f} ms"
-            f"  (py peak {mem['tracemalloc_peak_kib']:.1f} KiB{rss_msg})"
+            f"  {name:<45s}  {timing['median_ms']:10.3f} ms"
+            f"  (py peak {timing['tracemalloc_peak_kib']:.1f} KiB{rss_msg})"
         )
     except Exception as e:  # noqa: BLE001 - keep one bad case from aborting the run
         results[group][name] = {"error": f"{type(e).__name__}: {e}"}
@@ -154,6 +170,95 @@ def record(results, group, name, make_call, **kw):
 
 def active_thread_env():
     return {key: os.environ[key] for key in THREAD_ENV_KEYS if key in os.environ}
+
+
+def oracle_entry(values, *, atol, rtol):
+    arr = np.asarray(values, dtype=float)
+    return {
+        "shape": list(arr.shape),
+        "values": arr.reshape(-1).tolist(),
+        "atol": float(atol),
+        "rtol": float(rtol),
+    }
+
+
+def collect_oracles():
+    out = {"transform": {}, "evaluate": {}}
+
+    dd3 = qp.IIDStdUniform(3, seed=SEED)
+    keister = qp.Keister(dd3)
+    genz_osc = qp.Genz(dd3, kind_func="OSCILLATORY")
+    out["transform"]["Gaussian d=3 rows=4"] = oracle_entry(
+        qp.Gaussian(dd3, decomp_type="Cholesky")._transform(
+            oracle_uniform_matrix(ORACLE_ROWS, 3, offset=1)
+        ),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["evaluate"]["Keister rows=4"] = oracle_entry(
+        keister.g(keister.true_measure._transform(oracle_uniform_matrix(ORACLE_ROWS, 3, offset=11))),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["evaluate"]["Genz(oscillatory) rows=4"] = oracle_entry(
+        genz_osc.g(genz_osc.true_measure._transform(oracle_uniform_matrix(ORACLE_ROWS, 3, offset=12))),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+
+    dd50 = qp.IIDStdUniform(50, seed=SEED)
+    out["transform"]["Gaussian(diag) d=50 rows=3"] = oracle_entry(
+        qp.Gaussian(dd50, decomp_type="Cholesky")._transform(
+            oracle_uniform_matrix(3, 50, offset=2)
+        ),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["transform"]["Gaussian(dense) d=50 rows=3"] = oracle_entry(
+        qp.Gaussian(dd50, covariance=dense_covariance(50), decomp_type="Cholesky")._transform(
+            oracle_uniform_matrix(3, 50, offset=3)
+        ),
+        atol=5e-10,
+        rtol=5e-10,
+    )
+
+    dd1 = qp.IIDStdUniform(1, seed=SEED)
+    out["transform"]["StudentT d=1 rows=4"] = oracle_entry(
+        qp.StudentT(dd1, loc=np.zeros(1), shape=np.eye(1), df=2.0)._transform(
+            oracle_uniform_matrix(ORACLE_ROWS, 1, offset=4)
+        ),
+        atol=1e-7,
+        rtol=1e-7,
+    )
+    dd10 = qp.IIDStdUniform(10, seed=SEED)
+    out["transform"]["JohnsonsSU d=10 rows=4"] = oracle_entry(
+        qp.JohnsonsSU(dd10)._transform(
+            oracle_uniform_matrix(ORACLE_ROWS, 10, offset=5)
+        ),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["evaluate"]["BoxIntegral d=10 rows=4"] = oracle_entry(
+        qp.BoxIntegral(dd10, s=1).g(oracle_uniform_matrix(ORACLE_ROWS, 10, offset=13)),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["evaluate"]["Linear0 d=10 rows=4"] = oracle_entry(
+        qp.Linear0(dd10).g(oracle_uniform_matrix(ORACLE_ROWS, 10, offset=14)),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["evaluate"]["Genz(gaussian_peak) d=10 rows=4"] = oracle_entry(
+        genz_gaussian_peak(oracle_uniform_matrix(ORACLE_ROWS, 10, offset=15)),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    out["evaluate"]["Genz(continuous) d=10 rows=4"] = oracle_entry(
+        genz_continuous(oracle_uniform_matrix(ORACLE_ROWS, 10, offset=16)),
+        atol=1e-10,
+        rtol=1e-10,
+    )
+    return out
 
 
 def main():
@@ -410,6 +515,8 @@ def main():
         except Exception as e:  # noqa: BLE001
             print(f"  (accuracy) {name:<35s} skipped: {type(e).__name__}: {e}")
 
+    oracles = collect_oracles()
+
     # ── Save ─────────────────────────────────────────────────────────────
     resdir = Path(__file__).resolve().parent / "results"
     resdir.mkdir(exist_ok=True)
@@ -426,6 +533,7 @@ def main():
             "student_t_repeat": STUDENT_T_REPEAT,
             "student_t_warmup_runs": STUDENT_T_WARMUP_RUNS,
         },
+        "oracles": oracles,
         "results": results,
     }
     outfile.write_text(json.dumps(payload, indent=2))

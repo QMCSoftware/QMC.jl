@@ -12,7 +12,7 @@ inverse CDF, making it efficient for QMC.
 - `dd`: discrete distribution.
 - `alpha`: shape parameter α > 0 (scalar or d-vector). Default `2.0`.
 - `beta`: shape parameter β > 0 (scalar or d-vector). Default `2.0` (matches
-  QMC v2.3's `a=2, b=2`; QMC.jl's `alpha`/`beta` correspond to QMCPy's `a`/`b`).
+  QMCPy's `a=2, b=2`; QMC.jl's `alpha`/`beta` correspond to QMCPy's `a`/`b`).
 
 # Examples
 ```jldoctest

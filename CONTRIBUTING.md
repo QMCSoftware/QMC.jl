@@ -6,6 +6,35 @@ Please submit **pull requests** to the `develop` branch and **issues** using a t
 
 Join team communications at [qmc-software@googlegroups.com](mailto:qmc-software@googlegroups.com). If you develop a new component, consider writing a blog for [qmcpy.org](https://qmcpy.org).
 
+For release gates, versioning policy, and the maintainer release checklist, see [RELEASING.md](RELEASING.md).
+
+## Pull Request Checklist
+
+Before requesting review, please confirm the following:
+
+- [ ] Mathematical correctness is justified, especially for transforms, covariance structure, error bounds, and stopping logic.
+- [ ] Public API changes are intentional, backward-compatibility is considered, and any QMCPy parity impact is recorded in [sc_notes/qmcpy-parity.md](sc_notes/qmcpy-parity.md).
+- [ ] Tests cover the new behavior, edge cases, invalid inputs, and at least one mathematically meaningful invariant.
+- [ ] User-facing docs, docstrings, demos, and notebooks are updated when behavior, names, defaults, or workflows change.
+- [ ] Performance-sensitive changes include benchmark evidence or an explicit note explaining why no benchmark update was needed.
+- [ ] Reproducibility details are recorded: deterministic seeds when applicable, pinned reference versions, and exact commands for any reported benchmark or parity result.
+
+## QMCPy Parity Policy
+
+QMC.jl aims for behavioral parity with a pinned QMCPy reference release while keeping the implementation idiomatic Julia. The parity target for each component family is:
+
+| Component family | Parity target | Maintainer rule |
+| --- | --- | --- |
+| Abstract types and result objects | Aspirational | Align names and concepts where practical, but prefer Julia-native abstract types, result structs, and dispatch over class-for-class mirroring. |
+| Core API verbs and keywords | Approximate | Preserve direct call-site translation where possible, but allow Julia-specific wrappers, return structs, and dispatch-based APIs. |
+| Discrete distributions | Strict | Shared generators must preserve seeded sample behavior, layout, keywords, and documented failure modes against the pinned QMCPy reference. |
+| True measures | Approximate | Shared measures must preserve the mathematical transform and user-visible parameters, while allowing Julia-native numerical backends and decompositions. |
+| Integrands | Strict | Shared integrands must preserve formulas, parameter semantics, and seeded oracle values within the documented tolerance budget. |
+| Stopping criteria | Strict | Shared stopping criteria must preserve tolerance semantics, sample accounting, convergence behavior, and resume semantics against the pinned QMCPy reference. |
+| Kernels | Approximate | Shared kernels must preserve kernel values and Bayesian behavior within tolerance, while allowing Julia-native composition, derivative helpers, and implementation details. |
+
+Items marked as QMC.jl-only extensions in the parity map are outside strict QMCPy parity unless they are explicitly promoted to shared behavior in a future release.
+
 ## Developer Setup
 
 ### Prerequisites

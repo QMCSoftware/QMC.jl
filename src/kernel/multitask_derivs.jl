@@ -1,5 +1,5 @@
 # KernelMultiTaskDerivs — step 3 of the derivative machinery (see
-# sc_notes/DESIGN_kernel_multitask_derivs.md). Port of QMCPy 2.3's
+# sc_notes/DESIGN_kernel_multitask_derivs.md). Port of QMCPy's
 # `KernelMultiTaskDerivs`: a multi-task kernel over a differentiable base value
 # kernel with a fixed all-ones task covariance. Because the task matrix is
 # identically 1, the cross-covariance between any two tasks is just the base

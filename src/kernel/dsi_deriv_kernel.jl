@@ -1,6 +1,6 @@
 # Derivative-aware digitally-shift-invariant (Walsh) value kernel — step 2 of the
 # derivative machinery (see sc_notes/DESIGN_kernel_multitask_derivs.md). Ports
-# QMCPy 2.3's base `KernelDigShiftInvar.__call__` with derivative orders.
+# QMCPy's base `KernelDigShiftInvar.__call__` with derivative orders.
 #
 # Per dimension `j` and derivative term `ℓ`, with `βsum = β0[ℓ,j] + β1[ℓ,j]`,
 # `δ_j = bin(x0_j) ⊻ bin(x1_j)` over `t` bits, `order = α_j − βsum`:

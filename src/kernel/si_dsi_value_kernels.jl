@@ -1,4 +1,4 @@
-# Value-kernel (kernel_eval / kernel_matrix) ports of QMCPy 2.3's combined and
+# Value-kernel (kernel_eval / kernel_matrix) ports of QMCPy's combined and
 # adaptive-alpha shift-invariant / digitally-shift-invariant kernels. These
 # complement the eigenvalue-based `KernelShiftInvar` / `KernelDigShiftInvar`
 # used for fast Bayesian cubature; here the kernels expose pointwise values

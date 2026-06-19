@@ -76,6 +76,17 @@ Existing built-in types satisfy this contract through their stored fields, but n
 
 Built-in constructors on abstract arguments are expected to honor this contract as well. In practice, that means methods like `Uniform(dd::AbstractDiscreteDistribution)` or `Keister(tm::AbstractTrueMeasure)` should query `dimension(dd)` or `dimension(tm)` instead of assuming a concrete `.dimension` field exists.
 
+## API Stability
+
+QMC.jl uses four package-level stability labels for exported names:
+
+| Status | Representative symbols | Meaning |
+|---|---|---|
+| **Stable** | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Gaussian`, `BrownianMotion`, `Keister`, `Genz`, `CubMCCLT`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCNetGRep` | Expected to remain source-compatible except for deliberate documented breaking releases |
+| **Beta** | `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont` | Usable and tested, but advanced interfaces may still be refined before long-term stabilization |
+| **Experimental** | `PFGPCI`, `UMBridgeWrapper`, `KernelMultiTask`, `KernelMultiTaskDerivs` | Exported for early adopters; behavior and interfaces may change with limited compatibility guarantees |
+| **Placeholder** | `gpu_fwht`, `gpu_fwht!` | Exported names reserved for future functionality; current implementation does not provide the advertised capability |
+
 ## Stopping Criterion
 
 Adaptive algorithms that determine sample size:
@@ -91,7 +102,7 @@ Adaptive algorithms that determine sample size:
 - **`CubQMCBayesLatticeG`** — Bayesian QMC for lattices (kernel-based error bound)
 - **`CubQMCBayesNetG`** — Bayesian QMC for digital nets (WHT-based error bound)
 - **`CubQMCRepStudentT`** — replicated QMC with Student's *t* confidence intervals
-- **`PFGPCI`** — probability-of-failure GP criterion; currently exported as a stub that errors on `integrate`
+- **`PFGPCI`** — experimental probability-of-failure GP criterion with an optional Julia GP backend
 
 ### Multilevel Methods
 

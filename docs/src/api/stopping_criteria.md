@@ -8,9 +8,7 @@ AbstractStoppingCriterion
 
 ## Algorithms
 
-`PFGPCI` is included below for API visibility, but it is currently a stub:
-constructing it works and `integrate` throws a descriptive "not yet
-implemented" error until a Julia GP backend is added.
+`PFGPCI` is included below for API visibility as an **experimental** stopping criterion. The constructor and deterministic helpers are supported, and end-to-end `integrate` works once the optional `AbstractGPs`/`Optim` backend extension is loaded. Until that backend path settles, the interface should be treated as experimental rather than stable.
 
 `CubQMCNetGSingle` remains available as an exported backward-compatible alias
 for `CubQMCNetG`.

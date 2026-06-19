@@ -40,8 +40,9 @@ Pkg.instantiate()
 using BenchmarkTools
 using Dates
 using JSON3
-using Statistics
 using Printf
+using Random
+using Statistics
 
 resdir = joinpath(@__DIR__, "results")
 compare_py_outfile(label::AbstractString) =
@@ -51,6 +52,11 @@ compare_py_summary_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python_summary.json") :
     joinpath(resdir, "compare_python_summary_$(label).json")
 const ARTIFACT_SKEW_WARNING_SECONDS = 10 * 60
+const STRICT_ACCURACY_ENV = "QMC_BENCH_REQUIRE_QMCPY_ACCURACY"
+const TIME_RATIO_BOOTSTRAP_DRAWS = 1_000
+const TIME_RATIO_BOOTSTRAP_SEED = 20260619
+
+finite_or_nothing(x) = x isa Real && isfinite(x) ? x : nothing
 
 finite_or_nothing(x) = x isa Real && isfinite(x) ? x : nothing
 
@@ -126,11 +132,21 @@ function lookup_jl_memory_entry(jl_memory_results, group, name)
     return get(jl_group, name, nothing)
 end
 
+jl_time_samples_ms(trial::BenchmarkTools.Trial) = Float64.(trial.times) ./ 1e6
+
+function py_time_samples_ms(py_entry)
+    samples = maybe_get(py_entry, "samples_ms", nothing)
+    samples === nothing && return nothing
+    return Float64[Float64(sample) for sample in samples]
+end
+
 function collect_comparison_rows(jl_results, jl_memory_results, py_results)
     rows = NamedTuple[]
     for group in sort(collect(keys(jl_results)))
         for name in sort(collect(keys(jl_results[group])))
-            jl_trial = median(jl_results[group][name])
+            jl_raw_trial = jl_results[group][name]
+            jl_trial = median(jl_raw_trial)
+            jl_samples_ms = jl_time_samples_ms(jl_raw_trial)
             jl_ms = jl_trial.time / 1e6
             jl_kib = jl_trial.memory / 1024
             jl_mem_entry = lookup_jl_memory_entry(jl_memory_results, group, name)
@@ -142,11 +158,13 @@ function collect_comparison_rows(jl_results, jl_memory_results, py_results)
                         group=group,
                         name=name,
                         jl_ms=jl_ms,
+                        jl_samples_ms=jl_samples_ms,
                         jl_kib=jl_kib,
                         jl_rss_delta_kib=jl_mem_entry !== nothing &&
                                          haskey(jl_mem_entry, "rss_delta_kib") ?
                                          Float64(jl_mem_entry["rss_delta_kib"]) : nothing,
                         py_ms=Float64(py_entry["median_ms"]),
+                        py_samples_ms=py_time_samples_ms(py_entry),
                         py_peak_kib=haskey(py_entry, "tracemalloc_peak_kib") ?
                                     Float64(py_entry["tracemalloc_peak_kib"]) : nothing,
                         py_rss_delta_kib=haskey(py_entry, "rss_delta_kib") ?
@@ -163,11 +181,13 @@ function collect_comparison_rows(jl_results, jl_memory_results, py_results)
                         group=group,
                         name=name,
                         jl_ms=jl_ms,
+                        jl_samples_ms=jl_samples_ms,
                         jl_kib=jl_kib,
                         jl_rss_delta_kib=jl_mem_entry !== nothing &&
                                          haskey(jl_mem_entry, "rss_delta_kib") ?
                                          Float64(jl_mem_entry["rss_delta_kib"]) : nothing,
                         py_ms=nothing,
+                        py_samples_ms=nothing,
                         py_peak_kib=nothing,
                         py_rss_delta_kib=nothing,
                         py_error=py_entry === nothing ? "no Python data" :
@@ -211,6 +231,90 @@ function summary_metrics(rows; include=(row -> true))
         py_rss_delta_kib=total_py_rss_delta_kib,
         rss_ratio=total_jl_rss_kib > 0 ? total_py_rss_delta_kib / total_jl_rss_kib : nothing,
     )
+end
+
+function bootstrap_time_ratio(
+    rows;
+    include=(row -> true),
+    draws::Int=TIME_RATIO_BOOTSTRAP_DRAWS,
+    seed::Int=TIME_RATIO_BOOTSTRAP_SEED,
+)
+    matched = filter(
+        row ->
+            include(row) &&
+            row.py_ms !== nothing &&
+            row.jl_samples_ms !== nothing &&
+            row.py_samples_ms !== nothing,
+        rows,
+    )
+    isempty(matched) && return nothing
+    rng = MersenneTwister(seed)
+    ratios = Vector{Float64}(undef, draws)
+    for draw in 1:draws
+        jl_total = 0.0
+        py_total = 0.0
+        for row in matched
+            jl_total += median(rand(rng, row.jl_samples_ms, length(row.jl_samples_ms)))
+            py_total += median(rand(rng, row.py_samples_ms, length(row.py_samples_ms)))
+        end
+        ratios[draw] = py_total / jl_total
+    end
+    return (
+        draws=draws,
+        lower=quantile(ratios, 0.025),
+        median=median(ratios),
+        upper=quantile(ratios, 0.975),
+        matched=length(matched),
+    )
+end
+
+function ci_to_dict(ci)
+    ci === nothing && return nothing
+    return Dict(
+        "draws" => ci.draws,
+        "lower" => ci.lower,
+        "median" => ci.median,
+        "upper" => ci.upper,
+        "matched_rows" => ci.matched,
+    )
+end
+
+function format_ci(ci)
+    ci === nothing && return "n/a"
+    return @sprintf("[%.3f, %.3f]", ci.lower, ci.upper)
+end
+
+function group_scope_description(group::AbstractString)
+    group == "gen_samples" && return "generator only"
+    group == "transform" && return "transform only"
+    group == "evaluate" && return "integrand evaluation only"
+    if group == "integrate"
+        return "end-to-end adaptive integration; not isolated stopping-criterion overhead"
+    end
+    return group
+end
+
+function collect_group_summaries(rows)
+    groups = sort(unique(string(row.group) for row in rows))
+    out = NamedTuple[]
+    for (idx, group) in enumerate(groups)
+        summary = summary_metrics(rows; include=row -> string(row.group) == group)
+        time_ci = bootstrap_time_ratio(
+            rows;
+            include=row -> string(row.group) == group,
+            seed=TIME_RATIO_BOOTSTRAP_SEED + idx,
+        )
+        push!(
+            out,
+            (
+                group=group,
+                description=group_scope_description(group),
+                summary=summary,
+                time_ci=time_ci,
+            ),
+        )
+    end
+    return out
 end
 
 # ── Accuracy: Julia vs Python solution values ────────────────────────────────
@@ -266,6 +370,77 @@ function collect_accuracy_rows(jl_solutions, py_results)
     return sort(rows; by=r -> r.name)
 end
 
+function oracle_value_vector(entry)
+    vals = maybe_get(entry, "values", nothing)
+    vals === nothing && return nothing
+    return Float64[Float64(v) for v in vals]
+end
+
+function oracle_tolerance(entry, key::AbstractString)
+    raw = maybe_get(entry, key, 0.0)
+    return Float64(raw)
+end
+
+function compare_oracle_values(jl_entry, py_entry)
+    jl_values = oracle_value_vector(jl_entry)
+    py_values = oracle_value_vector(py_entry)
+    jl_values === nothing && return nothing
+    py_values === nothing && return nothing
+    atol = max(oracle_tolerance(jl_entry, "atol"), oracle_tolerance(py_entry, "atol"))
+    rtol = max(oracle_tolerance(jl_entry, "rtol"), oracle_tolerance(py_entry, "rtol"))
+    jl_shape = maybe_get(jl_entry, "shape", Int[])
+    py_shape = maybe_get(py_entry, "shape", Int[])
+    max_abs_diff = 0.0
+    max_rel_diff = 0.0
+    n_failed = 0
+    n_compared = min(length(jl_values), length(py_values))
+    for i in 1:n_compared
+        diff = abs(jl_values[i] - py_values[i])
+        rel = py_values[i] == 0 ? (diff == 0 ? 0.0 : Inf) : diff / abs(py_values[i])
+        allowed = atol + rtol * abs(py_values[i])
+        max_abs_diff = max(max_abs_diff, diff)
+        max_rel_diff = max(max_rel_diff, rel)
+        diff > allowed && (n_failed += 1)
+    end
+    shape_match = collect(jl_shape) == collect(py_shape)
+    length_match = length(jl_values) == length(py_values)
+    flagged = !shape_match || !length_match || n_failed > 0
+    return (
+        max_abs_diff=max_abs_diff,
+        max_rel_diff=max_rel_diff,
+        atol=atol,
+        rtol=rtol,
+        n_failed=n_failed,
+        n_compared=n_compared,
+        jl_len=length(jl_values),
+        py_len=length(py_values),
+        shape_match=shape_match,
+        length_match=length_match,
+        flagged=flagged,
+    )
+end
+
+function collect_oracle_rows(jl_oracles, py_oracles)
+    rows = NamedTuple[]
+    jl_oracles === nothing && return rows
+    py_oracles === nothing && return rows
+    for group_name in ("transform", "evaluate")
+        jl_group = maybe_get(jl_oracles, group_name, nothing)
+        jl_group === nothing && continue
+        py_group = maybe_get(py_oracles, group_name, nothing)
+        for (name, jl_entry) in pairs(jl_group)
+            namestr = string(name)
+            haskey(jl_entry, "error") && continue
+            py_entry = py_group === nothing ? nothing : get(py_group, namestr, nothing)
+            check =
+                (py_entry !== nothing && !haskey(py_entry, "error")) ?
+                compare_oracle_values(jl_entry, py_entry) : nothing
+            push!(rows, (group=group_name, name=namestr, check=check))
+        end
+    end
+    return sort(rows; by=r -> (r.group, r.name))
+end
+
 jl_label = length(ARGS) >= 1 ? ARGS[1] : "latest"
 py_label = length(ARGS) >= 2 ? ARGS[2] : jl_label
 out_label = length(ARGS) >= 3 ? ARGS[3] : ""
@@ -310,12 +485,28 @@ rows = collect_comparison_rows(jl_results, jl_memory_results, py_results)
 summary = summary_metrics(rows)
 summary_non_student_t = summary_metrics(rows; include=row -> !row.student_t)
 summary_student_t = summary_metrics(rows; include=row -> row.student_t)
+summary_time_ci = bootstrap_time_ratio(rows)
+summary_non_student_t_time_ci = bootstrap_time_ratio(rows; include=row -> !row.student_t)
+summary_student_t_time_ci =
+    summary_student_t.total > 0 ? bootstrap_time_ratio(rows; include=row -> row.student_t) :
+    nothing
+group_summaries = collect_group_summaries(rows)
 
 jl_sol_file = joinpath(resdir, "$(jl_label)_solutions.json")
 jl_sol_data = isfile(jl_sol_file) ? JSON3.read(read(jl_sol_file, String)) : nothing
 jl_solutions = jl_sol_data === nothing ? nothing : get(jl_sol_data, :solutions, nothing)
 accuracy_rows = collect_accuracy_rows(jl_solutions, py_results)
+checked_accuracy_rows = count(r -> r.check !== nothing, accuracy_rows)
 n_flagged = count(r -> r.check !== nothing && r.check.flagged, accuracy_rows)
+
+jl_oracle_file = joinpath(resdir, "$(jl_label)_oracles.json")
+jl_oracle_data = isfile(jl_oracle_file) ? JSON3.read(read(jl_oracle_file, String)) : nothing
+jl_oracles = jl_oracle_data === nothing ? nothing : get(jl_oracle_data, :oracles, nothing)
+py_oracles = maybe_get(py_data, "oracles", nothing)
+oracle_rows = collect_oracle_rows(jl_oracles, py_oracles)
+checked_oracle_rows = count(r -> r.check !== nothing, oracle_rows)
+n_flagged_oracle_rows = count(r -> r.check !== nothing && r.check.flagged, oracle_rows)
+strict_accuracy = get(ENV, STRICT_ACCURACY_ENV, "0") == "1"
 
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia label   : $jl_label")
@@ -388,6 +579,14 @@ println(
     summary.matched,
     summary.total
 )
+if summary_time_ci !== nothing
+    @printf(
+        "  within-run bootstrap 95%% interval = [%.3f, %.3f] from %d draws\n",
+        summary_time_ci.lower,
+        summary_time_ci.upper,
+        summary_time_ci.draws
+    )
+end
 if summary_student_t.total > 0
     @printf(
         "  weighted time ratio excluding StudentT = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
@@ -397,6 +596,14 @@ if summary_student_t.total > 0
         summary_non_student_t.matched,
         summary_non_student_t.total
     )
+    if summary_non_student_t_time_ci !== nothing
+        @printf(
+            "    within-run bootstrap 95%% interval = [%.3f, %.3f] from %d draws\n",
+            summary_non_student_t_time_ci.lower,
+            summary_non_student_t_time_ci.upper,
+            summary_non_student_t_time_ci.draws
+        )
+    end
     @printf(
         "  weighted time ratio StudentT only = %.3f  (Python total %.3f ms vs Julia total %.3f ms across %d/%d matched rows)\n",
         summary_student_t.time_ratio,
@@ -405,10 +612,18 @@ if summary_student_t.total > 0
         summary_student_t.matched,
         summary_student_t.total
     )
+    if summary_student_t_time_ci !== nothing
+        @printf(
+            "    within-run bootstrap 95%% interval = [%.3f, %.3f] from %d draws\n",
+            summary_student_t_time_ci.lower,
+            summary_student_t_time_ci.upper,
+            summary_student_t_time_ci.draws
+        )
+    end
 end
 if summary.peak_rows > 0
     @printf(
-        "weighted tracemalloc ratio = %.3f  (Python peak total %.1f KiB vs Julia alloc total %.1f KiB across %d/%d rows)\n",
+        "weighted approximate tracemalloc ratio = %.3f  (Python peak total %.1f KiB vs Julia alloc total %.1f KiB across %d/%d rows)\n",
         summary.peak_ratio,
         summary.py_peak_kib,
         summary.jl_peak_kib,
@@ -417,12 +632,12 @@ if summary.peak_rows > 0
     )
 else
     println(
-        "weighted tracemalloc ratio = n/a  (QMCPy results do not record Python memory metrics)",
+        "weighted approximate tracemalloc ratio = n/a  (QMCPy results do not record Python memory metrics)",
     )
 end
 if summary.rss_rows > 0 && summary.rss_ratio !== nothing
     @printf(
-        "weighted RSS delta ratio   = %.3f  (Python RSS Δ total %.1f KiB vs Julia RSS Δ total %.1f KiB across %d/%d rows)\n",
+        "weighted approximate RSS delta ratio = %.3f  (Python RSS Δ total %.1f KiB vs Julia RSS Δ total %.1f KiB across %d/%d rows)\n",
         summary.rss_ratio,
         summary.py_rss_delta_kib,
         summary.jl_rss_kib,
@@ -431,10 +646,23 @@ if summary.rss_rows > 0 && summary.rss_ratio !== nothing
     )
 elseif summary.rss_rows > 0
     println(
-        "weighted RSS delta ratio   = n/a  (Julia RSS Δ total is 0.0 KiB across matched rows, so the weighted ratio is undefined)",
+        "weighted approximate RSS delta ratio = n/a  (Julia RSS Δ total is 0.0 KiB across matched rows, so the weighted ratio is undefined)",
     )
 else
-    println("weighted RSS delta ratio   = n/a  (missing Julia or QMCPy RSS delta sidecar data)")
+    println(
+        "weighted approximate RSS delta ratio = n/a  (missing Julia or QMCPy RSS delta sidecar data)",
+    )
+end
+println("grouped weighted time ratios:")
+for row in group_summaries
+    @printf(
+        "  %-10s %.3f  %s  (%d/%d rows)\n",
+        row.group,
+        row.summary.time_ratio,
+        format_ci(row.time_ci),
+        row.summary.matched,
+        row.summary.total
+    )
 end
 
 # ── Accuracy (integrate): Julia vs Python solution values ───────────────────────
@@ -467,10 +695,104 @@ else
             )
         end
     end
+    @printf("%d of %d integrate case(s) exceed 2×tolerance\n", n_flagged, checked_accuracy_rows)
+end
+
+if isempty(oracle_rows)
+    println()
+    println(
+        "deterministic oracles: no transform/evaluate sidecar data " *
+        "(need Julia `$(jl_label)_oracles.json` + QMCPy `oracles` in $(basename(py_file)))",
+    )
+else
+    println()
+    println("="^length(header))
+    println("Deterministic oracles (transform/evaluate): elementwise agreement")
+    println("-"^length(header))
+    for r in oracle_rows
+        if r.check === nothing
+            @printf("  ???  %-12s  %-36s  Python=n/a\n", r.group, r.name)
+        else
+            c = r.check
+            mark = c.flagged ? "❌ DIFF" : "✅ ok  "
+            @printf(
+                "  %s %-12s  %-36s  max|Δ|=%.3g  tol=(%.1e, %.1e)  failed=%d/%d\n",
+                mark,
+                r.group,
+                r.name,
+                c.max_abs_diff,
+                c.atol,
+                c.rtol,
+                c.n_failed,
+                c.n_compared
+            )
+        end
+    end
     @printf(
-        "%d of %d integrate case(s) exceed 2×tolerance\n",
-        n_flagged,
-        count(r -> r.check !== nothing, accuracy_rows)
+        "%d of %d deterministic oracle case(s) exceed elementwise tolerance\n",
+        n_flagged_oracle_rows,
+        checked_oracle_rows
+    )
+end
+
+# ── Save machine-readable summary ─────────────────────────────────────────────
+summary_outfile = compare_py_summary_outfile(out_label)
+markdown_report_filename = basename(compare_py_outfile(out_label))
+open(summary_outfile, "w") do io
+    JSON3.pretty(
+        io,
+        Dict(
+            "report_generated_at" => report_generated_at,
+            "jl_label" => jl_label,
+            "py_label" => py_label,
+            "qmcpy_version" => py_version,
+            "jl_generated_at" => jl_generated_at,
+            "py_generated_at" => py_generated_at,
+            "jl_file_mtime" => jl_file_mtime,
+            "py_file_mtime" => py_file_mtime,
+            "jl_artifact_filename" => basename(jl_file),
+            "jl_memory_artifact_filename" => basename(jl_mem_file),
+            "jl_solution_artifact_filename" => basename(jl_sol_file),
+            "jl_oracle_artifact_filename" => basename(jl_oracle_file),
+            "py_artifact_filename" => basename(py_file),
+            "summary_filename" => basename(summary_outfile),
+            "markdown_report_filename" => markdown_report_filename,
+            "artifact_skew_seconds" => artifact_skew_seconds,
+            "matched_rows" => summary.matched,
+            "total_rows" => summary.total,
+            "time_ratio" => finite_or_nothing(summary.time_ratio),
+            "time_ratio_excluding_student_t" =>
+                finite_or_nothing(summary_non_student_t.time_ratio),
+            "time_ratio_student_t" => finite_or_nothing(summary_student_t.time_ratio),
+            "time_ratio_bootstrap_95" => ci_to_dict(summary_time_ci),
+            "time_ratio_excluding_student_t_bootstrap_95" =>
+                ci_to_dict(summary_non_student_t_time_ci),
+            "time_ratio_student_t_bootstrap_95" => ci_to_dict(summary_student_t_time_ci),
+            "peak_rows" => summary.peak_rows,
+            "peak_ratio" => finite_or_nothing(summary.peak_ratio),
+            "rss_rows" => summary.rss_rows,
+            "rss_ratio" => finite_or_nothing(summary.rss_ratio),
+            "group_summaries" => Dict(
+                row.group => Dict(
+                    "description" => row.description,
+                    "matched_rows" => row.summary.matched,
+                    "total_rows" => row.summary.total,
+                    "time_ratio" => finite_or_nothing(row.summary.time_ratio),
+                    "time_ratio_bootstrap_95" => ci_to_dict(row.time_ci),
+                    "julia_total_ms" => row.summary.jl_ms,
+                    "python_total_ms" => row.summary.py_ms,
+                    "peak_rows" => row.summary.peak_rows,
+                    "peak_ratio" => finite_or_nothing(row.summary.peak_ratio),
+                    "rss_rows" => row.summary.rss_rows,
+                    "rss_ratio" => finite_or_nothing(row.summary.rss_ratio),
+                ) for row in group_summaries
+            ),
+            "checked_oracle_rows" => checked_oracle_rows,
+            "n_flagged_oracle_rows" => n_flagged_oracle_rows,
+            "checked_accuracy_rows" => checked_accuracy_rows,
+            "n_flagged_accuracy_rows" => n_flagged,
+            "strict_accuracy_requested" => strict_accuracy,
+        ),
     )
 end
 
@@ -563,6 +885,10 @@ open(outfile, "w") do io
     )
     println(
         io,
+        "> The 95% timing intervals below come from bootstrap resampling of the repeated timing samples already collected inside this run. They quantify within-run timing-sample variability, not cross-machine or cross-workflow reproducibility.",
+    )
+    println(
+        io,
         "> Report generated at `$(report_generated_at)`. Input artifact skew: `$(format_seconds(artifact_skew_seconds))`.",
     )
     if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
@@ -605,22 +931,60 @@ open(outfile, "w") do io
             summary_student_t.matched
         )
     end
+    if summary_time_ci !== nothing
+        println(
+            io,
+            "| weighted time ratio 95% bootstrap CI | all matched rows | `$(format_ci(summary_time_ci))` | — | — | $(summary_time_ci.draws) |",
+        )
+    else
+        println(
+            io,
+            "| weighted time ratio 95% bootstrap CI | all matched rows | n/a | — | — | 0 |",
+        )
+    end
+    if summary_student_t.total > 0
+        if summary_non_student_t_time_ci !== nothing
+            println(
+                io,
+                "| weighted time ratio 95% bootstrap CI | excluding StudentT | `$(format_ci(summary_non_student_t_time_ci))` | — | — | $(summary_non_student_t_time_ci.draws) |",
+            )
+        else
+            println(
+                io,
+                "| weighted time ratio 95% bootstrap CI | excluding StudentT | n/a | — | — | 0 |",
+            )
+        end
+        if summary_student_t_time_ci !== nothing
+            println(
+                io,
+                "| weighted time ratio 95% bootstrap CI | StudentT only | `$(format_ci(summary_student_t_time_ci))` | — | — | $(summary_student_t_time_ci.draws) |",
+            )
+        else
+            println(
+                io,
+                "| weighted time ratio 95% bootstrap CI | StudentT only | n/a | — | — | 0 |",
+            )
+        end
+    end
     if summary.peak_rows > 0
         @printf(
             io,
-            "| weighted tracemalloc ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n",
+            "| weighted approximate tracemalloc ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n",
             summary.peak_ratio,
             summary.jl_peak_kib,
             summary.py_peak_kib,
             summary.peak_rows
         )
     else
-        println(io, "| weighted tracemalloc ratio | all matched rows | n/a | n/a | n/a | 0 |")
+        println(
+            io,
+            "| weighted approximate tracemalloc ratio | all matched rows | n/a | n/a | n/a | 0 |",
+        )
     end
     if summary.rss_rows > 0 && summary.rss_ratio !== nothing
         @printf(
             io,
-            "| weighted RSS delta ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n\n",
+            "| weighted approximate RSS delta ratio | all matched rows | %.3f | %.1f KiB | %.1f KiB | %d |\n\n",
             summary.rss_ratio,
             summary.jl_rss_kib,
             summary.py_rss_delta_kib,
@@ -629,15 +993,46 @@ open(outfile, "w") do io
     elseif summary.rss_rows > 0
         @printf(
             io,
-            "| weighted RSS delta ratio | all matched rows | n/a | %.1f KiB | %.1f KiB | %d |\n\n",
+            "| weighted approximate RSS delta ratio | all matched rows | n/a | %.1f KiB | %.1f KiB | %d |\n\n",
             summary.jl_rss_kib,
             summary.py_rss_delta_kib,
             summary.rss_rows
         )
     else
-        println(io, "| weighted RSS delta ratio | all matched rows | n/a | n/a | n/a | 0 |\n")
+        println(
+            io,
+            "| weighted approximate RSS delta ratio | all matched rows | n/a | n/a | n/a | 0 |\n",
+        )
     end
     println(io, "")
+    println(io, "## Grouped Timing Summary\n")
+    println(
+        io,
+        "Generator, transform, integrand evaluation, and end-to-end adaptive integration are summarized separately below. The `integrate` group is mixed end-to-end cost, not isolated stopping-criterion overhead.\n",
+    )
+    println(
+        io,
+        "| group | interpretation | weighted time ratio | 95% bootstrap CI | Julia total | Python total | rows |",
+    )
+    println(
+        io,
+        "|:------|:---------------|--------------------:|:------------------|------------:|-------------:|-----:|",
+    )
+    for row in group_summaries
+        @printf(
+            io,
+            "| `%s` | %s | %.3f | `%s` | %.3f ms | %.3f ms | %d |\n",
+            row.group,
+            row.description,
+            row.summary.time_ratio,
+            format_ci(row.time_ci),
+            row.summary.jl_ms,
+            row.summary.py_ms,
+            row.summary.matched
+        )
+    end
+    println(io, "")
+    println(io, "## Detailed Results\n")
     println(
         io,
         "| benchmark | time ratio | verdict | Julia (ms) | Python (ms) | Julia alloc (KiB) | Julia RSS Δ (KiB) | Python peak (KiB) | Python RSS Δ (KiB) |",
@@ -713,7 +1108,7 @@ open(outfile, "w") do io
             io,
             "**%d of %d** matched integrate case(s) exceed 2×tolerance.\n\n",
             n_flagged,
-            count(r -> r.check !== nothing, accuracy_rows)
+            checked_accuracy_rows
         )
         println(
             io,
@@ -750,6 +1145,82 @@ open(outfile, "w") do io
             end
         end
     end
+
+    println(io, "")
+    println(io, "## Deterministic oracles (transform/evaluate)\n")
+    println(
+        io,
+        "These cases compare small fixed transform/evaluate outputs against QMCPy on the exact same deterministic inputs. Rows are flagged ❌ if any element exceeds `atol + rtol * |reference|`.\n",
+    )
+    if isempty(oracle_rows)
+        println(
+            io,
+            "_No oracle sidecar data found. Re-run `make bench` (writes the Julia `$(jl_label)_oracles.json` sidecar) and a QMCPy harness recent enough to record top-level `oracles`._",
+        )
+    else
+        @printf(
+            io,
+            "**%d of %d** deterministic oracle case(s) exceed elementwise tolerance.\n\n",
+            n_flagged_oracle_rows,
+            checked_oracle_rows
+        )
+        println(
+            io,
+            "| group | case | max abs Δ | max rel Δ | atol | rtol | failed elems | verdict |",
+        )
+        println(
+            io,
+            "|:------|:-----|----------:|----------:|-----:|-----:|-------------:|:-------:|",
+        )
+        for r in oracle_rows
+            if r.check === nothing
+                println(io, "| `$(r.group)` | `$(r.name)` | n/a | n/a | n/a | n/a | n/a | — |")
+            else
+                c = r.check
+                rel_txt = isfinite(c.max_rel_diff) ? @sprintf("%.3e", c.max_rel_diff) : "inf"
+                failed_txt =
+                    c.length_match && c.shape_match ? "$(c.n_failed)/$(c.n_compared)" :
+                    "shape/len mismatch"
+                verdict = c.flagged ? "❌" : "✅"
+                @printf(
+                    io,
+                    "| `%s` | `%s` | %.3e | %s | %.1e | %.1e | %s | %s |\n",
+                    r.group,
+                    r.name,
+                    c.max_abs_diff,
+                    rel_txt,
+                    c.atol,
+                    c.rtol,
+                    failed_txt,
+                    verdict
+                )
+            end
+        end
+    end
 end
 println("\nWrote benchmark/results/$(basename(outfile))")
 println("  ratio = Python ÷ Julia  →  < 1: local slower  |  > 1: local faster")
+if strict_accuracy
+    if checked_accuracy_rows == 0
+        error(
+            "Strict QMCPy accuracy check requested via $(STRICT_ACCURACY_ENV)=1, " *
+            "but no comparable integrate solution rows were found.",
+        )
+    elseif n_flagged > 0
+        error(
+            "Strict QMCPy accuracy check failed: $(n_flagged) of $(checked_accuracy_rows) " *
+            "integrate case(s) exceeded 2×tolerance.",
+        )
+    elseif checked_oracle_rows == 0
+        error(
+            "Strict QMCPy accuracy check requested via $(STRICT_ACCURACY_ENV)=1, " *
+            "but no comparable deterministic oracle rows were found.",
+        )
+    elseif n_flagged_oracle_rows > 0
+        error(
+            "Strict QMCPy accuracy check failed: $(n_flagged_oracle_rows) of " *
+            "$(checked_oracle_rows) deterministic oracle case(s) exceeded " *
+            "elementwise tolerance.",
+        )
+    end
+end

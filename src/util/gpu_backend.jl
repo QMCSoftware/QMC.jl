@@ -1,16 +1,12 @@
 """
-    GPU Backend (stub)
+    Experimental GPU backend placeholder
 
-Future GPU acceleration for QMC computations using CUDA.jl.
+Reserved space for future GPU support in QMC.jl.
 
-When implemented, this will provide:
-- GPU-accelerated Walsh-Hadamard transform
-- GPU-accelerated digital net generation
-- GPU-accelerated kernel matrix computation
-
-Planned user-facing GPU configuration is not implemented yet; at present the
-only public entry point here is [`gpu_fwht!`](@ref), which falls back to the
-CPU Walsh-Hadamard transform when no GPU backend is available.
+No working GPU execution path is shipped. The public entry points in this file
+are [`gpu_fwht`](@ref) and [`gpu_fwht!`](@ref), and their current behavior is a
+CPU fallback to [`fwht`](@ref) and [`fwht!`](@ref). They do not allocate GPU
+buffers, launch GPU kernels, or provide acceleration.
 """
 
 # Placeholder: check if CUDA is available
@@ -23,10 +19,48 @@ _gpu_available() =
     end
 
 """
+    gpu_fwht(x::Vector{Float64})
+
+Placeholder out-of-place API for a future GPU Fast Walsh-Hadamard Transform.
+
+**Placeholder.** This exported name is kept for API discoverability, but QMC.jl
+does not currently provide a GPU implementation. The present behavior is always
+the CPU `fwht` path, so callers should not expect GPU acceleration.
+
+```jldoctest
+julia> using QMC
+
+julia> x = [1.0, 2.0, 3.0, 4.0];
+
+julia> gpu_fwht(x)
+4-element Vector{Float64}:
+ 10.0
+ -2.0
+ -4.0
+  0.0
+
+julia> x
+4-element Vector{Float64}:
+ 1.0
+ 2.0
+ 3.0
+ 4.0
+```
+"""
+function gpu_fwht(x::Vector{Float64})
+    y = copy(x)
+    gpu_fwht!(y)
+    return y
+end
+
+"""
     gpu_fwht!(x::Vector{Float64})
 
-GPU-accelerated Fast Walsh-Hadamard Transform (stub).
-Falls back to CPU implementation when CUDA is not available.
+Placeholder API for a future GPU Fast Walsh-Hadamard Transform.
+
+**Placeholder.** This exported name is kept for API discoverability, but QMC.jl
+does not currently provide a GPU implementation. The present behavior is always
+the CPU `fwht!` path, so callers should not expect GPU acceleration.
 
 ```jldoctest
 julia> using QMC

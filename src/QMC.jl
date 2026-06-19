@@ -152,7 +152,7 @@ export ml_sample_and_evaluate, ml_sample_and_evaluate_reps
 export bernoulli_poly, to_bin, to_float, fwht!, fwht, ifwht!
 export IterationLog, iterations
 export latnetbuilder_linker, mlmc_test
-export bro_fft, bro_ifft, gpu_fwht!
+export bro_fft, bro_ifft, gpu_fwht, gpu_fwht!
 export keister_exact, genz_exact, periodize
 
 end

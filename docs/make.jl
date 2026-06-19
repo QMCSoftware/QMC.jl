@@ -28,6 +28,7 @@ makedocs(
             "Internals" => "api/internals.md",
         ],
         "Demos" => "demos.md",
+        "Release Policy" => "releasing.md",
         "CI/CD Testing" => "ci-testing.md",
         "Workflow Debugging" => "workflow-debugging.md",
         "Contributing" => "contributing.md",
@@ -36,7 +37,7 @@ makedocs(
 )
 
 # Only deploy from CI
-if get(ENV, "CI", nothing) == "true"
+if get(ENV, "CI", nothing) == "true" && get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"
     deploydocs(
         repo = "github.com/QMCSoftware/QMC.jl.git",
         devbranch = "develop",
