@@ -28,13 +28,13 @@ to_float
 
 ## Fast Walsh-Hadamard Transform
 
-`gpu_fwht!` is currently a CPU-fallback placeholder. Its docstring is listed
-here for API completeness, but it does not yet provide true GPU acceleration.
+`gpu_fwht` and `gpu_fwht!` are currently **placeholder** exported names. Their docstrings are listed here for API completeness, but the current implementation is only the CPU `fwht`/`fwht!` fallback and does not provide true GPU acceleration.
 
 ```@docs
 fwht!
 fwht
 ifwht!
+gpu_fwht(::Vector{Float64})
 gpu_fwht!(::Vector{Float64})
 bro_fft(::Vector{Float64})
 bro_ifft(::Vector{ComplexF64})

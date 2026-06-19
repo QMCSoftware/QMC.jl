@@ -42,10 +42,18 @@ QMC.jl provides four core building blocks, plus related kernel types:
 
 Additional utilities include periodization transforms, iteration diagnostics (`IterationLog`), resume/checkpoint support, Walsh-Hadamard and BRO-FFT transforms, and a LatNetBuilder linker.
 
-Advanced status notes: `PFGPCI` is currently exported as a parity placeholder,
-but `integrate(::PFGPCI)` intentionally errors until a Julia GP backend is
-implemented. Likewise, `gpu_fwht!` is currently a CPU-fallback stub rather than
-a real GPU acceleration path.
+Advanced status notes: `PFGPCI` is currently an exported experimental feature that depends on an optional Julia GP backend, while `gpu_fwht` and `gpu_fwht!` are placeholder exported names whose current behavior is only the CPU `fwht`/`fwht!` fallback.
+
+## API Stability
+
+QMC.jl currently groups its public surface into the following stability levels:
+
+| Status | Representative symbols | Meaning |
+|---|---|---|
+| **Stable** | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Gaussian`, `BrownianMotion`, `Keister`, `Genz`, `CubMCCLT`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCNetGRep` | Expected to remain source-compatible except for deliberate documented breaking releases |
+| **Beta** | `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont` | Usable and tested, but advanced interfaces may still be refined before long-term stabilization |
+| **Experimental** | `PFGPCI`, `UMBridgeWrapper`, `KernelMultiTask`, `KernelMultiTaskDerivs` | Exported for early adopters; behavior and interfaces may change with limited compatibility guarantees |
+| **Placeholder** | `gpu_fwht`, `gpu_fwht!` | Exported names reserved for future functionality; current implementation does not provide the advertised capability |
 
 ## Installation
 

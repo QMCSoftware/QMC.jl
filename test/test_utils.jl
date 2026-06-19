@@ -21,6 +21,13 @@
         @test ifwht!(w) === w
         @test w ≈ x
 
+        g = gpu_fwht(x)
+        @test g == fwht(x)
+        @test x == Float64[3, 1, 4, 1, 5, 9, 2, 6]
+        h = copy(x)
+        @test gpu_fwht!(h) === h
+        @test h == g
+
         # Non-power-of-2 length is rejected.
         @test_throws AssertionError fwht([1.0, 2.0, 3.0])
     end
