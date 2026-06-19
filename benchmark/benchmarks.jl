@@ -46,6 +46,14 @@ const BENCH_BLAS_THREADS = let raw = get(ENV, "QMC_BENCH_BLAS_THREADS", "1")
     threads
 end
 BLAS.set_num_threads(BENCH_BLAS_THREADS)
+# With multiple Julia threads, clamp BLAS to 1 thread before any threads are spawned.
+# Toggling BLAS thread count while Julia threads are live is not thread-safe and
+# causes OpenBLAS to crash at Julia shutdown (signal 11). CubQMCNetGRep's parallel
+# replicates rely on this invariant: each Julia thread calls BLAS with 1 internal
+# thread, so OpenBLAS serializes concurrent calls without spawning extra workers.
+if Threads.nthreads() > 1
+    BLAS.set_num_threads(1)
+end
 
 # Large-d cases for the Gaussian transform only (see block 2b). These dimensions
 # are where the diagonal fast path's O(n·d²)→O(n·d) saving becomes visible; the
