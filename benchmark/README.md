@@ -169,7 +169,7 @@ benchmark/results/compare_python_base.md
 
 The Julia memory sidecar and the QMCPy JSON now also record lightweight benchmark metadata such as generation time, thread configuration, and the integrate timing sample/repeat counts. `compare_python*.md` surfaces that metadata in its header so stale or mismatched artifact pairings are easier to spot.
 
-The benchmark comparison also checks the seeded `integrate` cases against QMCPy solution values and compares deterministic transform/evaluate oracle outputs against QMCPy on fixed inputs. Each matched Julia/Python integrate pair is required to agree within `2 * max(abs_tol, rel_tol * |value|)`, and each oracle element is required to satisfy `abs(Δ) <= atol + rtol * |reference|`. The `make bench-compare-py` and `make bench-all` flows enable this strict guard automatically and fail if no comparable parity rows are found or if any matched row exceeds its bound.
+The benchmark comparison also checks the seeded `integrate` cases against QMCPy solution values and compares deterministic transform/evaluate oracle outputs against QMCPy on fixed inputs. Each matched Julia/Python integrate pair is required to agree within `2 * max(abs_tol, rel_tol * |value|)`, and each oracle element is required to satisfy `abs(Δ) <= atol + rtol * |reference|`. These oracle rows are a semantically aligned parity subset rather than a second copy of every timing row, so they focus on exact cross-language counterparts. The `make bench-compare-py` and `make bench-all` flows enable this strict guard automatically and fail if no comparable parity rows are found or if any matched row exceeds its bound.
 
 ### Coverage Caveat
 

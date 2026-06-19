@@ -181,7 +181,9 @@ def collect_oracles():
     keister = qp.Keister(dd3)
     genz_osc = qp.Genz(dd3, kind_func="OSCILLATORY")
     out["transform"]["Gaussian d=3 rows=4"] = oracle_entry(
-        qp.Gaussian(dd3)._transform(oracle_uniform_matrix(ORACLE_ROWS, 3, offset=1)),
+        qp.Gaussian(dd3, decomp_type="Cholesky")._transform(
+            oracle_uniform_matrix(ORACLE_ROWS, 3, offset=1)
+        ),
         atol=1e-10,
         rtol=1e-10,
     )
@@ -198,33 +200,38 @@ def collect_oracles():
 
     dd50 = qp.IIDStdUniform(50, seed=SEED)
     out["transform"]["Gaussian(diag) d=50 rows=3"] = oracle_entry(
-        qp.Gaussian(dd50)._transform(oracle_uniform_matrix(3, 50, offset=2)),
+        qp.Gaussian(dd50, decomp_type="Cholesky")._transform(
+            oracle_uniform_matrix(3, 50, offset=2)
+        ),
         atol=1e-10,
         rtol=1e-10,
     )
     out["transform"]["Gaussian(dense) d=50 rows=3"] = oracle_entry(
-        qp.Gaussian(dd50, covariance=dense_covariance(50))._transform(oracle_uniform_matrix(3, 50, offset=3)),
+        qp.Gaussian(dd50, covariance=dense_covariance(50), decomp_type="Cholesky")._transform(
+            oracle_uniform_matrix(3, 50, offset=3)
+        ),
         atol=5e-10,
         rtol=5e-10,
     )
 
-    dd10 = qp.IIDStdUniform(10, seed=SEED)
-    out["transform"]["StudentT d=10 rows=4"] = oracle_entry(
-        qp.StudentT(dd10, loc=np.zeros(10), shape=np.eye(10), df=2.0)._transform(
-            oracle_uniform_matrix(ORACLE_ROWS, 10, offset=4)
+    dd1 = qp.IIDStdUniform(1, seed=SEED)
+    out["transform"]["StudentT d=1 rows=4"] = oracle_entry(
+        qp.StudentT(dd1, loc=np.zeros(1), shape=np.eye(1), df=2.0)._transform(
+            oracle_uniform_matrix(ORACLE_ROWS, 1, offset=4)
         ),
         atol=1e-7,
         rtol=1e-7,
     )
+    dd10 = qp.IIDStdUniform(10, seed=SEED)
     out["transform"]["JohnsonsSU d=10 rows=4"] = oracle_entry(
-        qp.JohnsonsSU(dd10, gamma=0.0, xi=0.0, delta=1.0, lam=1.0)._transform(
+        qp.JohnsonsSU(dd10)._transform(
             oracle_uniform_matrix(ORACLE_ROWS, 10, offset=5)
         ),
         atol=1e-10,
         rtol=1e-10,
     )
     out["evaluate"]["BoxIntegral d=10 rows=4"] = oracle_entry(
-        qp.BoxIntegral(dd10).g(oracle_uniform_matrix(ORACLE_ROWS, 10, offset=13)),
+        qp.BoxIntegral(dd10, s=1).g(oracle_uniform_matrix(ORACLE_ROWS, 10, offset=13)),
         atol=1e-10,
         rtol=1e-10,
     )

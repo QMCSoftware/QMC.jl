@@ -192,9 +192,10 @@ end
 
 function oracle_entry(value, atol, rtol)
     arr = value isa AbstractArray ? Array(value) : fill(value, 1)
+    flat_values = ndims(arr) == 2 ? Float64.(vec(transpose(arr))) : Float64.(vec(arr))
     return Dict(
         "shape" => collect(Int, size(arr)),
-        "values" => Float64.(vec(arr)),
+        "values" => flat_values,
         "atol" => float(atol),
         "rtol" => float(rtol),
     )

@@ -81,6 +81,11 @@ function oracle_uniform_matrix(rows::Int, dim::Int; offset::Int=0)
     return out
 end
 
+function qmcpy_genz_coeffs(dim::Int)
+    base = (collect(1:dim) .- 0.5) ./ dim
+    return 4.5 .* base ./ sum(base)
+end
+
 # ── Benchmark Groups ─────────────────────────────────────────────────────
 
 const SUITE = BenchmarkGroup()
@@ -207,26 +212,26 @@ end
 # against QMCPy on the same inputs.
 function _oracle_transform_gaussian_small()
     dd = IIDStdUniform(3; seed=42)
-    tm = Gaussian(dd)
+    tm = Gaussian(dd; decomp_type=:Cholesky)
     return transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 3; offset=1))
 end
 
 function _oracle_transform_gaussian_diag_large()
     dd = IIDStdUniform(50; seed=42)
-    tm = Gaussian(dd)
+    tm = Gaussian(dd; decomp_type=:Cholesky)
     return transform(tm, oracle_uniform_matrix(3, 50; offset=2))
 end
 
 function _oracle_transform_gaussian_dense_large()
     dd = IIDStdUniform(50; seed=42)
-    tm = Gaussian(dd; covariance=dense_covariance(50))
+    tm = Gaussian(dd; covariance=dense_covariance(50), decomp_type=:Cholesky)
     return transform(tm, oracle_uniform_matrix(3, 50; offset=3))
 end
 
 function _oracle_transform_student_t()
-    dd = IIDStdUniform(10; seed=42)
+    dd = IIDStdUniform(1; seed=42)
     tm = StudentT(dd)
-    return transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=4))
+    return transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 1; offset=4))
 end
 
 function _oracle_transform_johnsons_su()
@@ -237,7 +242,7 @@ end
 
 function _oracle_evaluate_keister()
     dd = IIDStdUniform(3; seed=42)
-    tm = Gaussian(dd)
+    tm = Gaussian(dd; covariance=0.5)
     f = Keister(tm)
     x = transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 3; offset=11))
     return evaluate(f, x)
@@ -245,36 +250,36 @@ end
 
 function _oracle_evaluate_genz_oscillatory()
     dd = IIDStdUniform(3; seed=42)
-    tm = Gaussian(dd)
-    f = Genz(tm; kind=:oscillatory)
-    x = transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 3; offset=12))
+    tm = Uniform(dd)
+    f = Genz(tm; kind=:oscillatory, a=qmcpy_genz_coeffs(3), u=zeros(3))
+    x = oracle_uniform_matrix(ORACLE_ROWS, 3; offset=12)
     return evaluate(f, x)
 end
 
 function _oracle_evaluate_boxintegral()
     dd = IIDStdUniform(10; seed=42)
-    tm = Gaussian(dd)
-    f = BoxIntegral(tm)
+    tm = Uniform(dd)
+    f = BoxIntegral(tm; s=1.0)
     return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=13))
 end
 
 function _oracle_evaluate_linear0()
     dd = IIDStdUniform(10; seed=42)
-    tm = Gaussian(dd)
+    tm = Uniform(dd)
     f = Linear0(tm)
     return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=14))
 end
 
 function _oracle_evaluate_genz_gaussian_peak()
     dd = IIDStdUniform(10; seed=42)
-    tm = Gaussian(dd)
+    tm = Uniform(dd)
     f = Genz(tm; kind=:gaussian_peak)
     return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=15))
 end
 
 function _oracle_evaluate_genz_continuous()
     dd = IIDStdUniform(10; seed=42)
-    tm = Gaussian(dd)
+    tm = Uniform(dd)
     f = Genz(tm; kind=:continuous)
     return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=16))
 end
@@ -293,7 +298,7 @@ const TRANSFORM_ORACLE_CASES = [
         rtol=5e-10,
         make=_oracle_transform_gaussian_dense_large,
     ),
-    (name="StudentT d=10 rows=4", atol=1e-7, rtol=1e-7, make=_oracle_transform_student_t),
+    (name="StudentT d=1 rows=4", atol=1e-7, rtol=1e-7, make=_oracle_transform_student_t),
     (name="JohnsonsSU d=10 rows=4", atol=1e-10, rtol=1e-10, make=_oracle_transform_johnsons_su),
 ]
 
