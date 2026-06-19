@@ -13,6 +13,16 @@ on:
       - 'Manifest.toml'
       - 'test/requirements.txt'
       - '.github/workflows/doc_demo.yml'
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
+      - 'Manifest.toml'
+      - 'Makefile'
+      - 'test/requirements.txt'
+      - '.github/workflows/doc_demo.yml'
   workflow_dispatch:
 
 concurrency:
@@ -61,6 +71,7 @@ jobs:
         run: julia --project=docs docs/make.jl
 
   demos:
+    if: github.event_name != 'pull_request'
     name: Run Demo Notebooks
     runs-on: ubuntu-latest
     timeout-minutes: 90        # explicit job timeout

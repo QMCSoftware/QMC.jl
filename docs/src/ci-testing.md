@@ -9,15 +9,15 @@ For local linting and repeatable smoke runs of those workflows, see
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **Fast CI** | `ci.yml` | `push` except `develop`/`master`; manual | Linux | Unit tests + coverage |
-| **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
+| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux | Unit tests + coverage + doctests |
+| **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PRs with code/docs/workflow changes; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
-| **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; manual | Linux | Documenter build + deploy + notebook regression |
+| **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression |
 
 ## Policy
 
-- Linux is the default feature-branch feedback path and runs on pushes except for `develop`/`master` via `ci.yml`.
-- macOS and Windows are reserved for `develop`/`master` pushes and manual runs via `ci-full.yml`.
+- Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`.
+- macOS and Windows are reserved for `develop`/`master` pushes, selected pull requests, and manual runs via `ci-full.yml`.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
 - On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
@@ -26,8 +26,7 @@ For local linting and repeatable smoke runs of those workflows, see
 
 ## Fast CI (`ci.yml`)
 
-The primary fast-feedback workflow runs on non-`develop`/`master` pushes, plus
-manual dispatch.
+The primary fast-feedback workflow runs on non-`develop`/`master` pushes, on pull requests targeting `develop` or `master`, and via manual dispatch.
 
 **Unit tests job:**
 
@@ -48,7 +47,7 @@ manual dispatch.
 
 A cross-platform sweep for protected branches.
 
-- Triggers on pushes to `develop` or `master` and via manual dispatch.
+- Triggers on pushes to `develop` or `master`, on pull requests that touch `src/`, `test/`, `docs/`, `benchmark/`, `.github/`, `Project.toml`, `Manifest.toml`, or `Makefile`, and via manual dispatch.
 - Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and Windows on Julia 1.12.
 - Runs unit tests on every lane.
 - The Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, and feeds the `develop` branch Codecov badge; the other lanes run plain `Pkg.test()`.
@@ -75,14 +74,10 @@ The benchmark workflow is separate from the test workflows.
 
 Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 
-- Triggered on pushes to `develop`/`master` when `docs/`, `demos/`, `src/`,
-  `test/run_notebooks.jl`, `Makefile`, `Project.toml`, `Manifest.toml`,
-  `test/requirements.txt`, or the workflow file itself changes.
-- The documentation job uses `julia --project=docs` to resolve the docs-specific
-  dependency set and deploys via `deploydocs()` when `CI=true` (only on push,
-  not PR).
-- The demos job runs `make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1` on
-  Linux with Julia 1.12 and Python 3.13.
+- Triggered on pushes to `develop`/`master` when `docs/`, `demos/`, `src/`, `test/run_notebooks.jl`, `Makefile`, `Project.toml`, `Manifest.toml`, `test/requirements.txt`, or the workflow file itself changes.
+- Also triggered on pull requests into `develop`/`master` when `docs/`, `src/`, `Project.toml`, `Manifest.toml`, `Makefile`, `test/requirements.txt`, or the workflow file itself changes.
+- The documentation job uses `julia --project=docs` to resolve the docs-specific dependency set and deploys via `deploydocs()` only on push events.
+- The demos job remains push/manual only and does not run on pull requests.
 
 ## Running Tests Locally
 

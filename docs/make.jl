@@ -37,7 +37,7 @@ makedocs(
 )
 
 # Only deploy from CI
-if get(ENV, "CI", nothing) == "true"
+if get(ENV, "CI", nothing) == "true" && get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"
     deploydocs(
         repo = "github.com/QMCSoftware/QMC.jl.git",
         devbranch = "develop",

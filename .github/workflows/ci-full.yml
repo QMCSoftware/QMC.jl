@@ -3,8 +3,17 @@ name: "Doc/Unit Tests: 3 OSes"
 on:
   push:
     branches: [develop, master]
-  #pull_request:
-  #  branches: [develop, master]
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'docs/**'
+      - 'benchmark/**'
+      - '.github/**'
+      - 'Project.toml'
+      - 'Manifest.toml'
+      - 'Makefile'
   workflow_dispatch:
 
 concurrency:
