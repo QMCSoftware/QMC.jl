@@ -45,6 +45,7 @@ function benchmark_metadata(label::AbstractString)
         "generated_at" => generated_at,
         "julia_version" => string(VERSION),
         "blas_threads" => BLAS.get_num_threads(),
+        "julia_threads" => Threads.nthreads(),
         "benchmark_config" => Dict(
             "leaf_samples" => BENCH_SAMPLES,
             "integrate_samples" => INTEGRATE_BENCH_SAMPLES,

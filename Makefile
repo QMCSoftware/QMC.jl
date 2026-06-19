@@ -27,6 +27,13 @@ NOTEBOOK_KERNEL ?= qmc-1.12
 NOTEBOOK_TIMEOUT ?= 1800
 BENCH_COVERAGE ?= 0
 BENCH_BLAS_THREADS ?= 2
+# NOTE: Raising BENCH_JULIA_THREADS above 1 breaks the apples-to-apples comparison.
+# Julia's CubQMCNetGRep parallelises its R replicates across Julia threads, but
+# QMCPy's CubQMCRepStudentT is single-threaded (no multiprocessing). In addition,
+# benchmarks.jl clamps BLAS to 1 thread when nthreads > 1 (to prevent an OpenBLAS
+# crash), which penalises all other Julia benchmarks (transforms, CubQMCNetG) vs
+# Python which retains BLAS=$(BENCH_BLAS_THREADS). Use BENCH_JULIA_THREADS > 1 only
+# to measure threading speedup in isolation, not for a valid Julia-vs-Python ratio.
 BENCH_JULIA_THREADS ?= 1
 WORKFLOW_SMOKE_NOTEBOOKS ?= 0
 WORKFLOW_SMOKE_DOCS ?= 0

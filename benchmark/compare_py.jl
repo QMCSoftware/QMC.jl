@@ -469,6 +469,7 @@ py_python_version = maybe_get(py_data, "python_version", "?")
 report_generated_at = Dates.format(Dates.now(), dateformat"yyyy-mm-ddTHH:MM:SS")
 jl_generated_at = maybe_get(jl_mem_data, "generated_at", "n/a")
 jl_blas_threads = maybe_get(jl_mem_data, "blas_threads", "n/a")
+jl_julia_threads = maybe_get(jl_mem_data, "julia_threads", 1)
 jl_config = maybe_get(jl_mem_data, "benchmark_config", nothing)
 jl_integrate_samples = maybe_get(jl_config, "integrate_samples", "n/a")
 jl_student_t_samples = maybe_get(jl_config, "student_t_samples", "n/a")
@@ -538,6 +539,17 @@ if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
     println(
         "  NOTE: input artifacts are more than 10 minutes apart; rerun `make bench-compare-py` if that was not intentional.",
     )
+end
+if jl_julia_threads isa Integer && jl_julia_threads > 1
+    println(
+        "  NOTE: Julia ran with $(jl_julia_threads) thread(s) (BENCH_JULIA_THREADS=$(jl_julia_threads)).",
+    )
+    println("  CubQMCNetGRep parallelises its R replicates across Julia threads, but QMCPy's")
+    println("  CubQMCRepStudentT is single-threaded. Additionally, BLAS is clamped to 1 thread")
+    println(
+        "  on the Julia side when nthreads > 1, penalising transforms vs Python BLAS=$(jl_blas_threads).",
+    )
+    println("  The cross-language ratio is therefore not an apples-to-apples comparison.")
 end
 println()
 
