@@ -283,7 +283,7 @@ function print_oracle_summary(julia_oracles)
     end
 end
 
-println("QMC.jl Benchmarks")
+println("\nQMC.jl Benchmarks")
 println("="^70)
 println(
     "Benchmark config: BLAS threads=$(BLAS.get_num_threads()), integrate samples=$(INTEGRATE_BENCH_SAMPLES), StudentT samples=$(STUDENT_T_BENCH_SAMPLES)",
