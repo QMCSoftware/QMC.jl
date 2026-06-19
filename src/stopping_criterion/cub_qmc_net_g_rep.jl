@@ -84,38 +84,29 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
     f = sc.integrand
     dd = discrete_distribution(f)
     tm = true_measure(f)
+    estimates = Vector{Float64}(undef, R)
 
     while n <= sc.n_max
         n_iter += 1
-        estimates = Vector{Float64}(undef, R)
 
-        # Batch the R replicates' transform + evaluate in GROUPS of `group_size`
-        # rather than all at once. Each group's points are still the same draws in
-        # the same order (gen_samples advances the same RNG), so the per-replicate
-        # means — and hence mu_hat and the error bound — are unchanged. Grouping
-        # keeps one large BLAS GEMM per group (far better than R tiny ones) while
-        # bounding the dense-transform temporaries to group_size·n rows.
-        group_size = 4
-        r0 = 1
-        while r0 <= R
-            g = min(group_size, R - r0 + 1)
-            first = gen_samples(dd, n)
-            first =
-                ndims(first) == 3 ?
-                reshape(first, size(first, 1) * size(first, 2), size(first, 3)) : first
-            m = size(first, 1)
-            x_group = Matrix{Float64}(undef, g * m, size(first, 2))
-            @inbounds x_group[1:m, :] .= first
-            @inbounds for k in 2:g
-                xu = gen_samples(dd, n)
-                xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
-                x_group[((k - 1) * m + 1):(k * m), :] .= xu
-            end
-            y_group = evaluate(f, transform(tm, x_group))
-            @inbounds for k in 1:g
-                estimates[r0 + k - 1] = mean(@view y_group[((k - 1) * m + 1):(k * m)])
-            end
-            r0 += g
+        # Step 1: generate all R sample matrices sequentially.
+        # gen_samples advances dd.rng on each call, so this must stay serial.
+        samples = Vector{Matrix{Float64}}(undef, R)
+        for r in 1:R
+            xu = gen_samples(dd, n)
+            samples[r] =
+                ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+        end
+
+        # Step 2: transform + evaluate, parallelised over replicates when nthreads > 1.
+        # With nthreads == 1 Threads.@threads is a plain for loop — no overhead.
+        # tm and f are read-only; each replicate owns its sample matrix → thread-safe.
+        # Callers running with multiple Julia threads must call BLAS.set_num_threads(1)
+        # once at process startup (before any Julia threads are live); toggling the BLAS
+        # thread count while threads are active is not thread-safe and crashes OpenBLAS.
+        Threads.@threads for r in 1:R
+            y = evaluate(f, transform(tm, samples[r]))
+            @inbounds estimates[r] = mean(y)
         end
 
         mu_hat = mean(estimates)
