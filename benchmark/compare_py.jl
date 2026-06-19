@@ -51,6 +51,7 @@ compare_py_summary_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python_summary.json") :
     joinpath(resdir, "compare_python_summary_$(label).json")
 const ARTIFACT_SKEW_WARNING_SECONDS = 10 * 60
+const STRICT_ACCURACY_ENV = "QMC_BENCH_REQUIRE_QMCPY_ACCURACY"
 
 finite_or_nothing(x) = x isa Real && isfinite(x) ? x : nothing
 
@@ -266,6 +267,77 @@ function collect_accuracy_rows(jl_solutions, py_results)
     return sort(rows; by=r -> r.name)
 end
 
+function oracle_value_vector(entry)
+    vals = maybe_get(entry, "values", nothing)
+    vals === nothing && return nothing
+    return Float64[Float64(v) for v in vals]
+end
+
+function oracle_tolerance(entry, key::AbstractString)
+    raw = maybe_get(entry, key, 0.0)
+    return Float64(raw)
+end
+
+function compare_oracle_values(jl_entry, py_entry)
+    jl_values = oracle_value_vector(jl_entry)
+    py_values = oracle_value_vector(py_entry)
+    jl_values === nothing && return nothing
+    py_values === nothing && return nothing
+    atol = max(oracle_tolerance(jl_entry, "atol"), oracle_tolerance(py_entry, "atol"))
+    rtol = max(oracle_tolerance(jl_entry, "rtol"), oracle_tolerance(py_entry, "rtol"))
+    jl_shape = maybe_get(jl_entry, "shape", Int[])
+    py_shape = maybe_get(py_entry, "shape", Int[])
+    max_abs_diff = 0.0
+    max_rel_diff = 0.0
+    n_failed = 0
+    n_compared = min(length(jl_values), length(py_values))
+    for i in 1:n_compared
+        diff = abs(jl_values[i] - py_values[i])
+        rel = py_values[i] == 0 ? (diff == 0 ? 0.0 : Inf) : diff / abs(py_values[i])
+        allowed = atol + rtol * abs(py_values[i])
+        max_abs_diff = max(max_abs_diff, diff)
+        max_rel_diff = max(max_rel_diff, rel)
+        diff > allowed && (n_failed += 1)
+    end
+    shape_match = collect(jl_shape) == collect(py_shape)
+    length_match = length(jl_values) == length(py_values)
+    flagged = !shape_match || !length_match || n_failed > 0
+    return (
+        max_abs_diff=max_abs_diff,
+        max_rel_diff=max_rel_diff,
+        atol=atol,
+        rtol=rtol,
+        n_failed=n_failed,
+        n_compared=n_compared,
+        jl_len=length(jl_values),
+        py_len=length(py_values),
+        shape_match=shape_match,
+        length_match=length_match,
+        flagged=flagged,
+    )
+end
+
+function collect_oracle_rows(jl_oracles, py_oracles)
+    rows = NamedTuple[]
+    jl_oracles === nothing && return rows
+    py_oracles === nothing && return rows
+    for group_name in ("transform", "evaluate")
+        jl_group = maybe_get(jl_oracles, group_name, nothing)
+        jl_group === nothing && continue
+        py_group = maybe_get(py_oracles, group_name, nothing)
+        for (name, jl_entry) in pairs(jl_group)
+            namestr = string(name)
+            haskey(jl_entry, "error") && continue
+            py_entry = py_group === nothing ? nothing : get(py_group, namestr, nothing)
+            check =
+                (py_entry !== nothing && !haskey(py_entry, "error")) ?
+                compare_oracle_values(jl_entry, py_entry) : nothing
+            push!(rows, (group=group_name, name=namestr, check=check))
+        end
+    end
+    return sort(rows; by=r -> (r.group, r.name))
+end
+
 jl_label = length(ARGS) >= 1 ? ARGS[1] : "latest"
 py_label = length(ARGS) >= 2 ? ARGS[2] : jl_label
 out_label = length(ARGS) >= 3 ? ARGS[3] : ""
@@ -315,7 +387,17 @@ jl_sol_file = joinpath(resdir, "$(jl_label)_solutions.json")
 jl_sol_data = isfile(jl_sol_file) ? JSON3.read(read(jl_sol_file, String)) : nothing
 jl_solutions = jl_sol_data === nothing ? nothing : get(jl_sol_data, :solutions, nothing)
 accuracy_rows = collect_accuracy_rows(jl_solutions, py_results)
+checked_accuracy_rows = count(r -> r.check !== nothing, accuracy_rows)
 n_flagged = count(r -> r.check !== nothing && r.check.flagged, accuracy_rows)
+
+jl_oracle_file = joinpath(resdir, "$(jl_label)_oracles.json")
+jl_oracle_data = isfile(jl_oracle_file) ? JSON3.read(read(jl_oracle_file, String)) : nothing
+jl_oracles = jl_oracle_data === nothing ? nothing : get(jl_oracle_data, :oracles, nothing)
+py_oracles = maybe_get(py_data, "oracles", nothing)
+oracle_rows = collect_oracle_rows(jl_oracles, py_oracles)
+checked_oracle_rows = count(r -> r.check !== nothing, oracle_rows)
+n_flagged_oracle_rows = count(r -> r.check !== nothing && r.check.flagged, oracle_rows)
+strict_accuracy = get(ENV, STRICT_ACCURACY_ENV, "0") == "1"
 
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia label   : $jl_label")
@@ -467,10 +549,43 @@ else
             )
         end
     end
+    @printf("%d of %d integrate case(s) exceed 2×tolerance\n", n_flagged, checked_accuracy_rows)
+end
+
+if isempty(oracle_rows)
+    println()
+    println(
+        "deterministic oracles: no transform/evaluate sidecar data " *
+        "(need Julia `$(jl_label)_oracles.json` + QMCPy `oracles` in $(basename(py_file)))",
+    )
+else
+    println()
+    println("="^length(header))
+    println("Deterministic oracles (transform/evaluate): elementwise agreement")
+    println("-"^length(header))
+    for r in oracle_rows
+        if r.check === nothing
+            @printf("  ???  %-12s  %-36s  Python=n/a\n", r.group, r.name)
+        else
+            c = r.check
+            mark = c.flagged ? "❌ DIFF" : "✅ ok  "
+            @printf(
+                "  %s %-12s  %-36s  max|Δ|=%.3g  tol=(%.1e, %.1e)  failed=%d/%d\n",
+                mark,
+                r.group,
+                r.name,
+                c.max_abs_diff,
+                c.atol,
+                c.rtol,
+                c.n_failed,
+                c.n_compared
+            )
+        end
+    end
     @printf(
-        "%d of %d integrate case(s) exceed 2×tolerance\n",
-        n_flagged,
-        count(r -> r.check !== nothing, accuracy_rows)
+        "%d of %d deterministic oracle case(s) exceed elementwise tolerance\n",
+        n_flagged_oracle_rows,
+        checked_oracle_rows
     )
 end
 
@@ -499,7 +614,11 @@ open(summary_outfile, "w") do io
             "peak_ratio" => finite_or_nothing(summary.peak_ratio),
             "rss_rows" => summary.rss_rows,
             "rss_ratio" => finite_or_nothing(summary.rss_ratio),
+            "checked_oracle_rows" => checked_oracle_rows,
+            "n_flagged_oracle_rows" => n_flagged_oracle_rows,
+            "checked_accuracy_rows" => checked_accuracy_rows,
             "n_flagged_accuracy_rows" => n_flagged,
+            "strict_accuracy_requested" => strict_accuracy,
         ),
     )
 end
@@ -714,7 +833,7 @@ open(outfile, "w") do io
             io,
             "**%d of %d** matched integrate case(s) exceed 2×tolerance.\n\n",
             n_flagged,
-            count(r -> r.check !== nothing, accuracy_rows)
+            checked_accuracy_rows
         )
         println(
             io,
@@ -751,6 +870,82 @@ open(outfile, "w") do io
             end
         end
     end
+
+    println(io, "")
+    println(io, "## Deterministic oracles (transform/evaluate)\n")
+    println(
+        io,
+        "These cases compare small fixed transform/evaluate outputs against QMCPy on the exact same deterministic inputs. Rows are flagged ❌ if any element exceeds `atol + rtol * |reference|`.\n",
+    )
+    if isempty(oracle_rows)
+        println(
+            io,
+            "_No oracle sidecar data found. Re-run `make bench` (writes the Julia `$(jl_label)_oracles.json` sidecar) and a QMCPy harness recent enough to record top-level `oracles`._",
+        )
+    else
+        @printf(
+            io,
+            "**%d of %d** deterministic oracle case(s) exceed elementwise tolerance.\n\n",
+            n_flagged_oracle_rows,
+            checked_oracle_rows
+        )
+        println(
+            io,
+            "| group | case | max abs Δ | max rel Δ | atol | rtol | failed elems | verdict |",
+        )
+        println(
+            io,
+            "|:------|:-----|----------:|----------:|-----:|-----:|-------------:|:-------:|",
+        )
+        for r in oracle_rows
+            if r.check === nothing
+                println(io, "| `$(r.group)` | `$(r.name)` | n/a | n/a | n/a | n/a | n/a | — |")
+            else
+                c = r.check
+                rel_txt = isfinite(c.max_rel_diff) ? @sprintf("%.3e", c.max_rel_diff) : "inf"
+                failed_txt =
+                    c.length_match && c.shape_match ? "$(c.n_failed)/$(c.n_compared)" :
+                    "shape/len mismatch"
+                verdict = c.flagged ? "❌" : "✅"
+                @printf(
+                    io,
+                    "| `%s` | `%s` | %.3e | %s | %.1e | %.1e | %s | %s |\n",
+                    r.group,
+                    r.name,
+                    c.max_abs_diff,
+                    rel_txt,
+                    c.atol,
+                    c.rtol,
+                    failed_txt,
+                    verdict
+                )
+            end
+        end
+    end
 end
 println("\nWrote benchmark/results/$(basename(outfile))")
 println("  ratio = Python ÷ Julia  →  < 1: local slower  |  > 1: local faster")
+if strict_accuracy
+    if checked_accuracy_rows == 0
+        error(
+            "Strict QMCPy accuracy check requested via $(STRICT_ACCURACY_ENV)=1, " *
+            "but no comparable integrate solution rows were found.",
+        )
+    elseif n_flagged > 0
+        error(
+            "Strict QMCPy accuracy check failed: $(n_flagged) of $(checked_accuracy_rows) " *
+            "integrate case(s) exceeded 2×tolerance.",
+        )
+    elseif checked_oracle_rows == 0
+        error(
+            "Strict QMCPy accuracy check requested via $(STRICT_ACCURACY_ENV)=1, " *
+            "but no comparable deterministic oracle rows were found.",
+        )
+    elseif n_flagged_oracle_rows > 0
+        error(
+            "Strict QMCPy accuracy check failed: $(n_flagged_oracle_rows) of " *
+            "$(checked_oracle_rows) deterministic oracle case(s) exceeded " *
+            "elementwise tolerance.",
+        )
+    end
+end

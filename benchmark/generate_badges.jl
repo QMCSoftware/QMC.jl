@@ -9,7 +9,7 @@ summary_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python_summary.json") :
     joinpath(resdir, "compare_python_summary_$(label).json")
 
-requirements_file() = joinpath(@__DIR__, "requirements.txt")
+requirements_file() = joinpath(@__DIR__, "qmcpy-requirements.txt")
 
 function resolve_summary_outfile(label::AbstractString)
     primary = summary_outfile(label)

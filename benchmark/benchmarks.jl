@@ -27,6 +27,7 @@ const SAMPLES = [256, 1024, 4096, 16384]
 const DIMS = [3, 10]
 const BENCH_SAMPLES = 5
 const INTEGRATE_BENCH_SAMPLES = 9
+const ORACLE_ROWS = 4
 # StudentT is reported as its own cross-language row, so its sample count is
 # matched to the Python harness's `STUDENT_T_REPEAT = 21` (benchmark_qmcpy.py) to
 # keep that comparison apples-to-apples. Both sides report the median per call;
@@ -61,6 +62,23 @@ end
 
 function bench_integrate(make_sc; kwargs...)
     @benchmarkable integrate(sc) evals=1 samples=INTEGRATE_BENCH_SAMPLES setup=(sc = $make_sc())
+end
+
+function dense_covariance(dim::Int)
+    cov = fill(0.5, dim, dim)
+    for i in 1:dim
+        cov[i, i] = 1.0
+    end
+    return cov
+end
+
+function oracle_uniform_matrix(rows::Int, dim::Int; offset::Int=0)
+    out = Matrix{Float64}(undef, rows, dim)
+    for i in 1:rows, j in 1:dim
+        numer = mod(37 * i + 17 * j + 13 * offset, 997)
+        out[i, j] = (numer + 0.5) / 997.0
+    end
+    return out
 end
 
 # ── Benchmark Groups ─────────────────────────────────────────────────────
@@ -111,11 +129,7 @@ for dim in LARGE_DIMS, n in LARGE_N
         @benchmarkable transform($tm_diag, $x) evals=3 samples=BENCH_SAMPLES
 
     # Dense positive-definite Σ (unit diagonal, 0.5 off-diagonal) ⇒ dense A ⇒ GEMM.
-    cov = fill(0.5, dim, dim)
-    for i in 1:dim
-        cov[i, i] = 1.0
-    end
-    tm_dense = Gaussian(dd; covariance=cov)
+    tm_dense = Gaussian(dd; covariance=dense_covariance(dim))
     SUITE["transform"]["Gaussian(dense) d=$dim n=$n"] =
         @benchmarkable transform($tm_dense, $x) evals=3 samples=BENCH_SAMPLES
 end
@@ -187,6 +201,128 @@ for dim in LARGE_DIMS, n in LARGE_N
     SUITE["evaluate"]["Genz(gaussian_peak) d=$dim n=$n"] =
         @benchmarkable evaluate($f_gp, $xu) evals=3 samples=BENCH_SAMPLES
 end
+
+# 3c. Deterministic cross-language oracle cases. These are small fixed-value
+# checks that complement the timing rows by comparing actual computed outputs
+# against QMCPy on the same inputs.
+function _oracle_transform_gaussian_small()
+    dd = IIDStdUniform(3; seed=42)
+    tm = Gaussian(dd)
+    return transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 3; offset=1))
+end
+
+function _oracle_transform_gaussian_diag_large()
+    dd = IIDStdUniform(50; seed=42)
+    tm = Gaussian(dd)
+    return transform(tm, oracle_uniform_matrix(3, 50; offset=2))
+end
+
+function _oracle_transform_gaussian_dense_large()
+    dd = IIDStdUniform(50; seed=42)
+    tm = Gaussian(dd; covariance=dense_covariance(50))
+    return transform(tm, oracle_uniform_matrix(3, 50; offset=3))
+end
+
+function _oracle_transform_student_t()
+    dd = IIDStdUniform(10; seed=42)
+    tm = StudentT(dd)
+    return transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=4))
+end
+
+function _oracle_transform_johnsons_su()
+    dd = IIDStdUniform(10; seed=42)
+    tm = JohnsonsSU(dd)
+    return transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=5))
+end
+
+function _oracle_evaluate_keister()
+    dd = IIDStdUniform(3; seed=42)
+    tm = Gaussian(dd)
+    f = Keister(tm)
+    x = transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 3; offset=11))
+    return evaluate(f, x)
+end
+
+function _oracle_evaluate_genz_oscillatory()
+    dd = IIDStdUniform(3; seed=42)
+    tm = Gaussian(dd)
+    f = Genz(tm; kind=:oscillatory)
+    x = transform(tm, oracle_uniform_matrix(ORACLE_ROWS, 3; offset=12))
+    return evaluate(f, x)
+end
+
+function _oracle_evaluate_boxintegral()
+    dd = IIDStdUniform(10; seed=42)
+    tm = Gaussian(dd)
+    f = BoxIntegral(tm)
+    return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=13))
+end
+
+function _oracle_evaluate_linear0()
+    dd = IIDStdUniform(10; seed=42)
+    tm = Gaussian(dd)
+    f = Linear0(tm)
+    return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=14))
+end
+
+function _oracle_evaluate_genz_gaussian_peak()
+    dd = IIDStdUniform(10; seed=42)
+    tm = Gaussian(dd)
+    f = Genz(tm; kind=:gaussian_peak)
+    return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=15))
+end
+
+function _oracle_evaluate_genz_continuous()
+    dd = IIDStdUniform(10; seed=42)
+    tm = Gaussian(dd)
+    f = Genz(tm; kind=:continuous)
+    return evaluate(f, oracle_uniform_matrix(ORACLE_ROWS, 10; offset=16))
+end
+
+const TRANSFORM_ORACLE_CASES = [
+    (name="Gaussian d=3 rows=4", atol=1e-10, rtol=1e-10, make=_oracle_transform_gaussian_small),
+    (
+        name="Gaussian(diag) d=50 rows=3",
+        atol=1e-10,
+        rtol=1e-10,
+        make=_oracle_transform_gaussian_diag_large,
+    ),
+    (
+        name="Gaussian(dense) d=50 rows=3",
+        atol=5e-10,
+        rtol=5e-10,
+        make=_oracle_transform_gaussian_dense_large,
+    ),
+    (name="StudentT d=10 rows=4", atol=1e-7, rtol=1e-7, make=_oracle_transform_student_t),
+    (name="JohnsonsSU d=10 rows=4", atol=1e-10, rtol=1e-10, make=_oracle_transform_johnsons_su),
+]
+
+const EVALUATE_ORACLE_CASES = [
+    (name="Keister rows=4", atol=1e-10, rtol=1e-10, make=_oracle_evaluate_keister),
+    (
+        name="Genz(oscillatory) rows=4",
+        atol=1e-10,
+        rtol=1e-10,
+        make=_oracle_evaluate_genz_oscillatory,
+    ),
+    (name="BoxIntegral d=10 rows=4", atol=1e-10, rtol=1e-10, make=_oracle_evaluate_boxintegral),
+    (name="Linear0 d=10 rows=4", atol=1e-10, rtol=1e-10, make=_oracle_evaluate_linear0),
+    (
+        name="Genz(gaussian_peak) d=10 rows=4",
+        atol=1e-10,
+        rtol=1e-10,
+        make=_oracle_evaluate_genz_gaussian_peak,
+    ),
+    (
+        name="Genz(continuous) d=10 rows=4",
+        atol=1e-10,
+        rtol=1e-10,
+        make=_oracle_evaluate_genz_continuous,
+    ),
+]
+
+const ORACLE_CASES =
+    Dict("transform" => TRANSFORM_ORACLE_CASES, "evaluate" => EVALUATE_ORACLE_CASES)
 
 # 4. End-to-end integration (mixed: C-backed generators + pure-Julia compute)
 # Each integrate case has a named builder returning a fresh stopping criterion.

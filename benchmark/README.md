@@ -23,6 +23,7 @@ Typical files:
 - `<label>.json`: Julia `BenchmarkTools` results
 - `<label>_memory.json`: Julia retained-RSS sidecar
 - `<label>_solutions.json`: Julia integrate-case solution and exactness sidecar
+- `<label>_oracles.json`: Julia deterministic transform/evaluate oracle sidecar
 - `qmcpy_<label>.json`: QMCPy benchmark results
 - `compare_*.md`: Julia-vs-Julia comparison reports
 - `compare_python*.md`: Julia-vs-QMCPy comparison reports
@@ -52,8 +53,7 @@ By default the benchmark targets now pin BLAS-style thread env vars to `2` for m
 make bench BENCH_BLAS_THREADS=4
 ```
 
-For the Julia-vs-QMCPy comparison flow, install the pinned benchmark Python
-dependencies:
+For the Julia-vs-QMCPy comparison flow, install the pinned benchmark Python dependencies. The QMCPy version pin lives in `benchmark/qmcpy-requirements.txt`.
 
 ```bash
 pip install -r benchmark/requirements.txt
@@ -168,6 +168,8 @@ benchmark/results/compare_python_base.md
 ```
 
 The Julia memory sidecar and the QMCPy JSON now also record lightweight benchmark metadata such as generation time, thread configuration, and the integrate timing sample/repeat counts. `compare_python*.md` surfaces that metadata in its header so stale or mismatched artifact pairings are easier to spot.
+
+The benchmark comparison also checks the seeded `integrate` cases against QMCPy solution values and compares deterministic transform/evaluate oracle outputs against QMCPy on fixed inputs. Each matched Julia/Python integrate pair is required to agree within `2 * max(abs_tol, rel_tol * |value|)`, and each oracle element is required to satisfy `abs(Δ) <= atol + rtol * |reference|`. The `make bench-compare-py` and `make bench-all` flows enable this strict guard automatically and fail if no comparable parity rows are found or if any matched row exceeds its bound.
 
 ### Coverage Caveat
 

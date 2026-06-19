@@ -29,7 +29,7 @@ randomized net (e.g. `randomize="LMS_DS"`) is expected.
 
 Pass `control_variates` (an integrand or vector of integrands sharing the main
 integrand's discrete distribution and dimension) with their known
-`control_variate_means` to apply linear control variates. Following QMC v2.3,
+`control_variate_means` to apply linear control variates. Following QMCPy,
 the coefficients β are fit in the Walsh-coefficient domain on the decay-ordered
 tail and the correction is subtracted from `ytilde` before the bound is formed;
 the mean is recovered as `mean(y − Σ β·g) + Σ β·μ`. The fitted coefficients are

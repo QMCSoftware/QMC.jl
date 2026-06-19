@@ -190,6 +190,32 @@ function collect_integrate_solutions()
     return out
 end
 
+function oracle_entry(value, atol, rtol)
+    arr = value isa AbstractArray ? Array(value) : fill(value, 1)
+    return Dict(
+        "shape" => collect(Int, size(arr)),
+        "values" => Float64.(vec(arr)),
+        "atol" => float(atol),
+        "rtol" => float(rtol),
+    )
+end
+
+function collect_oracles()
+    out = Dict{String, Any}()
+    for group_name in ("transform", "evaluate")
+        rows = Dict{String, Any}()
+        for case in ORACLE_CASES[group_name]
+            try
+                rows[case.name] = oracle_entry(case.make(), case.atol, case.rtol)
+            catch err
+                rows[case.name] = Dict("error" => sprint(showerror, err))
+            end
+        end
+        out[group_name] = rows
+    end
+    return out
+end
+
 function print_integrate_accuracy_summary(julia_solutions)
     rows = NamedTuple[]
     for name in sort(collect(keys(julia_solutions)))
@@ -234,6 +260,29 @@ function print_integrate_accuracy_summary(julia_solutions)
     @printf("%d of %d exact-check case(s) exceed 2×tolerance\n", flagged, length(rows))
 end
 
+function print_oracle_summary(julia_oracles)
+    println("\n", "="^70)
+    println("Deterministic Oracle Cases")
+    println("="^70)
+    for group_name in ("transform", "evaluate")
+        rows = get(julia_oracles, group_name, Dict{String, Any}())
+        n_ok = 0
+        n_err = 0
+        for name in sort(collect(keys(rows)))
+            entry = rows[name]
+            if haskey(entry, "error")
+                n_err += 1
+                println("  ERR  $(group_name) / $(name): $(entry["error"])")
+            else
+                n_ok += 1
+                shape = join(entry["shape"], "×")
+                println("  ok   $(group_name) / $(name)  (shape $(shape))")
+            end
+        end
+        println("  -> $(n_ok) ok, $(n_err) errored")
+    end
+end
+
 println("QMC.jl Benchmarks")
 println("="^70)
 println(
@@ -243,6 +292,7 @@ println(
 results = run_suite(SUITE)
 julia_memory = collect_rss_deltas(SUITE)
 julia_solutions = collect_integrate_solutions()
+julia_oracles = collect_oracles()
 
 # ── Summary ──────────────────────────────────────────────────────────────
 println("\n", "="^70)
@@ -267,6 +317,7 @@ for group_name in sort(collect(keys(results)))
     end
 end
 print_integrate_accuracy_summary(julia_solutions)
+print_oracle_summary(julia_oracles)
 
 # ── Save ───────────────────────────────────────────────────────────────────
 resdir = joinpath(@__DIR__, "results")
@@ -288,3 +339,9 @@ open(solfile, "w") do io
     JSON3.pretty(io, JSON3.write(merge(julia_meta, Dict("solutions" => julia_solutions))))
 end
 println("Julia solution sidecar saved to benchmark/results/$(label)_solutions.json")
+
+orafile = joinpath(resdir, "$(label)_oracles.json")
+open(orafile, "w") do io
+    JSON3.pretty(io, JSON3.write(merge(julia_meta, Dict("oracles" => julia_oracles))))
+end
+println("Julia oracle sidecar saved to benchmark/results/$(label)_oracles.json")

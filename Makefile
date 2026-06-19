@@ -210,12 +210,12 @@ PY_LABEL ?= $(JL_LABEL)
 BENCH_COMPARE_OUT := $(if $(LABEL),benchmark/results/compare_$(LABEL).md,benchmark/results/compare_head.md)
 BENCH_COMPARE_PY_OUT := $(if $(LABEL),benchmark/results/compare_python_$(LABEL).md,benchmark/results/compare_python.md)
 bench-compare-py: bench check-qmcpy-python
-	$(call RUN_TIMED,$(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && $(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && $(BENCH_THREAD_ENV) QMC_BENCH_REQUIRE_QMCPY_ACCURACY=1 BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
 
 # Explicit labeled Julia-vs-QMCPy comparison flow.
 # Usage: make bench-compare-py-label LABEL=base
 bench-compare-py-label: check-qmcpy-python
-	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && $(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && $(BENCH_THREAD_ENV) QMC_BENCH_REQUIRE_QMCPY_ACCURACY=1 BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
 
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
 # This target does not define a third ratio; inspect:

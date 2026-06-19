@@ -1,5 +1,5 @@
 """
-Linear control variates, matching QMC v2.3 (`CubMCCLT` / `CubMCG`).
+Linear control variates, matching QMCPy (`CubMCCLT` / `CubMCG`).
 
 Given a main integrand ``f`` and control variates ``g_1, …, g_k`` with *known*
 means ``μ_1, …, μ_k``, the control-variate estimator replaces each sample value
@@ -189,7 +189,7 @@ end
     _fit_control_variate_beta_transform(ytilde, ycvtilde_list, kappanumap, mllstart) -> β
 
 Transform-domain control-variate regression for the guaranteed low-discrepancy
-criteria (`CubQMCNetG` / `CubQMCLatticeG`). Mirroring QMC v2.3, the coefficients
+criteria (`CubQMCNetG` / `CubQMCLatticeG`). Mirroring QMCPy, the coefficients
 β are fit by ordinary least squares of the main integrand's scaled Walsh/Fourier
 coefficients onto the control variates' coefficients, restricted to the
 decay-ordered tail `kappanumap[2^mllstart : end]` — the same high-frequency block

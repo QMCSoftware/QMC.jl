@@ -59,7 +59,7 @@ end
     end
 
     @testset "Control variates" begin
-        # ── core regression math, validated to equal QMC v2.3's lstsq formula ──
+        # ── core regression math, validated to equal QMCPy's lstsq formula ──
         # F1: a single, perfectly affine control variate g = 2y with known mean 6.
         let
             y = [1.0, 2.0, 3.0, 4.0, 5.0]

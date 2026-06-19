@@ -61,12 +61,12 @@ The benchmark workflow is separate from the test workflows.
 - Runs on `ubuntu-latest` with Julia 1.12 and Python 3.13.
 - Checks out full git history so `make bench-all REV=<previous-commit>` can
   materialize the baseline revision in a temporary worktree.
-- Installs pinned benchmark Python dependencies from
-  `benchmark/requirements.txt`, including `qmcpy==2.3`.
+- Installs pinned benchmark Python dependencies from `benchmark/requirements.txt`; the QMCPy benchmark version pin itself lives in `benchmark/qmcpy-requirements.txt`.
 - Runs `make bench-all`, not the broader `make ci`, so benchmark artifacts
   measure the checked-in sources rather than a formatter-mutated worktree.
 - Uses `BENCH_BLAS_THREADS` for both Julia and Python-side native-kernel thread
   settings.
+- Treats the seeded Julia-vs-QMCPy parity checks as a guard: `make bench-compare-py` fails if no comparable `integrate` or deterministic transform/evaluate oracle rows are found or if any matched row exceeds its configured agreement bound.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions
   artifact for later inspection.
 
