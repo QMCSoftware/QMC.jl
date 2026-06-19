@@ -77,11 +77,7 @@ function save_notebook_times(times::Dict{String, Float64})
     end
 end
 
-function split_work_lpt(
-    items::Vector{String},
-    nshards::Int,
-    times::Dict{String, Float64},
-)
+function split_work_lpt(items::Vector{String}, nshards::Int, times::Dict{String, Float64})
     shard_total = max(1, min(nshards, length(items)))
     shards = [String[] for _ in 1:shard_total]
     shard_loads = zeros(shard_total)
