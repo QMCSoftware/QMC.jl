@@ -86,6 +86,8 @@ To execute notebooks with the `qmc-1.12` kernel and overwrite output cells in pl
 make notebook-update NOTEBOOK_KERNEL=qmc-1.12
 ```
 
-Both `make notebook` and `make notebook-update` shard the runnable notebook list
-across `NOTEBOOK_JOBS` processes. Set `NOTEBOOK_JOBS=1` if you want a single
-sequential pass over all runnable notebooks.
+Both `make notebook` and `make notebook-update` shard the runnable notebook list across `NOTEBOOK_JOBS` processes. Set `NOTEBOOK_JOBS=1` if you want a single sequential pass over all runnable notebooks.
+
+## Notebook Parity With QMCPy
+
+For notebooks that declare an `Original QMCPy demo`, QMC.jl now treats the QMCPy notebook as the reference standard rather than as loose inspiration. Shared notebooks are expected to stay minimal Julia adaptations unless a documented backend, CI, or package-scope reason requires divergence. See [Notebook Parity](notebook-parity.md) for the per-notebook tracking table and the allowed parameter-alignment rules.
