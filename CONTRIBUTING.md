@@ -16,7 +16,6 @@ Before requesting review, please confirm the following:
 - [ ] Public API changes are intentional, backward-compatibility is considered, and any QMCPy parity impact is recorded in [sc_notes/qmcpy-parity.md](sc_notes/qmcpy-parity.md).
 - [ ] Tests cover the new behavior, edge cases, invalid inputs, and at least one mathematically meaningful invariant.
 - [ ] User-facing docs, docstrings, demos, and notebooks are updated when behavior, names, defaults, or workflows change.
-- [ ] If a notebook that cites an `Original QMCPy demo` was changed, its parameter drift and target parity profile were updated in [docs/src/notebook-parity.md](docs/src/notebook-parity.md).
 - [ ] Performance-sensitive changes include benchmark evidence or an explicit note explaining why no benchmark update was needed.
 - [ ] Reproducibility details are recorded: deterministic seeds when applicable, pinned reference versions, and exact commands for any reported benchmark or parity result.
 

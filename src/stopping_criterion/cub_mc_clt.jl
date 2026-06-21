@@ -129,32 +129,51 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     # Fast path: for IID + supported true measures (Gaussian, BM, GBM), bypass
     # rand → erfinv and use randn directly. The pilot (stage 1) always uses the
     # erfinv path so that σ̂_pilot — and hence n_mu — are unaffected by this change.
-    if cv === nothing
-        if dd isa IIDStdUniform && _has_randn_transform(true_measure(f))
-            y = _evaluate_iid_randn(f, n_mu, dd)
+    function draw_main_samples(n::Int)
+        if cv === nothing
+            if dd isa IIDStdUniform && _has_randn_transform(true_measure(f))
+                return _evaluate_iid_randn(f, n, dd)
+            end
+            return sample_and_evaluate(f, n)
         else
-            y = sample_and_evaluate(f, n_mu)
+            x_uniform = _sample_uniform_points(dd, n)
+            y_main = evaluate_on_uniform(f, x_uniform)
+            ycv = _control_variate_values(cv, x_uniform)
+            return _apply_control_variates(y_main, ycv, cv.means, cv_beta)
         end
-    else
-        x_uniform = _sample_uniform_points(dd, n_mu)
-        y = evaluate_on_uniform(f, x_uniform)
-        ycv = _control_variate_values(cv, x_uniform)
-        y = _apply_control_variates(y, ycv, cv.means, cv_beta)
     end
+
+    y = draw_main_samples(n_mu)
     sig_hat = std(y; corrected=true)
     mu_hat = mean(y)
 
-    # Final confidence interval from main-stage samples
+    # Top up when the realized main-stage variance exceeds the pilot estimate.
+    # Without this step a small pilot underestimate produces a false
+    # non-convergence warning even when the sample cap is far from exhausted.
+    tol_final = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
     err = z_star * sc.inflate * sig_hat / sqrt(n_mu)
+    max_main = sc.n_max - sc.n_init
+    while err > tol_final && n_mu < max_main
+        n_required = ceil(Int, (z_star * sc.inflate * sig_hat / tol_final)^2)
+        n_add = min(max(n_required - n_mu, 1), max_main - n_mu)
+        append!(y, draw_main_samples(n_add))
+        n_mu += n_add
+        sig_hat = std(y; corrected=true)
+        mu_hat = mean(y)
+        tol_final = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
+        err = z_star * sc.inflate * sig_hat / sqrt(n_mu)
+    end
+
+    # Final confidence interval from main-stage samples
     n_total = sc.n_init + n_mu
 
     bound_low = mu_hat - err
     bound_high = mu_hat + err
 
-    converged = err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
+    converged = err <= tol_final
     if !converged
         @warn "CubMCCLT: did not converge within n_max=$(sc.n_max). " *
-              "Error bound: $err, tolerance: $(max(sc.abs_tol, sc.rel_tol * abs(mu_hat)))"
+              "Error bound: $err, tolerance: $tol_final"
     end
     if sc.trace_iterations
         push!(
@@ -162,7 +181,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
             n=n_total,
             solution=mu_hat,
             error_bound=err,
-            tol=max(sc.abs_tol, sc.rel_tol * abs(mu_hat)),
+            tol=tol_final,
             elapsed=time() - t_start,
         )
     end

@@ -9,6 +9,8 @@ bernoulli_poly
 ## Diagnostics
 
 ```@docs
+DisplayTable
+display_table
 IterationLog
 iterations(::IterationLog)
 ```

@@ -56,6 +56,27 @@ end
         @test result.data[:converged] == true
         @test result.data[:n] > 0
         @test result.data[:n_total] == result.data[:n]
+
+        # A low pilot variance must trigger a main-stage top-up rather than a
+        # false non-convergence warning.
+        dd_topup = IIDStdUniform(1; seed=2)
+        f_topup = CustomFun(Uniform(dd_topup), x -> exp.(4 .* x[:, 1]))
+        sc_topup = CubMCCLT(f_topup; abs_tol=0.1, n_init=64, n_max=2^18)
+        result_topup = integrate(sc_topup)
+        z_star = quantile(Normal(), 1.0 - sc_topup.alpha / 2.0)
+        pilot_n_mu = max(
+            ceil(
+                Int,
+                (
+                    z_star * sc_topup.inflate * result_topup.data[:sigma_pilot] /
+                    sc_topup.abs_tol
+                )^2,
+            ),
+            sc_topup.n_init,
+        )
+        @test result_topup.data[:n_mu] > pilot_n_mu
+        @test result_topup.data[:converged]
+        @test result_topup.data[:error_bound] <= sc_topup.abs_tol
     end
 
     @testset "Control variates" begin
@@ -550,6 +571,16 @@ end
         rows = iterations(log)
         @test rows[1].n == 100
         @test rows[2].solution ≈ 1.48
+        @test collect(rows) == log.records
+        txt = sprint(show, rows)
+        @test occursin("iter", txt)
+        @test occursin("err_bound", txt)
+        @test !occursin("Vector{@NamedTuple", txt)
+        html = sprint(io -> show(io, MIME("text/html"), rows))
+        @test occursin("<table>", html)
+        @test occursin("<th>solution</th>", html)
+        log_txt = sprint(show, log)
+        @test occursin("IterationLog (2 iterations)", log_txt)
 
         dd = IIDStdUniform(3; seed=7)
         tm = Gaussian(dd)

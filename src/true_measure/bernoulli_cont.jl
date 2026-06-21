@@ -7,8 +7,8 @@ The continuous Bernoulli with parameter λ ∈ (0,1) has PDF:
     f(x) = C(λ) λˣ (1-λ)^(1-x)    for x ∈ [0,1]
 
 where C(λ) is the normalizing constant. The inverse CDF is:
-    F⁻¹(u) = log(1 + u(λ/(1-λ) - 1) / C(λ)) / log(λ/(1-λ))   for λ ≠ 0.5
-    F⁻¹(u) = u                                                    for λ = 0.5
+    F⁻¹(u) = log(1 + u(λ/(1-λ) - 1)) / log(λ/(1-λ))   for λ ≠ 0.5
+    F⁻¹(u) = u                                         for λ = 0.5
 
 # Arguments
 - `dd`: discrete distribution.
@@ -25,10 +25,10 @@ BernoulliCont(d=2)
 
 julia> round.(transform(tm, gen_samples(dd, 4)); digits=6)
 4×2 Matrix{Float64}:
- 0.232318  0.088239
- 0.086532  0.234408
- 0.155748  0.024943
- 0.023379  0.157627
+ 0.72936   0.223102
+ 0.218357  0.739028
+ 0.429524  0.058994
+ 0.055212  0.43589
 ```
 """
 struct BernoulliCont{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
@@ -48,12 +48,8 @@ function _cont_bern_ppf(u::Float64, lam::Float64)
     if abs(lam - 0.5) < 1e-12
         return u
     end
-    # Normalizing constant: C(λ) = 2 * atanh(1 - 2λ) / (1 - 2λ)
     r = lam / (1.0 - lam)
-    C = 2.0 * atanh(1.0 - 2.0 * lam) / (1.0 - 2.0 * lam)
-    # CDF: F(x) = (λˣ(1-λ)^(1-x) - (1-λ)) / (λ - (1-λ)) * 1/C   ... simplified:
-    # F⁻¹(u):
-    return log(1.0 + (r - 1.0) * u / C) / log(r)
+    return log1p((r - 1.0) * u) / log(r)
 end
 
 function transform(tm::BernoulliCont, x::AbstractMatrix)

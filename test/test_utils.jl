@@ -162,4 +162,35 @@
         @test sort(k4) == collect(0:15)
         @test k3[1] == 0 && k4[1] == 0
     end
+
+    @testset "DisplayTable" begin
+        rows = [(n=64, label="small", error=0.012345), (n=128, label="<large>", error=0.001234)]
+        table = display_table(
+            rows;
+            columns=[:n, :label, :error],
+            headers=["N", "case", "error"],
+            formatters=(error=x -> string(round(x; sigdigits=4)),),
+            caption="Convergence",
+        )
+        @test table isa DisplayTable
+        txt = sprint(show, table)
+        @test startswith(txt, "Convergence\n")
+        @test occursin("  N  case        error", txt)
+        @test occursin(" 64  small     0.01234", txt)
+        @test occursin("128  <large>  0.001234", txt)
+
+        html = sprint(io -> show(io, MIME("text/html"), table))
+        @test occursin("<caption>Convergence</caption>", html)
+        @test occursin("<th>N</th>", html)
+        @test occursin("text-align:right", html)
+        @test occursin("text-align:left", html)
+        @test occursin("&lt;large&gt;", html)
+
+        empty_table = display_table(NamedTuple[]; columns=[:n], headers=["N"])
+        @test sprint(show, empty_table) == ""
+        @test_throws ArgumentError display_table(NamedTuple[])
+        @test_throws ArgumentError display_table(rows; columns=[:missing])
+        @test_throws ArgumentError display_table(rows; columns=[:n], headers=["N", "extra"])
+        @test_throws ArgumentError display_table([(n=1,), (value=2,)])
+    end
 end

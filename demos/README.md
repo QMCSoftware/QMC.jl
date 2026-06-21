@@ -2,8 +2,6 @@
 
 These notebooks contain Julia code for the QMC.jl package. Most demos use `Lattice` or `DigitalNetB2`, so Python is currently required because those generators depend on the `qmctoolscl` Python package. Conda is optional; it is only one way to provide that Python environment or to launch Jupyter. The notebooks themselves must run with a Julia kernel, not a Python kernel.
 
-For notebooks that cite an `Original QMCPy demo`, QMC.jl now treats the QMCPy notebook as the reference standard and tracks allowed parameter drift explicitly. See the notebook parity policy in [docs/src/notebook-parity.md](../docs/src/notebook-parity.md).
-
 Install `qmctoolscl` into a Python visible to Julia before running the low-discrepancy demos:
 
 ```bash

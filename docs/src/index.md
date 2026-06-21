@@ -66,6 +66,6 @@ before `using QMC`.
 ## Contents
 
 ```@contents
-Pages = ["components.md", "demos.md", "notebook-parity.md", "releasing.md", "contributing.md", "community.md"]
+Pages = ["components.md", "demos.md", "releasing.md", "contributing.md", "community.md"]
 Depth = 2
 ```

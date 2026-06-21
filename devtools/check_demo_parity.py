@@ -2,7 +2,7 @@
 """
 check_demo_parity.py — audit QMC.jl demo notebooks against their QMCPy sources.
 
-Two independent checks, selectable with --mode:
+Checks, selectable with --mode:
 
   conformance   Static checks on every QMC.jl/demos notebook (no runtime needed):
                   - parses as valid JSON
@@ -13,6 +13,11 @@ Two independent checks, selectable with --mode:
                 These map to requirements 5, 6, 7, 18, 19 of
                 sc_notes/demo_translation_prompt.md and are authoritative.
 
+  headings      Static heading-structure audit of each translated Julia notebook
+                against its QMCPy source. Headings are extracted from markdown
+                and compared in order, so renamed or reordered shared sections
+                are flagged immediately.
+
   parity        Best-effort numeric comparison of each translated Julia notebook
                 against its QMCPy source, using each notebook's SAVED outputs.
                 Numbers are aligned by the text label that precedes them
@@ -21,12 +26,13 @@ Two independent checks, selectable with --mode:
                 it tells you which notebooks deserve a closer manual look.
                 Re-run after `make notebook-update` so the Julia outputs are fresh.
 
-  both          Run conformance then parity (default).
+  both          Run conformance, headings, parity, and figures (default).
 
 Usage:
   # Run from QMCSoftware folder that contains both QMC.jl and QMCPy
   python3 QMC.jl/devtools/check_demo_parity.py   
   python3 QMC.jl/devtools/check_demo_parity.py --mode conformance
+  python3 QMC.jl/devtools/check_demo_parity.py --mode headings
   python3 QMC.jl/devtools/check_demo_parity.py --mode parity --rtol 1e-2 --atol 1e-6
   python3 QMC.jl/devtools/check_demo_parity.py --jl-root QMC.jl/demos --py-root QMCPy/demos
   python3 QMC.jl/devtools/check_demo_parity.py --json report.json
@@ -57,13 +63,14 @@ RENAME_JL_TO_PY = {
 PATH_OVERRIDE = {
     "gbm_demo.ipynb": "GBM/gbm_demo.ipynb",
 }
-# Julia-only demos: no QMCPy original, so skip the translation-only checks.
+# Julia-only demos: no QMCPy original.
 JULIA_ONLY = {
     "financial_option_ml.ipynb",
     "kronecker.ipynb",
     "sensitivity_indices.ipynb",
-    "lattice.ipynb",
 }
+SOURCE_RE = re.compile(r"Original QMCPy demo\s*:.*?QMCPy/demos/([^)`\s]+\.ipynb)")
+HEAD_RE = re.compile(r"^(#+)\s+(.*\S)\s*$")
 
 NUM_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:[, ]\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?"
@@ -73,6 +80,11 @@ LABEL_NUM_RE = re.compile(
     r"([A-Za-z][\w '().%/-]{0,40}?)\s*[:=]\s*\(?\s*"
     r"([-+]?(?:\d+)?(?:\.\d+)?(?:[eE][-+]?\d+)?)"
 )
+PLOT_CALL_RE = re.compile(
+    r"\b(?:plot!?|scatter!?|heatmap|histogram|surface|contour|bar)\s*\(",
+)
+PLOTS_NAMESPACE_RE = re.compile(r"\bPlots\.")
+VOLATILE_LABEL_RE = re.compile(r"\b(?:elapsed|runtime|wall time)\b")
 
 
 # ----------------------------------------------------------------------------- helpers
@@ -92,6 +104,24 @@ def markdown_cells(nb):
 
 def code_cells(nb):
     return [c for c in nb.get("cells", []) if c.get("cell_type") == "code"]
+
+
+def declared_qmcpy_source(nb):
+    for c in markdown_cells(nb):
+        m = SOURCE_RE.search(cell_src(c))
+        if m:
+            return m.group(1)
+    return None
+
+
+def heading_sequence(nb):
+    out = []
+    for c in markdown_cells(nb):
+        for line in cell_src(c).splitlines():
+            m = HEAD_RE.match(line)
+            if m:
+                out.append((len(m.group(1)), m.group(2)))
+    return out
 
 
 def output_text(cell):
@@ -164,14 +194,12 @@ def embedded_figures(nb, min_bytes=2000):
 
 
 def _julia_plot_calls(nb):
-    markers = ("plot(", "plot!(", "scatter(", "scatter!(", "heatmap(",
-               "histogram(", "surface(", "contour(", "bar(", "Plots.")
     n = 0
     for c in nb.get("cells", []):
         if c.get("cell_type") != "code":
             continue
         s = "".join(c.get("source", []))
-        if any(m in s for m in markers):
+        if PLOT_CALL_RE.search(s) or PLOTS_NAMESPACE_RE.search(s):
             n += 1
     return n
 
@@ -204,6 +232,8 @@ def figures(jl_root, py_root, pairs):
             cls = "no-py-figs"
         elif nj == npy:
             cls = "match-count"
+        elif nj > npy:
+            cls = "MORE FIGURES"
         elif nj == 0 and plot_calls == 0:
             cls = "TEXT-ONLY PORT"
         elif nj == 0 and plot_calls > 0 and executed:
@@ -228,7 +258,8 @@ def print_figures(rows):
     print("=" * 78)
     print(f"{'notebook':40} {'jl':>3} {'py':>3} {'plt':>3}  classification")
     order = {"TEXT-ONLY PORT": 0, "FEWER FIGURES": 1, "figures-not-embedded": 2,
-             "no-jl-figs": 3, "match-count": 4, "no-py-figs": 5}
+             "no-jl-figs": 3, "match-count": 4, "MORE FIGURES": 5,
+             "no-py-figs": 6}
     for r in sorted(rows, key=lambda r: order.get(r.get("classification"), 9)):
         if r["status"] != "ok":
             print(f"{r['notebook']:40} {'-':>3} {'-':>3} {'-':>3}  {r['status']}")
@@ -242,6 +273,7 @@ def print_figures(rows):
     print("  figures-not-embedded Julia code plots but no image was saved; rerun")
     print("                       `make notebook-update`, then re-check (req 19).")
     print("  match-count          Same number of figures (content still needs eyes).")
+    print("  MORE FIGURES         Julia has additional figures beyond the QMCPy source.")
     print("  no-py-figs           QMCPy source has no figures to match.")
     print("\nNote: counts and the text-only flag are reliable; equal counts do NOT")
     print("prove the plots match in data, layout, or labels — that still needs a look.")
@@ -270,17 +302,25 @@ def jl_to_py_relpath(jl_rel):
 
 
 def build_pairs(jl_root, py_root):
-    """Return (pairs, jl_only, py_only). pairs: list of (jl_rel, py_rel)."""
+    """Return (pairs, jl_only, py_only, bad_refs)."""
     jl = list_notebooks(jl_root)
     py = set(list_notebooks(py_root))
-    pairs, jl_only = [], []
+    pairs, jl_only, bad_refs = [], [], []
     matched_py = set()
     for j in jl:
+        nb = load(os.path.join(jl_root, j))
+        declared = declared_qmcpy_source(nb)
+        if declared is not None:
+            if declared in py:
+                pairs.append((j, declared))
+                matched_py.add(declared)
+            else:
+                bad_refs.append((j, declared))
+            continue
         if j in JULIA_ONLY:
             jl_only.append(j)
             continue
         cand = jl_to_py_relpath(j)
-        # also try the dash/underscore swap if exact miss
         if cand not in py:
             alt = cand.replace("_", "-")
             cand = alt if alt in py else cand
@@ -290,7 +330,7 @@ def build_pairs(jl_root, py_root):
         else:
             jl_only.append(j)
     py_only = sorted(py - matched_py)
-    return pairs, jl_only, py_only
+    return pairs, jl_only, py_only, bad_refs
 
 
 # ----------------------------------------------------------------------------- conformance
@@ -329,8 +369,9 @@ def stale_outputs(nb):
     )
 
 
-def conformance(jl_root, pairs, jl_only):
+def conformance(jl_root, pairs, jl_only, bad_refs):
     translated = {j for j, _ in pairs}
+    translated |= {j for j, _ in bad_refs}
     rows = []
     failures = 0
     for jl_rel in sorted(translated | set(jl_only)):
@@ -369,12 +410,44 @@ def conformance(jl_root, pairs, jl_only):
     return rows, failures
 
 
+# ----------------------------------------------------------------------------- headings
+def headings(jl_root, py_root, pairs):
+    rows = []
+    failures = 0
+    for jl_rel, py_rel in pairs:
+        rec = {"notebook": jl_rel, "py": py_rel}
+        jl_nb = load(os.path.join(jl_root, jl_rel))
+        py_nb = load(os.path.join(py_root, py_rel))
+        jl_heads = heading_sequence(jl_nb)
+        py_heads = heading_sequence(py_nb)
+        rec["jl_count"] = len(jl_heads)
+        rec["py_count"] = len(py_heads)
+        if jl_heads == py_heads:
+            rec["status"] = "ok"
+            rows.append(rec)
+            continue
+        jl_set, py_set = set(jl_heads), set(py_heads)
+        rec["status"] = "mismatch"
+        rec["missing"] = [h for h in py_heads if h not in jl_set]
+        rec["extra"] = [h for h in jl_heads if h not in py_set]
+        if not rec["missing"] and not rec["extra"]:
+            rec["kind"] = "order-only"
+        else:
+            rec["kind"] = "content"
+        rows.append(rec)
+        failures += 1
+    return rows, failures
+
+
 # ----------------------------------------------------------------------------- parity
 def labeled_numbers(text):
     """label(lowercased) -> list of floats, in encounter order."""
     d = defaultdict(list)
     for m in LABEL_NUM_RE.finditer(text):
         label = re.sub(r"\s+", " ", m.group(1).strip().lower())
+        alpha_count = sum(ch.isalpha() for ch in label)
+        if alpha_count < 2 or VOLATILE_LABEL_RE.search(label):
+            continue
         val = to_float(m.group(2))
         if val is not None and label:
             d[label].append(val)
@@ -392,6 +465,26 @@ def flat_numbers(text):
 
 def close(a, b, rtol, atol):
     return abs(a - b) <= atol + rtol * max(abs(a), abs(b))
+
+
+def align_labeled_values(julia_values, python_values):
+    """Pair each Julia value with the closest unused QMCPy occurrence.
+
+    Some QMCPy notebooks repeat timing runs with identical parameters. A
+    positional zip then shifts later values onto the wrong repeated occurrence
+    and reports false mismatches.
+    """
+    remaining = list(python_values)
+    pairs = []
+    for julia_value in julia_values:
+        if not remaining:
+            break
+        idx = min(
+            range(len(remaining)),
+            key=lambda i: abs(julia_value - remaining[i]),
+        )
+        pairs.append((julia_value, remaining.pop(idx)))
+    return pairs
 
 
 def parity(jl_root, py_root, pairs, rtol, atol):
@@ -423,7 +516,7 @@ def parity(jl_root, py_root, pairs, rtol, atol):
         mism = []
         for lab in shared:
             jv, pv = jl_lab[lab], py_lab[lab]
-            for a, b in zip(jv, pv):  # align by position within a shared label
+            for a, b in align_labeled_values(jv, pv):
                 compared += 1
                 if close(a, b, rtol, atol):
                     matched += 1
@@ -490,12 +583,32 @@ def print_parity(rows, rtol, atol):
     print("here means 'nothing obviously diverged', not 'verified equivalent'.")
 
 
+def _fmt_heads(items):
+    return ", ".join(f"{'#' * lvl} {txt}" for lvl, txt in items[:4])
+
+
+def print_headings(rows, failures):
+    print("\n" + "=" * 78)
+    print("HEADINGS (authoritative) — shared markdown heading sequence vs QMCPy")
+    print("=" * 78)
+    print(f"{'notebook':40} {'jl':>3} {'py':>3} status")
+    for r in rows:
+        status = "ok" if r["status"] == "ok" else r.get("kind", "mismatch")
+        print(f"{r['notebook']:40} {r['jl_count']:>3} {r['py_count']:>3} {status}")
+        if r["status"] != "ok":
+            if r.get("missing"):
+                print(f"   missing: {_fmt_heads(r['missing'])}")
+            if r.get("extra"):
+                print(f"   extra:   {_fmt_heads(r['extra'])}")
+    print(f"\nHeading mismatches: {failures}")
+
+
 # ----------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mode",
-                    choices=["conformance", "parity", "figures", "both"],
+                    choices=["conformance", "headings", "parity", "figures", "both"],
                     default="both")
     ap.add_argument("--jl-root", default="QMC.jl/demos")
     ap.add_argument("--py-root", default="QMCPy/demos")
@@ -508,16 +621,29 @@ def main():
         sys.exit(f"error: run from repo root containing {args.jl_root} and "
                  f"{args.py_root} (or pass --jl-root/--py-root).")
 
-    pairs, jl_only, py_only = build_pairs(args.jl_root, args.py_root)
-    report = {"pairs": len(pairs), "jl_only": jl_only, "py_only": py_only}
+    pairs, jl_only, py_only, bad_refs = build_pairs(args.jl_root, args.py_root)
+    report = {
+        "pairs": len(pairs),
+        "jl_only": jl_only,
+        "py_only": py_only,
+        "bad_refs": [{"notebook": j, "py": p} for j, p in bad_refs],
+    }
     exit_code = 0
 
     if args.mode in ("conformance", "both"):
-        rows, failures = conformance(args.jl_root, pairs, jl_only)
+        rows, failures = conformance(args.jl_root, pairs, jl_only, bad_refs)
         print_conformance(rows, failures)
         report["conformance"] = rows
         report["conformance_failures"] = failures
         if failures:
+            exit_code = 1
+
+    if args.mode in ("headings", "both"):
+        hrows, hfailures = headings(args.jl_root, args.py_root, pairs)
+        print_headings(hrows, hfailures)
+        report["headings"] = hrows
+        report["heading_failures"] = hfailures
+        if hfailures:
             exit_code = 1
 
     if args.mode in ("parity", "both"):
@@ -535,6 +661,10 @@ def main():
     print("=" * 78)
     print(f"translated pairs : {len(pairs)}")
     print(f"julia-only demos : {len(jl_only)} -> {', '.join(jl_only) or '(none)'}")
+    if bad_refs:
+        print(f"bad QMCPy refs   : {len(bad_refs)}")
+        for j, p in bad_refs:
+            print(f"   {j} -> {p}")
     print(f"untranslated QMCPy ({len(py_only)}):")
     for p in py_only:
         print(f"   {p}")
