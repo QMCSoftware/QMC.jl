@@ -247,6 +247,7 @@ end
 
     @test result.solution isa Float64
     @test !isnan(result.solution)
+    @test result.data[:levels] >= 3  # levels_min + 1, may refine further on some platforms
     @test result.data[:n_total] > 0
     @test result.data[:replications] == 8
 

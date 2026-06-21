@@ -272,6 +272,21 @@
         x2 = gen_samples(dd, 100)
         xt2 = transform(tm05, x2)
         @test xt2 ≈ x2 atol=1e-10
+
+        u = [0.25 0.50; 0.75 0.25]
+        tm_vec = BernoulliCont(dd; lam=[0.25, 0.75])
+        expected = [
+            log1p(-2 / 3 * 0.25) / log(1 / 3) log1p(2 * 0.50) / log(3)
+            log1p(-2 / 3 * 0.75) / log(1 / 3) log1p(2 * 0.25) / log(3)
+        ]
+        @test transform(tm_vec, u) ≈ expected atol=1e-14
+
+        dd_mean = DigitalNetB2(1; seed=7, graycode=false)
+        lam = 0.75
+        tm_mean = BernoulliCont(dd_mean; lam=lam)
+        sample_mean = mean(transform(tm_mean, gen_samples(dd_mean, 2^18)))
+        exact_mean = lam / (2lam - 1) + 1 / (2atanh(1 - 2lam))
+        @test sample_mean ≈ exact_mean atol=1e-5
     end
 
     @testset "AcceptanceRejection" begin

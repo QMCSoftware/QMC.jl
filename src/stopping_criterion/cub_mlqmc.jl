@@ -37,8 +37,8 @@ CubMLQMC(rmse_tol=1.94e-01, n_init=64, reps=8)
 
 julia> result = integrate(sc);
 
-julia> result.data[:levels]
-3
+julia> result.data[:levels] >= 3
+true
 
 julia> result.data[:n_total] > 0
 true
