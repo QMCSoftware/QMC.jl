@@ -1,0 +1,355 @@
+{
+    "label": "sha-c1a889a",
+    "julia_threads": 1,
+    "julia_version": "1.12.6",
+    "benchmark_config": {
+        "integrate_samples": 9,
+        "leaf_samples": 5,
+        "student_t_samples": 21
+    },
+    "results": {
+        "gen_samples": {
+            "Halton d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Lattice d=3 n=1024": {
+                "rss_delta_kib": 7760
+            },
+            "Lattice d=3 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=3 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Lattice d=10 n=1024": {
+                "rss_delta_kib": 4000
+            },
+            "Lattice d=3 n=256": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Halton d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=10 n=1024": {
+                "rss_delta_kib": 4016
+            },
+            "IIDStdUniform d=3 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=3 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=3 n=1024": {
+                "rss_delta_kib": 2736
+            },
+            "Kronecker d=3 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=3 n=256": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Halton d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=10 n=1024": {
+                "rss_delta_kib": 2048
+            },
+            "Halton d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=3 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Lattice d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=3 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=3 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Lattice d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Lattice d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Kronecker d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Halton d=3 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Lattice d=3 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=3 n=1024": {
+                "rss_delta_kib": 5664
+            },
+            "Halton d=3 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Halton d=3 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Halton d=3 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=3 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "IIDStdUniform d=3 n=256": {
+                "rss_delta_kib": 0
+            },
+            "DigitalNetB2 d=10 n=16384": {
+                "rss_delta_kib": 0
+            }
+        },
+        "integrate": {
+            "CubQMCNetG Keister": {
+                "rss_delta_kib": 0
+            },
+            "CubMCCLT AsianOption": {
+                "rss_delta_kib": 6768
+            },
+            "CubQMCLatticeG Keister": {
+                "rss_delta_kib": 3488
+            },
+            "CubQMCNetGRep Keister": {
+                "rss_delta_kib": 0
+            },
+            "CubMCCLT EuropeanOption": {
+                "rss_delta_kib": 0
+            },
+            "CubQMCNetGRep AsianOption": {
+                "rss_delta_kib": 2416
+            },
+            "CubQMCNetG EuropeanOption": {
+                "rss_delta_kib": 0
+            },
+            "CubQMCNetGRep EuropeanOption": {
+                "rss_delta_kib": 0
+            },
+            "CubQMCLatticeG EuropeanOption": {
+                "rss_delta_kib": 0
+            },
+            "CubMCCLT Keister": {
+                "rss_delta_kib": 0
+            },
+            "CubQMCNetG AsianOption": {
+                "rss_delta_kib": 0
+            }
+        },
+        "transform": {
+            "Gaussian d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "JohnsonsSU d=10 n=256": {
+                "rss_delta_kib": 1792
+            },
+            "Gaussian d=3 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(diag) d=50 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian d=3 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(dense) d=200 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(diag) d=50 n=1024": {
+                "rss_delta_kib": 1408
+            },
+            "Gaussian(dense) d=200 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian d=3 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "JohnsonsSU d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "StudentT d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(dense) d=50 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(diag) d=200 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(dense) d=50 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "JohnsonsSU d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian(diag) d=200 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Gaussian d=3 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "StudentT d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "JohnsonsSU d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "StudentT d=10 n=256": {
+                "rss_delta_kib": 2096
+            },
+            "StudentT d=10 n=4096": {
+                "rss_delta_kib": 0
+            }
+        },
+        "evaluate": {
+            "Genz(gaussian_peak) d=50 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=50 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=200 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=200 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=200 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=10 n=4096": {
+                "rss_delta_kib": 5840
+            },
+            "Linear0 d=50 n=4096": {
+                "rss_delta_kib": 2128
+            },
+            "Keister n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Genz(oscillatory) n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=200 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Keister n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=50 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=200 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Genz(continuous) d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Genz(continuous) d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Genz(oscillatory) n=256": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=50 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Genz(oscillatory) n=4096": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Genz(continuous) d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Genz(oscillatory) n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=10 n=256": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=200 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Linear0 d=10 n=16384": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Keister n=16384": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=10 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "BoxIntegral d=10 n=1024": {
+                "rss_delta_kib": 0
+            },
+            "Genz(gaussian_peak) d=50 n=4096": {
+                "rss_delta_kib": 0
+            },
+            "Keister n=256": {
+                "rss_delta_kib": 0
+            },
+            "Genz(continuous) d=10 n=16384": {
+                "rss_delta_kib": 0
+            }
+        }
+    },
+    "generated_at": "2026-06-21T11:55:44",
+    "blas_threads": 2
+}
