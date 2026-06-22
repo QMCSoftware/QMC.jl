@@ -39,7 +39,7 @@ Base.@kwdef struct NotebookOptions
     shard_index::Int = 1
     overwrite::Bool = false
     kernel::String = "qmc-1.12"
-    timeout::Int = 1800
+    timeout::Int = 7200
 end
 
 # ── Notebook timing cache (LPT load balancing) ────────────────────────────────
