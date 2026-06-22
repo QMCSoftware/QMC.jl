@@ -325,16 +325,18 @@ struct QMCResult
 end
 
 function Base.show(io::IO, r::QMCResult)
-    @printf(io, "QMCResult(solution=%.6e", r.solution)
+    parts = String[]
+    push!(parts, @sprintf("QMCResult(solution=%.6e", r.solution))
     if haskey(r.data, :n_total)
-        @printf(io, ", n_total=%d", r.data[:n_total])
+        push!(parts, @sprintf(", n_total=%d", r.data[:n_total]))
     elseif haskey(r.data, :n)
-        @printf(io, ", n=%d", r.data[:n])
+        push!(parts, @sprintf(", n=%d", r.data[:n]))
     end
     if haskey(r.data, :error_bound)
-        @printf(io, ", error_bound=%.2e", r.data[:error_bound])
+        push!(parts, @sprintf(", error_bound=%.2e", r.data[:error_bound]))
     end
-    print(io, ")")
+    push!(parts, ")")
+    print(io, join(parts))
 end
 
 """
@@ -354,12 +356,13 @@ struct QMCVecResult
 end
 
 function Base.show(io::IO, r::QMCVecResult)
-    print(io, "QMCVecResult(solution=", r.solution)
+    s = "QMCVecResult(solution=$(r.solution)"
     if haskey(r.data, :n_total)
-        @printf(io, ", n_total=%d", r.data[:n_total])
+        s *= @sprintf(", n_total=%d", r.data[:n_total])
     end
     if haskey(r.data, :error_bound)
-        @printf(io, ", error_bound=%.2e", r.data[:error_bound])
+        s *= @sprintf(", error_bound=%.2e", r.data[:error_bound])
     end
-    print(io, ")")
+    s *= ")"
+    print(io, s)
 end
