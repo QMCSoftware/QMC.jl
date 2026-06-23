@@ -150,7 +150,8 @@ export ml_sample_and_evaluate, ml_sample_and_evaluate_reps
 
 # Exports — utilities
 export bernoulli_poly, to_bin, to_float, fwht!, fwht, ifwht!
-export DisplayTable, display_table, IterationLog, iterations
+export DisplayTable, display_table, IterationLog, iterations,
+    resume_iteration_log, combined_iteration_log
 export latnetbuilder_linker, mlmc_test
 export bro_fft, bro_ifft, gpu_fwht, gpu_fwht!
 export keister_exact, genz_exact, periodize

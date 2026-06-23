@@ -393,3 +393,84 @@ function Base.show(io::IO, ::MIME"text/html", table::DisplayTable)
     end
     print(io, "</tbody></table>")
 end
+
+# ── Resume iteration log helpers ───────────────────────────────────────────────
+
+function _build_iteration_display(loose_data, resume_data; full::Bool)
+    has_loose  = haskey(loose_data,  :iteration_log) && !isempty(loose_data[:iteration_log])
+    has_resume = haskey(resume_data, :iteration_log) && !isempty(resume_data[:iteration_log])
+
+    Row = NamedTuple{(:stage, :iter, :n, :solution, :error_bound, :tol, :elapsed),
+                     Tuple{String, Int, Int, Float64, Float64, Float64, Float64}}
+    rows = Row[]
+
+    offset = 0
+    last_loose_row = nothing
+
+    if has_loose
+        loose_iters = collect(iterations(loose_data[:iteration_log]))
+        if full
+            for r in loose_iters
+                push!(rows, Row(("ITER", r.iter, r.n, r.solution,
+                                 r.error_bound, r.tol, r.elapsed)))
+            end
+        end
+        last_loose_row = last(loose_iters)
+        offset = last_loose_row.iter
+    end
+
+    if has_resume
+        if last_loose_row !== nothing
+            r = last_loose_row
+            push!(rows, Row(("RESUME", r.iter, r.n, r.solution,
+                             r.error_bound, r.tol, r.elapsed)))
+        end
+        for r in collect(iterations(resume_data[:iteration_log]))
+            push!(rows, Row(("ITER", r.iter + offset, r.n, r.solution,
+                             r.error_bound, r.tol, r.elapsed)))
+        end
+    end
+
+    fmts = (
+        solution    = x -> @sprintf("%.8g", x),
+        error_bound = x -> isnan(x) ? "-" : @sprintf("%.3e", x),
+        tol         = x -> isnan(x) ? "-" : @sprintf("%.3e", x),
+        elapsed     = x -> isnan(x) ? "-" :
+            (abs(x) < 1e-3 || abs(x) >= 1e3 ? @sprintf("%.3e", x) : @sprintf("%.3f", x)),
+    )
+
+    return display_table(
+        rows;
+        columns    = (:stage, :iter, :n, :solution, :error_bound, :tol, :elapsed),
+        headers    = ["stage", "iter", "n", "solution", "err_bound", "tol", "time(s)"],
+        formatters = fmts,
+    )
+end
+
+"""
+    resume_iteration_log(loose_data, resume_data)
+
+Build an iteration table for a resumed integration. The last row of the loose run
+appears as a `RESUME` checkpoint, followed by resumed iteration rows with iter
+numbers continuing from the loose run's final count.
+
+Accepts the data dictionaries returned by `integrate` (i.e. `result.data`).
+Returns a `DisplayTable` that renders as aligned text in terminals and as an HTML
+table in notebook frontends.
+"""
+resume_iteration_log(loose_data, resume_data) =
+    _build_iteration_display(loose_data, resume_data; full=false)
+
+"""
+    combined_iteration_log(loose_data, resume_data)
+
+Build an iteration table combining all stages of a resumed integration: loose `ITER`
+rows, a `RESUME` checkpoint (the last loose row repeated), and resumed `ITER` rows
+with iter numbers continuing from the loose run's final count.
+
+Accepts the data dictionaries returned by `integrate` (i.e. `result.data`).
+Returns a `DisplayTable` that renders as aligned text in terminals and as an HTML
+table in notebook frontends.
+"""
+combined_iteration_log(loose_data, resume_data) =
+    _build_iteration_display(loose_data, resume_data; full=true)
