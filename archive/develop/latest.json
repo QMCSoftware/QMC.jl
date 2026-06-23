@@ -1,7 +1,7 @@
 {
   "branch": "develop",
-  "label": "sha-365da35",
-  "commit_sha": "365da35adde29c849005a3cd2975122da9b63b78",
-  "snapshot_dir": "archive/develop/sha-365da35",
+  "label": "sha-b5d7cba",
+  "commit_sha": "b5d7cbaf7489580870a437bb62cae0f269e66a0c",
+  "snapshot_dir": "archive/develop/sha-b5d7cba",
   "source_manifest": "badges/benchmark-source-develop.json"
 }
