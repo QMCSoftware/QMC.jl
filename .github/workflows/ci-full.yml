@@ -24,11 +24,12 @@ jobs:
   test:
     name: Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.continue-on-error == true }}
     env:
       TEST_JOBS: ${{ vars.TEST_JOBS || '2' }}
       TEST_THREADS: ${{ vars.TEST_THREADS || '1' }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -43,6 +44,10 @@ jobs:
           - os: windows-latest
             julia-version: '1.12'
             coverage: false
+          - os: ubuntu-latest
+            julia-version: 'nightly'
+            coverage: false
+            continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
