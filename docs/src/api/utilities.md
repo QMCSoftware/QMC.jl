@@ -13,6 +13,8 @@ DisplayTable
 display_table
 IterationLog
 iterations(::IterationLog)
+resume_iteration_log
+combined_iteration_log
 ```
 
 ## Periodization

@@ -1,0 +1,635 @@
+Stopping Criteria Check: Resume vs Fresh
+generated: 2026-06-23 17:09:32
+
+[CubMCCLTVec] status=ok
+
+  loose_inputs:
+    abs_tol: 5.00e-02
+    rel_tol: 0.00e+00
+    n_init: 256
+    n_max: 16777216
+    dimension: 2
+
+  resume_inputs:
+    abs_tol: 2.50e-02
+    rel_tol: 0.00e+00
+    n_init: 256
+    n_max: 16777216
+    dimension: 2
+
+  fresh_inputs:
+    abs_tol: 2.50e-02
+    rel_tol: 0.00e+00
+    n_init: 256
+    n_max: 16777216
+    dimension: 2
+
+  loose_iteration_log:
+    iter     n   solution  err_bound        tol    time(s)
+       1   256  1.9042164  1.783e-01  5.000e-02  3.386e-05
+       2   768  1.8416982  1.050e-01  5.000e-02  4.697e-05
+       3  1792  1.8054701  7.091e-02  5.000e-02  6.890e-05
+       4  3840  1.8000887  4.717e-02  5.000e-02  1.218e-04
+
+  resume_iteration_log:
+    iter      n   solution  err_bound        tol    time(s)
+       4   3840  1.8000887  4.717e-02  5.000e-02  1.218e-04
+       5  11520  1.8165422  2.697e-02  2.500e-02  1.910e-04
+       6  26880  1.7997082  1.787e-02  2.500e-02      0.004
+
+  fresh_iteration_log:
+    iter      n   solution  err_bound        tol    time(s)
+       1    256  1.9042164  1.783e-01  2.500e-02  9.060e-06
+       2    768  1.8416982  1.050e-01  2.500e-02  2.098e-05
+       3   1792  1.8054701  7.091e-02  2.500e-02  4.601e-05
+       4   3840  1.8000887  4.717e-02  2.500e-02  9.418e-05
+       5   7936  1.8069199  3.282e-02  2.500e-02  1.891e-04
+       6  16128  1.7969363  2.322e-02  2.500e-02  3.872e-04
+
+  Stage summary of CubMCCLTVec
+  --------------------------------------------------------------------------
+  Stage   abs_tol   total n     new n  iters    solution half-width time (s)
+  --------------------------------------------------------------------------
+  Loose     5e-02     3,840     3,840      4   1.8000887   4.72e-02   0.0001
+  Resumed   3e-02    26,880    23,040      2   1.7997082   1.79e-02   0.0036
+  Fresh     3e-02    16,128    16,128      6   1.7969363   2.32e-02   0.0004
+  --------------------------------------------------------------------------
+
+  WARNING: CubMCCLTVec: Inconsistent total samples (resume_n=26880, fresh_n=16128)
+
+  WARNING: CubMCCLTVec: Inconsistent iterations (resume_iters=2, fresh_iters=6)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubQMCLatticeG] status=ok
+
+  loose_inputs:
+    abs_tol: 5.00e-03
+    rel_tol: 0.00e+00
+    n_init: 1024
+    n_max: 1048576
+    n_reps: 16
+    dimension: 2
+
+  resume_inputs:
+    abs_tol: 1.00e-03
+    rel_tol: 0.00e+00
+    n_init: 1024
+    n_max: 1048576
+    n_reps: 16
+    dimension: 2
+
+  fresh_inputs:
+    abs_tol: 1.00e-03
+    rel_tol: 0.00e+00
+    n_init: 1024
+    n_max: 1048576
+    n_reps: 16
+    dimension: 2
+
+  loose_iteration_log:
+    iter     n   solution  err_bound        tol  time(s)
+       1  1024  1.8074969  5.056e-03  5.000e-03    0.016
+       2  2048  1.8081432  2.147e-03  5.000e-03    0.016
+
+  resume_iteration_log:
+    iter     n   solution  err_bound        tol  time(s)
+       2  2048  1.8081432  2.147e-03  5.000e-03    0.016
+       3  4096  1.8081285  1.229e-03  1.000e-03    0.017
+       4  8192  1.8081958  5.031e-04  1.000e-03    0.026
+
+  fresh_iteration_log:
+    iter     n   solution  err_bound        tol    time(s)
+       1  1024  1.8074969  5.056e-03  1.000e-03  5.484e-05
+       2  2048  1.8081432  2.147e-03  1.000e-03  1.440e-04
+       3  4096   1.808086  1.203e-03  1.000e-03  2.930e-04
+       4  8192  1.8082582  4.884e-04  1.000e-03  6.518e-04
+
+  Stage summary of CubQMCLatticeG
+  --------------------------------------------------------------------------
+  Stage   abs_tol   total n     new n  iters    solution half-width time (s)
+  --------------------------------------------------------------------------
+  Loose     5e-03     2,048     2,048      2   1.8081432   2.15e-03   0.0158
+  Resumed   1e-03     8,192     6,144      2   1.8081958   5.03e-04   0.0419
+  Fresh     1e-03     8,192     8,192      4   1.8082582   4.88e-04   0.0007
+  --------------------------------------------------------------------------
+
+  WARNING: CubQMCLatticeG: Inconsistent iterations (resume_iters=2, fresh_iters=4)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubQMCNetG] status=ok
+
+  loose_inputs:
+    abs_tol: 5.00e-03
+    rel_tol: 0.00e+00
+    n_init: 1024
+    n_max: 4194304
+    dimension: 2
+
+  resume_inputs:
+    abs_tol: 1.00e-03
+    rel_tol: 0.00e+00
+    n_init: 1024
+    n_max: 4194304
+    dimension: 2
+
+  fresh_inputs:
+    abs_tol: 1.00e-03
+    rel_tol: 0.00e+00
+    n_init: 1024
+    n_max: 4194304
+    dimension: 2
+
+  loose_iteration_log:
+    iter     n   solution  err_bound        tol  time(s)
+       1  1024  1.8059642  4.222e-03  5.000e-03    0.144
+
+  resume_iteration_log:
+    iter     n   solution  err_bound        tol  time(s)
+       1  1024  1.8059642  4.222e-03  5.000e-03    0.144
+       2  2048  1.8095835  2.399e-03  1.000e-03    0.004
+       3  4096  1.8080641  1.124e-03  1.000e-03    0.004
+       4  8192  1.8082955  5.290e-04  1.000e-03    0.005
+
+  fresh_iteration_log:
+    iter     n   solution  err_bound        tol    time(s)
+       1  1024  1.8059642  4.222e-03  1.000e-03  5.078e-05
+       2  2048  1.8095835  2.399e-03  1.000e-03  1.268e-04
+       3  4096  1.8080641  1.124e-03  1.000e-03  2.639e-04
+       4  8192  1.8082955  5.290e-04  1.000e-03  5.670e-04
+
+  Stage summary of CubQMCNetG
+  --------------------------------------------------------------------------
+  Stage   abs_tol   total n     new n  iters    solution half-width time (s)
+  --------------------------------------------------------------------------
+  Loose     5e-03     1,024     1,024      1   1.8059642   4.22e-03   0.1442
+  Resumed   1e-03     8,192     7,168      3   1.8082955   5.29e-04   0.1488
+  Fresh     1e-03     8,192     8,192      4   1.8082955   5.29e-04   0.0006
+  --------------------------------------------------------------------------
+
+  WARNING: CubQMCNetG: Inconsistent iterations (resume_iters=3, fresh_iters=4)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubQMCNetGRep] status=ok
+
+  loose_inputs:
+    abs_tol: 5.00e-02
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 1073741824
+    n_reps: 16
+    dimension: 5
+
+  resume_inputs:
+    abs_tol: 1.00e-02
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 1073741824
+    n_reps: 16
+    dimension: 5
+
+  fresh_inputs:
+    abs_tol: 1.00e-02
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 1073741824
+    n_reps: 16
+    dimension: 5
+
+  loose_iteration_log:
+    iter      n   solution  err_bound        tol  time(s)
+       1    512  1.1602046  2.543e-01  5.000e-02    0.014
+       2   1024  1.0884222  2.080e-01  5.000e-02    0.014
+       3   2048  1.1309349  9.401e-02  5.000e-02    0.014
+       4   4096  1.1738954  1.220e-01  5.000e-02    0.014
+       5   8192  1.0700263  7.016e-02  5.000e-02    0.015
+       6  16384  1.1665919  6.141e-02  5.000e-02    0.016
+       7  32768  1.1206579  3.873e-02  5.000e-02    0.017
+
+  resume_iteration_log:
+    iter       n   solution  err_bound        tol  time(s)
+       7   32768  1.1206579  3.873e-02  5.000e-02    0.017
+       8   65536  1.1313133  1.718e-02  1.000e-02    0.003
+       9  131072  1.1329297  1.290e-02  1.000e-02    0.016
+      10  262144  1.1378431  5.501e-03  1.000e-02    0.030
+
+  fresh_iteration_log:
+    iter       n   solution  err_bound        tol    time(s)
+       1     512  1.1602046  2.543e-01  1.000e-02  1.309e-04
+       2    1024  1.0884222  2.080e-01  1.000e-02  2.780e-04
+       3    2048  1.1309349  9.401e-02  1.000e-02  4.621e-04
+       4    4096  1.1738954  1.220e-01  1.000e-02  7.489e-04
+       5    8192  1.0700263  7.016e-02  1.000e-02      0.001
+       6   16384  1.1665919  6.141e-02  1.000e-02      0.002
+       7   32768  1.1206579  3.873e-02  1.000e-02      0.003
+       8   65536  1.1313133  1.718e-02  1.000e-02      0.006
+       9  131072  1.1329297  1.290e-02  1.000e-02      0.012
+      10  262144  1.1378431  5.501e-03  1.000e-02      0.094
+
+  Stage summary of CubQMCNetGRep
+  --------------------------------------------------------------------------
+  Stage   abs_tol   total n     new n  iters    solution half-width time (s)
+  --------------------------------------------------------------------------
+  Loose     5e-02    32,768    32,768      7   1.1206579   3.87e-02   0.0171
+  Resumed   1e-02   262,144   229,376      3   1.1378431   5.50e-03   0.0472
+  Fresh     1e-02   262,144   262,144     10   1.1378431   5.50e-03   0.0938
+  --------------------------------------------------------------------------
+
+  WARNING: CubQMCNetGRep: Inconsistent iterations (resume_iters=3, fresh_iters=10)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubQMCBayesLatticeG] status=ok
+
+  loose_inputs:
+    abs_tol: 5.00e-02
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 16777216
+    dimension: 2
+
+  resume_inputs:
+    abs_tol: 5.00e-04
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 16777216
+    dimension: 2
+
+  fresh_inputs:
+    abs_tol: 5.00e-04
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 16777216
+    dimension: 2
+
+  loose_iteration_log:
+    iter   n   solution  err_bound        tol    time(s)
+       1  32  1.7462988  1.013e-02  5.000e-02  1.440e-04
+
+  resume_iteration_log:
+    iter    n   solution  err_bound        tol    time(s)
+       1   32  1.7462988  1.013e-02  5.000e-02  1.440e-04
+       2   64  1.8084472  8.682e-04  5.000e-04      0.012
+       3  128  1.8082226  1.267e-04  5.000e-04      0.012
+
+  fresh_iteration_log:
+    iter    n   solution  err_bound        tol    time(s)
+       1   32  1.7462988  1.013e-02  5.000e-04  9.799e-05
+       2   64  1.8084472  8.682e-04  5.000e-04  2.561e-04
+       3  128  1.8082226  1.267e-04  5.000e-04  4.630e-04
+
+  Stage summary of CubQMCBayesLatticeG
+  --------------------------------------------------------------------------
+  Stage   abs_tol   total n     new n  iters    solution half-width time (s)
+  --------------------------------------------------------------------------
+  Loose     5e-02        32        32      1   1.7462988   1.01e-02   0.0002
+  Resumed   5e-04       128        96      2   1.8082226   1.27e-04   0.0118
+  Fresh     5e-04       128       128      3   1.8082226   1.27e-04   0.0005
+  --------------------------------------------------------------------------
+
+  WARNING: CubQMCBayesLatticeG: Inconsistent iterations (resume_iters=2, fresh_iters=3)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubQMCBayesNetG] status=ok
+
+  loose_inputs:
+    abs_tol: 1.00e-01
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 16777216
+    dimension: 2
+
+  resume_inputs:
+    abs_tol: 3.00e-03
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 16777216
+    dimension: 2
+
+  fresh_inputs:
+    abs_tol: 3.00e-03
+    rel_tol: 0.00e+00
+    n_init: 32
+    n_max: 16777216
+    dimension: 2
+
+  loose_iteration_log:
+    iter   n   solution  err_bound        tol    time(s)
+       1  32  1.8091351  7.484e-03  1.000e-01  2.711e-04
+
+  resume_iteration_log:
+    iter   n   solution  err_bound        tol    time(s)
+       1  32  1.8091351  7.484e-03  1.000e-01  2.711e-04
+       2  64  1.7978525  1.773e-03  3.000e-03      0.011
+
+  fresh_iteration_log:
+    iter   n   solution  err_bound        tol    time(s)
+       1  32  1.8091351  7.484e-03  3.000e-03  3.505e-05
+       2  64  1.7978525  1.773e-03  3.000e-03  7.296e-05
+
+  Stage summary of CubQMCBayesNetG
+  --------------------------------------------------------------------------
+  Stage   abs_tol   total n     new n  iters    solution half-width time (s)
+  --------------------------------------------------------------------------
+  Loose     1e-01        32        32      1   1.8091351   7.48e-03   0.0004
+  Resumed   3e-03        64        32      1   1.7978525   1.77e-03   0.0108
+  Fresh     3e-03        64        64      2   1.7978525   1.77e-03   0.0001
+  --------------------------------------------------------------------------
+
+  WARNING: CubQMCBayesNetG: Inconsistent iterations (resume_iters=1, fresh_iters=2)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubMLMC] status=ok
+
+  loose_inputs:
+    rmse_tol: 7.76e-02
+    n_init: 256
+    n_limit: 1048576
+    levels_min: 2
+    levels_max: 10
+    dimension: 8
+
+  resume_inputs:
+    rmse_tol: 3.88e-02
+    n_init: 256
+    n_limit: 1048576
+    levels_min: 2
+    levels_max: 10
+    dimension: 8
+
+  fresh_inputs:
+    rmse_tol: 3.88e-02
+    n_init: 256
+    n_limit: 1048576
+    levels_min: 2
+    levels_max: 10
+    dimension: 8
+
+  loose_iteration_log:
+    iter      n   solution  err_bound        tol  time(s)
+       1    768  4.6486354  7.328e-01  7.764e-02    0.214
+       2  57831  3.7431749  2.124e-01  7.764e-02    0.217
+       3  58925    3.74509  2.135e-01  7.764e-02    0.217
+       4  58925    3.74509  2.135e-01  7.764e-02    0.217
+       5  60692  3.5874899  1.218e-01  7.764e-02    0.229
+       6  60711     3.5835  1.211e-01  7.764e-02    0.229
+       7  63164  3.5223513  6.057e-02  7.764e-02    0.230
+       8  63169  3.5228393  6.042e-02  7.764e-02    0.230
+       9  65812  3.4866013  4.902e-02  7.764e-02    0.230
+      10  65812  3.4866013  4.902e-02  7.764e-02    0.230
+
+  resume_iteration_log:
+    iter       n   solution  err_bound        tol    time(s)
+      10   65812  3.4866013  4.902e-02  7.764e-02      0.230
+      11     768  4.9967102  5.523e-01  3.882e-02  1.130e-04
+      12  302514  3.7906242  2.029e-01  3.882e-02      0.015
+      13  302514  3.7906242  2.029e-01  3.882e-02      0.015
+      14  306574  3.6313076  1.171e-01  3.882e-02      0.016
+      15  306651  3.6310984  1.174e-01  3.882e-02      0.016
+      16  306659  3.6314037  1.169e-01  3.882e-02      0.016
+      17  308479  3.5511903  6.136e-02  3.882e-02      0.017
+      18  308500  3.5509616  6.146e-02  3.882e-02      0.017
+      19  309855   3.516565  3.215e-02  3.882e-02      0.018
+      20  309978  3.5163261  3.197e-02  3.882e-02      0.018
+      21  309988  3.5164894  3.194e-02  3.882e-02      0.018
+      22  311524   3.496363  2.503e-02  3.882e-02      0.024
+      23  311625   3.495398  2.502e-02  3.882e-02      0.024
+      24  311654   3.495219  2.502e-02  3.882e-02      0.024
+
+  fresh_iteration_log:
+    iter       n   solution  err_bound        tol    time(s)
+       1     768  2.0800606  4.596e-01  3.882e-02  1.070e-04
+       2  178393  3.7132772  2.508e-01  3.882e-02      0.010
+       3  219913  3.7004545  2.506e-01  3.882e-02      0.012
+       4  219913  3.7004545  2.506e-01  3.882e-02      0.012
+       5  245699  3.5386228  1.200e-01  3.882e-02      0.014
+       6  245708  3.5386678  1.200e-01  3.882e-02      0.014
+       7  262962  3.4660049  5.479e-02  3.882e-02      0.015
+       8  262962  3.4660049  5.479e-02  3.882e-02      0.015
+       9  273049  3.4336105  2.983e-02  3.882e-02      0.017
+      10  273540  3.4335859  3.003e-02  3.882e-02      0.017
+      11  273540  3.4335859  3.003e-02  3.882e-02      0.017
+      12  281125  3.3979113  2.937e-02  3.882e-02      0.018
+      13  286858  3.3977333  2.936e-02  3.882e-02      0.019
+      14  286858  3.3977333  2.936e-02  3.882e-02      0.019
+      15  294609   3.385496  2.214e-02  3.882e-02      0.035
+      16  294609   3.385496  2.214e-02  3.882e-02      0.035
+
+  Stage summary of CubMLMC
+  ----------------------------------------------------------------------------
+  Stage    rmse_tol   total n     new n  iters    solution half-width time (s)
+  ----------------------------------------------------------------------------
+  Loose       8e-02    65,812    65,812     10   3.4866013   4.90e-02   0.2302
+  Resumed     4e-02   311,654   245,842     14   3.4952190   2.50e-02   0.0242
+  Fresh       4e-02   294,609   294,609     16   3.3854960   2.21e-02   0.0351
+  ----------------------------------------------------------------------------
+
+  WARNING: CubMLMC: Inconsistent total samples (resume_n=311654, fresh_n=294609)
+
+  WARNING: CubMLMC: Resume and fresh solutions differ by >2×tol (resume=3.4952189948588983, fresh=3.385496024991695, tol=0.038822448312946366)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubMLMCCont] status=ok
+
+  loose_inputs:
+    target_tol: 1.55e-01
+    n_init: 256
+    n_limit: 1048576
+    levels_min: 2
+    levels_max: 10
+    n_tols: 6
+    dimension: 8
+
+  resume_inputs:
+    target_tol: 1.16e-01
+    n_init: 256
+    n_limit: 1048576
+    levels_min: 2
+    levels_max: 10
+    n_tols: 6
+    dimension: 8
+
+  fresh_inputs:
+    target_tol: 1.16e-01
+    n_init: 256
+    n_limit: 1048576
+    levels_min: 2
+    levels_max: 10
+    n_tols: 6
+    dimension: 8
+
+  loose_iteration_log:
+    iter      n   solution  err_bound        tol    time(s)
+       1   7826  3.9046437  1.415e-01  2.006e+00  5.410e-04
+       2   7826  3.9046437  1.415e-01  1.202e+00  5.431e-04
+       3   7826  3.9046437  1.412e-01  7.208e-01  5.441e-04
+       4   7826  3.9046437  1.402e-01  4.321e-01  5.450e-04
+       5   8731   3.935054  1.379e-01  2.590e-01  5.901e-04
+       6  13406  3.8698981  1.149e-01  1.553e-01  8.051e-04
+
+  resume_iteration_log:
+    iter      n   solution  err_bound        tol    time(s)
+       6  13406  3.8698981  1.149e-01  1.553e-01  8.051e-04
+       7  18857  3.7948613  9.610e-02  1.504e+00      0.001
+       8  18857  3.7948613  1.124e-01  9.018e-01      0.001
+       9  18857  3.7948613  1.433e-01  5.406e-01      0.001
+      10  23969  3.7759626  1.808e-01  3.241e-01      0.001
+      11  24119  3.7628977  1.770e-01  1.943e-01      0.001
+      12  29022  3.4609438  7.858e-02  1.165e-01      0.002
+
+  fresh_iteration_log:
+    iter      n   solution  err_bound        tol    time(s)
+       1  15614  3.7764173  1.050e-01  1.504e+00  8.199e-04
+       2  15614  3.7764173  1.532e-01  9.018e-01  8.221e-04
+       3  19275  3.8196014  2.360e-01  5.406e-01      0.007
+       4  23816  3.8178717  2.798e-01  3.241e-01      0.007
+       5  24112  3.6372767  8.778e-02  1.943e-01      0.007
+       6  26576  3.6291858  8.248e-02  1.165e-01      0.007
+
+  Stage summary of CubMLMCCont
+  ----------------------------------------------------------------------------
+  Stage    rmse_tol   total n     new n  iters    solution half-width time (s)
+  ----------------------------------------------------------------------------
+  Loose       2e-01    13,406    13,406      6   3.8698981   1.15e-01   0.0008
+  Resumed     1e-01    29,022    15,616      6   3.4609438   7.86e-02   0.0019
+  Fresh       1e-01    26,576    26,576      6   3.6291858   8.25e-02   0.0074
+  ----------------------------------------------------------------------------
+
+  WARNING: CubMLMCCont: Inconsistent total samples (resume_n=29022, fresh_n=26576)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubMLQMC] status=ok
+
+  loose_inputs:
+    target_tol: 7.76e-02
+    n_init: 256
+    n_limit: 4194304
+    replications: 32
+    levels_min: 2
+    levels_max: 10
+    dimension: 8
+
+  resume_inputs:
+    target_tol: 3.88e-02
+    n_init: 256
+    n_limit: 4194304
+    replications: 32
+    levels_min: 2
+    levels_max: 10
+    dimension: 8
+
+  fresh_inputs:
+    target_tol: 3.88e-02
+    n_init: 256
+    n_limit: 4194304
+    replications: 32
+    levels_min: 2
+    levels_max: 10
+    dimension: 8
+
+  loose_iteration_log:
+    iter       n   solution  err_bound        tol  time(s)
+       1  172032  3.7479099  1.263e-01  7.764e-02    0.348
+       2  212992  3.5905708  6.470e-02  7.764e-02    0.365
+
+  resume_iteration_log:
+    iter       n   solution  err_bound        tol  time(s)
+       2  212992  3.5905708  6.470e-02  7.764e-02    0.365
+       3  360448    3.74445  1.275e-01  3.882e-02    0.141
+       4  729088  3.5861674  5.911e-02  3.882e-02    0.219
+       5  745472  3.5080583  2.841e-02  3.882e-02    0.322
+
+  fresh_iteration_log:
+    iter       n   solution  err_bound        tol  time(s)
+       1  622592  3.7579259  1.135e-01  3.882e-02    0.099
+       2  737280  3.6018303  5.505e-02  3.882e-02    0.224
+       3  745472  3.5228494  3.479e-02  3.882e-02    0.239
+
+  Stage summary of CubMLQMC
+  ----------------------------------------------------------------------------
+  Stage    rmse_tol   total n     new n  iters    solution half-width time (s)
+  ----------------------------------------------------------------------------
+  Loose       8e-02   212,992   212,992      2   3.5905708   6.47e-02   0.3651
+  Resumed     4e-02   745,472   532,480      3   3.5080583   2.84e-02   0.3216
+  Fresh       4e-02   745,472   745,472      3   3.5228494   3.48e-02   0.2393
+  ----------------------------------------------------------------------------
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[CubMLQMCCont] status=ok
+
+  loose_inputs:
+    target_tol: 2.33e-01
+    n_init: 256
+    n_limit: 262144
+    replications: 32
+    levels_min: 2
+    levels_max: 10
+    n_tols: 6
+    dimension: 8
+
+  resume_inputs:
+    target_tol: 1.16e-01
+    n_init: 256
+    n_limit: 262144
+    replications: 32
+    levels_min: 2
+    levels_max: 10
+    n_tols: 6
+    dimension: 8
+
+  fresh_inputs:
+    target_tol: 1.16e-01
+    n_init: 256
+    n_limit: 262144
+    replications: 32
+    levels_min: 2
+    levels_max: 10
+    n_tols: 6
+    dimension: 8
+
+  loose_iteration_log:
+    iter      n   solution  err_bound        tol  time(s)
+       1  24576  3.7255588  1.332e-01  3.008e+00    0.006
+       2  24576  3.7255588  1.332e-01  1.804e+00    0.006
+       3  24576  3.7255588  1.337e-01  1.081e+00    0.006
+       4  24576  3.7255588  1.352e-01  6.482e-01    0.006
+       5  24576  3.7255588  1.374e-01  3.886e-01    0.006
+       6  24576  3.7255588  1.374e-01  2.329e-01    0.006
+
+  resume_iteration_log:
+    iter      n   solution  err_bound        tol  time(s)
+       6  24576  3.7255588  1.374e-01  2.329e-01    0.006
+       7  24576  3.7460597  1.312e-01  1.504e+00    0.007
+       8  24576  3.7460597  1.324e-01  9.018e-01    0.007
+       9  24576  3.7460597  1.355e-01  5.406e-01    0.007
+      10  24576  3.7460597  1.366e-01  3.241e-01    0.007
+      11  24576  3.7460597  1.366e-01  1.943e-01    0.007
+      12  32768  3.7529738  1.098e-01  1.165e-01    0.012
+
+  fresh_iteration_log:
+    iter      n   solution  err_bound        tol  time(s)
+       1  24576  3.7734982  1.290e-01  1.504e+00    0.006
+       2  24576  3.7734982  1.298e-01  9.018e-01    0.006
+       3  24576  3.7734982  1.320e-01  5.406e-01    0.006
+       4  24576  3.7734982  1.333e-01  3.241e-01    0.006
+       5  24576  3.7734982  1.333e-01  1.943e-01    0.006
+       6  49152  3.7699686  1.049e-01  1.165e-01    0.012
+
+  Stage summary of CubMLQMCCont
+  ----------------------------------------------------------------------------
+  Stage    rmse_tol   total n     new n  iters    solution half-width time (s)
+  ----------------------------------------------------------------------------
+  Loose       2e-01    24,576    24,576      6   3.7255588   1.37e-01   0.0064
+  Resumed     1e-01    32,768     8,192      6   3.7529738   1.10e-01   0.0117
+  Fresh       1e-01    49,152    49,152      6   3.7699686   1.05e-01   0.0116
+  ----------------------------------------------------------------------------
+
+  WARNING: CubMLQMCCont: Inconsistent total samples (resume_n=32768, fresh_n=49152)
+
