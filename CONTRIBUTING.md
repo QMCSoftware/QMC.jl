@@ -243,6 +243,32 @@ QMC.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new
 - A demo notebook if the component is user-facing
 - `include` and `export` entries in `src/QMC.jl`
 
+## API Stability
+
+QMC.jl groups its public surface into the following stability levels:
+
+| Status | Representative symbols | Meaning |
+|---|---|---|
+| **Stable** | `IIDStdUniform`, `Lattice`, `DigitalNetB2`, `Gaussian`, `BrownianMotion`, `Keister`, `Genz`, `CubMCCLT`, `CubMCG`, `CubQMCLatticeG`, `CubQMCNetG`, `CubQMCNetGRep` | Expected to remain source-compatible except for deliberate documented breaking releases |
+| **Beta** | `CubQMCBayesLatticeG`, `CubQMCBayesNetG`, `CubMLMC`, `CubMLMCCont`, `CubMLQMC`, `CubMLQMCCont` | Usable and tested, but advanced interfaces may still be refined before long-term stabilization |
+| **Experimental** | `PFGPCI`, `UMBridgeWrapper`, `KernelMultiTask`, `KernelMultiTaskDerivs` | Exported for early adopters; behavior and interfaces may change with limited compatibility guarantees |
+| **Placeholder** | `gpu_fwht`, `gpu_fwht!` | Exported names reserved for future functionality; current implementation falls back to CPU `fwht`/`fwht!` |
+
+## Repository Layout
+
+Most top-level and source subdirectories contain a local `README.md` describing their purpose. Useful starting points:
+
+- [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and Julia-vs-QMCPy comparison tooling
+- [`demos/README.md`](demos/README.md) — notebook demos and how to run them
+- [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — Documenter build/deploy layout
+- [`RELEASING.md`](RELEASING.md) — release ladder, readiness gates, and tagging process
+- [`src/README.md`](src/README.md) — package source tree and component folders
+- [`test/README.md`](test/README.md) — unit tests, notebook tests, and coverage commands
+
+## Benchmark Badges
+
+The top-level benchmark badges track the latest published `develop` run. The speed badge is the weighted `Python time ÷ Julia time` ratio from the Julia-vs-QMCPy comparison script. The peak-memory badge compares QMCPy's `tracemalloc` peak against Julia's recorded allocation totals — treat it as an approximate signal rather than a strict apples-to-apples metric. See [`benchmark/README.md`](benchmark/README.md) for the full report structure, comparison scripts, and interpretation notes.
+
 ## IDE Tips (VS Code)
 
 [VS Code](https://code.visualstudio.com) with the [Julia extension](https://www.julia-vscode.org/) is the recommended editor.
