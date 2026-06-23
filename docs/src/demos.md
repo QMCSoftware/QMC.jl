@@ -2,40 +2,57 @@
 
 ## Quick Start
 
-Examples using `Lattice` require the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia before running them.
+Add the package with `import Pkg; Pkg.add("QMC")`, or `Pkg.develop(path=pwd())`
+from the repository root. Examples using `Lattice` also require `qmctoolscl`
+installed in a Python visible to Julia.
 
-```julia
-# In terminal, run `julia`. Issue the following command:
-#   import Pkg; Pkg.add("QMC")
-# If the package is not on path and you started Julia from the repository root:
-#   import Pkg; Pkg.develop(path=pwd())
-using QMC
+**1. IID Monte Carlo** — integrate ``\sin(\pi x_1)\cos(\pi x_2)`` over ``[0,1]^2``
+(exact value = 0):
 
-# 1. IID Monte Carlo for a simple integral
-dd = IIDStdUniform(2; seed=42)
-tm = Uniform(dd)
-f = CustomFun(tm, x -> sin.(π .* x[:, 1]) .* cos.(π .* x[:, 2]))
-sc = CubMCCLT(f; abs_tol=1e-3)
-result = integrate(sc)
-println("MC estimate: $(result.solution), error bound: $(result.data[:error_bound])")
+```jldoctest
+julia> using QMC
 
-# 2. QMC with lattice rule
-dd = Lattice(3; randomize=true)
-tm = Uniform(dd)
-f = Genz(tm; kind=:continuous)
-sc = CubQMCLatticeG(f; abs_tol=1e-4)
-result = integrate(sc)
-println("QMC estimate: $(result.solution)")
+julia> dd = IIDStdUniform(2; seed=42);
 
-# 3. Asian option pricing
-dd = Lattice(52; randomize=true)  # weekly monitoring for 1 year
-tm = BrownianMotion(dd)
-f = AsianOption(tm; volatility=0.2, start_price=100.0, strike_price=100.0,
-                interest_rate=0.05)
-sc = CubQMCLatticeG(f; abs_tol=0.1, n_reps=16)
-result = integrate(sc)
-println("Asian call price: $(result.solution)")
+julia> f = CustomFun(Uniform(dd), x -> sin.(π .* x[:, 1]) .* cos.(π .* x[:, 2]));
+
+julia> result = integrate(CubMCCLT(f; abs_tol=1e-3));
+
+julia> abs(result.solution) < 0.1
+true
+```
+
+**2. QMC with a lattice rule** — Genz continuous integrand in 3D:
+
+```jldoctest
+julia> using QMC
+
+julia> dd = Lattice(3; randomize=true, seed=7);
+
+julia> f = Genz(Uniform(dd); kind=:continuous);
+
+julia> result = integrate(CubQMCLatticeG(f; abs_tol=1e-4));
+
+julia> isapprox(result.solution, genz_exact(f); atol=1e-4)
+true
+```
+
+**3. Asian option pricing** — arithmetic-average call with 52 monitoring dates:
+
+```jldoctest
+julia> using QMC
+
+julia> dd = Lattice(52; randomize=true, seed=7);
+
+julia> f = AsianOption(BrownianMotion(dd); volatility=0.2, start_price=100.0, strike_price=100.0, interest_rate=0.05);
+
+julia> result = integrate(CubQMCLatticeG(f; abs_tol=0.1));
+
+julia> result.data[:converged]
+true
+
+julia> result.solution > 0.0
+true
 ```
 
 ## Jupyter Notebooks

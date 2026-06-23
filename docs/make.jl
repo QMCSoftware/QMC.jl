@@ -5,7 +5,7 @@ makedocs(
     sitename = "QMC.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
     modules = [QMC],
-    doctest = ("doctest=only" in ARGS) ? :only : true,
+    doctest = ("doctest=fix" in ARGS) ? :fix : ("doctest=only" in ARGS) ? :only : true,
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",

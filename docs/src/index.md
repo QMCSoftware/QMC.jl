@@ -30,19 +30,17 @@ QMC methods approximate multivariate integrals using four main components:
 
 This example uses `Lattice`, so `qmctoolscl` must be installed in a Python visible to Julia.
 
-```julia
-using QMC
+```jldoctest
+julia> using QMC
 
-# Set up a 3D integration using a lattice rule
-dd = Lattice(3; randomize=true)
-tm = Uniform(dd)
-f = Genz(tm; kind=:continuous)
-sc = CubQMCLatticeG(f; abs_tol=1e-3)
+julia> dd = Lattice(3; randomize=true, seed=7);
 
-# Run integration
-result = integrate(sc)
-println("Estimate: $(result.solution)")
-println("Error bound: $(result.data[:error_bound])")
+julia> f = Genz(Uniform(dd); kind=:continuous);
+
+julia> result = integrate(CubQMCLatticeG(f; abs_tol=1e-3));
+
+julia> isapprox(result.solution, genz_exact(f); atol=1e-3)
+true
 ```
 
 ## Installation
