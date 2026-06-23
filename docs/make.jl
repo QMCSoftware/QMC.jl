@@ -1,6 +1,8 @@
 using Documenter
 using QMC
 
+rm(joinpath(@__DIR__, "build"); force=true, recursive=true)
+
 makedocs(
     sitename = "QMC.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
