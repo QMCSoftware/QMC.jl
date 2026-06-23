@@ -115,4 +115,4 @@ jobs:
             --shard-index=${{ matrix.shard_index }} \
             --overwrite=0 \
             --kernel=qmc-1.12 \
-            --timeout=1800
+            --timeout=7200

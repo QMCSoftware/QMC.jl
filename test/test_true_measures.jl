@@ -385,4 +385,37 @@
         @test size(y) == size(x)
         @test all(isfinite, y)
     end
+
+    @testset "Non-Standard Gaussian covariance (regression: shared-dd cross/star artifact)" begin
+        # DigitalNetB2 is a stateful mutable struct: every gen_samples call advances the
+        # internal MersenneTwister rng (LMS scramble + digital shift). Sharing one
+        # DigitalNetB2 instance across multiple true measures means each measure's
+        # gen_samples call sees a different scramble. The 2nd and 3rd calls on seed=7
+        # with default t produce degenerate [0,1]^2 sequences (arc/ring and cross/star)
+        # that look wrong after erfinv. Each true measure must use its own fresh
+        # DigitalNetB2 with t=63 for high-quality LMS scrambling (matching the
+        # scatter-plot convention used elsewhere in the demo notebooks).
+        n = 2^12
+        Σ = [5.0 4.0; 4.0 9.0]
+        μ = [1.0, 2.0]
+
+        # Correct: fresh dd with t=63 → first gen_samples call → good scramble
+        tm_ok = Gaussian(DigitalNetB2(2; seed=9, t=63); mean=μ, covariance=Σ)
+        t_ok = transform(tm_ok, gen_samples(tm_ok.dd, n))
+        @test abs(mean(t_ok[:, 1]) - μ[1]) < 0.1
+        @test abs(mean(t_ok[:, 2]) - μ[2]) < 0.1
+        @test abs(cov(t_ok)[1, 1] - Σ[1, 1]) < 2.0
+        @test abs(cov(t_ok)[2, 2] - Σ[2, 2]) < 2.0
+        @test abs(cov(t_ok)[1, 2] - Σ[1, 2]) < 1.5  # off-diagonal ≈ 4.0; bug gives ≈ 0
+
+        # Bug: shared dd → 3rd gen_samples call → degenerate scramble → cross/star artifact
+        dd_shared = DigitalNetB2(2; seed=7)
+        tm1 = Uniform(dd_shared; lower_bound=[-3.0, -2.0], upper_bound=[3.0, 2.0])
+        tm2 = Gaussian(dd_shared)
+        tm3 = Gaussian(dd_shared; mean=μ, covariance=Σ)
+        gen_samples(tm1.dd, n)   # 1st advance — tm1 gets scramble S1
+        gen_samples(tm2.dd, n)   # 2nd advance — tm2 gets scramble S2
+        t_bug = transform(tm3, gen_samples(tm3.dd, n))  # 3rd advance — S3 is degenerate
+        @test abs(cov(t_bug)[1, 2] - Σ[1, 2]) > abs(cov(t_ok)[1, 2] - Σ[1, 2])
+    end
 end
