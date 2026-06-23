@@ -1,6 +1,6 @@
 {
     "label": "Memory vs QMCPy v2.3",
-    "message": "4.37x lower",
+    "message": "4.38x lower",
     "color": "brightgreen",
     "schemaVersion": 1,
     "namedLogo": "julia"
