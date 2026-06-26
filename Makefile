@@ -1,4 +1,4 @@
-.PHONY: test coverage doctest doc uml format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
+.PHONY: test coverage doctest doctest-coverage doc uml format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
 .NOTPARALLEL: notebook notebook-update notebook-update-% notebook-% ci-doc-demo workflow-smoke
 
 # ============================================================================
@@ -135,6 +135,11 @@ uml:
 doctest:
 	$(call RUN_TIMED,JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl doctest=only,doctest)
 
+# Run Documenter doctests with coverage instrumentation and produce an lcov report over src/.
+# The pkg-setup step runs without --code-coverage so only doctest execution is measured.
+doctest-coverage:
+	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --code-coverage=user --project=docs docs/make.jl doctest=only && julia --project=. devtools/process_coverage.jl && find src -name '*.cov' -delete,doctest-coverage)
+
 # ============================================================================
 # Formatting
 # ============================================================================
@@ -175,6 +180,11 @@ notebook-update-%:
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
 	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+
+# Run all demo notebooks with coverage instrumentation and produce an lcov report over src/.
+# Child processes inherit --code-coverage=user via Base.julia_cmd(), so parallel jobs work.
+notebook-coverage:
+	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --code-coverage=user --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) && julia --project=. devtools/process_coverage.jl && find src -name '*.cov' -delete,notebook-coverage)
 
 # Audit QMC.jl demos against QMCPy sources
 check-demos:
