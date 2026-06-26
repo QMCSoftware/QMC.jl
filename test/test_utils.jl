@@ -163,6 +163,48 @@
         @test k3[1] == 0 && k4[1] == 0
     end
 
+    @testset "bernoulli_poly" begin
+        # k=0: B_0(x) = 1 everywhere.
+        @test bernoulli_poly(0, 0.0) == 1.0
+        @test bernoulli_poly(0, 0.5) == 1.0
+        @test bernoulli_poly(0, 1.0) == 1.0
+
+        # k=1: B_1(x) = x - 1/2.
+        @test bernoulli_poly(1, 0.0) == -0.5
+        @test bernoulli_poly(1, 0.5) == 0.0
+        @test bernoulli_poly(1, 1.0) == 0.5
+
+        # k=2: B_2(x) = x² - x + 1/6; B_2(1/2) = -1/12.
+        @test bernoulli_poly(2, 0.5) ≈ -1/12 atol=1e-15
+        @test bernoulli_poly(2, 0.0) ≈  1/6  atol=1e-15
+        @test bernoulli_poly(2, 1.0) ≈  1/6  atol=1e-15  # B_k(0) = B_k(1) for k ≥ 2
+
+        # k=4: B_4(0) = -1/30.
+        @test bernoulli_poly(4, 0.0) ≈ -1/30 atol=1e-15
+
+        # k=6: B_6(0) = 1/42.
+        @test bernoulli_poly(6, 0.0) ≈ 1/42 atol=1e-14
+
+        # Unsupported k raises an error.
+        @test_throws ErrorException bernoulli_poly(7, 0.5)
+
+        # bernoulli_number is B_k(0).
+        for k in 0:6
+            @test QMC.bernoulli_number(k) == bernoulli_poly(k, 0.0)
+        end
+
+        # lattice_kernel_component: alpha=1 uses B_2, alpha=2 uses B_4, alpha=3 uses B_6.
+        x = 0.3
+        # sign_factor = (-1)^(alpha+1): alpha=1 → +1, alpha=2 → -1.
+        @test QMC.lattice_kernel_component(x, 1) ≈  (2π)^2 / 2  * bernoulli_poly(2, x) atol=1e-12
+        @test QMC.lattice_kernel_component(x, 2) ≈ -(2π)^4 / 24 * bernoulli_poly(4, x) atol=1e-12
+        # alpha out of range raises an error.
+        @test_throws ErrorException QMC.lattice_kernel_component(x, 0)
+        @test_throws ErrorException QMC.lattice_kernel_component(x, 4)
+        # Fractional part: x=1.3 same as x=0.3.
+        @test QMC.lattice_kernel_component(1.3, 2) ≈ QMC.lattice_kernel_component(0.3, 2) atol=1e-12
+    end
+
     @testset "DisplayTable" begin
         rows = [(n=64, label="small", error=0.012345), (n=128, label="<large>", error=0.001234)]
         table = display_table(

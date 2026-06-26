@@ -283,3 +283,15 @@ end
     @test haskey(traced.data, :iteration_log)
     @test length(traced.data[:iteration_log]) >= 1
 end
+
+@testset "mlmc_test" begin
+    # Smoke test: mlmc_test runs without error and returns three finite floats (α, β, γ).
+    dd = IIDStdUniform(4; seed=7)
+    f = TestMLIntegrand(dd; d_coarsest=1, volatility=0.5, start_price=30.0, strike_price=35.0)
+    alpha, beta, gamma = mlmc_test(f; n=200, L=3)
+    @test isfinite(alpha)
+    @test isfinite(beta)
+    @test isfinite(gamma)
+    # γ should be positive (cost grows with level).
+    @test gamma > 0
+end

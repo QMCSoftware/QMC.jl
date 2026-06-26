@@ -386,6 +386,90 @@
         @test all(isfinite, y)
     end
 
+    @testset "MaternGP" begin
+        dd = IIDStdUniform(5; seed=7)
+        tm = MaternGP(dd; nu=2.5, lengthscale=0.3)
+        x = gen_samples(dd, 100)
+        y = transform(tm, x)
+        @test size(y) == (100, 5)
+        @test all(isfinite, y)
+        # GP sample paths have zero mean (approximately) over many draws.
+        @test abs(mean(y)) < 1.0
+
+        # ν = 0.5 (exponential covariance).
+        tm05 = MaternGP(IIDStdUniform(4; seed=1); nu=0.5, lengthscale=1.0)
+        y05 = transform(tm05, gen_samples(tm05.dd, 50))
+        @test size(y05) == (50, 4)
+        @test all(isfinite, y05)
+
+        # ν = 1.5.
+        tm15 = MaternGP(IIDStdUniform(4; seed=2); nu=1.5, lengthscale=0.5)
+        y15 = transform(tm15, gen_samples(tm15.dd, 50))
+        @test all(isfinite, y15)
+
+        # show method.
+        @test repr(tm) == "MaternGP(ν=2.5, ℓ=0.3, σ²=1.0)"
+
+        # Argument errors.
+        @test_throws ArgumentError MaternGP(dd; nu=-1.0)
+        @test_throws ArgumentError MaternGP(dd; lengthscale=0.0)
+        @test_throws ArgumentError MaternGP(dd; variance=-1.0)
+    end
+
+    @testset "UniformTriangle" begin
+        dd = IIDStdUniform(2; seed=7)
+        tm = UniformTriangle(dd)
+        x = gen_samples(dd, 1000)
+        y = transform(tm, x)
+        @test size(y) == (1000, 2)
+        # Output lies in the triangle: 0 ≤ y2 ≤ y1 ≤ 1.
+        @test all(0.0 .<= y[:, 2] .<= y[:, 1] .<= 1.0)
+        # Mean of uniform on {y2 ≤ y1}: E[y1] = 2/3, E[y2] = 1/3.
+        @test abs(mean(y[:, 1]) - 2/3) < 0.05
+        @test abs(mean(y[:, 2]) - 1/3) < 0.05
+
+        # Deterministic check using docstring example values.
+        u = [0.601137 0.553600; 0.943441 0.631885; 0.717708 0.099473; 0.357784 0.240963]
+        y_det = transform(tm, u)
+        @test y_det[:, 1] ≈ max.(u[:, 1], u[:, 2]) atol=1e-6
+        @test y_det[:, 2] ≈ min.(u[:, 1], u[:, 2]) atol=1e-6
+
+        @test repr(tm) == "UniformTriangle()"
+        @test_throws ArgumentError UniformTriangle(IIDStdUniform(3))
+    end
+
+    @testset "ZeroInflatedExpUniform" begin
+        dd = IIDStdUniform(2; seed=7)
+        tm = ZeroInflatedExpUniform(dd; p_zero=0.3, rate=2.0)
+        @test QMC.dimension(tm) == 1
+
+        x = gen_samples(dd, 5000)
+        y = transform(tm, x)
+        @test size(y) == (5000, 1)
+        @test all(y .>= 0.0)
+        # Fraction of zeros ≈ p_zero = 0.3.
+        @test abs(mean(y .== 0.0) - 0.3) < 0.05
+
+        # Non-zero values: half exponential (rate=2), half Uniform(0,1).
+        # Mean of Exp(2) = 0.5, mean of U(0,1) = 0.5 ⇒ non-zero mean ≈ 0.5.
+        nonzero = y[y .!= 0.0]
+        @test abs(mean(nonzero) - 0.5) < 0.1
+
+        # Default parameters (p_zero=0.3, rate=1.0).
+        tm_def = ZeroInflatedExpUniform(IIDStdUniform(2; seed=1))
+        @test tm_def.p_zero == 0.3
+        @test tm_def.rate == 1.0
+
+        # show method.
+        @test repr(tm) == "ZeroInflatedExpUniform(p_zero=0.30, rate=2.00)"
+
+        # Argument errors.
+        @test_throws ArgumentError ZeroInflatedExpUniform(IIDStdUniform(3))
+        @test_throws ArgumentError ZeroInflatedExpUniform(dd; p_zero=-0.1)
+        @test_throws ArgumentError ZeroInflatedExpUniform(dd; rate=0.0)
+        @test_throws ArgumentError ZeroInflatedExpUniform(dd; low=1.0, high=0.0)
+    end
+
     @testset "Non-Standard Gaussian covariance (regression: shared-dd cross/star artifact)" begin
         # DigitalNetB2 is a stateful mutable struct: every gen_samples call advances the
         # internal MersenneTwister rng (LMS scramble + digital shift). Sharing one

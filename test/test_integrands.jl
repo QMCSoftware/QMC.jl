@@ -387,6 +387,32 @@ QMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims
         ref = ishigami_exact()
         @test all(abs.(closed .- ref.closed) .<= 0.06)
         @test all(abs.(total .- ref.total) .<= 0.06)
+
+        # indices=:all enumerates every non-trivial subset (2^d - 2 = 6 for d=3).
+        # Re-use the same 6D tm pattern from the existing test above so evaluate
+        # receives a 200×6 matrix (cols 1:3 = X, cols 4:6 = Z pick-freeze pairs).
+        dd_all = IIDStdUniform(6; seed=11)
+        tm_all = Uniform(dd_all; lower_bound=(-π), upper_bound=π)
+        si_all = SensitivityIndices(Ishigami(tm_all); indices=:all)
+        @test size(si_all.indices, 1) == (1 << 3) - 2   # 6 subsets for d=3
+        @test size(si_all.indices, 2) == 3
+        y_all = evaluate(si_all, transform(tm_all, gen_samples(dd_all, 200)))
+        @test size(y_all) == (200, 3, 6)  # (n, 3 estimator terms, k subsets)
+
+        # indices=Matrix{Bool}: pass a custom 2×3 subset matrix.
+        idx = Bool[1 0 0; 1 1 0]   # subsets {x1} and {x1, x2}
+        dd_mb = IIDStdUniform(6; seed=12)
+        tm_mb = Uniform(dd_mb; lower_bound=(-π), upper_bound=π)
+        si_mb = SensitivityIndices(Ishigami(tm_mb); indices=idx)
+        @test size(si_mb.indices) == (2, 3)
+        y_mb = evaluate(si_mb, transform(tm_mb, gen_samples(dd_mb, 100)))
+        @test size(y_mb) == (100, 3, 2)  # (n, 3 estimator terms, 2 subsets)
+
+        # Wrong column count for Matrix{Bool} indices.
+        @test_throws ArgumentError SensitivityIndices(base; indices=Bool[1 0; 0 1])
+
+        # Completely unknown indices symbol.
+        @test_throws ArgumentError SensitivityIndices(base; indices=:unknown)
     end
 
     @testset "BayesianLRCoeffs" begin
@@ -398,6 +424,37 @@ QMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims
         x = transform(tm, gen_samples(dd, 100))
         y = evaluate(blr, x)
         @test length(y) == 100
+    end
+
+    @testset "Sin1D" begin
+        dd = DigitalNetB2(1; seed=7)
+        tm = Uniform(dd; lower_bound=0.0, upper_bound=2π)
+        f = Sin1D(tm)
+        @test f.dimension == 1
+        @test f.k == 1
+        @test repr(f) == "Sin1D(k=1)"
+
+        # Exact integral of sin over [0, 2πk] is 0 for integer k.
+        y = sample_and_evaluate(f, 2^10)
+        @test length(y) == 2^10
+        @test !any(isnan, y)
+        @test abs(mean(y)) < 1e-14
+
+        # k=2: integral over [0, 4π] is also 0.
+        tm2 = Uniform(DigitalNetB2(1; seed=8); lower_bound=0.0, upper_bound=4π)
+        f2 = Sin1D(tm2; k=2)
+        @test f2.k == 2
+        y2 = sample_and_evaluate(f2, 2^10)
+        @test abs(mean(y2)) < 1e-14
+
+        # Deterministic: evaluate at known points.
+        x_pts = [0.0 π/2; π/2 π; π 3π/2]
+        v = evaluate(f, x_pts)
+        @test v ≈ [sin(0.0), sin(π/2), sin(π)] atol=1e-14
+
+        # Argument errors.
+        @test_throws ArgumentError Sin1D(Uniform(IIDStdUniform(2)))  # requires d=1
+        @test_throws ArgumentError Sin1D(tm; k=0)
     end
 
     @testset "Multi-output interface (Stage A)" begin

@@ -365,6 +365,27 @@ end
         @test result.data[:n] >= 2^10
         @test result.data[:n_per_rep] == result.data[:n]
         @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
+
+        # trace_iterations fills iteration_log; also covers line 150 (log in data).
+        dd_tr = DigitalNetB2(2; randomize="DS", seed=701)
+        f_tr = Genz(Uniform(dd_tr); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_tr = integrate(CubQMCNetGRep(f_tr; abs_tol=0.1, n_init=2^10, n_reps=8, trace_iterations=true))
+        @test haskey(r_tr.data, :iteration_log)
+        @test length(r_tr.data[:iteration_log]) >= 1
+
+        # Resume: start from a saved data dict (covers lines 71-73).
+        dd_r1 = DigitalNetB2(2; randomize="DS", seed=702)
+        f_r1 = Genz(Uniform(dd_r1); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
+        r1 = integrate(CubQMCNetGRep(f_r1; abs_tol=2.0, n_init=2^8, n_reps=8))
+        r2 = integrate(CubQMCNetGRep(f_r1; abs_tol=0.1, n_init=2^8, n_max=2^14, n_reps=8); resume=r1.data)
+        @test r2.data[:n] >= r1.data[:n]
+
+        # Non-convergence warning: very tight tol with tiny n_max (covers lines 129-130, 134).
+        dd_nc = DigitalNetB2(2; randomize="DS", seed=703)
+        f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[5.0, 5.0], u=[0.5, 0.5])
+        @test_logs (:warn, r"CubQMCNetGRep") integrate(
+            CubQMCNetGRep(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10, n_reps=4),
+        )
     end
 
     @testset "CubQMCNetGSingle alias" begin
@@ -394,6 +415,19 @@ end
         )
         @test haskey(traced.data, :iteration_log)
         @test length(traced.data[:iteration_log]) >= 1
+    end
+
+    @testset "CubQMCBayesLatticeG ptransform variants" begin
+        # Cover the :C1, :C2SIN, :C3 branches in _periodize_with_weight (and their
+        # derivative inline functions), which are not exercised by the default :C1SIN.
+        dd = Lattice(1; randomize=true, seed=801)
+        tm = Uniform(dd)
+        f = Sin1D(tm; k=1)
+        for pt in [:C1, :C2SIN, :C3]
+            r = integrate(CubQMCBayesLatticeG(f; abs_tol=0.5, n_init=2^8, n_max=2^10, ptransform=pt))
+            @test r.solution isa Float64
+            @test isfinite(r.solution)
+        end
     end
 
     @testset "CubQMCBayesLatticeG (multi-output)" begin
@@ -443,6 +477,33 @@ end
         @test result.data[:n_total] == result.data[:n]
         @test result.data[:n_per_rep] == result.data[:n_rep]
         @test result.data[:n_total] == result.data[:n_per_rep] * result.data[:replications]
+
+        # trace_iterations fills iteration_log; also covers line 203 (log in data).
+        dd_tr = DigitalNetB2(2; randomize="LMS_DS", seed=902, replications=4)
+        f_tr = Genz(Uniform(dd_tr); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_tr = integrate(CubQMCRepStudentT(f_tr; abs_tol=0.2, n_init=32, n_limit=128, trace_iterations=true))
+        @test haskey(r_tr.data, :iteration_log)
+        @test length(r_tr.data[:iteration_log]) >= 1
+
+        # rel_tol + error_fun=:both → covers _error_bound_tol :both branch.
+        dd_rb = DigitalNetB2(2; randomize="LMS_DS", seed=903, replications=4)
+        f_rb = Genz(Uniform(dd_rb); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_rb = integrate(CubQMCRepStudentT(f_rb; abs_tol=0.5, rel_tol=0.5, error_fun=:both, n_init=32, n_limit=512))
+        @test r_rb.solution isa Float64
+
+        # Resume: continue from a previous result's data dict.
+        dd_res = DigitalNetB2(2; randomize="LMS_DS", seed=904, replications=4)
+        f_res = Genz(Uniform(dd_res); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r1 = integrate(CubQMCRepStudentT(f_res; abs_tol=0.5, n_init=32, n_limit=64))
+        r2 = integrate(CubQMCRepStudentT(f_res; abs_tol=0.1, n_init=32, n_limit=2^12); resume=r1.data)
+        @test r2.data[:n_per_rep] >= r1.data[:n_per_rep]
+
+        # n_limit exceeded: warns and stops (covers lines 174-177).
+        dd_lim = DigitalNetB2(2; randomize="LMS_DS", seed=905, replications=4)
+        f_lim = Genz(Uniform(dd_lim); kind=:discontinuous, a=[5.0, 5.0], u=[0.5, 0.5])
+        @test_logs (:warn, r"n_limit") integrate(
+            CubQMCRepStudentT(f_lim; abs_tol=1e-8, n_init=32, n_limit=64),
+        )
     end
 
     @testset "rel_tol in stopping criteria" begin
