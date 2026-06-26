@@ -31,7 +31,7 @@ Typical files:
 
 These JSON and Markdown outputs are machine-specific benchmark artifacts and are intentionally not tracked in git.
 
-The GitHub benchmarking workflow also turns the latest Julia-vs-QMCPy summary for `develop` and `master` into Shields-compatible JSON badge payloads for time and memory and publishes them on the dedicated `benchmark-badges` branch. That branch now also keeps a `badges/benchmark-source-<branch>.json` manifest and an `archive/<branch>/<label>/` snapshot of the exact result files used for each published badge update.
+The GitHub benchmarking workflow also turns the latest Julia-vs-QMCPy summary for `develop` and `master` into Shields-compatible JSON badge payloads for time and memory and publishes them on the dedicated `benchmark-badges` branch. That branch now also carries coverage badge JSON from the protected-branch coverage jobs, plus a `badges/benchmark-source-<branch>.json` manifest and an `archive/<branch>/<label>/` snapshot of the exact benchmark result files used for each published benchmark badge update.
 
 ## Quick Start
 
@@ -181,6 +181,20 @@ When the Julia benchmark flow is run with `--code-coverage=user`, every native J
 
 If a Julia-vs-QMCPy report shows Python improving sharply against Julia, first check whether the run was produced through a `bench-*-coverage` target or with `BENCH_COVERAGE=1`. Those runs are useful for correctness and coverage collection, not for clean performance claims.
 
+The coverage-oriented benchmark targets are:
+
+```bash
+make bench-coverage
+make bench-compare-coverage REV=HEAD~1
+make bench-compare-py-coverage LABEL=base
+make bench-all-coverage LABEL=base
+```
+
+These targets still execute the benchmark harness under coverage, but their
+final `lcov.info` and printed totals are now filtered to `src/` only, so the
+reported percentage is package coverage rather than benchmark-harness coverage.
+Their `executable lines` denominators are still target-specific because Julia's `*.cov` output only records the `src/` lines exercised by the current run.
+
 The Julia runner now also writes a sidecar memory file per label:
 
 - `<label>_memory.json`: per-row Julia `rss_delta_kib` from one warmed call
@@ -239,7 +253,7 @@ The Julia-vs-QMCPy Markdown report is now organized into a small number of secti
 
 The machine-readable companion file `compare_python_summary_<label>.json` now records the same headline ratios, bootstrap intervals, grouped summaries, and the exact source artifact filenames used to build the report.
 
-When the GitHub benchmark workflow publishes badges, it also writes a `badges/benchmark-source-<branch>.json` manifest plus an `archive/<branch>/<label>/` snapshot on the `benchmark-badges` branch. That archive is the provenance record for the exact report inputs behind the published README badge values.
+When the GitHub benchmark workflow publishes badges, it also writes a `badges/benchmark-source-<branch>.json` manifest plus an `archive/<branch>/<label>/` snapshot on the `benchmark-badges` branch. The develop/master coverage jobs add parallel `badges/coverage-source-<scope>-<branch>.json` manifests and `archive/coverage/<scope>/<branch>/<label>/` snapshots there as well. Those archives are the provenance record for the exact report inputs behind the published README badge values.
 
 The Python harness also mirrors most of the newer Julia-only benchmark rows:
 
@@ -258,7 +272,7 @@ The repository's GitHub Actions benchmark workflow lives in `.github/workflows/b
 - It compares the pushed commit against the previous pushed commit when GitHub provides one; manual runs fall back to `REV=HEAD`.
 - It checks out full git history so the previous-commit baseline is available for `git worktree`-based Julia-to-Julia comparisons.
 - It uploads `benchmark/results/` as an artifact instead of committing machine-specific outputs back into the repository.
-- It also archives the exact result snapshot behind each published benchmark badge on the dedicated `benchmark-badges` branch so the README badge values remain auditable after later runs.
+- It also archives the exact result snapshot behind each published benchmark badge, and the protected-branch coverage workflows archive their `lcov.info` inputs there too, so the README badge values remain auditable after later runs.
 - It installs pinned Python dependencies from `benchmark/requirements.txt` so benchmark reports stay comparable across repository commits. Changes to the shared `test/requirements.txt` pin file also retrigger the workflow.
 
 If the Python interpreter should be overridden:

@@ -840,6 +840,31 @@ end
 Generate `n` Sobol' points in `d` dimensions.  Returns an `n × d` matrix
 with values in [0, 1).  If `replications` was set, returns an `R × n × d` array.
 `n` should be a power of 2 for optimal equidistribution.
+
+# Examples
+```jldoctest
+julia> using QMC
+
+julia> x = gen_samples(DigitalNetB2(2; randomize="LMS", seed=7), 4);
+
+julia> size(x)
+(4, 2)
+
+julia> y = gen_samples(DigitalNetB2(2; randomize="DS", seed=7), 4);
+
+julia> all(0.0 .<= y .< 1.0)
+true
+
+julia> z = gen_samples(DigitalNetB2(2; randomize="NUS", seed=7), 4);
+
+julia> all(0.0 .<= z .< 1.0)
+true
+
+julia> w = gen_samples(DigitalNetB2(2; randomize="LMS", seed=7, replications=3), 4);
+
+julia> size(w)
+(3, 4, 2)
+```
 """
 function gen_samples(dd::DigitalNetB2, n::Int; n_start::Int=0)
     n > 0 || throw(ArgumentError("n must be positive, got $n"))

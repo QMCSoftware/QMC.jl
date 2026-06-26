@@ -47,6 +47,27 @@ true
 julia> result.data[:converged]
 true
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> f = Genz(Uniform(Lattice(2; randomize=true, seed=7)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5]);
+
+julia> r1 = integrate(CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, ptransform=:C1));
+
+julia> isfinite(r1.solution)
+true
+
+julia> r2 = integrate(CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, ptransform=:C2SIN));
+
+julia> isfinite(r2.solution)
+true
+
+julia> r3 = integrate(CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, ptransform=:C3));
+
+julia> isfinite(r3.solution)
+true
+```
 """
 mutable struct CubQMCBayesLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     integrand::I

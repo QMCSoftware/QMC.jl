@@ -18,6 +18,24 @@ julia> bernoulli_poly(2, 0.5)
 
 julia> bernoulli_poly(4, 0.0)
 -0.03333333333333333
+
+julia> bernoulli_poly(1, 1.0)
+0.5
+
+julia> bernoulli_poly(3, 0.0)
+0.0
+
+julia> bernoulli_poly(5, 0.0)
+0.0
+
+julia> bernoulli_poly(6, 0.0) ≈ 1/42
+true
+
+julia> QMC.bernoulli_number(2) ≈ 1/6
+true
+
+julia> isfinite(QMC.lattice_kernel_component(0.3))
+true
 ```
 """
 function bernoulli_poly(k::Int, x::Real)

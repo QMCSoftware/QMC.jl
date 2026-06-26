@@ -116,3 +116,123 @@ jobs:
             --overwrite=0 \
             --kernel=qmc-1.12 \
             --timeout=7200
+
+  doctest_coverage:
+    if: github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master')
+    name: Doctest Coverage
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: test/requirements.txt
+
+      - name: Install qmctoolscl
+        run: pip install -r test/requirements.txt
+
+      - name: Run doctest coverage
+        run: make doctest-coverage DOC_DEPOT="$HOME/.julia"
+
+      - name: Upload doctest LCOV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-doctest-${{ github.ref_name }}-${{ github.run_number }}
+          path: lcov.info
+          if-no-files-found: error
+
+      - name: Generate doctest coverage badge
+        run: julia --project=. devtools/generate_coverage_badges.jl lcov.info doctest "${{ github.ref_name }}" coverage_badges
+
+      - name: Publish doctest coverage badge
+        env:
+          BADGE_BRANCH: benchmark-badges
+          BADGE_DIR: coverage_badges
+          COVERAGE_SCOPE: doctest
+          LCOV_PATH: lcov.info
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          export COVERAGE_LABEL="sha-${GITHUB_SHA::7}"
+          bash devtools/publish_coverage_badges.sh
+
+  notebook_coverage:
+    if: github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master')
+    name: Notebook Coverage
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: test/requirements.txt
+
+      - name: Install qmctoolscl
+        run: pip install -r test/requirements.txt
+
+      - name: Install dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run notebook coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src -name '*.cov' -delete
+          rm -f lcov.info
+          QMC_SKIP_PKG_SETUP=1 GKSwstype=100 QMC_NOTEBOOK_PYTHON="python" julia --threads=1 --code-coverage=user --project=. \
+            test/run_notebooks.jl \
+            --jobs=2 \
+            --shard-count=1 \
+            --shard-index=1 \
+            --overwrite=0 \
+            --kernel=qmc-1.12 \
+            --timeout=7200
+          julia --project=. devtools/process_coverage.jl src
+          find src -name '*.cov' -delete
+
+      - name: Upload notebook LCOV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-notebook-${{ github.ref_name }}-${{ github.run_number }}
+          path: lcov.info
+          if-no-files-found: error
+
+      - name: Generate notebook coverage badge
+        run: julia --project=. devtools/generate_coverage_badges.jl lcov.info notebook "${{ github.ref_name }}" coverage_badges
+
+      - name: Publish notebook coverage badge
+        env:
+          BADGE_BRANCH: benchmark-badges
+          BADGE_DIR: coverage_badges
+          COVERAGE_SCOPE: notebook
+          LCOV_PATH: lcov.info
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          export COVERAGE_LABEL="sha-${GITHUB_SHA::7}"
+          bash devtools/publish_coverage_badges.sh

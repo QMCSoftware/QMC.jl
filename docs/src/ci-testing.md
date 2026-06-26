@@ -1,24 +1,22 @@
 # CI/CD Testing
 
-QMC.jl uses GitHub Actions for continuous integration and benchmark collection.
-Four workflow files in `.github/workflows/` handle the main feedback paths.
-For local linting and repeatable smoke runs of those workflows, see
-[Workflow Debugging](workflow-debugging.md).
+QMC.jl uses GitHub Actions for continuous integration and benchmark collection. Four workflow files in `.github/workflows/` handle the main feedback paths. For local linting and repeatable smoke runs of those workflows, see [Workflow Debugging](workflow-debugging.md).
 
 ## Workflow Overview
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux | Unit tests + coverage + doctests |
+| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux | Unit tests + doctests |
 | **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PRs with code/docs/workflow changes; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
-| **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks |
-| **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression |
+| **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks + benchmark-driven `src/` coverage |
+| **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression + develop/master doctest/notebook coverage |
 
 ## Policy
 
 - Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`.
 - macOS and Windows are reserved for `develop`/`master` pushes, selected pull requests, and manual runs via `ci-full.yml`.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
+- Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
 - The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
 - On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
 - `concurrency` cancels superseded runs, and the `ci.yml`, `ci-full.yml`, and `benchmarking.yml` groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
@@ -32,16 +30,10 @@ The primary fast-feedback workflow runs on non-`develop`/`master` pushes, on pul
 
 - Runs on `ubuntu-latest` with Julia 1.12.
 - Installs Python 3.13 and pinned `qmctoolscl` from `test/requirements.txt`.
-- Executes `make coverage`, which runs `test/runtests.jl` with Julia coverage
-  instrumentation enabled.
-- Executes `make doctest`, which runs the Documenter `jldoctest` examples from
-  the package docstrings under `src/` and any docs pages that contain
-  doctests, without a full docs render.
-- Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub
-  Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each
-  shard to avoid oversubscription.
-- Processes the resulting coverage data into `lcov.info`.
-- Uploads `lcov.info` both to Codecov and as a GitHub Actions artifact.
+- Executes `make test`, which runs the sharded unit-test suite without coverage instrumentation.
+- Executes `make doctest`, which runs the Documenter `jldoctest` examples from the package docstrings under `src/` and any docs pages that contain doctests, without a full docs render.
+- Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each shard to avoid oversubscription.
+- Does not upload `lcov.info`; coverage publication is reserved for `develop`/`master`.
 
 ## Full CI (`ci-full.yml`)
 
@@ -50,7 +42,7 @@ A cross-platform sweep for protected branches.
 - Triggers on pushes to `develop` or `master`, on pull requests that touch `src/`, `test/`, `docs/`, `benchmark/`, `.github/`, `Project.toml`, `Manifest.toml`, or `Makefile`, and via manual dispatch.
 - Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and Windows on Julia 1.12.
 - Runs unit tests on every lane.
-- The Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, and feeds the `develop` branch Codecov badge; the other lanes run plain `Pkg.test()`.
+- On `develop`/`master` push/manual runs, the Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, updates the Codecov branch badge, and publishes the develop/master unit-coverage Shields badge. On pull requests, that same lane falls back to plain `Pkg.test()` so coverage stays branch-only.
 - Does not run `make doctest`; doctest and full docs validation for `develop`/`master` live in `doc_demo.yml`, which already builds the documentation and therefore exercises the Documenter doctests there.
 
 ## Benchmarking (`benchmarking.yml`)
@@ -66,6 +58,7 @@ The benchmark workflow is separate from the test workflows.
 - Treats the seeded Julia-vs-QMCPy parity checks as a guard: `make bench-compare-py` fails if no comparable `integrate` or deterministic transform/evaluate oracle rows are found or if any matched row exceeds its configured agreement bound.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
 - Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
+- Runs a separate `make bench-coverage` job on `develop`/`master` push/manual events and publishes a distinct benchmark-driven `src/` coverage badge without affecting the benchmark speed/memory badges.
 - The published Julia-vs-QMCPy report now exposes the headline weighted time ratio, a 95% within-run bootstrap interval, `StudentT` split summaries, grouped timing totals for `gen_samples` / `transform` / `evaluate` / end-to-end `integrate`, and approximate memory ratios with explicit provenance manifests.
 
 ## Docs and Demos (`doc_demo.yml`)
@@ -76,6 +69,7 @@ Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 - Also triggered on pull requests into `develop`/`master` when `docs/`, `src/`, `Project.toml`, `Manifest.toml`, `Makefile`, `test/requirements.txt`, or the workflow file itself changes.
 - The documentation job uses `julia --project=docs` to resolve the docs-specific dependency set and deploys via `deploydocs()` only on push events.
 - The demos job remains push/manual only and does not run on pull requests.
+- On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and publish dedicated doctest/notebook coverage badges.
 
 ## Running Tests Locally
 
@@ -101,6 +95,36 @@ make coverage TEST_JOBS=2 TEST_THREADS=1
 make doctest
 ```
 
+**Coverage-focused local targets:**
+
+```bash
+make coverage TEST_JOBS=2 TEST_THREADS=1
+make doctest-coverage DOC_DEPOT="$HOME/.julia"
+make notebook-coverage NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
+make bench-coverage BENCH_BLAS_THREADS=2
+make bench-compare-coverage REV=HEAD~1 BENCH_BLAS_THREADS=2
+make bench-compare-py-coverage LABEL=base BENCH_BLAS_THREADS=2
+make bench-all-coverage REV=HEAD~1 LABEL=base BENCH_BLAS_THREADS=2
+```
+
+- `make coverage` wraps `Pkg.test(coverage=true)`, converts the resulting `src/*.cov` files into `lcov.info`, and prints a `src/` summary.
+- `make doctest-coverage` runs `docs/make.jl doctest=only` with coverage enabled and then summarizes the `src/` coverage files produced by that doctest-only execution.
+- `make notebook-coverage` executes the checked-in demo notebooks with coverage enabled and summarizes `src/`.
+- `make bench-coverage`, `make bench-compare-coverage`,
+  `make bench-compare-py-coverage`, and `make bench-all-coverage` now also
+  summarize `src/` only, even though the benchmark harness itself may emit
+  temporary `benchmark/*.cov` files during the run.
+
+All user-facing `*-coverage` targets now report package coverage with respect to
+`src/`. The `covered/executable` totals are still intentionally
+target-specific. `devtools/process_coverage.jl` only counts executable lines
+that appear in the `src/*.cov` files generated by the current run, so
+different entry points can produce different denominators. In particular,
+`make doctest-coverage` measures only the code reached while Documenter runs
+the doctests, after the docs environment has already been resolved separately,
+so its `(... executable lines)` total should not be expected to match
+`make coverage`.
+
 **A single demo notebook:**
 
 ```bash
@@ -123,10 +147,7 @@ make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=qmc-1.12
 make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
 ```
 
-`NOTEBOOK_JOBS` shards the runnable notebook list across separate Julia
-processes. If there are 34 runnable notebooks and `NOTEBOOK_JOBS=2`, the run is
-split into two 17-notebook shards. Set `NOTEBOOK_JOBS=1` when you want one
-sequential pass over the entire notebook set.
+`NOTEBOOK_JOBS` shards the runnable notebook list across separate Julia processes. If there are 34 runnable notebooks and `NOTEBOOK_JOBS=2`, the run is split into two 17-notebook shards. Set `NOTEBOOK_JOBS=1` when you want one sequential pass over the entire notebook set.
 
 **Build documentation:**
 
@@ -143,16 +164,16 @@ make bench-all REV=HEAD~1 BENCH_BLAS_THREADS=2
 
 ## Coverage Reports
 
-QMC.jl publishes test coverage through Linux coverage lanes in both `ci.yml` and `ci-full.yml`.
+QMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
 
 - The repository README badge points at the Codecov report for `develop`.
-- `ci.yml` converts Julia's `*.cov` outputs into `lcov.info` for feature branches.
-- The Linux Julia 1.11 lane in `ci-full.yml` does the same for `develop` and `master`.
-- The resulting LCOV file is uploaded to Codecov and also attached to the workflow run as an artifact.
+- The Linux Julia 1.11 lane in `ci-full.yml` runs `make coverage` for `develop` and `master`, uploads `lcov.info` to Codecov, and publishes the unit-coverage badge.
+- `doc_demo.yml` publishes separate develop/master badges for `make doctest-coverage` and notebook coverage.
+- `benchmarking.yml` publishes a separate develop/master badge for `make bench-coverage` while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
+- Each coverage-producing workflow also uploads its `lcov.info` as a GitHub Actions artifact.
 
 The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.
-`make coverage` additionally processes the raw `*.cov` files into `lcov.info`
-and prints a source-coverage summary for `src/`.
+`make coverage` additionally processes the raw `*.cov` files into `lcov.info` and prints a source-coverage summary for `src/`. The other `*-coverage` targets reuse the same post-processing script, now also report against `src/` only, and still measure different execution slices, so they may report different `executable lines` totals.
 
 ## Test File Structure
 

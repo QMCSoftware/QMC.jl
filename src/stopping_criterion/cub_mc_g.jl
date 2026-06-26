@@ -45,6 +45,20 @@ julia> result.data[:n_total] > 0
 true
 ```
 
+```jldoctest
+julia> using QMC
+
+julia> f = Keister(Gaussian(IIDStdUniform(2; seed=7)));
+
+julia> r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_max=2^18, trace_iterations=true));
+
+julia> isfinite(r.solution)
+true
+
+julia> haskey(r.data, :iteration_log)
+true
+```
+
 # References
 1. Hickernell, Jiang, Liu, Owen. "Guaranteed conservative fixed width
    confidence intervals via Monte Carlo sampling." MCQMC 2012.
