@@ -61,6 +61,16 @@ julia&gt; isapprox(result.solution, 0.8483; atol=0.05)
 true
 
 julia&gt; result.data[:n_total] &gt; 0
+true</code></pre><pre><code class="language-julia-repl hljs">julia&gt; using QMC
+
+julia&gt; f = Keister(Gaussian(IIDStdUniform(2; seed=7)));
+
+julia&gt; r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_max=2^18, trace_iterations=true));
+
+julia&gt; isfinite(r.solution)
+true
+
+julia&gt; haskey(r.data, :iteration_log)
 true</code></pre><p><strong>References</strong></p><ol><li>Hickernell, Jiang, Liu, Owen. &quot;Guaranteed conservative fixed width confidence intervals via Monte Carlo sampling.&quot; MCQMC 2012.</li></ol></div></section></details></article><article><details class="docstring" open="true"><summary id="QMC.CubQMCLatticeG"><a class="docstring-binding" href="#QMC.CubQMCLatticeG"><code>QMC.CubQMCLatticeG</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">CubQMCLatticeG(integrand; abs_tol=0.01, rel_tol=0.0,
                n_init=2^10, n_max=2^30, fft_error_bound=true,
                n_reps=16, alpha=0.01, trace_iterations=false)</code></pre><p>Guaranteed QMC cubature using a randomized lattice rule.</p><p>When <code>fft_error_bound=true</code> (default), uses a single randomized lattice draw and a Fourier-coefficient error bound (matching QMCPy&#39;s algorithm).  This is fast: one batch of n function evaluations, one FFT, done.</p><p>When <code>fft_error_bound=false</code>, uses <code>n_reps</code> independent randomized replicates and a Student-t confidence interval. Control variates always use the replication path regardless of <code>fft_error_bound</code>.</p><p>For vector-valued integrands (<code>QMC.d_indv(f) != ()</code>), returns a <a href="#QMC.QMCVecResult"><code>QMCVecResult</code></a> whose combined bounds are built through <code>QMC.bound_fun(f, low, high)</code>.</p><p>Pass <code>control_variates</code> (an integrand or vector of integrands sharing the main integrand&#39;s discrete distribution and dimension) with their known <code>control_variate_means</code> to apply linear control variates. Because control variates are replication-based, the coefficients β are fit once on a dedicated pilot draw and frozen, so the R per-replicate means stay i.i.d. and the t-confidence interval remains valid.</p><p>Supports <strong>resume</strong> and optional <strong>iteration logging</strong> (<code>trace_iterations=true</code>).</p><p><strong>Example</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using QMC
@@ -169,6 +179,23 @@ julia&gt; abs(result.solution - genz_exact(f)) &lt; 0.1
 true
 
 julia&gt; result.data[:converged]
+true</code></pre><pre><code class="language-julia-repl hljs">julia&gt; using QMC
+
+julia&gt; f = Genz(Uniform(Lattice(2; randomize=true, seed=7)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5]);
+
+julia&gt; r1 = integrate(CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, ptransform=:C1));
+
+julia&gt; isfinite(r1.solution)
+true
+
+julia&gt; r2 = integrate(CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, ptransform=:C2SIN));
+
+julia&gt; isfinite(r2.solution)
+true
+
+julia&gt; r3 = integrate(CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, ptransform=:C3));
+
+julia&gt; isfinite(r3.solution)
 true</code></pre></div></section></details></article><article><details class="docstring" open="true"><summary id="QMC.CubQMCBayesNetG"><a class="docstring-binding" href="#QMC.CubQMCBayesNetG"><code>QMC.CubQMCBayesNetG</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">CubQMCBayesNetG(integrand; abs_tol=0.01, rel_tol=0.0,
                 n_init=2^8, n_max=2^22, order=2,
                 ptransform=:NONE, errbd_type=:MLE, alpha=0.01,
@@ -298,4 +325,4 @@ julia&gt; sc.abs_tol
 0.2
 
 julia&gt; sc.rel_tol
-0.01</code></pre></div></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../kernels/">« Kernels</a><a class="docs-footer-nextpage" href="../utilities/">Utilities »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 26 June 2026 08:15">Friday 26 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+0.01</code></pre></div></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../kernels/">« Kernels</a><a class="docs-footer-nextpage" href="../utilities/">Utilities »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 26 June 2026 13:30">Friday 26 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

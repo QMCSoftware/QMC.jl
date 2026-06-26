@@ -8,7 +8,25 @@ julia&gt; bernoulli_poly(2, 0.5)
 -0.08333333333333334
 
 julia&gt; bernoulli_poly(4, 0.0)
--0.03333333333333333</code></pre></div></section></details></article><h2 id="Diagnostics"><a class="docs-heading-anchor" href="#Diagnostics">Diagnostics</a><a id="Diagnostics-1"></a><a class="docs-heading-anchor-permalink" href="#Diagnostics" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="QMC.DisplayTable"><a class="docstring-binding" href="#QMC.DisplayTable"><code>QMC.DisplayTable</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">DisplayTable</code></pre><p>Display object returned by <a href="#QMC.display_table"><code>display_table</code></a>. It renders as an aligned plain-text table in terminals and as an HTML table in notebook frontends.</p></div></section></details></article><article><details class="docstring" open="true"><summary id="QMC.display_table"><a class="docstring-binding" href="#QMC.display_table"><code>QMC.display_table</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">display_table(rows; columns=nothing, headers=nothing, formatters=NamedTuple(), caption=nothing)</code></pre><p>Create a compact table with aligned terminal output and an HTML representation for notebooks. Each row must be a <code>NamedTuple</code> with the same fields.</p><p><code>columns</code> controls field order, <code>headers</code> supplies display names, and <code>formatters</code> is a <code>NamedTuple</code> mapping fields to single-argument formatting functions. Numeric columns are right-aligned and other columns are left-aligned.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using QMC, Printf
+-0.03333333333333333
+
+julia&gt; bernoulli_poly(1, 1.0)
+0.5
+
+julia&gt; bernoulli_poly(3, 0.0)
+0.0
+
+julia&gt; bernoulli_poly(5, 0.0)
+0.0
+
+julia&gt; bernoulli_poly(6, 0.0) ≈ 1/42
+true
+
+julia&gt; QMC.bernoulli_number(2) ≈ 1/6
+true
+
+julia&gt; isfinite(QMC.lattice_kernel_component(0.3))
+true</code></pre></div></section></details></article><h2 id="Diagnostics"><a class="docs-heading-anchor" href="#Diagnostics">Diagnostics</a><a id="Diagnostics-1"></a><a class="docs-heading-anchor-permalink" href="#Diagnostics" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="QMC.DisplayTable"><a class="docstring-binding" href="#QMC.DisplayTable"><code>QMC.DisplayTable</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">DisplayTable</code></pre><p>Display object returned by <a href="#QMC.display_table"><code>display_table</code></a>. It renders as an aligned plain-text table in terminals and as an HTML table in notebook frontends.</p></div></section></details></article><article><details class="docstring" open="true"><summary id="QMC.display_table"><a class="docstring-binding" href="#QMC.display_table"><code>QMC.display_table</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">display_table(rows; columns=nothing, headers=nothing, formatters=NamedTuple(), caption=nothing)</code></pre><p>Create a compact table with aligned terminal output and an HTML representation for notebooks. Each row must be a <code>NamedTuple</code> with the same fields.</p><p><code>columns</code> controls field order, <code>headers</code> supplies display names, and <code>formatters</code> is a <code>NamedTuple</code> mapping fields to single-argument formatting functions. Numeric columns are right-aligned and other columns are left-aligned.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using QMC, Printf
 
 julia&gt; rows = [(n=64, error=0.012345), (n=128, error=0.001234)];
 
@@ -48,7 +66,21 @@ julia&gt; round.(periodize(x, :C1SIN); digits=6)
 julia&gt; periodize(x, :BAKER)
 2×2 Matrix{Float64}:
  0.5  1.0
- 0.5  0.2</code></pre></div></section></details></article><h2 id="Binary-Transforms"><a class="docs-heading-anchor" href="#Binary-Transforms">Binary Transforms</a><a id="Binary-Transforms-1"></a><a class="docs-heading-anchor-permalink" href="#Binary-Transforms" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="QMC.to_bin"><a class="docstring-binding" href="#QMC.to_bin"><code>QMC.to_bin</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">to_bin(x::Real, m::Int)</code></pre><p>Convert a float <code>x</code> in [0, 1) to its binary representation with <code>m</code> bits. Returns a vector of <code>m</code> integers (0 or 1).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using QMC
+ 0.5  0.2</code></pre><pre><code class="language-julia-repl hljs">julia&gt; using QMC
+
+julia&gt; x = [0.25 0.5; 0.75 0.1];
+
+julia&gt; periodize(x, :NONE) == x
+true
+
+julia&gt; all(0.0 .&lt;= periodize(x, :C1) .&lt;= 1.0)
+true
+
+julia&gt; all(0.0 .&lt;= periodize(x, :C2SIN) .&lt;= 1.0)
+true
+
+julia&gt; all(0.0 .&lt;= periodize(x, :C3) .&lt;= 1.0)
+true</code></pre></div></section></details></article><h2 id="Binary-Transforms"><a class="docs-heading-anchor" href="#Binary-Transforms">Binary Transforms</a><a id="Binary-Transforms-1"></a><a class="docs-heading-anchor-permalink" href="#Binary-Transforms" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="QMC.to_bin"><a class="docstring-binding" href="#QMC.to_bin"><code>QMC.to_bin</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">to_bin(x::Real, m::Int)</code></pre><p>Convert a float <code>x</code> in [0, 1) to its binary representation with <code>m</code> bits. Returns a vector of <code>m</code> integers (0 or 1).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using QMC
 
 julia&gt; to_bin(0.75, 4)
 4-element Vector{Int64}:
@@ -138,4 +170,4 @@ julia&gt; mktempdir() do d
 (:ordinary, UInt64[0x0000000000000001, 0x0000000000000003, 0x0000000000000005], 8, 3)</code></pre><p>Adapted from the LatNetBuilder Python parser:   https://github.com/umontreal-simul/latnetbuilder/blob/master/python-wrapper/latnetbuilder/parse_output.py</p></div></section></details></article><h2 id="Multilevel-Utilities"><a class="docs-heading-anchor" href="#Multilevel-Utilities">Multilevel Utilities</a><a id="Multilevel-Utilities-1"></a><a class="docs-heading-anchor-permalink" href="#Multilevel-Utilities" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="QMC.mlmc_test-Tuple{AbstractMLIntegrand}"><a class="docstring-binding" href="#QMC.mlmc_test-Tuple{AbstractMLIntegrand}"><code>QMC.mlmc_test</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">mlmc_test(integrand; n=20000, L=8)</code></pre><p>MLMC convergence rate test routine. Estimates the three key MLMC parameters (α, β, γ) by running <code>n</code> samples at each of <code>L+1</code> levels and performing linear regression on the observed means, variances, and costs.</p><p>Prints a formatted table with per-level statistics and regression estimates.</p><p><strong>Returns</strong></p><ul><li><code>alpha::Float64</code>: weak convergence exponent (E[P<em>ℓ - P</em>{ℓ-1}] ~ 2^{-α·ℓ})</li><li><code>beta::Float64</code>:  variance decay exponent (Var[P<em>ℓ - P</em>{ℓ-1}] ~ 2^{-β·ℓ})</li><li><code>gamma::Float64</code>: cost growth exponent (cost_ℓ ~ 2^{γ·ℓ})</li></ul><p><strong>Example</strong></p><pre><code class="language-text hljs">dd = IIDStdUniform(4; seed=7)
 tm = GeometricBrownianMotion(dd)
 fml = FinancialOptionML(tm; d_coarsest=4)
-alpha, beta, gamma = mlmc_test(fml; n=10000, L=6)</code></pre></div></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../stopping_criteria/">« Stopping Criteria</a><a class="docs-footer-nextpage" href="../internals/">Internals »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 26 June 2026 08:15">Friday 26 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+alpha, beta, gamma = mlmc_test(fml; n=10000, L=6)</code></pre></div></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../stopping_criteria/">« Stopping Criteria</a><a class="docs-footer-nextpage" href="../internals/">Internals »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 26 June 2026 13:30">Friday 26 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
