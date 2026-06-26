@@ -1,0 +1,19 @@
+{
+  "branch": "develop",
+  "label": "sha-8508c52",
+  "commit_sha": "8508c5233e77de0494c11eac19fff89283dc5c70",
+  "run_id": "28241171994",
+  "run_number": "28",
+  "run_attempt": "1",
+  "source_manifest": "badges/benchmark-source-develop.json",
+  "archived_files": [
+    "sha-8508c52.json",
+    "sha-8508c52_memory.json",
+    "sha-8508c52_solutions.json",
+    "sha-8508c52_oracles.json",
+    "qmcpy_sha-8508c52.json",
+    "compare_sha-8508c52.md",
+    "compare_python_sha-8508c52.md",
+    "compare_python_summary_sha-8508c52.json"
+  ]
+}
