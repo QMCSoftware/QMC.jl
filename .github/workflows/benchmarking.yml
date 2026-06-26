@@ -148,13 +148,22 @@ jobs:
           }
           EOF
           cat > README.md <<'EOF'
-          Benchmark badge JSON and archived source snapshots for Shields.io.
+          Benchmark and coverage badge JSON plus archived source snapshots for Shields.io.
           Latest badge source manifests live under `badges/`.
-          Historical snapshots of the exact benchmark result files used for each badge update live under `archive/<branch>/<label>/`.
+          Historical benchmark snapshots live under `archive/<branch>/<label>/`.
+          Historical coverage snapshots live under `archive/coverage/<scope>/<branch>/<label>/`.
           EOF
           git add badges archive README.md
           git commit -m "Update benchmark badges for ${GITHUB_SHA}" || exit 0
-          git push origin HEAD:"$BADGE_BRANCH"
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:"$BADGE_BRANCH"; then
+              exit 0
+            fi
+            git fetch --depth=1 origin "$BADGE_BRANCH"
+            git rebase "origin/$BADGE_BRANCH"
+          done
+          echo "Failed to publish benchmark badges after 5 attempts" >&2
+          exit 1
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
@@ -162,3 +171,64 @@ jobs:
           name: benchmark-results-julia-${{ matrix.julia-version }}-${{ github.ref_name }}-${{ github.run_number }}
           path: benchmark/results
           if-no-files-found: error
+
+  benchmark_coverage:
+    if: github.ref_name == 'develop' || github.ref_name == 'master'
+    needs: benchmark
+    name: Benchmark Coverage – Julia 1.12 – ubuntu-latest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BENCH_BLAS_THREADS: ${{ vars.BENCH_BLAS_THREADS || '2' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: benchmark/requirements.txt
+
+      - name: Install benchmark Python dependencies
+        run: pip install -r benchmark/requirements.txt
+
+      - name: Run benchmark coverage
+        run: |
+          export QMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+          export OPENBLAS_NUM_THREADS="$BENCH_BLAS_THREADS"
+          export MKL_NUM_THREADS="$BENCH_BLAS_THREADS"
+          export OMP_NUM_THREADS="$BENCH_BLAS_THREADS"
+          export NUMEXPR_NUM_THREADS="$BENCH_BLAS_THREADS"
+          make bench-coverage BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+
+      - name: Upload benchmark coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-bench-${{ github.ref_name }}-${{ github.run_number }}
+          path: lcov.info
+          if-no-files-found: error
+
+      - name: Generate benchmark coverage badge
+        run: julia --project=. devtools/generate_coverage_badges.jl lcov.info bench "${{ github.ref_name }}" coverage_badges
+
+      - name: Publish benchmark coverage badge
+        env:
+          BADGE_BRANCH: benchmark-badges
+          BADGE_DIR: coverage_badges
+          COVERAGE_SCOPE: bench
+          LCOV_PATH: lcov.info
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          export COVERAGE_LABEL="sha-${GITHUB_SHA::7}"
+          bash devtools/publish_coverage_badges.sh

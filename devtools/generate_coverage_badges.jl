@@ -87,10 +87,8 @@ function main(args)
     manifest_path = joinpath(outdir, "coverage-source-$(scope_key)-$(branch_key).json")
     message = @sprintf("%.2f%%", stats.pct)
     color = coverage_color(stats.pct)
-    generated_at = Dates.format(
-        Dates.now(Dates.UTC),
-        dateformat"yyyy-mm-ddTHH:MM:SS\\Z",
-    )
+    generated_at =
+        Dates.format(Dates.now(Dates.UTC), dateformat"yyyy-mm-ddTHH:MM:SS") * "Z"
 
     write_json(
         badge_path,

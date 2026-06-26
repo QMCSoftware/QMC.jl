@@ -171,7 +171,7 @@ jobs:
   notebook_coverage:
     if: github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master')
     name: Notebook Coverage
-    needs: doctest_coverage
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write

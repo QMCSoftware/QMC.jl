@@ -86,4 +86,14 @@ EOF
 
 git add badges archive README.md
 git commit -m "Update coverage badge ${scope_slug} for ${GITHUB_SHA}" || exit 0
-git push origin HEAD:"$BADGE_BRANCH"
+
+for attempt in 1 2 3 4 5; do
+  if git push origin HEAD:"$BADGE_BRANCH"; then
+    exit 0
+  fi
+  git fetch --depth=1 origin "$BADGE_BRANCH"
+  git rebase "origin/$BADGE_BRANCH"
+done
+
+echo "Failed to publish coverage badge after 5 attempts" >&2
+exit 1

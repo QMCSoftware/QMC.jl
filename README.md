@@ -8,6 +8,11 @@
 [![codecov](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
+[![Unit Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/coverage-unit-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml)
+[![Doctest Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/coverage-doctest-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml)
+[![Notebook Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/coverage-notebook-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml)
+[![Benchmark Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/coverage-bench-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
+
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 Quasi-Monte Carlo (QMC) methods approximate multivariate integrals using four interacting components: a **discrete distribution** (low-discrepancy sequence), a **true measure** (target probability space), an **integrand** (function to evaluate), and a **stopping criterion** (adaptive error control). QMC.jl provides plug-and-play implementations of each, following the same abstract-type framework as QMCPy so that components from both libraries compose naturally.
