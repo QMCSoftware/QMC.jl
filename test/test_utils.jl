@@ -176,8 +176,8 @@
 
         # k=2: B_2(x) = x² - x + 1/6; B_2(1/2) = -1/12.
         @test bernoulli_poly(2, 0.5) ≈ -1/12 atol=1e-15
-        @test bernoulli_poly(2, 0.0) ≈  1/6  atol=1e-15
-        @test bernoulli_poly(2, 1.0) ≈  1/6  atol=1e-15  # B_k(0) = B_k(1) for k ≥ 2
+        @test bernoulli_poly(2, 0.0) ≈ 1/6 atol=1e-15
+        @test bernoulli_poly(2, 1.0) ≈ 1/6 atol=1e-15  # B_k(0) = B_k(1) for k ≥ 2
 
         # k=4: B_4(0) = -1/30.
         @test bernoulli_poly(4, 0.0) ≈ -1/30 atol=1e-15
@@ -196,7 +196,7 @@
         # lattice_kernel_component: alpha=1 uses B_2, alpha=2 uses B_4, alpha=3 uses B_6.
         x = 0.3
         # sign_factor = (-1)^(alpha+1): alpha=1 → +1, alpha=2 → -1.
-        @test QMC.lattice_kernel_component(x, 1) ≈  (2π)^2 / 2  * bernoulli_poly(2, x) atol=1e-12
+        @test QMC.lattice_kernel_component(x, 1) ≈ (2π)^2 / 2 * bernoulli_poly(2, x) atol=1e-12
         @test QMC.lattice_kernel_component(x, 2) ≈ -(2π)^4 / 24 * bernoulli_poly(4, x) atol=1e-12
         # alpha out of range raises an error.
         @test_throws ErrorException QMC.lattice_kernel_component(x, 0)
@@ -234,5 +234,21 @@
         @test_throws ArgumentError display_table(rows; columns=[:missing])
         @test_throws ArgumentError display_table(rows; columns=[:n], headers=["N", "extra"])
         @test_throws ArgumentError display_table([(n=1,), (value=2,)])
+    end
+
+    @testset "IterationRows/Log empty show and elapsed formatting" begin
+        empty_rows = iterations(IterationLog())
+        @test sprint(show, empty_rows) == "IterationRows (empty)"
+        @test sprint(io -> show(io, MIME("text/html"), empty_rows)) ==
+              "<p>IterationRows (empty)</p>"
+        @test sprint(show, IterationLog()) == "IterationLog (empty)"
+        log_nan = IterationLog()
+        push!(log_nan; n=10, solution=1.0, error_bound=0.1, tol=0.1, elapsed=NaN)
+        txt_nan = sprint(show, log_nan)
+        @test occursin("-", txt_nan)
+        log_tiny = IterationLog()
+        push!(log_tiny; n=10, solution=1.0, error_bound=0.1, tol=0.1, elapsed=1e-5)
+        txt_tiny = sprint(show, log_tiny)
+        @test occursin("e", txt_tiny)
     end
 end

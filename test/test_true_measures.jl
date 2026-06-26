@@ -470,6 +470,62 @@
         @test_throws ArgumentError ZeroInflatedExpUniform(dd; low=1.0, high=0.0)
     end
 
+    @testset "BrownianMotion time_vector parameter" begin
+        dd = IIDStdUniform(4; seed=201)
+        tv = [0.25, 0.5, 0.75, 1.0]
+        tm = BrownianMotion(dd; time_vector=tv)
+        x = gen_samples(dd, 10)
+        y = transform(tm, x)
+        @test size(y) == (10, 4)
+        @test all(isfinite, y)
+        @test_throws ArgumentError BrownianMotion(dd; time_vector=tv, t_final=1.0)
+        @test_throws ArgumentError BrownianMotion(dd; time_vector=[0.5, 1.0])
+        @test_throws ArgumentError BrownianMotion(dd; time_vector=[0.5, 0.5, 0.75, 1.0])
+        @test_throws ArgumentError BrownianMotion(dd; time_vector=[-0.1, 0.25, 0.5, 1.0])
+    end
+
+    @testset "Gaussian vector and matrix covariance" begin
+        dd = IIDStdUniform(3; seed=202)
+        tm_vec = Gaussian(dd; covariance=[1.0, 2.0, 3.0])
+        x = gen_samples(dd, 20)
+        y_vec = transform(tm_vec, x)
+        @test size(y_vec) == (20, 3)
+        @test all(isfinite, y_vec)
+        Σ = [2.0 1.0 0.5; 1.0 2.0 0.5; 0.5 0.5 2.0]
+        tm_mat = Gaussian(dd; covariance=Σ)
+        y_mat = transform(tm_mat, x)
+        @test size(y_mat) == (20, 3)
+        @test all(isfinite, y_mat)
+        tm_nd = Gaussian(IIDStdUniform(2; seed=203); covariance=[1.0 0.5; 0.5 1.0])
+        z = randn(10, 2)
+        yr = QMC._transform_from_randn(tm_nd, z)
+        @test size(yr) == (10, 2)
+        @test all(isfinite, yr)
+    end
+
+    @testset "GeometricBrownianMotion constructor error branches" begin
+        dd = IIDStdUniform(4; seed=204)
+        @test_throws ArgumentError GeometricBrownianMotion(
+            dd;
+            initial_value=100.0,
+            start_price=50.0,
+            t_final=1.0,
+        )
+        @test_throws ArgumentError GeometricBrownianMotion(
+            dd;
+            drift=0.1,
+            interest_rate=0.05,
+            t_final=1.0,
+        )
+        @test_throws ArgumentError GeometricBrownianMotion(dd; volatility=-0.2, t_final=1.0)
+        @test_throws ArgumentError GeometricBrownianMotion(
+            dd;
+            diffusion=0.5,
+            volatility=0.2,
+            t_final=1.0,
+        )
+    end
+
     @testset "Non-Standard Gaussian covariance (regression: shared-dd cross/star artifact)" begin
         # DigitalNetB2 is a stateful mutable struct: every gen_samples call advances the
         # internal MersenneTwister rng (LMS scramble + digital shift). Sharing one

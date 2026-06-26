@@ -369,7 +369,9 @@ end
         # trace_iterations fills iteration_log; also covers line 150 (log in data).
         dd_tr = DigitalNetB2(2; randomize="DS", seed=701)
         f_tr = Genz(Uniform(dd_tr); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
-        r_tr = integrate(CubQMCNetGRep(f_tr; abs_tol=0.1, n_init=2^10, n_reps=8, trace_iterations=true))
+        r_tr = integrate(
+            CubQMCNetGRep(f_tr; abs_tol=0.1, n_init=2^10, n_reps=8, trace_iterations=true),
+        )
         @test haskey(r_tr.data, :iteration_log)
         @test length(r_tr.data[:iteration_log]) >= 1
 
@@ -377,7 +379,10 @@ end
         dd_r1 = DigitalNetB2(2; randomize="DS", seed=702)
         f_r1 = Genz(Uniform(dd_r1); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
         r1 = integrate(CubQMCNetGRep(f_r1; abs_tol=2.0, n_init=2^8, n_reps=8))
-        r2 = integrate(CubQMCNetGRep(f_r1; abs_tol=0.1, n_init=2^8, n_max=2^14, n_reps=8); resume=r1.data)
+        r2 = integrate(
+            CubQMCNetGRep(f_r1; abs_tol=0.1, n_init=2^8, n_max=2^14, n_reps=8);
+            resume=r1.data,
+        )
         @test r2.data[:n] >= r1.data[:n]
 
         # Non-convergence warning: very tight tol with tiny n_max (covers lines 129-130, 134).
@@ -424,7 +429,9 @@ end
         tm = Uniform(dd)
         f = Sin1D(tm; k=1)
         for pt in [:C1, :C2SIN, :C3]
-            r = integrate(CubQMCBayesLatticeG(f; abs_tol=0.5, n_init=2^8, n_max=2^10, ptransform=pt))
+            r = integrate(
+                CubQMCBayesLatticeG(f; abs_tol=0.5, n_init=2^8, n_max=2^10, ptransform=pt),
+            )
             @test r.solution isa Float64
             @test isfinite(r.solution)
         end
@@ -481,21 +488,35 @@ end
         # trace_iterations fills iteration_log; also covers line 203 (log in data).
         dd_tr = DigitalNetB2(2; randomize="LMS_DS", seed=902, replications=4)
         f_tr = Genz(Uniform(dd_tr); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
-        r_tr = integrate(CubQMCRepStudentT(f_tr; abs_tol=0.2, n_init=32, n_limit=128, trace_iterations=true))
+        r_tr = integrate(
+            CubQMCRepStudentT(f_tr; abs_tol=0.2, n_init=32, n_limit=128, trace_iterations=true),
+        )
         @test haskey(r_tr.data, :iteration_log)
         @test length(r_tr.data[:iteration_log]) >= 1
 
         # rel_tol + error_fun=:both → covers _error_bound_tol :both branch.
         dd_rb = DigitalNetB2(2; randomize="LMS_DS", seed=903, replications=4)
         f_rb = Genz(Uniform(dd_rb); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
-        r_rb = integrate(CubQMCRepStudentT(f_rb; abs_tol=0.5, rel_tol=0.5, error_fun=:both, n_init=32, n_limit=512))
+        r_rb = integrate(
+            CubQMCRepStudentT(
+                f_rb;
+                abs_tol=0.5,
+                rel_tol=0.5,
+                error_fun=:both,
+                n_init=32,
+                n_limit=512,
+            ),
+        )
         @test r_rb.solution isa Float64
 
         # Resume: continue from a previous result's data dict.
         dd_res = DigitalNetB2(2; randomize="LMS_DS", seed=904, replications=4)
         f_res = Genz(Uniform(dd_res); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
         r1 = integrate(CubQMCRepStudentT(f_res; abs_tol=0.5, n_init=32, n_limit=64))
-        r2 = integrate(CubQMCRepStudentT(f_res; abs_tol=0.1, n_init=32, n_limit=2^12); resume=r1.data)
+        r2 = integrate(
+            CubQMCRepStudentT(f_res; abs_tol=0.1, n_init=32, n_limit=2^12);
+            resume=r1.data,
+        )
         @test r2.data[:n_per_rep] >= r1.data[:n_per_rep]
 
         # n_limit exceeded: warns and stops (covers lines 174-177).
@@ -754,5 +775,156 @@ end
 
         # The two QMC rules estimate the same integral.
         @test abs(integrate(net(0.05)).solution - integrate(lat(0.05)).solution) < 0.2
+    end
+
+    @testset "CubMCG (rel_tol iterative mode)" begin
+        dd = IIDStdUniform(3; seed=2001)
+        f = Keister(Gaussian(dd; covariance=0.5))
+        r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_max=2^18))
+        @test r.solution isa Float64
+        @test isfinite(r.solution)
+        r2 = integrate(
+            CubMCG(
+                f;
+                abs_tol=0.01,
+                rel_tol=0.05,
+                n_init=256,
+                n_max=2^18,
+                trace_iterations=true,
+            ),
+        )
+        @test haskey(r2.data, :iteration_log)
+        @test length(r2.data[:iteration_log]) >= 1
+    end
+
+    @testset "CubQMCBayesNetG (order=2, order=3, GCV, resume, non-conv)" begin
+        dd2 = DigitalNetB2(2; randomize="LMS_DS", seed=2002)
+        f2 = Genz(Uniform(dd2); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r2 = integrate(CubQMCBayesNetG(f2; abs_tol=0.1, n_init=2^8, n_max=2^12, order=2))
+        @test r2.solution isa Float64
+        @test isfinite(r2.solution)
+        dd3 = DigitalNetB2(2; randomize="LMS_DS", seed=2003)
+        f3 = Genz(Uniform(dd3); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r3 = integrate(CubQMCBayesNetG(f3; abs_tol=0.1, n_init=2^8, n_max=2^12, order=3))
+        @test r3.solution isa Float64
+        dd_gcv = DigitalNetB2(2; randomize="LMS_DS", seed=2004)
+        f_gcv = Genz(Uniform(dd_gcv); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_gcv = integrate(
+            CubQMCBayesNetG(f_gcv; abs_tol=0.1, n_init=2^8, n_max=2^12, errbd_type=:GCV),
+        )
+        @test r_gcv.solution isa Float64
+        dd_res = DigitalNetB2(2; randomize="LMS_DS", seed=2005)
+        f_res = Genz(Uniform(dd_res); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_r1 = integrate(CubQMCBayesNetG(f_res; abs_tol=2.0, n_init=2^8, n_max=2^10))
+        r_r2 = integrate(
+            CubQMCBayesNetG(f_res; abs_tol=0.01, n_init=2^8, n_max=2^14);
+            resume=r_r1.data,
+        )
+        @test r_r2.data[:n] >= r_r1.data[:n]
+        dd_nc = DigitalNetB2(2; randomize="LMS_DS", seed=2006)
+        f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[10.0, 10.0], u=[0.5, 0.5])
+        @test_logs (:warn, r"CubQMCBayesNetG") integrate(
+            CubQMCBayesNetG(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10),
+        )
+    end
+
+    @testset "CubQMCLatticeG (FFT trace + non-conv + resume)" begin
+        dd = Lattice(2; randomize=true, seed=2007)
+        f = Genz(Uniform(dd); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_tr = integrate(CubQMCLatticeG(f; abs_tol=0.05, n_init=2^8, trace_iterations=true))
+        @test haskey(r_tr.data, :iteration_log)
+        @test length(r_tr.data[:iteration_log]) >= 1
+        dd_nc = Lattice(2; randomize=true, seed=2008)
+        f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[10.0, 10.0], u=[0.5, 0.5])
+        @test_logs (:warn, r"CubQMCLatticeG") integrate(
+            CubQMCLatticeG(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10),
+        )
+        dd_r = Lattice(2; randomize=true, seed=2009)
+        f_r = Genz(Uniform(dd_r); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r1 = integrate(CubQMCLatticeG(f_r; abs_tol=2.0, n_init=2^8, n_max=2^10))
+        r_res =
+            integrate(CubQMCLatticeG(f_r; abs_tol=0.01, n_init=2^8, n_max=2^14); resume=r1.data)
+        @test r_res.data[:n] >= r1.data[:n]
+    end
+
+    @testset "CubQMCLatticeG (replication scalar: trace + non-conv + resume)" begin
+        dd = Lattice(2; randomize=true, seed=2011)
+        f = Genz(Uniform(dd); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_tr = integrate(
+            CubQMCLatticeG(
+                f;
+                abs_tol=0.05,
+                n_init=2^8,
+                n_reps=8,
+                fft_error_bound=false,
+                trace_iterations=true,
+            ),
+        )
+        @test haskey(r_tr.data, :iteration_log)
+        @test length(r_tr.data[:iteration_log]) >= 1
+        dd_nc = Lattice(2; randomize=true, seed=2012)
+        f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[10.0, 10.0], u=[0.5, 0.5])
+        @test_logs (:warn, r"CubQMCLatticeG") integrate(
+            CubQMCLatticeG(
+                f_nc;
+                abs_tol=1e-8,
+                n_init=2^8,
+                n_max=2^10,
+                n_reps=8,
+                fft_error_bound=false,
+            ),
+        )
+        dd_r = Lattice(2; randomize=true, seed=2013)
+        f_r = Genz(Uniform(dd_r); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r1 = integrate(
+            CubQMCLatticeG(
+                f_r;
+                abs_tol=2.0,
+                n_init=2^8,
+                n_max=2^10,
+                n_reps=8,
+                fft_error_bound=false,
+            ),
+        )
+        r_res = integrate(
+            CubQMCLatticeG(
+                f_r;
+                abs_tol=0.01,
+                n_init=2^8,
+                n_max=2^14,
+                n_reps=8,
+                fft_error_bound=false,
+            );
+            resume=r1.data,
+        )
+        @test r_res.data[:n] >= r1.data[:n]
+    end
+
+    @testset "CubQMCLatticeG (FFT multi-output: trace + non-conv + resume)" begin
+        dd = Lattice(1; randomize=true, seed=2014)
+        f = _VecCLTIntegrand(Uniform(dd))
+        r_tr = integrate(CubQMCLatticeG(f; abs_tol=0.02, n_init=2^8, trace_iterations=true))
+        @test r_tr isa QMCVecResult
+        @test haskey(r_tr.data, :iteration_log)
+        @test length(r_tr.data[:iteration_log]) >= 1
+        dd_nc = Lattice(1; randomize=true, seed=2015)
+        f_nc = _VecCLTIntegrand(Uniform(dd_nc))
+        @test_logs (:warn, r"CubQMCLatticeG") integrate(
+            CubQMCLatticeG(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10),
+        )
+        dd_r = Lattice(1; randomize=true, seed=2016)
+        f_r = _VecCLTIntegrand(Uniform(dd_r))
+        r1 = integrate(CubQMCLatticeG(f_r; abs_tol=2.0, n_init=2^8, n_max=2^10))
+        r_res = integrate(
+            CubQMCLatticeG(f_r; abs_tol=0.005, n_init=2^8, n_max=2^14);
+            resume=r1.data,
+        )
+        @test r_res.data[:n] >= r1.data[:n]
+    end
+
+    @testset "CubQMCNetG (n_init bump warning)" begin
+        dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=2010)
+        f = Genz(Uniform(dd); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        @test_logs (:warn, r"CubQMCNetG") CubQMCNetG(f; abs_tol=0.1, n_init=64)
     end
 end

@@ -588,8 +588,8 @@
     @testset "DigitalNetAnyBases" begin
         # Reproduces the docstring example exactly (base-3, 2D, 3-bit precision).
         C = zeros(Int, 2, 3, 3)
-        C[1,:,:] = [1 0 0; 0 1 0; 1 2 1]
-        C[2,:,:] = [2 0 0; 1 2 0; 0 2 2]
+        C[1, :, :] = [1 0 0; 0 1 0; 1 2 1]
+        C[2, :, :] = [2 0 0; 1 2 0; 0 2 2]
         dd = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none")
         x = gen_samples(dd, 9)
         @test size(x) == (9, 2)
@@ -611,7 +611,14 @@
         @test all(0.0 .<= x_ds .< 1.0)
 
         # Replications layout: (R, n, d).
-        dd_rep = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="DS", seed=1, replications=3)
+        dd_rep = DigitalNetAnyBases(
+            2;
+            bases=3,
+            generating_matrices=C,
+            randomize="DS",
+            seed=1,
+            replications=3,
+        )
         x_rep = gen_samples(dd_rep, 9)
         @test size(x_rep) == (3, 9, 2)
         @test all(0.0 .<= x_rep .< 1.0)
@@ -629,7 +636,13 @@
 
         # replications > 1 with randomize="none" triggers a warning (line 169).
         @test_logs (:warn, r"replications.*no randomization") begin
-            dd_warn = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none", replications=2)
+            dd_warn = DigitalNetAnyBases(
+                2;
+                bases=3,
+                generating_matrices=C,
+                randomize="none",
+                replications=2,
+            )
             gen_samples(dd_warn, 3)
         end
 
@@ -639,16 +652,27 @@
         for j in 1:4
             C4[j, :, :] = C[mod1(j, 2), :, :]
         end
-        dd_ho = DigitalNetAnyBases(2; bases=3, generating_matrices=C4, randomize="none", alpha=2)
+        dd_ho =
+            DigitalNetAnyBases(2; bases=3, generating_matrices=C4, randomize="none", alpha=2)
         x_ho = gen_samples(dd_ho, 9)
         @test size(x_ho) == (9, 2)
         @test all(0.0 .<= x_ho .< 1.0)
         # alpha>1 requires d_gen >= dimension*alpha; fewer gen matrices should error.
-        @test_throws ArgumentError DigitalNetAnyBases(2; bases=3, generating_matrices=C, alpha=2)
+        @test_throws ArgumentError DigitalNetAnyBases(
+            2;
+            bases=3,
+            generating_matrices=C,
+            alpha=2,
+        )
 
         # Argument errors.
         @test_throws ArgumentError DigitalNetAnyBases(0; bases=3, generating_matrices=C)
-        @test_throws ArgumentError DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="BAD")
+        @test_throws ArgumentError DigitalNetAnyBases(
+            2;
+            bases=3,
+            generating_matrices=C,
+            randomize="BAD",
+        )
         C_small = zeros(Int, 1, 3, 3)
         @test_throws ArgumentError DigitalNetAnyBases(2; bases=3, generating_matrices=C_small)
     end
@@ -704,5 +728,27 @@
         x4 = gen_samples(kr, 50; n_start=100)
         @test size(x4) == (50, 2)
         @test all(0.0 .<= x4 .< 1.0)
+    end
+
+    @testset "Lattice linear order ignores n_start (warning)" begin
+        dd = Lattice(2; randomize=false, order="linear")
+        @test_logs (:warn, r"linear order ignores n_start") gen_samples(dd, 8; n_start=4)
+    end
+
+    @testset "DigitalNetB2 NUS randomize" begin
+        dd = DigitalNetB2(2; randomize="NUS", seed=5)
+        x = gen_samples(dd, 16)
+        @test size(x) == (16, 2)
+        @test all(0.0 .<= x .< 1.0)
+    end
+
+    @testset "Kronecker custom generator vector" begin
+        alpha = [0.6180339887498949, 0.4142135623730951]
+        kr = Kronecker(2; generator=alpha)
+        @test kr.alpha == alpha
+        x = gen_samples(kr, 10)
+        @test size(x) == (10, 2)
+        @test all(0.0 .<= x .< 1.0)
+        @test_throws ArgumentError Kronecker(2; generator=:invalid)
     end
 end
