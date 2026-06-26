@@ -479,4 +479,314 @@ QMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims
         @test QMC.bound_fun(toy, lo, hi) == (lo, hi)
         @test QMC.dependency(toy, [true, false, true]) == [true, false, true]
     end
+
+    @testset "CustomFun (matrix output + replicated sampler)" begin
+        dd = IIDStdUniform(2; seed=12)
+        tm = Uniform(dd)
+        # g returns a matrix — evaluate must vec() it (line 51 in custom_fun.jl)
+        f_mat = CustomFun(tm, x -> reshape(sum(x; dims=2), size(x, 1), 1))
+        y_mat = sample_and_evaluate(f_mat, 100)
+        @test length(y_mat) == 100
+        @test all(isfinite, y_mat)
+
+        # _sample_uniform_points with a replicated DD flattens R×n×d → R*n × d
+        dd_rep = DigitalNetB2(2; randomize="DS", seed=13, replications=2)
+        tm_rep = Uniform(dd_rep)
+        f_rep = CustomFun(tm_rep, x -> sum(x; dims=2)[:])
+        y_rep = sample_and_evaluate(f_rep, 8)
+        @test length(y_rep) == 16  # 2 reps × 8 points
+        @test all(isfinite, y_rep)
+    end
+
+    @testset "Genz exact value (zero a[j] branches)" begin
+        # When a[j] ≈ 0 the exact-value formulas take special branches:
+        # gaussian_peak: continue (line 224), continuous: val *= 1 (line 236),
+        # discontinuous: val *= u[j] (line 249).
+        dd = IIDStdUniform(2; seed=14)
+        tm = Uniform(dd)
+        f_gp = Genz(tm; kind=:gaussian_peak, a=[0.0, 1.0], u=[0.5, 0.5])
+        ev_gp = genz_exact(f_gp)
+        @test isfinite(ev_gp) && ev_gp > 0
+
+        f_cont = Genz(tm; kind=:continuous, a=[0.0, 1.0], u=[0.5, 0.5])
+        ev_cont = genz_exact(f_cont)
+        @test isfinite(ev_cont) && ev_cont > 0
+
+        f_disc = Genz(tm; kind=:discontinuous, a=[0.0, 1.0], u=[0.5, 0.5])
+        ev_disc = genz_exact(f_disc)
+        @test isfinite(ev_disc) && ev_disc > 0
+    end
+
+    @testset "AsianOption (geometric-mean evaluate)" begin
+        # Covers lines 106-113 in asian_option.jl (geometric path of evaluate).
+        dd = IIDStdUniform(8; seed=15)
+        tm = BrownianMotion(dd)
+        ao_geo = AsianOption(
+            tm;
+            mean_type=:geometric,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+        )
+        y_geo = sample_and_evaluate(ao_geo, 500)
+        @test all(y_geo .>= 0.0)
+        @test mean(y_geo) > 0
+
+        # Put variant via AsianOption
+        ao_put = AsianOption(
+            tm;
+            call_put=:put,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+            interest_rate=0.05,
+        )
+        y_put = sample_and_evaluate(ao_put, 300)
+        @test all(y_put .>= 0.0)
+    end
+
+    @testset "BayesianLRCoeffs (bias term + extreme eta)" begin
+        # d = n_features + 1 triggers offset=1 (bias intercept), line 82.
+        # Large feature values make eta > 20 or < -20, covering lines 88 and 90.
+        features_extreme = vcat(100 .* ones(25, 3), -100 .* ones(25, 3))
+        response = vcat(ones(Int, 25), zeros(Int, 25))
+        dd_bias = IIDStdUniform(4; seed=16)  # d=4 = n_features(3) + 1 → bias offset
+        tm_bias = Gaussian(dd_bias)
+        blr_bias = BayesianLRCoeffs(
+            tm_bias;
+            feature_array=features_extreme,
+            response_vector=Float64.(response),
+        )
+        x_bias = transform(tm_bias, gen_samples(dd_bias, 20))
+        y_bias = evaluate(blr_bias, x_bias)
+        @test length(y_bias) == 20
+        @test all(isfinite, y_bias)
+    end
+
+    @testset "FinancialOption (non-GBM coverage)" begin
+        dd_bm = IIDStdUniform(4; seed=403)
+        tm_bm = BrownianMotion(dd_bm)
+
+        # Constructor: conflicting mean_type and asian_mean (line 99)
+        @test_throws ArgumentError FinancialOption(
+            tm_bm;
+            option_type=:asian,
+            mean_type=:arithmetic,
+            asian_mean=:geometric,
+        )
+
+        # Geometric asian mean, non-GBM path → _payoff line 182
+        f_ag = FinancialOption(
+            tm_bm;
+            option_type=:asian,
+            mean_type=:geometric,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+        )
+        y_ag = sample_and_evaluate(f_ag, 300)
+        @test all(y_ag .>= 0.0)
+
+        # Lookback put, non-GBM → _payoff line 189
+        f_lp = FinancialOption(
+            tm_bm;
+            option_type=:lookback,
+            call_put=:put,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=90.0,
+        )
+        y_lp = sample_and_evaluate(f_lp, 300)
+        @test all(y_lp .>= 0.0)
+
+        # Barrier up-barrier :in, non-GBM → _barrier_payoff lines 203-223 (up branch line 211)
+        f_bin = FinancialOption(
+            tm_bm;
+            option_type=:barrier,
+            barrier_price=120.0,
+            barrier_in_out=:in,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+        )
+        y_bin = sample_and_evaluate(f_bin, 300)
+        @test all(y_bin .>= 0.0)
+
+        # Barrier down-barrier :out, non-GBM → _barrier_payoff down branch line 213
+        f_bout = FinancialOption(
+            tm_bm;
+            option_type=:barrier,
+            barrier_price=80.0,
+            barrier_in_out=:out,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+        )
+        y_bout = sample_and_evaluate(f_bout, 300)
+        @test all(y_bout .>= 0.0)
+    end
+
+    @testset "FinancialOption (GBM fast-path coverage)" begin
+        dd_g = IIDStdUniform(16; seed=404)
+        tm_g = GeometricBrownianMotion(
+            dd_g;
+            volatility=0.2,
+            start_price=100.0,
+            interest_rate=0.05,
+            t_final=1.0,
+        )
+        x_g = transform(tm_g, gen_samples(dd_g, 200))
+
+        # European put GBM fast path (line 240)
+        f_ep = FinancialOption(tm_g; option_type=:european, call_put=:put, strike_price=100.0)
+        y_ep = evaluate(f_ep, x_g)
+        @test all(y_ep .>= 0.0)
+
+        # Asian arithmetic put GBM fast path (lines 251-272 put branch)
+        f_ap = FinancialOption(
+            tm_g;
+            option_type=:asian,
+            call_put=:put,
+            mean_type=:arithmetic,
+            strike_price=100.0,
+        )
+        y_ap = evaluate(f_ap, x_g)
+        @test all(y_ap .>= 0.0)
+
+        # Asian geometric call GBM fast path (lines 262-270)
+        f_agc = FinancialOption(
+            tm_g;
+            option_type=:asian,
+            call_put=:call,
+            mean_type=:geometric,
+            strike_price=100.0,
+        )
+        y_agc = evaluate(f_agc, x_g)
+        @test all(y_agc .>= 0.0)
+
+        # Asian geometric put GBM fast path (lines 262-272)
+        f_agp = FinancialOption(
+            tm_g;
+            option_type=:asian,
+            call_put=:put,
+            mean_type=:geometric,
+            strike_price=100.0,
+        )
+        y_agp = evaluate(f_agp, x_g)
+        @test all(y_agp .>= 0.0)
+
+        # Digital put GBM fast path (lines 279-285)
+        f_dp = FinancialOption(tm_g; option_type=:digital, call_put=:put, strike_price=100.0)
+        y_dp = evaluate(f_dp, x_g)
+        @test all(0.0 .<= y_dp .<= 1.0)
+
+        # Lookback call GBM fast path (lines 292-301)
+        f_lbc = FinancialOption(tm_g; option_type=:lookback, call_put=:call, strike_price=90.0)
+        y_lbc = evaluate(f_lbc, x_g)
+        @test all(y_lbc .>= 0.0)
+
+        # Lookback put GBM fast path (lines 303-309)
+        f_lbp = FinancialOption(tm_g; option_type=:lookback, call_put=:put, strike_price=110.0)
+        y_lbp = evaluate(f_lbp, x_g)
+        @test all(y_lbp .>= 0.0)
+
+        # Barrier down-barrier (start_price > barrier_price) GBM fast path (lines 328-332)
+        dd_gd = IIDStdUniform(16; seed=405)
+        tm_gd = GeometricBrownianMotion(
+            dd_gd;
+            volatility=0.2,
+            start_price=100.0,
+            interest_rate=0.05,
+            t_final=1.0,
+        )
+        x_gd = transform(tm_gd, gen_samples(dd_gd, 200))
+        f_bdown = FinancialOption(
+            tm_gd;
+            option_type=:barrier,
+            barrier_price=80.0,
+            barrier_in_out=:in,
+            call_put=:call,
+            strike_price=100.0,
+        )
+        y_bdown = evaluate(f_bdown, x_gd)
+        @test all(y_bdown .>= 0.0)
+
+        # Barrier put GBM fast path (line 338)
+        f_bput = FinancialOption(
+            tm_g;
+            option_type=:barrier,
+            barrier_price=120.0,
+            barrier_in_out=:out,
+            call_put=:put,
+            strike_price=100.0,
+        )
+        y_bput = evaluate(f_bput, x_g)
+        @test all(y_bput .>= 0.0)
+
+        # exact_value error for unsupported option types (line 428)
+        @test_throws ErrorException get_exact_value(
+            FinancialOption(
+                tm_g;
+                option_type=:barrier,
+                barrier_price=120.0,
+                strike_price=100.0,
+            ),
+        )
+        @test_throws ErrorException get_exact_value(
+            FinancialOption(tm_g; option_type=:lookback, strike_price=100.0),
+        )
+    end
+
+    @testset "FinancialOptionML (BrownianMotion + generic path + option types)" begin
+        # BrownianMotion path in _coupled_stock_paths (lines 207-215)
+        dd_bm = IIDStdUniform(8; seed=406)
+        tm_bm = BrownianMotion(dd_bm)
+        fml_bm = FinancialOptionML(tm_bm; d_coarsest=4)
+        x_bm = transform(tm_bm, gen_samples(dd_bm, 20))
+        Qc0, Qf0 = ml_evaluate(fml_bm, x_bm, 0)  # level=0 → lines 207-211
+        @test length(Qf0) == 20
+        @test all(iszero, Qc0)
+        Qc1, Qf1 = ml_evaluate(fml_bm, x_bm, 1)  # level=1 → lines 207-215
+        @test length(Qf1) == 20
+        @test !any(isnan, Qf1)
+
+        # Generic fallback path (lines 218-229): FinancialOptionML(dd) → Gaussian TM
+        dd_g = IIDStdUniform(8; seed=407)
+        fml_g = FinancialOptionML(dd_g; d_coarsest=4)
+        x_g = transform(fml_g.true_measure, gen_samples(dd_g, 20))
+        Qc0g, Qf0g = ml_evaluate(fml_g, x_g, 0)  # level=0 → lines 218-220
+        @test length(Qf0g) == 20
+        Qc1g, Qf1g = ml_evaluate(fml_g, x_g, 1)  # level=1 → lines 218-229
+        @test length(Qf1g) == 20
+        @test !any(isnan, Qf1g)
+
+        # _ml_payoff variants: european put (241), geometric asian (246),
+        # asian put (249), lookback call/put (250-253), digital call/put (255-258)
+        dd_opt = IIDStdUniform(8; seed=408)
+        tm_opt = BrownianMotion(dd_opt)
+        x_opt = transform(tm_opt, gen_samples(dd_opt, 20))
+        for (opt, cp, mt) in [
+            (:european, :put, :arithmetic),
+            (:asian, :call, :geometric),
+            (:asian, :put, :arithmetic),
+            (:lookback, :call, :arithmetic),
+            (:lookback, :put, :arithmetic),
+            (:digital, :call, :arithmetic),
+            (:digital, :put, :arithmetic),
+        ]
+            fml_t = FinancialOptionML(
+                tm_opt;
+                d_coarsest=4,
+                option_type=opt,
+                mean_type=mt,
+                call_put=cp,
+                start_price=30.0,
+                strike_price=25.0,
+            )
+            _, Qf = ml_evaluate(fml_t, x_opt, 0)
+            @test length(Qf) == 20
+            @test !any(isnan, Qf)
+        end
+    end
 end
