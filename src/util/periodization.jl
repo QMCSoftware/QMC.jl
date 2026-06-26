@@ -35,6 +35,24 @@ julia> periodize(x, :BAKER)
  0.5  1.0
  0.5  0.2
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> x = [0.25 0.5; 0.75 0.1];
+
+julia> periodize(x, :NONE) == x
+true
+
+julia> all(0.0 .<= periodize(x, :C1) .<= 1.0)
+true
+
+julia> all(0.0 .<= periodize(x, :C2SIN) .<= 1.0)
+true
+
+julia> all(0.0 .<= periodize(x, :C3) .<= 1.0)
+true
+```
 """
 function periodize(x::AbstractMatrix, ptransform::Symbol)
     if ptransform == :NONE || ptransform == :none

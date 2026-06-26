@@ -18,6 +18,15 @@ julia> bernoulli_poly(2, 0.5)
 
 julia> bernoulli_poly(4, 0.0)
 -0.03333333333333333
+
+julia> bernoulli_poly(1, 1.0)
+0.5
+
+julia> bernoulli_poly(3, 0.0)
+0.0
+
+julia> bernoulli_poly(5, 0.0)
+0.0
 ```
 """
 function bernoulli_poly(k::Int, x::Real)

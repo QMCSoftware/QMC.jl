@@ -236,6 +236,20 @@ julia> round.(gen_samples(dd, 5); digits=6)
  0.111111  0.192298  0.159325
  0.444444  0.576911  0.434063
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> dd4 = Faure(4; randomize="none");
+
+julia> size(gen_samples(dd4, 3))
+(3, 4)
+
+julia> dd3 = Faure(3; randomize="DS", seed=7);
+
+julia> all(0.0 .<= gen_samples(dd3, 4) .< 1.0)
+true
+```
 """
 function Faure(dimension::Int; seed=nothing, randomize::String="none", replications=nothing)
     dimension > 0 || throw(ArgumentError("dimension must be positive"))

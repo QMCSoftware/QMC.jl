@@ -94,6 +94,20 @@ julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="LINEAR"), 4); d
  0.5   0.5
  0.75  0.25
 ```
+
+```jldoctest
+julia> using QMC
+
+julia> dd = Lattice(2; randomize=false, generating_vector=[1, 3], m_max=10);
+
+julia> size(gen_samples(dd, 4))
+(4, 2)
+
+julia> dd2 = Lattice(2; seed=42, generating_vector=8);
+
+julia> all(0.0 .<= gen_samples(dd2, 4) .< 1.0)
+true
+```
 """
 mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
     dimension::Int
