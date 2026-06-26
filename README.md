@@ -3,15 +3,16 @@
 [![Doc/Unit Tests](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml)
 [![Docs and Demos](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml)
 [![Benchmarking](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
-[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
-[![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
-[![codecov](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Unit Coverage](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg?flag=unit)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Doctest Coverage](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg?flag=doctest)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Notebook Coverage](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg?flag=notebook)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Benchmark Coverage](https://codecov.io/gh/QMCSoftware/QMC.jl/branch/develop/graph/badge.svg?flag=bench)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
+[![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
+
+[![Overall Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?label=Overall%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Doctest Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=doctest&label=Doctest%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Notebook Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Notebook%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
