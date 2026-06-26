@@ -585,6 +585,110 @@
         @test size(x2) == (500, 3)
     end
 
+    @testset "DigitalNetAnyBases" begin
+        # Reproduces the docstring example exactly (base-3, 2D, 3-bit precision).
+        C = zeros(Int, 2, 3, 3)
+        C[1,:,:] = [1 0 0; 0 1 0; 1 2 1]
+        C[2,:,:] = [2 0 0; 1 2 0; 0 2 2]
+        dd = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none")
+        x = gen_samples(dd, 9)
+        @test size(x) == (9, 2)
+        @test all(0.0 .<= x .< 1.0)
+        @test x[1, :] == [0.0, 0.0]
+        # Row 2: C[1]*[1,0,0] mod 3 = [1,0,1] → 1/3+1/27 = 10/27; C[2]*[1,0,0] = [2,0,0] → 2/3 = 7/9 from docstring
+        expected = [0.0 0.0; 10/27 7/9; 20/27 5/9]
+        @test x[1:3, :] ≈ expected atol=1e-6
+
+        # Seed reproducibility with digital shift.
+        dd_a = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="DS", seed=7)
+        dd_b = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="DS", seed=7)
+        @test gen_samples(dd_a, 9) ≈ gen_samples(dd_b, 9)
+
+        # Randomized version stays in [0, 1).
+        dd_ds = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="DS", seed=42)
+        x_ds = gen_samples(dd_ds, 27)
+        @test size(x_ds) == (27, 2)
+        @test all(0.0 .<= x_ds .< 1.0)
+
+        # Replications layout: (R, n, d).
+        dd_rep = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="DS", seed=1, replications=3)
+        x_rep = gen_samples(dd_rep, 9)
+        @test size(x_rep) == (3, 9, 2)
+        @test all(0.0 .<= x_rep .< 1.0)
+        @test x_rep[1, :, :] != x_rep[2, :, :]
+
+        # n_start shifts the sequence window.
+        dd_w = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none")
+        x_full = gen_samples(dd_w, 9)
+        x_tail = gen_samples(dd_w, 6; n_start=3)
+        @test x_tail ≈ x_full[4:9, :]
+
+        # show method.
+        @test repr(DigitalNetAnyBases(2; bases=3, generating_matrices=C)) ==
+              "DigitalNetAnyBases(d=2, base=3, α=1)"
+
+        # replications > 1 with randomize="none" triggers a warning (line 169).
+        @test_logs (:warn, r"replications.*no randomization") begin
+            dd_warn = DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="none", replications=2)
+            gen_samples(dd_warn, 3)
+        end
+
+        # alpha=2 (higher-order net): exercises the _interlace path (lines 134-158).
+        # Need d_gen >= dimension * alpha; use a 4-dim gen mat interlaced to 2 output dims.
+        C4 = zeros(Int, 4, 3, 3)
+        for j in 1:4
+            C4[j, :, :] = C[mod1(j, 2), :, :]
+        end
+        dd_ho = DigitalNetAnyBases(2; bases=3, generating_matrices=C4, randomize="none", alpha=2)
+        x_ho = gen_samples(dd_ho, 9)
+        @test size(x_ho) == (9, 2)
+        @test all(0.0 .<= x_ho .< 1.0)
+        # alpha>1 requires d_gen >= dimension*alpha; fewer gen matrices should error.
+        @test_throws ArgumentError DigitalNetAnyBases(2; bases=3, generating_matrices=C, alpha=2)
+
+        # Argument errors.
+        @test_throws ArgumentError DigitalNetAnyBases(0; bases=3, generating_matrices=C)
+        @test_throws ArgumentError DigitalNetAnyBases(2; bases=3, generating_matrices=C, randomize="BAD")
+        C_small = zeros(Int, 1, 3, 3)
+        @test_throws ArgumentError DigitalNetAnyBases(2; bases=3, generating_matrices=C_small)
+    end
+
+    @testset "Faure" begin
+        # d=2: smallest prime >= 2 is 2.
+        dd2 = Faure(2; randomize="none")
+        x2 = gen_samples(dd2, 8)
+        @test size(x2) == (8, 2)
+        @test all(0.0 .<= x2 .< 1.0)
+        @test x2[1, :] == [0.0, 0.0]
+
+        # d=3: smallest prime >= 3 is 3 — reproduces docstring example.
+        dd3 = Faure(3; randomize="none")
+        x3 = gen_samples(dd3, 5)
+        @test size(x3) == (5, 3)
+        @test all(0.0 .<= x3 .< 1.0)
+        @test x3[1, :] == [0.0, 0.0, 0.0]
+        @test x3[2, 1] ≈ 1/3 atol=1e-6
+
+        # d=4: smallest prime >= 4 is 5.
+        dd4 = Faure(4; randomize="none")
+        @test repr(dd4) == "DigitalNetAnyBases(d=4, base=5, α=1)"
+
+        # Seed reproducibility with randomization.
+        dd_a = Faure(3; seed=99, randomize="DS")
+        dd_b = Faure(3; seed=99, randomize="DS")
+        @test gen_samples(dd_a, 27) ≈ gen_samples(dd_b, 27)
+
+        # Randomized output stays in [0, 1).
+        dd_r = Faure(3; randomize="DS", seed=5)
+        xr = gen_samples(dd_r, 27)
+        @test all(0.0 .<= xr .< 1.0)
+
+        # Replications.
+        dd_rep = Faure(2; seed=3, randomize="DS", replications=4)
+        x_rep = gen_samples(dd_rep, 8)
+        @test size(x_rep) == (4, 8, 2)
+    end
+
     @testset "n_start windowed sampling" begin
         # Lattice
         dd = Lattice(2; randomize=false, order="natural")
