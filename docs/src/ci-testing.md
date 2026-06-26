@@ -167,7 +167,9 @@ make bench-all REV=HEAD~1 BENCH_BLAS_THREADS=2
 
 QMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
 
-- The repository README badge points at the Codecov report for `develop`.
+- The repository README `Overall Coverage` badge points at Codecov's unflagged branch report for `develop`.
+- `Overall Coverage` is the combined `src/` coverage for that branch commit across all uploaded protected-branch reports. It reflects lines hit by at least one coverage-producing workflow.
+- `Overall Coverage` is not tied to a single workflow and is not the arithmetic mean of the `unit`, `doctest`, `notebook`, and `bench` coverage badges.
 - The Linux Julia 1.11 lane in `ci-full.yml` runs `make coverage` for `develop` and `master`, uploads `lcov.info` to Codecov, and updates the `unit` flag badge.
 - `doc_demo.yml` updates separate develop/master Codecov flag badges for `make doctest-coverage` and notebook coverage.
 - `benchmarking.yml` updates the develop/master Codecov `bench` flag badge for `make bench-coverage` while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
