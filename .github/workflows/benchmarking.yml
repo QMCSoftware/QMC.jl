@@ -148,10 +148,9 @@ jobs:
           }
           EOF
           cat > README.md <<'EOF'
-          Benchmark and coverage badge JSON plus archived source snapshots for Shields.io.
+          Benchmark badge JSON and archived source snapshots for Shields.io.
           Latest badge source manifests live under `badges/`.
-          Historical benchmark snapshots live under `archive/<branch>/<label>/`.
-          Historical coverage snapshots live under `archive/coverage/<scope>/<branch>/<label>/`.
+          Historical snapshots of the exact benchmark result files used for each badge update live under `archive/<branch>/<label>/`.
           EOF
           git add badges archive README.md
           git commit -m "Update benchmark badges for ${GITHUB_SHA}" || exit 0
@@ -177,8 +176,6 @@ jobs:
     needs: benchmark
     name: Benchmark Coverage – Julia 1.12 – ubuntu-latest
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     env:
       BENCH_BLAS_THREADS: ${{ vars.BENCH_BLAS_THREADS || '2' }}
 
@@ -218,17 +215,10 @@ jobs:
           path: lcov.info
           if-no-files-found: error
 
-      - name: Generate benchmark coverage badge
-        run: julia --project=. devtools/generate_coverage_badges.jl lcov.info bench "${{ github.ref_name }}" coverage_badges
-
-      - name: Publish benchmark coverage badge
-        env:
-          BADGE_BRANCH: benchmark-badges
-          BADGE_DIR: coverage_badges
-          COVERAGE_SCOPE: bench
-          LCOV_PATH: lcov.info
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          export COVERAGE_LABEL="sha-${GITHUB_SHA::7}"
-          bash devtools/publish_coverage_badges.sh
+      - name: Upload benchmark coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          flags: bench
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
