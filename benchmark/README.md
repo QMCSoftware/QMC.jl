@@ -181,6 +181,20 @@ When the Julia benchmark flow is run with `--code-coverage=user`, every native J
 
 If a Julia-vs-QMCPy report shows Python improving sharply against Julia, first check whether the run was produced through a `bench-*-coverage` target or with `BENCH_COVERAGE=1`. Those runs are useful for correctness and coverage collection, not for clean performance claims.
 
+The coverage-oriented benchmark targets are:
+
+```bash
+make bench-coverage
+make bench-compare-coverage REV=HEAD~1
+make bench-compare-py-coverage LABEL=base
+make bench-all-coverage LABEL=base
+```
+
+These targets still execute the benchmark harness under coverage, but their
+final `lcov.info` and printed totals are now filtered to `src/` only, so the
+reported percentage is package coverage rather than benchmark-harness coverage.
+Their `executable lines` denominators are still target-specific because Julia's `*.cov` output only records the `src/` lines exercised by the current run.
+
 The Julia runner now also writes a sidecar memory file per label:
 
 - `<label>_memory.json`: per-row Julia `rss_delta_kib` from one warmed call

@@ -44,22 +44,8 @@ jobs:
       - name: Install dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-      - name: Run unit tests with coverage
-        run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
+      - name: Run unit tests
+        run: make test TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
 
       - name: Run doctests
         run: make doctest DOC_DEPOT="$HOME/.julia"
-
-      - name: Upload LCOV artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-julia-${{ matrix.julia-version }}-linux
-          path: lcov.info
-          if-no-files-found: warn
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: lcov.info
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false

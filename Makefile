@@ -102,6 +102,8 @@ clean:
 # Testing and coverage
 # ============================================================================
 
+COVERAGE_REPORT_ROOTS := src
+
 # Run all unit tests. Override file-level process sharding with TEST_JOBS=... and
 # Julia threads inside each test process with TEST_THREADS=...
 test: 
@@ -112,7 +114,7 @@ coverage:
 	find src test -name '*.cov' -delete
 	rm -f lcov.info
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; coverage=true, julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
-	julia --project=. devtools/process_coverage.jl
+	julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS)
 	find src test -name '*.cov' -delete
 
 # Run specific test file
@@ -138,7 +140,7 @@ doctest:
 # Run Documenter doctests with coverage instrumentation and produce an lcov report over src/.
 # The pkg-setup step runs without --code-coverage so only doctest execution is measured.
 doctest-coverage:
-	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --code-coverage=user --project=docs docs/make.jl doctest=only && julia --project=. devtools/process_coverage.jl && find src -name '*.cov' -delete,doctest-coverage)
+	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --code-coverage=user --project=docs docs/make.jl doctest=only && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src -name '*.cov' -delete,doctest-coverage)
 
 # ============================================================================
 # Formatting
@@ -184,7 +186,7 @@ notebook-%:
 # Run all demo notebooks with coverage instrumentation and produce an lcov report over src/.
 # Child processes inherit --code-coverage=user via Base.julia_cmd(), so parallel jobs work.
 notebook-coverage:
-	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --code-coverage=user --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) && julia --project=. devtools/process_coverage.jl && find src -name '*.cov' -delete,notebook-coverage)
+	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --code-coverage=user --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src -name '*.cov' -delete,notebook-coverage)
 
 # Audit QMC.jl demos against QMCPy sources
 check-demos:
@@ -244,21 +246,24 @@ bench-all:
 	$(call RUN_TIMED,$(MAKE) bench-compare BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) REV=$(REV) LABEL=$(LABEL) && $(MAKE) bench-compare-py BENCH_COVERAGE=$(BENCH_COVERAGE) BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && printf '\n[bench-all] wrote %s (ratio = reference ÷ local) and %s (ratio = Python ÷ Julia)\n' "$(BENCH_COMPARE_OUT)" "$(BENCH_COMPARE_PY_OUT)",bench-all)
 
 # Run the benchmark suite with coverage enabled and produce an lcov report over
-# both src/ and benchmark/ coverage files.
+# src/ only. Benchmark-harness coverage files are discarded from the summary.
 bench-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src benchmark -name '*.cov' -delete,bench-coverage)
 
-# Run the Julia-vs-Julia comparison with coverage enabled and produce an lcov report.
+# Run the Julia-vs-Julia comparison with coverage enabled and produce an lcov
+# report over src/ only. Benchmark-harness coverage files are discarded.
 bench-compare-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) REV=$(REV) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) REV=$(REV) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src benchmark -name '*.cov' -delete,bench-compare-coverage)
 
-# Run the Julia-vs-QMCPy comparison with coverage enabled and produce an lcov report.
+# Run the Julia-vs-QMCPy comparison with coverage enabled and produce an lcov
+# report over src/ only. Benchmark-harness coverage files are discarded.
 bench-compare-py-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare-py BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-compare-py-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-compare-py BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) JL_LABEL=$(JL_LABEL) PY_LABEL=$(PY_LABEL) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src benchmark -name '*.cov' -delete,bench-compare-py-coverage)
 
-# Run the full labeled benchmark workflow with coverage enabled and produce an lcov report.
+# Run the full labeled benchmark workflow with coverage enabled and produce an
+# lcov report over src/ only. Benchmark-harness coverage files are discarded.
 bench-all-coverage:
-	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl src benchmark && find src benchmark -name '*.cov' -delete,bench-all-coverage)
+	$(call RUN_TIMED,find src benchmark -name '*.cov' -delete && rm -f lcov.info && $(MAKE) bench-all BENCH_COVERAGE=1 BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) LABEL=$(LABEL) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src benchmark -name '*.cov' -delete,bench-all-coverage)
 
 # Compare two saved Julia benchmark-result labels and decide which one is better.
 # Usage: make bench-compare-labels LABEL_A=a LABEL_B=b [OUT_LABEL=report]

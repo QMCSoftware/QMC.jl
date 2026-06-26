@@ -24,6 +24,8 @@ jobs:
   test:
     name: Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     continue-on-error: ${{ matrix.continue-on-error == true }}
     env:
       TEST_JOBS: ${{ vars.TEST_JOBS || '2' }}
@@ -71,15 +73,15 @@ jobs:
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
       - name: Run unit tests with coverage
-        if: ${{ matrix.coverage }}
+        if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
         run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
 
       - name: Run unit tests
-        if: ${{ !matrix.coverage }}
+        if: ${{ !matrix.coverage || github.event_name == 'pull_request' || (github.ref_name != 'develop' && github.ref_name != 'master') }}
         run: julia --project=. -e 'using Pkg; Pkg.test()'
 
       - name: Upload LCOV artifact
-        if: ${{ matrix.coverage }}
+        if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-julia-${{ matrix.julia-version }}-${{ runner.os }}
@@ -87,9 +89,26 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload coverage to Codecov
-        if: ${{ matrix.coverage }}
+        if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
         uses: codecov/codecov-action@v4
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+      - name: Generate unit coverage badge
+        if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
+        run: julia --project=. devtools/generate_coverage_badges.jl lcov.info unit "${{ github.ref_name }}" coverage_badges
+
+      - name: Publish unit coverage badge
+        if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
+        env:
+          BADGE_BRANCH: benchmark-badges
+          BADGE_DIR: coverage_badges
+          COVERAGE_SCOPE: unit
+          LCOV_PATH: lcov.info
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          export COVERAGE_LABEL="sha-${GITHUB_SHA::7}"
+          bash devtools/publish_coverage_badges.sh
