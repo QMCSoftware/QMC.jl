@@ -6,8 +6,7 @@ This folder contains the repository's GitHub Actions workflows.
 
 | Workflow | Description | Local equivalent |
 |---|---|---|
-| `ci.yml` (`Fast CI`) | Fast Linux feedback for feature-branch pushes; runs unit tests on Julia 1.10/1.11/1.12 and doctests on Julia 1.11/1.12, with no coverage upload. | `make test` · `make doctest` |
-| `ci-full.yml` (`Full CI`) | Cross-platform validation for `develop`/`master`; one Linux lane also runs unit coverage and updates the develop/master Codecov `unit` flag badge. | `make test` or `make coverage` *(current Julia/OS only)* |
+| `ci-full.yml` (`CI`) | Adaptive test workflow. Feature-branch pushes use a Linux-only Julia 1.10/1.11/1.12 matrix; PRs into `develop`/`master`, protected-branch pushes, and manual runs expand to the full Linux/macOS/Windows/nightly sweep. The Linux Julia 1.11 protected-branch lane also publishes unit coverage. | `make test` · `make doctest` · `make coverage` *(coverage lane only on protected branches)* |
 | `doc_demo.yml` | Documenter build/deploy plus demo-notebook regression runs on `develop`/`master`; push/manual runs there also publish Codecov `doctest` and `notebook` flag badges. | `make doc; make notebook; make doctest-coverage; make notebook-coverage` |
 | `benchmarking.yml` | Benchmark collection for benchmark-relevant `develop`/`master` pushes and manual runs; separate jobs publish benchmark speed/memory badges and update the Codecov `bench` flag badge. | `make ci-bench` |
 | `install-test.yml` | Clean-environment install test without Python: verifies `using QMC` works, pure-Julia generators produce correct output, and sampling from qmctoolscl-backed generators (`Lattice`, `DigitalNetB2`, `Halton`) emits actionable errors when the library is absent. | *(runs in an isolated environment with no qmctoolscl)* |

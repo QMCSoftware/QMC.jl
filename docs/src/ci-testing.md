@@ -1,58 +1,61 @@
 # CI/CD Testing
 
-QMC.jl uses GitHub Actions for continuous integration and benchmark collection. Four workflow files in `.github/workflows/` handle the main feedback paths. For local linting and repeatable smoke runs of those workflows, see [Workflow Debugging](workflow-debugging.md).
+QMC.jl uses GitHub Actions for continuous integration and benchmark collection. The main feedback paths live in four active workflow files under `.github/workflows/` plus `TagBot.yml`. For local linting and repeatable smoke runs of those workflows, see [Workflow Debugging](workflow-debugging.md).
 
 ## Workflow Overview
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux (unit tests on Julia 1.10, 1.11, 1.12; doctests on Julia 1.11, 1.12) | Fast unit-test gate across the full compat window plus doctests on newer lanes |
-| **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PRs with code/docs/workflow changes; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
+| **CI** | `ci-full.yml` | all `push` events; PRs into `develop`/`master`; manual | Linux-only fast mode on feature branches; Linux/macOS/Windows/nightly full mode on protected branches and PRs | Unit tests across the declared Julia compat window, Linux doctests, and one protected-branch unit-coverage lane |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks + benchmark-driven `src/` coverage |
 | **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression + develop/master doctest/notebook coverage |
 | **Install Test** | `install-test.yml` | `push` to `develop`/`master`; PRs touching `src/` or `Project.toml`; manual | Linux | Clean install without Python — verifies pure-Julia generators work and qmctoolscl-backed generators give actionable errors |
 
 ## Policy
 
-- Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`, testing unit behavior on Julia 1.10, 1.11, and 1.12. This keeps the full declared compat window (`julia = "1.10"`) gate-verified on every PR while leaving exact doctest matching to the Julia 1.11/1.12 lanes.
-- macOS and Windows are reserved for `develop`/`master` pushes, selected pull requests, and manual runs via `ci-full.yml`.
+- The main CI workflow borrows QMCPy’s current `develop`-branch `alltests.yml` pattern: one workflow file chooses a smaller feature-branch matrix or a larger protected-branch/PR matrix internally, instead of maintaining separate fast and full workflow files.
+- Linux is the default fast-feedback path. Feature-branch pushes run only the Linux Julia 1.10/1.11/1.12 lanes, which keeps the full declared compat window (`julia = "1.10"`) gate-verified on every push while leaving exact doctest matching to the Julia 1.11/1.12 lanes.
+- macOS, Windows, and the nightly Julia lane are reserved for the full CI mode used by pushes to `develop`/`master`, pull requests into those branches, and manual dispatches.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - The repository also has a fast fixture-based QMCPy release-parity gate (`make release-parity`) that complements the benchmark parity checks. It lives in the unit-test tree rather than the benchmark workflow so curated parity failures are easier to see and reproduce locally.
 - Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
 - Coverage badges are served by Codecov flag badges (`unit`, `doctest`, `notebook`, `bench`). The custom `benchmark-badges` branch is reserved for benchmark speed/memory badges.
 - The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
 - On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
-- `concurrency` cancels superseded runs, and the `ci.yml`, `ci-full.yml`, and `benchmarking.yml` groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
+- `concurrency` cancels superseded runs, and the CI and benchmarking groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
 - There is no nightly CI schedule.
 
-## Fast CI (`ci.yml`)
+## CI (`ci-full.yml`)
 
-The primary fast-feedback workflow runs on non-`develop`/`master` pushes, on pull requests targeting `develop` or `master`, and via manual dispatch.
+This repository now uses one adaptive test workflow instead of separate fast and full CI files.
 
-**Unit tests job:**
+### Fast mode
 
-- Runs on `ubuntu-latest` with Julia 1.10, 1.11, and 1.12 (one job per version; `fail-fast: false` so all three complete independently).
-- `make test` runs on all three Julia versions. `make doctest` runs on the Julia 1.11 and 1.12 lanes, while Julia 1.10 remains in the fast matrix for package-functionality compatibility testing.
-- This matrix still covers the full declared compat window (`julia = "1.10"` in `Project.toml`) on every PR, ensuring the minimum supported version is always gate-verified.
-- Installs Python 3.13 and pinned `qmctoolscl` from `test/requirements.txt`.
-- Executes `make test`, which runs the sharded unit-test suite without coverage instrumentation.
-- Executes `make doctest`, which runs the Documenter `jldoctest` examples from the package docstrings under `src/` and any docs pages that contain doctests, without a full docs render.
-- Shards whole test files across `TEST_JOBS` Julia subprocesses (default GitHub Actions variable fallback: `2`) while keeping `TEST_THREADS=1` inside each shard to avoid oversubscription.
-- Does not upload `lcov.info`; coverage publication is reserved for `develop`/`master`.
+Feature-branch pushes run the fast Linux-only mode:
 
-## Full CI (`ci-full.yml`)
+- `ubuntu-latest` with Julia 1.10, 1.11, and 1.12 (one lane per version; `fail-fast: false`).
+- `make test` runs on all three Julia versions.
+- `make doctest` runs on the Julia 1.11 and 1.12 lanes. Julia 1.10 remains in the matrix for package-functionality compatibility testing.
+- This mode keeps the full declared compat window (`julia = "1.10"` in `Project.toml`) gate-verified on every feature-branch push.
+- It installs Python 3.13 plus pinned `qmctoolscl` from `test/requirements.txt`.
+- It uses `make test`, so Linux fast-mode lanes keep the existing sharded test execution (`TEST_JOBS`, `TEST_THREADS`) rather than falling back to a single monolithic `Pkg.test()` process.
+- It does not upload `lcov.info`; coverage publication is reserved for protected-branch push/manual runs.
 
-A cross-platform sweep for protected branches.
+### Full mode
 
-- Triggers on pushes to `develop` or `master`, on pull requests that touch `src/`, `test/`, `docs/`, `benchmark/`, `.github/`, `Project.toml`, `Manifest.toml`, or `Makefile`, and via manual dispatch.
-- Uses an orthogonal matrix: Linux (`ubuntu-latest`) on Julia 1.10 and 1.11 (1.11 carries the coverage lane), macOS on Julia 1.12, Windows on Julia 1.12, and Linux on `nightly` with `continue-on-error: true` (see [The `nightly` Julia version](#the-nightly-julia-version) below).
-- Runs unit tests on every lane.
-- On `develop`/`master` push/manual runs, the Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, updates the Codecov branch badge, and updates the develop/master Codecov `unit` flag badge. On pull requests, that same lane falls back to plain `Pkg.test()` so coverage stays branch-only.
-- Does not run `make doctest`; doctest and full docs validation for `develop`/`master` live in `doc_demo.yml`, which already builds the documentation and therefore exercises the Documenter doctests there.
+Pushes to `develop` or `master`, pull requests into those branches, and manual dispatches expand into the full sweep:
+
+- Linux (`ubuntu-latest`) on Julia 1.10, 1.11, and 1.12.
+- macOS on Julia 1.12.
+- Windows on Julia 1.12.
+- Linux on `nightly` with `continue-on-error: true` (see [The `nightly` Julia version](#the-nightly-julia-version) below).
+- The Linux Julia 1.11 lane is the unit-coverage lane. On `develop`/`master` push/manual runs it executes `make coverage`, uploads `lcov.info`, and updates the develop/master Codecov `unit` flag badge. On pull requests, that same lane falls back to plain test execution so coverage stays branch-only.
+- Linux Julia 1.11 and 1.12 still run `make doctest`, so the full mode subsumes the previous fast-workflow doctest coverage of current stable Julia versions.
+- Non-Linux lanes run plain `Pkg.test()` rather than the Linux sharded `make test` wrapper.
 
 ### The `nightly` Julia version
 
-The Full CI matrix includes one entry with `julia-version: 'nightly'`. **This is not a scheduled overnight run.** It is the name of a special Julia version keyword accepted by `julia-actions/setup-julia@v2`.
+The full-sweep CI matrix includes one entry with `julia-version: 'nightly'`. **This is not a scheduled overnight run.** It is the name of a special Julia version keyword accepted by `julia-actions/setup-julia@v2`.
 
 When `version: nightly` is specified, the action downloads the **latest pre-release development build of Julia** — currently the 1.14-DEV series — compiled and published by the Julia project every day from the `master` branch of the Julia compiler. In other words, `nightly` is a rolling target that always tracks the bleeding edge of Julia development, not a fixed version number.
 

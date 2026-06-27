@@ -1,27 +1,50 @@
-name: "Doc/Unit Tests: 3 OSes"
+name: "Doc/Unit Tests"
 
 on:
   push:
-    branches: [develop, master]
   pull_request:
     branches: [develop, master]
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'docs/**'
-      - 'benchmark/**'
-      - '.github/**'
-      - 'Project.toml'
-      - 'Manifest.toml'
-      - 'Makefile'
   workflow_dispatch:
 
 concurrency:
-  group: ci-full-${{ github.event_name }}-${{ github.ref }}
+  # Keep push and pull_request runs separate so same-SHA PR updates do not
+  # inherit cancelled push checks.
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
+  select-matrix:
+    name: Select CI scope
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.scope.outputs.matrix }}
+    steps:
+      - name: Decide runner matrix
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          full_sweep=false
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            full_sweep=true
+          elif [[ "$EVENT_NAME" == "pull_request" && ( "$BASE_REF" == "develop" || "$BASE_REF" == "master" ) ]]; then
+            full_sweep=true
+          elif [[ "$REF_NAME" == "develop" || "$REF_NAME" == "master" ]]; then
+            full_sweep=true
+          fi
+
+          if [[ "$full_sweep" == "true" ]]; then
+            matrix_json='{"include":[{"os":"ubuntu-latest","julia-version":"1.10","run-doctests":false,"coverage":false},{"os":"ubuntu-latest","julia-version":"1.11","run-doctests":true,"coverage":true},{"os":"ubuntu-latest","julia-version":"1.12","run-doctests":true,"coverage":false},{"os":"macos-latest","julia-version":"1.12","run-doctests":false,"coverage":false},{"os":"windows-latest","julia-version":"1.12","run-doctests":false,"coverage":false},{"os":"ubuntu-latest","julia-version":"nightly","run-doctests":false,"coverage":false,"continue-on-error":true}]}'
+          else
+            matrix_json='{"include":[{"os":"ubuntu-latest","julia-version":"1.10","run-doctests":false,"coverage":false},{"os":"ubuntu-latest","julia-version":"1.11","run-doctests":true,"coverage":false},{"os":"ubuntu-latest","julia-version":"1.12","run-doctests":true,"coverage":false}]}'
+          fi
+          printf 'matrix=%s\n' "$matrix_json" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: select-matrix
     name: Julia ${{ matrix.julia-version }} – ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     permissions:
@@ -32,24 +55,7 @@ jobs:
       TEST_THREADS: ${{ vars.TEST_THREADS || '1' }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            julia-version: '1.10'
-            coverage: false
-          - os: ubuntu-latest
-            julia-version: '1.11'
-            coverage: true
-          - os: macos-latest
-            julia-version: '1.12'
-            coverage: false
-          - os: windows-latest
-            julia-version: '1.12'
-            coverage: false
-          - os: ubuntu-latest
-            julia-version: 'nightly'
-            coverage: false
-            continue-on-error: true
+      matrix: ${{ fromJSON(needs.select-matrix.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -81,8 +87,16 @@ jobs:
         run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
 
       - name: Run unit tests
-        if: ${{ !matrix.coverage || github.event_name == 'pull_request' || (github.ref_name != 'develop' && github.ref_name != 'master') }}
+        if: ${{ (!matrix.coverage || github.event_name == 'pull_request' || (github.ref_name != 'develop' && github.ref_name != 'master')) && matrix.os == 'ubuntu-latest' }}
+        run: make test TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
+
+      - name: Run unit tests
+        if: ${{ (!matrix.coverage || github.event_name == 'pull_request' || (github.ref_name != 'develop' && github.ref_name != 'master')) && matrix.os != 'ubuntu-latest' }}
         run: julia --project=. -e 'using Pkg; Pkg.test()'
+
+      - name: Run doctests
+        if: ${{ matrix.run-doctests }}
+        run: make doctest DOC_DEPOT="$HOME/.julia"
 
       - name: Upload LCOV artifact
         if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
