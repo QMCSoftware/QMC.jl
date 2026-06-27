@@ -190,6 +190,13 @@ make bench-compare-py-coverage LABEL=base
 make bench-all-coverage LABEL=base
 ```
 
+On `develop` and `master`, the GitHub benchmark-coverage job now uploads the
+`bench` Codecov flag from `make bench-all-coverage`. That broader target keeps
+the benchmark coverage badge tied to `src/` while also exercising the
+Julia-vs-Julia and Julia-vs-QMCPy comparison code paths. The separate
+benchmark speed/memory badges still come from plain `make bench-all`, so this
+coverage broadening does not affect the published weighted time ratio badge.
+
 These targets still execute the benchmark harness under coverage, but their
 final `lcov.info` and printed totals are now filtered to `src/` only, so the
 reported percentage is package coverage rather than benchmark-harness coverage.

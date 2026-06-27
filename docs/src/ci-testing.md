@@ -59,7 +59,7 @@ The benchmark workflow is separate from the test workflows.
 - Treats the seeded Julia-vs-QMCPy parity checks as a guard: `make bench-compare-py` fails if no comparable `integrate` or deterministic transform/evaluate oracle rows are found or if any matched row exceeds its configured agreement bound.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
 - Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
-- Runs a separate `make bench-coverage` job on `develop`/`master` push/manual events and updates a distinct Codecov `bench` flag badge without affecting the benchmark speed/memory badges.
+- Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` Codecov flag covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
 - The published Julia-vs-QMCPy report now exposes the headline weighted time ratio, a 95% within-run bootstrap interval, `StudentT` split summaries, grouped timing totals for `gen_samples` / `transform` / `evaluate` / end-to-end `integrate`, and approximate memory ratios with explicit provenance manifests.
 
 ## Docs and Demos (`doc_demo.yml`)
@@ -172,7 +172,7 @@ QMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
 - `Overall Coverage` is not tied to a single workflow and is not the arithmetic mean of the `unit`, `doctest`, `notebook`, and `bench` coverage badges.
 - The Linux Julia 1.11 lane in `ci-full.yml` runs `make coverage` for `develop` and `master`, uploads `lcov.info` to Codecov, and updates the `unit` flag badge.
 - `doc_demo.yml` updates separate develop/master Codecov flag badges for `make doctest-coverage` and notebook coverage.
-- `benchmarking.yml` updates the develop/master Codecov `bench` flag badge for `make bench-coverage` while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
+- `benchmarking.yml` updates the develop/master Codecov `bench` flag badge from `make bench-all-coverage`, which exercises the standalone benchmark suite together with the Julia-vs-Julia and Julia-vs-QMCPy comparison flows while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
 - Each coverage-producing workflow also uploads its `lcov.info` as a GitHub Actions artifact.
 
 The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.
