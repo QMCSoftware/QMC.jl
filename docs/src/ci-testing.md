@@ -46,6 +46,21 @@ A cross-platform sweep for protected branches.
 - On `develop`/`master` push/manual runs, the Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, updates the Codecov branch badge, and updates the develop/master Codecov `unit` flag badge. On pull requests, that same lane falls back to plain `Pkg.test()` so coverage stays branch-only.
 - Does not run `make doctest`; doctest and full docs validation for `develop`/`master` live in `doc_demo.yml`, which already builds the documentation and therefore exercises the Documenter doctests there.
 
+### The `nightly` Julia version
+
+The Full CI matrix includes one entry with `julia-version: 'nightly'`. **This is not a scheduled overnight run.** It is the name of a special Julia version keyword accepted by `julia-actions/setup-julia@v2`.
+
+When `version: nightly` is specified, the action downloads the **latest pre-release development build of Julia** — currently the 1.14-DEV series — compiled and published by the Julia project every day from the `master` branch of the Julia compiler. In other words, `nightly` is a rolling target that always tracks the bleeding edge of Julia development, not a fixed version number.
+
+Why is `nightly` in the matrix?
+
+- It gives early warning of breaking changes before a new Julia version is officially released. For example, Julia 1.14 tightened the `ccall` ABI so that the library name must be a compile-time `Symbol` rather than a runtime expression; the nightly job caught this before 1.14 was released.
+- It cannot be replaced with a concrete stable version such as `1.13` or `1.14` because those versions do not yet exist as official releases.
+
+Because pre-release builds can introduce breaking changes that are still under discussion upstream, the nightly job is marked `continue-on-error: true`. This means a failure in the nightly job is reported in the CI summary but does **not** block a pull request from being merged. It serves as a signal worth investigating, not an automatic blocker.
+
+> **Summary:** In this repository, `nightly` = "test against tomorrow's Julia, non-blocking."
+
 ## Benchmarking (`benchmarking.yml`)
 
 The benchmark workflow is separate from the test workflows.
