@@ -120,11 +120,15 @@ except Exception:
     _QMCTOOLSCL_LAST_SEARCH[] = searched_str
     if warn_on_failure
         @warn """QMCToolsCL C library not found.
-Lattice, DigitalNetB2, and Halton generation require it.
-Install `qmctoolscl` into a Python visible to Julia, or set
-ENV["QMC_PYTHON"] to the interpreter that has it installed.
-Searched Python interpreters: $searched_str
-Then restart Julia."""
+Lattice, DigitalNetB2, and Halton require it (IIDStdUniform and Kronecker work without it).
+
+Remediation (pick one):
+  pip install 'qmctoolscl>=1.2.3'
+
+Or point Julia at the Python that already has it (no restart needed):
+  ENV["QMC_PYTHON"] = "/path/to/python"
+
+Searched Python interpreters: $searched_str"""
     end
     return false
 end
@@ -140,10 +144,13 @@ function _qmctoolscl_lib_path()
     # after importing QMC but before first use of QMCToolsCL-backed generators.
     isempty(_QMCTOOLSCL_LIB_PATH[]) && _init_qmctoolscl!(; warn_on_failure=false, force=true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) && error(
-        "QMCToolsCL C library not loaded. " *
-        "Lattice, DigitalNetB2, and Halton require it. " *
-        "Install `qmctoolscl` into a Python visible to Julia, or set " *
-        "ENV[\"QMC_PYTHON\"] to that interpreter before first use. " *
+        "QMCToolsCL C library not loaded.\n\n" *
+        "Lattice, DigitalNetB2, and Halton require qmctoolscl ≥ 1.2.3.\n" *
+        "IIDStdUniform and Kronecker work without it.\n\n" *
+        "Remediation (pick one):\n" *
+        "  pip install 'qmctoolscl>=1.2.3'\n\n" *
+        "Or point Julia at the Python that already has it (no restart needed):\n" *
+        "  ENV[\"QMC_PYTHON\"] = \"/path/to/python\"\n\n" *
         "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).",
     )
     return _QMCTOOLSCL_LIB_PATH[]

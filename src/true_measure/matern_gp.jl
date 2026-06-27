@@ -24,7 +24,8 @@ julia> round.(transform(tm, gen_samples(tm.dd, 2)); digits=6)
  1.58433   0.438711  0.175567  -0.13253   -0.394796
 ```
 """
-struct MaternGP{D <: AbstractDiscreteDistribution, M <: AbstractMatrix{Float64}} <: AbstractTrueMeasure
+struct MaternGP{D <: AbstractDiscreteDistribution, M <: AbstractMatrix{Float64}} <:
+       AbstractTrueMeasure
     dd::D
     nu::Float64
     lengthscale::Float64

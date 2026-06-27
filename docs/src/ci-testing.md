@@ -6,14 +6,15 @@ QMC.jl uses GitHub Actions for continuous integration and benchmark collection. 
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux | Unit tests + doctests |
+| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux (Julia 1.10, 1.11, 1.12) | Unit tests + doctests on the full compat window |
 | **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PRs with code/docs/workflow changes; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks + benchmark-driven `src/` coverage |
 | **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression + develop/master doctest/notebook coverage |
+| **Install Test** | `install-test.yml` | `push` to `develop`/`master`; PRs touching `src/` or `Project.toml`; manual | Linux | Clean install without Python — verifies pure-Julia generators work and qmctoolscl-backed generators give actionable errors |
 
 ## Policy
 
-- Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`.
+- Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`, testing Julia 1.10, 1.11, and 1.12. This ensures the full declared compat window (`julia = "1.10"`) is gate-verified on every PR.
 - macOS and Windows are reserved for `develop`/`master` pushes, selected pull requests, and manual runs via `ci-full.yml`.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
@@ -29,7 +30,8 @@ The primary fast-feedback workflow runs on non-`develop`/`master` pushes, on pul
 
 **Unit tests job:**
 
-- Runs on `ubuntu-latest` with Julia 1.12.
+- Runs on `ubuntu-latest` with Julia 1.10, 1.11, and 1.12 (one job per version; `fail-fast: false` so all three complete independently).
+- This matrix covers the full declared compat window (`julia = "1.10"` in `Project.toml`) on every PR, ensuring the minimum supported version is always gate-verified.
 - Installs Python 3.13 and pinned `qmctoolscl` from `test/requirements.txt`.
 - Executes `make test`, which runs the sharded unit-test suite without coverage instrumentation.
 - Executes `make doctest`, which runs the Documenter `jldoctest` examples from the package docstrings under `src/` and any docs pages that contain doctests, without a full docs render.
@@ -87,6 +89,16 @@ Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 - The documentation job uses `julia --project=docs` to resolve the docs-specific dependency set and deploys via `deploydocs()` only on push events.
 - The demos job remains push/manual only and does not run on pull requests.
 - On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and update dedicated Codecov `doctest`/`notebook` flag badges.
+
+## Install Test (`install-test.yml`)
+
+Guards against the qmctoolscl external-dependency hazard: Julia users expect `Pkg.add` to fully instantiate a package, but `Lattice`, `DigitalNetB2`, and `Halton` require a separately installed Python package with a compiled C library.
+
+- Triggers on pushes to `develop`/`master`, on pull requests that touch `src/` or `Project.toml`, and via manual dispatch.
+- Runs on `ubuntu-latest` with Julia 1.10 and 1.12. **Intentionally installs no Python and no qmctoolscl.**
+- Asserts that `using QMC` succeeds and that pure-Julia generators (`IIDStdUniform`, `Kronecker`) produce correct output without the C library.
+- Asserts that `Lattice(3)`, `DigitalNetB2(3)`, and `Halton(3)` each throw an error whose message mentions `qmctoolscl`, `pip install`, and the minimum version `1.2.3` — so a first-time user sees an actionable remediation rather than a cryptic symbol-lookup failure.
+- Does not run `Pkg.test()` — the full test suite requires qmctoolscl and is covered by the other CI workflows.
 
 ## Running Tests Locally
 

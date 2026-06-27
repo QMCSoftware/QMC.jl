@@ -1,0 +1,110 @@
+name: "Install Test (no Python)"
+
+# Verifies that:
+#   1. `using QMC` succeeds without qmctoolscl installed.
+#   2. Pure-Julia generators (IIDStdUniform, Kronecker) work normally.
+#   3. qmctoolscl-backed generators (Lattice, DigitalNetB2, Halton) produce a
+#      clear, actionable error that mentions the exact pip command.
+#
+# This is a v0.1.0 external-user hazard guard: Julia users expect `Pkg.add` to
+# instantiate all dependencies, but qmctoolscl is a Python package that must be
+# installed separately.  This workflow catches regressions in the error path.
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'src/**'
+      - 'Project.toml'
+      - '.github/workflows/install-test.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: install-test-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-test:
+    name: No-Python install — Julia ${{ matrix.julia-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version: ['1.10', '1.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+
+      - uses: julia-actions/cache@v2
+
+      # Intentionally skip Python / qmctoolscl installation.
+
+      - name: Install Julia dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Pure-Julia generators work without qmctoolscl
+        run: |
+          julia --project=. -e '
+            using QMC
+            dd = IIDStdUniform(3; seed=7)
+            x = gen_samples(dd, 4)
+            @assert size(x) == (4, 3) "IIDStdUniform size wrong: $(size(x))"
+            println("IIDStdUniform OK: ", size(x))
+
+            kron = Kronecker(3; seed=1)
+            y = gen_samples(kron, 4)
+            @assert size(y) == (4, 3) "Kronecker size wrong: $(size(y))"
+            println("Kronecker OK: ", size(y))
+          '
+
+      - name: Lattice gives a helpful error without qmctoolscl
+        run: |
+          julia --project=. -e '
+            using QMC
+            try
+              Lattice(3)
+              error("Expected an error from Lattice when qmctoolscl is missing")
+            catch e
+              msg = sprint(showerror, e)
+              occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
+              occursin("pip install", msg) || error("Error did not mention pip install:\n", msg)
+              occursin("1.2.3", msg)       || error("Error did not mention version 1.2.3:\n", msg)
+              println("Lattice missing-library error is actionable: OK")
+            end
+          '
+
+      - name: DigitalNetB2 gives a helpful error without qmctoolscl
+        run: |
+          julia --project=. -e '
+            using QMC
+            try
+              DigitalNetB2(3)
+              error("Expected an error from DigitalNetB2 when qmctoolscl is missing")
+            catch e
+              msg = sprint(showerror, e)
+              occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
+              occursin("pip install", msg) || error("Error did not mention pip install:\n", msg)
+              println("DigitalNetB2 missing-library error is actionable: OK")
+            end
+          '
+
+      - name: Halton gives a helpful error without qmctoolscl
+        run: |
+          julia --project=. -e '
+            using QMC
+            try
+              Halton(3)
+              error("Expected an error from Halton when qmctoolscl is missing")
+            catch e
+              msg = sprint(showerror, e)
+              occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
+              occursin("pip install", msg) || error("Error did not mention pip install:\n", msg)
+              println("Halton missing-library error is actionable: OK")
+            end
+          '

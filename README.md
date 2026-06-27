@@ -81,13 +81,15 @@ using Pkg
 Pkg.add(url="https://github.com/QMCSoftware/QMC.jl")
 ```
 
-For `Lattice`, `DigitalNetB2`, and `Halton`, also install the QMCToolsCL runtime into a Python visible to Julia:
+For `Lattice`, `DigitalNetB2`, and `Halton`, also install the QMCToolsCL runtime (version ≥ 1.2.3) into a Python visible to Julia:
 
 ```bash
-pip install qmctoolscl
+pip install 'qmctoolscl>=1.2.3'
 ```
 
-If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"] = "/path/to/python"` before loading QMC.
+`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and stopping criteria, work without this step.
+
+If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"] = "/path/to/python"` before first use of those generators (no Julia restart needed).
 
 ### For contributors
 
