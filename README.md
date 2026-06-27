@@ -2,9 +2,10 @@
 
 [![Doc/Unit Tests](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml) [![Docs and Demos](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml) [![Benchmarking](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 
-[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml) [![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml) [![Contributors](https://img.shields.io/github/contributors/QMCSoftware/QMC.jl?label=Contributors)](https://github.com/QMCSoftware/QMC.jl/graphs/contributors) [![GitHub Stars](https://img.shields.io/github/stars/QMCSoftware/QMC.jl?style=flat&label=GitHub%20Stars)](https://github.com/QMCSoftware/QMC.jl/stargazers)
+[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml) [![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml) [![Contributors](https://img.shields.io/github/contributors/QMCSoftware/QMC.jl?label=Contributors&cacheSeconds=300)](https://github.com/QMCSoftware/QMC.jl/graphs/contributors) [![GitHub Stars](https://img.shields.io/github/stars/QMCSoftware/QMC.jl?style=flat&label=GitHub%20Stars)](https://github.com/QMCSoftware/QMC.jl/stargazers)
 
-[![Overall Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?label=Overall%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Test%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Doctest Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=doctest&label=Doctest%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Notebook Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Notebook%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Overall Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?label=Overall%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Test%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Doctest Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=doctest&label=Doctest%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Demo Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Demo%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+
 
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
@@ -42,9 +43,11 @@ The [QMC.jl documentation](https://QMCSoftware.github.io/QMC.jl/) contains a det
 - [Introduction notebook](demos/qmc.jl_intro.ipynb) and [quickstart notebook](demos/quickstart.ipynb)
 - [Mathematical description of components](docs/src/components.md)
 - [Full demo list](demos/README.md) — 26 notebooks covering sampling, multilevel QMC, Bayesian optimization, sensitivity analysis, and more
+- Fred Hickernell's [2020 MCQMC tutorial video](https://www.youtube.com/watch?v=gL8M_7c-YUE) (QMCPy; concepts apply directly)
 - Aleksei Sorokin's [2023 PyData Chicago tutorial](https://www.youtube.com/watch?v=bRcKiLA2yBQ) (QMCPy; concepts apply directly)
+- [Publications on the development and use of QMCPy](https://qmcpy.org/publications/)
 
-In the Julia REPL, enter help mode by typing `?` at the `julia>` prompt. The prompt changes to `help?>`, and then you can type the object name:
+In the Julia REPL (Read-Eval-Print Loop, an interactive command-line environment for Julia), enter help mode by typing `?` at the `julia>` prompt. The prompt changes to `help?>`, and then you can type the object name:
 
 ```text
 julia> using QMC
@@ -78,13 +81,15 @@ using Pkg
 Pkg.add(url="https://github.com/QMCSoftware/QMC.jl")
 ```
 
-For `Lattice`, `DigitalNetB2`, and `Halton`, also install the QMCToolsCL runtime into a Python visible to Julia:
+For `Lattice`, `DigitalNetB2`, and `Halton`, also install the QMCToolsCL runtime (version ≥ 1.2.3) into a Python visible to Julia:
 
 ```bash
-pip install qmctoolscl
+pip install 'qmctoolscl>=1.2.3'
 ```
 
-If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"] = "/path/to/python"` before loading QMC.
+`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and stopping criteria, work without this step.
+
+If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"] = "/path/to/python"` before first use of those generators (no Julia restart needed).
 
 ### For contributors
 

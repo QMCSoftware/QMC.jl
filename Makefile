@@ -1,4 +1,4 @@
-.PHONY: test coverage doctest doctest-coverage doc uml format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
+.PHONY: test coverage release-parity release-parity-refresh doctest doctest-coverage doc uml format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
 .NOTPARALLEL: notebook notebook-update notebook-update-% notebook-% ci-doc-demo workflow-smoke
 
 # ============================================================================
@@ -116,6 +116,17 @@ coverage:
 	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; coverage=true, julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
 	julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS)
 	find src test -name '*.cov' -delete
+
+# Run the curated QMCPy 2.3 release-parity gate. This is a unit-style parity
+# check: exact deterministic sample/transform/evaluate oracles plus fast seeded
+# stopping-criterion and multilevel accounting checks.
+release-parity:
+	$(call RUN_TIMED,QMC_PYTHON="$(PYTHON)" julia --project=. test/release_parity.jl,release-parity)
+
+# Regenerate the checked-in QMCPy 2.3 release-parity fixture. Requires PYTHON to
+# point at an environment with the pinned benchmark dependencies installed.
+release-parity-refresh: check-qmcpy-python
+	$(PYTHON) devtools/generate_release_parity_fixture.py
 
 # Run specific test file
 test-%:

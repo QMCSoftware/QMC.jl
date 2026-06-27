@@ -45,10 +45,8 @@ Items marked as QMC.jl-only extensions in the parity map are outside strict QMCP
 | Python | any recent | currently required for the QMCToolsCL-backed generators `Lattice`, `DigitalNetB2`, and `Halton` |
 | Git | any recent | to clone the repo |
 
-Python is currently a runtime dependency for the main low-discrepancy QMC generators
-`Lattice`, `DigitalNetB2`, and `Halton`, because they rely on the QMCToolsCL shared library.
-Conda is optional; it is only one way to provide that Python environment and can also host
-an optional Jupyter frontend.
+Python is currently a runtime dependency for the main low-discrepancy QMC generators `Lattice`, `DigitalNetB2`, and `Halton`, because they rely on the QMCToolsCL shared library.
+Conda is optional; it is only one way to provide that Python environment and can also host an optional Jupyter frontend.
 
 ### 1. Clone and enter the project
 
@@ -64,14 +62,15 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ### 3. Install QMCToolsCL for `Lattice`, `DigitalNetB2`, and `Halton`
 
-The main low-discrepancy generators are backed by QMCToolsCL. Install it into a Python
-visible to Julia:
+The main low-discrepancy generators are backed by the compiled C library inside the `qmctoolscl` Python package (version ≥ 1.2.3). Install it into a Python visible to Julia:
 
 ```bash
-python3 -m pip install qmctoolscl
+python3 -m pip install 'qmctoolscl>=1.2.3'
 ```
 
-If Julia should use a specific Python interpreter, set this before first use of those generators:
+`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and stopping criteria, work without this step. Only `Lattice`, `DigitalNetB2`, and `Halton` need qmctoolscl.
+
+If Julia should use a specific Python interpreter, set this before first use of those generators (no Julia restart needed):
 
 ```julia
 ENV["QMC_PYTHON"] = "/path/to/python"
@@ -164,8 +163,7 @@ Then select the `QMC` kernel in Jupyter or VS Code once.
 
 If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMC` Julia kernel.
 
-Most demos use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl`
-to be installed in a Python visible to Julia.
+Most demos use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl` to be installed in a Python visible to Julia.
 
 To run a notebook in VS Code:
 

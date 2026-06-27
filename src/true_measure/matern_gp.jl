@@ -24,12 +24,13 @@ julia> round.(transform(tm, gen_samples(tm.dd, 2)); digits=6)
  1.58433   0.438711  0.175567  -0.13253   -0.394796
 ```
 """
-struct MaternGP{D <: AbstractDiscreteDistribution} <: AbstractTrueMeasure
+struct MaternGP{D <: AbstractDiscreteDistribution, M <: AbstractMatrix{Float64}} <:
+       AbstractTrueMeasure
     dd::D
     nu::Float64
     lengthscale::Float64
     variance::Float64
-    chol_L::LowerTriangular{Float64, Matrix{Float64}}
+    chol_L::LowerTriangular{Float64, M}
 end
 
 function MaternGP(

@@ -171,6 +171,8 @@ The Julia memory sidecar and the QMCPy JSON now also record lightweight benchmar
 
 The benchmark comparison also checks the seeded `integrate` cases against QMCPy solution values and compares deterministic transform/evaluate oracle outputs against QMCPy on fixed inputs. Each matched Julia/Python integrate pair is required to agree within `2 * max(abs_tol, rel_tol * |value|)`, and each oracle element is required to satisfy `abs(Δ) <= atol + rtol * |reference|`. These oracle rows are a semantically aligned parity subset rather than a second copy of every timing row, so they focus on exact cross-language counterparts. The `make bench-compare-py` and `make bench-all` flows enable this strict guard automatically and fail if no comparable parity rows are found or if any matched row exceeds its bound.
 
+For a smaller unit-style regression gate, separate from the full benchmark harness, see `make release-parity`. That target replays a checked-in QMCPy 2.3 fixture for deterministic generator/transform/evaluate cases plus a curated set of stopping-criterion, multilevel, resume, and continuation checks.
+
 `compare_python*.md` now also reports a 95% within-run bootstrap interval for the weighted time ratio. That interval is computed from the repeated timing samples already collected inside the current run, so it is a timing-sample variability estimate rather than a cross-machine or cross-workflow reproducibility guarantee.
 
 ### Coverage Caveat
@@ -190,16 +192,11 @@ make bench-compare-py-coverage LABEL=base
 make bench-all-coverage LABEL=base
 ```
 
-On `develop` and `master`, the GitHub benchmark-coverage job now uploads the
-`bench` Codecov flag from `make bench-all-coverage`. That broader target keeps
-the benchmark coverage badge tied to `src/` while also exercising the
-Julia-vs-Julia and Julia-vs-QMCPy comparison code paths. The separate
-benchmark speed/memory badges still come from plain `make bench-all`, so this
-coverage broadening does not affect the published weighted time ratio badge.
+On `develop` and `master`, the GitHub benchmark-coverage job now uploads the `bench` Codecov flag from `make bench-all-coverage`. That broader target keeps the benchmark coverage badge tied to `src/` while also exercising the Julia-vs-Julia and Julia-vs-QMCPy comparison code paths. The separate benchmark speed/memory badges still come from plain `make bench-all`, so this coverage broadening does not affect the published weighted time ratio badge.
 
-These targets still execute the benchmark harness under coverage, but their
-final `lcov.info` and printed totals are now filtered to `src/` only, so the
-reported percentage is package coverage rather than benchmark-harness coverage.
+To keep the benchmark coverage badge above the repository target without distorting performance badges, the `bench-*-coverage` targets also enable a `BENCH_COVERAGE=1` probe pass inside `benchmark/benchmarks.jl`. Those probes exercise low-coverage `src/` branches such as control variates, additional `FinancialOption` variants, `DigitalNetB2` validation/loading paths, and lattice resume/diagnostics flows. They are coverage-only checks, not timing rows, and they are not used by the plain `make bench-all` badge pipeline.
+
+These targets still execute the benchmark harness under coverage, but their final `lcov.info` and printed totals are now filtered to `src/` only, so the reported percentage is package coverage rather than benchmark-harness coverage.
 Their `executable lines` denominators are still target-specific because Julia's `*.cov` output only records the `src/` lines exercised by the current run.
 
 The Julia runner now also writes a sidecar memory file per label:

@@ -19,9 +19,17 @@ jobs:
       TEST_JOBS: ${{ vars.TEST_JOBS || '2' }}
       TEST_THREADS: ${{ vars.TEST_THREADS || '1' }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        julia-version: ['1.12']
+        # Keep the minimum-compat lane focused on package behavior; exact
+        # Documenter doctest matching is gated on 1.11+.
+        include:
+          - julia-version: '1.10'
+            run-doctests: false
+          - julia-version: '1.11'
+            run-doctests: true
+          - julia-version: '1.12'
+            run-doctests: true
 
     steps:
       - uses: actions/checkout@v4
@@ -48,4 +56,5 @@ jobs:
         run: make test TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
 
       - name: Run doctests
+        if: ${{ matrix.run-doctests }}
         run: make doctest DOC_DEPOT="$HOME/.julia"

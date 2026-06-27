@@ -9,6 +9,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 
 const _QMCTOOLSCL_LIB_PATH = Ref{String}("")
+const _QMCTOOLSCL_HANDLE = Ref{Ptr{Cvoid}}(C_NULL)
 const _QMCTOOLSCL_INIT_ATTEMPTED = Ref(false)
 const _QMCTOOLSCL_LAST_SEARCH = Ref("none")
 
@@ -98,6 +99,7 @@ except Exception:
                 has_fused = Libdl.dlsym_e(hdl, :dnb2_gen_gray_float) != C_NULL
                 if has_fused
                     _QMCTOOLSCL_LIB_PATH[] = path
+                    _QMCTOOLSCL_HANDLE[] = hdl
                     _HAS_DNB2_FUSED[] = true
                     return true
                 end
@@ -110,6 +112,7 @@ except Exception:
     if !isempty(fallback_path)
         _QMCTOOLSCL_LIB_PATH[] = fallback_path
         hdl = Libdl.dlopen(fallback_path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
+        _QMCTOOLSCL_HANDLE[] = hdl
         _HAS_DNB2_FUSED[] = false
         return true
     end
@@ -117,11 +120,15 @@ except Exception:
     _QMCTOOLSCL_LAST_SEARCH[] = searched_str
     if warn_on_failure
         @warn """QMCToolsCL C library not found.
-Lattice, DigitalNetB2, and Halton generation require it.
-Install `qmctoolscl` into a Python visible to Julia, or set
-ENV["QMC_PYTHON"] to the interpreter that has it installed.
-Searched Python interpreters: $searched_str
-Then restart Julia."""
+Lattice, DigitalNetB2, and Halton require it (IIDStdUniform and Kronecker work without it).
+
+Remediation (pick one):
+  pip install 'qmctoolscl>=1.2.3'
+
+Or point Julia at the Python that already has it (no restart needed):
+  ENV["QMC_PYTHON"] = "/path/to/python"
+
+Searched Python interpreters: $searched_str"""
     end
     return false
 end
@@ -137,13 +144,24 @@ function _qmctoolscl_lib_path()
     # after importing QMC but before first use of QMCToolsCL-backed generators.
     isempty(_QMCTOOLSCL_LIB_PATH[]) && _init_qmctoolscl!(; warn_on_failure=false, force=true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) && error(
-        "QMCToolsCL C library not loaded. " *
-        "Lattice, DigitalNetB2, and Halton require it. " *
-        "Install `qmctoolscl` into a Python visible to Julia, or set " *
-        "ENV[\"QMC_PYTHON\"] to that interpreter before first use. " *
+        "QMCToolsCL C library not loaded.\n\n" *
+        "Lattice, DigitalNetB2, and Halton require qmctoolscl ≥ 1.2.3.\n" *
+        "IIDStdUniform and Kronecker work without it.\n\n" *
+        "Remediation (pick one):\n" *
+        "  pip install 'qmctoolscl>=1.2.3'\n\n" *
+        "Or point Julia at the Python that already has it (no restart needed):\n" *
+        "  ENV[\"QMC_PYTHON\"] = \"/path/to/python\"\n\n" *
         "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).",
     )
     return _QMCTOOLSCL_LIB_PATH[]
+end
+
+# Return the open library handle, triggering initialization if needed.
+# Julia 1.14 requires ccall library names to be compile-time constants,
+# so we look up function pointers via dlsym at runtime instead.
+function _qmctoolscl_handle()
+    _QMCTOOLSCL_HANDLE[] == C_NULL && _qmctoolscl_lib_path()  # triggers init + error if missing
+    return _QMCTOOLSCL_HANDLE[]
 end
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -182,7 +200,7 @@ end
 
 function _c_lat_gen_linear!(n::Int, d::Int, g::Vector{UInt64}, x_buf::Vector{Float64})
     ccall(
-        (:lat_gen_linear, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :lat_gen_linear),
         Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, Ptr{UInt64}, Ptr{Float64}),
         UInt64(1),
@@ -204,7 +222,7 @@ function _c_lat_gen_natural!(
     x_buf::Vector{Float64},
 )
     ccall(
-        (:lat_gen_natural, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :lat_gen_natural),
         Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, Ptr{UInt64}, Ptr{Float64}),
         UInt64(1),
@@ -227,7 +245,7 @@ function _c_lat_gen_gray!(
     x_buf::Vector{Float64},
 )
     ccall(
-        (:lat_gen_gray, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :lat_gen_gray),
         Cvoid,
         (UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, Ptr{UInt64}, Ptr{Float64}),
         UInt64(1),
@@ -252,7 +270,7 @@ function _c_lat_shift_mod_1!(
     xr::Vector{Float64},
 )
     ccall(
-        (:lat_shift_mod_1, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :lat_shift_mod_1),
         Cvoid,
         (
             UInt64,
@@ -305,7 +323,7 @@ function _c_dnb2_gen_gray!(
     xb_buf::Vector{UInt64},
 )
     ccall(
-        (:dnb2_gen_gray, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_gen_gray),
         Cvoid,
         (
             UInt64,
@@ -342,7 +360,7 @@ function _c_dnb2_gen_natural!(
     xb_buf::Vector{UInt64},
 )
     ccall(
-        (:dnb2_gen_natural, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_gen_natural),
         Cvoid,
         (
             UInt64,
@@ -380,7 +398,7 @@ function _c_dnb2_digital_shift!(
     xrb_buf::Vector{UInt64},
 )
     ccall(
-        (:dnb2_digital_shift, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_digital_shift),
         Cvoid,
         (
             UInt64,
@@ -421,7 +439,7 @@ function _c_dnb2_interlace!(
     C_alpha::Vector{UInt64},
 )
     ccall(
-        (:dnb2_interlace, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_interlace),
         Cvoid,
         (
             UInt64,
@@ -461,7 +479,7 @@ function _c_dnb2_integer_to_float!(
     x_buf::Vector{Float64},
 )
     ccall(
-        (:dnb2_integer_to_float, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_integer_to_float),
         Cvoid,
         (
             UInt64,
@@ -519,7 +537,7 @@ function _c_dnb2_gen_gray_float!(
     x_buf::Vector{Float64},
 )
     ccall(
-        (:dnb2_gen_gray_float, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_gen_gray_float),
         Cvoid,
         (
             UInt64,
@@ -571,7 +589,7 @@ function _c_dnb2_gen_natural_float!(
     x_buf::Vector{Float64},
 )
     ccall(
-        (:dnb2_gen_natural_float, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :dnb2_gen_natural_float),
         Cvoid,
         (
             UInt64,
@@ -633,7 +651,7 @@ function _c_halton_qrng!(
     dvec::Vector{Int32},
 )
     ccall(
-        (:halton_qrng, _qmctoolscl_lib_path()),
+        Libdl.dlsym(_qmctoolscl_handle(), :halton_qrng),
         Cvoid,
         (Cint, Cint, Cint, Cint, Ptr{Float64}, Ptr{Float64}, Ptr{Cint}),
         Cint(n),

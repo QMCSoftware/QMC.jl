@@ -146,7 +146,8 @@ end
 
 Create a new Halton sampler with the given dimension and fresh seed.
 """
-spawn_dd(dd::Halton, dimension::Int) = Halton(dimension; randomize=dd.randomize)
+spawn_dd(dd::Halton, dimension::Int) =
+    Halton(dimension; randomize=dd.randomize, generalize=dd.generalize)
 
 # ── True Measure Spawning ──
 

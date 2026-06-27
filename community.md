@@ -21,9 +21,7 @@ See the full list at the [QMCSoftware community page](https://qmcsoftware.github
 
 ## Select References
 
-The mathematical and algorithmic foundations used by QMC.jl are documented in the
-[QMCPy publications page](https://qmcpy.org/publications/) and the
-[select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
+The mathematical and algorithmic foundations used by QMC.jl are documented in the [QMCPy publications page](https://qmcpy.org/publications/) and the [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
 
 ### (Q)MC Courses
 
