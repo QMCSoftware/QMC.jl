@@ -35,12 +35,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            julia-version: '1.9'
-            coverage: false
-          - os: macos-latest
             julia-version: '1.10'
             coverage: false
-          - os: windows-latest
+          - os: ubuntu-latest
             julia-version: '1.11'
             coverage: true
           - os: macos-latest
