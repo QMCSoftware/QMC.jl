@@ -3,8 +3,9 @@ name: "Install Test (no Python)"
 # Verifies that:
 #   1. `using QMC` succeeds without qmctoolscl installed.
 #   2. Pure-Julia generators (IIDStdUniform, Kronecker) work normally.
-#   3. qmctoolscl-backed generators (Lattice, DigitalNetB2, Halton) produce a
-#      clear, actionable error that mentions the exact pip command.
+#   3. Sampling from qmctoolscl-backed generators (Lattice, DigitalNetB2,
+#      Halton) produces a clear, actionable error that mentions the exact pip
+#      command.
 #
 # This is a v0.1.0 external-user hazard guard: Julia users expect `Pkg.add` to
 # instantiate all dependencies, but qmctoolscl is a Python package that must be
@@ -63,13 +64,14 @@ jobs:
             println("Kronecker OK: ", size(y))
           '
 
-      - name: Lattice gives a helpful error without qmctoolscl
+      - name: Lattice sampling gives a helpful error without qmctoolscl
         run: |
           julia --project=. -e '
             using QMC
+            dd = Lattice(3)
             try
-              Lattice(3)
-              error("Expected an error from Lattice when qmctoolscl is missing")
+              gen_samples(dd, 4)
+              error("Expected gen_samples(Lattice(...)) to error when qmctoolscl is missing")
             catch e
               msg = sprint(showerror, e)
               occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
@@ -79,13 +81,14 @@ jobs:
             end
           '
 
-      - name: DigitalNetB2 gives a helpful error without qmctoolscl
+      - name: DigitalNetB2 sampling gives a helpful error without qmctoolscl
         run: |
           julia --project=. -e '
             using QMC
+            dd = DigitalNetB2(3)
             try
-              DigitalNetB2(3)
-              error("Expected an error from DigitalNetB2 when qmctoolscl is missing")
+              gen_samples(dd, 4)
+              error("Expected gen_samples(DigitalNetB2(...)) to error when qmctoolscl is missing")
             catch e
               msg = sprint(showerror, e)
               occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
@@ -94,13 +97,14 @@ jobs:
             end
           '
 
-      - name: Halton gives a helpful error without qmctoolscl
+      - name: Halton sampling gives a helpful error without qmctoolscl
         run: |
           julia --project=. -e '
             using QMC
+            dd = Halton(3)
             try
-              Halton(3)
-              error("Expected an error from Halton when qmctoolscl is missing")
+              gen_samples(dd, 4)
+              error("Expected gen_samples(Halton(...)) to error when qmctoolscl is missing")
             catch e
               msg = sprint(showerror, e)
               occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)

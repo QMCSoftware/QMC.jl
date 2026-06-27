@@ -6,7 +6,7 @@ QMC.jl uses GitHub Actions for continuous integration and benchmark collection. 
 
 | Workflow | File | Trigger | Platforms | Scope |
 |----------|------|---------|-----------|-------|
-| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux (Julia 1.10, 1.11, 1.12) | Unit tests + doctests on the full compat window |
+| **Fast CI** | `ci.yml` | feature-branch `push`; every PR into `develop`/`master`; manual | Linux (unit tests on Julia 1.10, 1.11, 1.12; doctests on Julia 1.11, 1.12) | Fast unit-test gate across the full compat window plus doctests on newer lanes |
 | **Full CI** | `ci-full.yml` | `push` to `develop`/`master`; PRs with code/docs/workflow changes; manual | Linux, macOS, Windows | Unit tests + one Linux coverage lane |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks + benchmark-driven `src/` coverage |
 | **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression + develop/master doctest/notebook coverage |
@@ -14,7 +14,7 @@ QMC.jl uses GitHub Actions for continuous integration and benchmark collection. 
 
 ## Policy
 
-- Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`, testing Julia 1.10, 1.11, and 1.12. This ensures the full declared compat window (`julia = "1.10"`) is gate-verified on every PR.
+- Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`, testing unit behavior on Julia 1.10, 1.11, and 1.12. This keeps the full declared compat window (`julia = "1.10"`) gate-verified on every PR while leaving exact doctest matching to the Julia 1.11/1.12 lanes.
 - macOS and Windows are reserved for `develop`/`master` pushes, selected pull requests, and manual runs via `ci-full.yml`.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - The repository also has a fast fixture-based QMCPy release-parity gate (`make release-parity`) that complements the benchmark parity checks. It lives in the unit-test tree rather than the benchmark workflow so curated parity failures are easier to see and reproduce locally.
@@ -32,7 +32,8 @@ The primary fast-feedback workflow runs on non-`develop`/`master` pushes, on pul
 **Unit tests job:**
 
 - Runs on `ubuntu-latest` with Julia 1.10, 1.11, and 1.12 (one job per version; `fail-fast: false` so all three complete independently).
-- This matrix covers the full declared compat window (`julia = "1.10"` in `Project.toml`) on every PR, ensuring the minimum supported version is always gate-verified.
+- `make test` runs on all three Julia versions. `make doctest` runs on the Julia 1.11 and 1.12 lanes, while Julia 1.10 remains in the fast matrix for package-functionality compatibility testing.
+- This matrix still covers the full declared compat window (`julia = "1.10"` in `Project.toml`) on every PR, ensuring the minimum supported version is always gate-verified.
 - Installs Python 3.13 and pinned `qmctoolscl` from `test/requirements.txt`.
 - Executes `make test`, which runs the sharded unit-test suite without coverage instrumentation.
 - Executes `make doctest`, which runs the Documenter `jldoctest` examples from the package docstrings under `src/` and any docs pages that contain doctests, without a full docs render.
@@ -99,7 +100,7 @@ Guards against the qmctoolscl external-dependency hazard: Julia users expect `Pk
 - Triggers on pushes to `develop`/`master`, on pull requests that touch `src/` or `Project.toml`, and via manual dispatch.
 - Runs on `ubuntu-latest` with Julia 1.10 and 1.12. **Intentionally installs no Python and no qmctoolscl.**
 - Asserts that `using QMC` succeeds and that pure-Julia generators (`IIDStdUniform`, `Kronecker`) produce correct output without the C library.
-- Asserts that `Lattice(3)`, `DigitalNetB2(3)`, and `Halton(3)` each throw an error whose message mentions `qmctoolscl`, `pip install`, and the minimum version `1.2.3` — so a first-time user sees an actionable remediation rather than a cryptic symbol-lookup failure.
+- Asserts that `gen_samples(Lattice(3), 4)`, `gen_samples(DigitalNetB2(3), 4)`, and `gen_samples(Halton(3), 4)` each throw an error whose message mentions `qmctoolscl`, `pip install`, and the minimum version `1.2.3` — so a first-time user sees an actionable remediation rather than a cryptic symbol-lookup failure.
 - Does not run `Pkg.test()` — the full test suite requires qmctoolscl and is covered by the other CI workflows.
 
 ## Running Tests Locally
