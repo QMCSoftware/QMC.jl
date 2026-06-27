@@ -14,8 +14,6 @@
 [![Notebook Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Notebook%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 
-`Overall Coverage` is the combined Codecov view for `src/` on `develop`, aggregated across all protected-branch coverage uploads. The other coverage badges are workflow-specific Codecov flags; see [CI/CD Testing](docs/src/ci-testing.md#coverage-reports).
-
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 Quasi-Monte Carlo (QMC) methods approximate multivariate integrals using four interacting components: a **discrete distribution** (low-discrepancy sequence), a **true measure** (target probability space), an **integrand** (function to evaluate), and a **stopping criterion** (adaptive error control). QMC.jl provides plug-and-play implementations of each, following the same abstract-type framework as QMCPy so that components from both libraries compose naturally.
