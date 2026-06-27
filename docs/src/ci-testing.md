@@ -41,7 +41,7 @@ The primary fast-feedback workflow runs on non-`develop`/`master` pushes, on pul
 A cross-platform sweep for protected branches.
 
 - Triggers on pushes to `develop` or `master`, on pull requests that touch `src/`, `test/`, `docs/`, `benchmark/`, `.github/`, `Project.toml`, `Manifest.toml`, or `Makefile`, and via manual dispatch.
-- Uses an orthogonal matrix: Linux on Julia 1.10 and 1.11, plus macOS and Windows on Julia 1.12.
+- Uses an orthogonal matrix: Linux (`ubuntu-latest`) on Julia 1.10 and 1.11 (1.11 carries the coverage lane), macOS on Julia 1.12, Windows on Julia 1.12, and Linux on `nightly` with `continue-on-error: true` (see [The `nightly` Julia version](#the-nightly-julia-version) below).
 - Runs unit tests on every lane.
 - On `develop`/`master` push/manual runs, the Linux Julia 1.11 lane runs `make coverage`, uploads `lcov.info`, updates the Codecov branch badge, and updates the develop/master Codecov `unit` flag badge. On pull requests, that same lane falls back to plain `Pkg.test()` so coverage stays branch-only.
 - Does not run `make doctest`; doctest and full docs validation for `develop`/`master` live in `doc_demo.yml`, which already builds the documentation and therefore exercises the Documenter doctests there.
