@@ -1,7 +1,7 @@
 {
     "label": "Time vs QMCPy v2.3",
-    "message": "4.68x faster",
-    "color": "brightgreen",
+    "message": "3.73x faster",
+    "color": "green",
     "schemaVersion": 1,
     "namedLogo": "julia"
 }
