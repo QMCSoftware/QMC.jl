@@ -43,7 +43,9 @@ The [QMC.jl documentation](https://QMCSoftware.github.io/QMC.jl/) contains a det
 - [Introduction notebook](demos/qmc.jl_intro.ipynb) and [quickstart notebook](demos/quickstart.ipynb)
 - [Mathematical description of components](docs/src/components.md)
 - [Full demo list](demos/README.md) — 26 notebooks covering sampling, multilevel QMC, Bayesian optimization, sensitivity analysis, and more
+- Fred Hickernell's [2020 MCQMC tutorial video](https://www.youtube.com/watch?v=gL8M_7c-YUE) (QMCPy; concepts apply directly)
 - Aleksei Sorokin's [2023 PyData Chicago tutorial](https://www.youtube.com/watch?v=bRcKiLA2yBQ) (QMCPy; concepts apply directly)
+- [Publications on the development and use of QMCPy](https://qmcpy.org/publications/)
 
 In the Julia REPL (Read-Eval-Print Loop, an interactive command-line environment for Julia), enter help mode by typing `?` at the `julia>` prompt. The prompt changes to `help?>`, and then you can type the object name:
 
