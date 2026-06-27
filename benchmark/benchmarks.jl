@@ -28,6 +28,9 @@ const DIMS = [3, 10]
 const BENCH_SAMPLES = 5
 const INTEGRATE_BENCH_SAMPLES = 9
 const ORACLE_ROWS = 4
+# Coverage jobs reuse this suite but also need broader src/ branch execution than
+# the timed rows alone provide. Those extra probes are enabled only when the
+# coverage targets set BENCH_COVERAGE=1.
 const BENCH_COVERAGE = get(ENV, "BENCH_COVERAGE", "0") == "1"
 # StudentT is reported as its own cross-language row, so its sample count is
 # matched to the Python harness's `STUDENT_T_REPEAT = 21` (benchmark_qmcpy.py) to

@@ -197,6 +197,14 @@ Julia-vs-Julia and Julia-vs-QMCPy comparison code paths. The separate
 benchmark speed/memory badges still come from plain `make bench-all`, so this
 coverage broadening does not affect the published weighted time ratio badge.
 
+To keep the benchmark coverage badge above the repository target without
+distorting performance badges, the `bench-*-coverage` targets also enable a
+`BENCH_COVERAGE=1` probe pass inside `benchmark/benchmarks.jl`. Those probes
+exercise low-coverage `src/` branches such as control variates, additional
+`FinancialOption` variants, `DigitalNetB2` validation/loading paths, and
+lattice resume/diagnostics flows. They are coverage-only checks, not timing
+rows, and they are not used by the plain `make bench-all` badge pipeline.
+
 These targets still execute the benchmark harness under coverage, but their
 final `lcov.info` and printed totals are now filtered to `src/` only, so the
 reported percentage is package coverage rather than benchmark-harness coverage.
