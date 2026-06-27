@@ -47,7 +47,7 @@ jobs:
             julia-version: '1.12'
             coverage: false
           - os: ubuntu-latest
-            julia-version: 'env'
+            julia-version: 'nightly'
             coverage: false
             continue-on-error: true
 
