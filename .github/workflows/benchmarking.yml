@@ -199,6 +199,16 @@ jobs:
       - name: Install benchmark Python dependencies
         run: pip install -r benchmark/requirements.txt
 
+      - name: Select coverage baseline
+        shell: bash
+        run: |
+          BENCH_COMPARE_REV=HEAD
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            BENCH_COMPARE_REV="${{ github.event.before }}"
+          fi
+          echo "BENCH_COMPARE_REV=$BENCH_COMPARE_REV" >> "$GITHUB_ENV"
+          echo "BENCH_COVERAGE_LABEL=coverage" >> "$GITHUB_ENV"
+
       - name: Run benchmark coverage
         run: |
           export QMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
@@ -206,7 +216,7 @@ jobs:
           export MKL_NUM_THREADS="$BENCH_BLAS_THREADS"
           export OMP_NUM_THREADS="$BENCH_BLAS_THREADS"
           export NUMEXPR_NUM_THREADS="$BENCH_BLAS_THREADS"
-          make bench-coverage BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+          make bench-all-coverage REV="$BENCH_COMPARE_REV" LABEL="$BENCH_COVERAGE_LABEL" BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
 
       - name: Upload benchmark coverage artifact
         uses: actions/upload-artifact@v4

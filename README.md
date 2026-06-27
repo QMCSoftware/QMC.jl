@@ -1,26 +1,24 @@
 # QMC.jl: Quasi-Monte Carlo Community Software in Julia
 
-[![Doc/Unit Tests](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml)
-[![Docs and Demos](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml)
-[![Benchmarking](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
-[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![Doc/Unit Tests](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/ci-full.yml) [![Docs and Demos](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/doc_demo.yml) [![Benchmarking](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml/badge.svg?branch=develop)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 
-[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
-[![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
+[![Benchmark Speed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-speed-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml) [![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml) [![Contributors](https://img.shields.io/github/contributors/QMCSoftware/QMC.jl?label=Contributors)](https://github.com/QMCSoftware/QMC.jl/graphs/contributors) [![GitHub Stars](https://img.shields.io/github/stars/QMCSoftware/QMC.jl?style=flat&label=GitHub%20Stars)](https://github.com/QMCSoftware/QMC.jl/stargazers)
 
-[![Overall Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?label=Overall%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Doctest Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=doctest&label=Doctest%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Notebook Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Notebook%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-
-`Overall Coverage` is the combined Codecov view for `src/` on `develop`, aggregated across all protected-branch coverage uploads. The other coverage badges are workflow-specific Codecov flags; see [CI/CD Testing](docs/src/ci-testing.md#coverage-reports).
+[![Overall Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?label=Overall%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Test%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Doctest Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=doctest&label=Doctest%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Notebook Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Notebook%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl) [![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 
 A Julia port of [QMCPy](https://github.com/QMCSoftware/QMCSoftware) — quasi-Monte Carlo point generators, measure transforms, and adaptive stopping criteria for high-dimensional numerical integration.
 
 Quasi-Monte Carlo (QMC) methods approximate multivariate integrals using four interacting components: a **discrete distribution** (low-discrepancy sequence), a **true measure** (target probability space), an **integrand** (function to evaluate), and a **stopping criterion** (adaptive error control). QMC.jl provides plug-and-play implementations of each, following the same abstract-type framework as QMCPy so that components from both libraries compose naturally.
 
 ## Quick Start
+
+From a terminal, start Julia:
+
+```bash
+julia
+```
+
+Then run:
 
 ```julia
 using Pkg; Pkg.add(url="https://github.com/QMCSoftware/QMC.jl")
@@ -31,9 +29,11 @@ f  = Keister(Gaussian(dd; covariance=0.5))
 sc = CubQMCLatticeG(f; abs_tol=1e-3)
 
 result = integrate(sc)
-println("Estimate: $(result.solution)")   # ≈ 2.168
-println("Exact:    $(keister_exact(3))")
+println("Estimate: $(round(result.solution, digits=5))")
+println("Exact:    $(round(keister_exact(3), digits=5))")
 ```
+
+Quit Julia with `Ctrl-D` or `exit()`.
 
 ## Resources
 
@@ -44,12 +44,20 @@ The [QMC.jl documentation](https://QMCSoftware.github.io/QMC.jl/) contains a det
 - [Full demo list](demos/README.md) — 26 notebooks covering sampling, multilevel QMC, Bayesian optimization, sensitivity analysis, and more
 - Aleksei Sorokin's [2023 PyData Chicago tutorial](https://www.youtube.com/watch?v=bRcKiLA2yBQ) (QMCPy; concepts apply directly)
 
-In the Julia REPL, help is always one keystroke away:
+In the Julia REPL, enter help mode by typing `?` at the `julia>` prompt. The prompt changes to `help?>`, and then you can type the object name:
+
+```text
+julia> using QMC
+
+julia> ?
+help?> CubQMCLatticeG
+```
+
+From the normal Julia prompt, scripts, or notebooks, you can also inspect docstrings with:
 
 ```julia
-using QMC
-?CubQMCLatticeG       # help mode
-@doc CubQMCBayesNetG  # full docstring
+@doc CubQMCLatticeG
+@doc CubQMCBayesNetG
 ```
 
 ## Installation
