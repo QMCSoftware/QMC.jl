@@ -133,20 +133,15 @@ Utility code should remain support code, not become a hidden fifth framework lay
 
 The main sources of architectural friction today are:
 
-1. Direct cross-subsystem field access
-   Examples include relying on `.dd`, `.true_measure`, or `.dimension` in shared orchestration paths.
+1. Direct cross-subsystem field access Examples include relying on `.dd`, `.true_measure`, or `.dimension` in shared orchestration paths.
 
-2. Interface knowledge spread across implementation files
-   Some contracts are implicit in how built-in types happen to be written rather than stated in one place.
+2. Interface knowledge spread across implementation files Some contracts are implicit in how built-in types happen to be written rather than stated in one place.
 
-3. Built-in storage conventions functioning as de facto public API
-   This makes extension more brittle than necessary.
+3. Built-in storage conventions functioning as de facto public API This makes extension more brittle than necessary.
 
-4. Incomplete contract testing
-   Some extension behaviors are only exercised indirectly through built-in examples rather than through explicit interface tests.
+4. Incomplete contract testing Some extension behaviors are only exercised indirectly through built-in examples rather than through explicit interface tests.
 
-5. Mixed concerns in some subsystem files
-   Some files define both component-local behavior and framework-level orchestration assumptions.
+5. Mixed concerns in some subsystem files Some files define both component-local behavior and framework-level orchestration assumptions.
 
 ## Target Extensibility Contract
 
@@ -304,14 +299,11 @@ The current priority is constructor- and pipeline-level interface coverage: buil
 
 Architecture work should be documented in three places:
 
-1. [components.md](components.md)
-   For a high-level user-facing overview.
+1. [components.md](components.md) For a high-level user-facing overview.
 
-2. [api/internals.md](api/internals.md)
-   For concrete internal helpers and interface accessors.
+2. [api/internals.md](api/internals.md) For concrete internal helpers and interface accessors.
 
-3. This page
-   For design intent, boundaries, and refactor priorities.
+3. This page For design intent, boundaries, and refactor priorities.
 
 Generated UML diagrams may help communicate the current type graph, but they are only a visualization of the architecture. They are not the architecture itself.
 

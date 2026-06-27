@@ -2,12 +2,9 @@
 
 ## Quick Start
 
-Add the package with `import Pkg; Pkg.add("QMC")`, or `Pkg.develop(path=pwd())`
-from the repository root. Examples using `Lattice` also require `qmctoolscl`
-installed in a Python visible to Julia.
+Add the package with `import Pkg; Pkg.add("QMC")`, or `Pkg.develop(path=pwd())` from the repository root. Examples using `Lattice` also require `qmctoolscl` installed in a Python visible to Julia.
 
-**1. IID Monte Carlo** — integrate ``\sin(\pi x_1)\cos(\pi x_2)`` over ``[0,1]^2``
-(exact value = 0):
+**1. IID Monte Carlo** — integrate ``\sin(\pi x_1)\cos(\pi x_2)`` over ``[0,1]^2`` (exact value = 0):
 
 ```jldoctest
 julia> using QMC

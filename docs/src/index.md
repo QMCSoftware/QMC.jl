@@ -58,8 +58,7 @@ For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Pyth
 python3 -m pip install qmctoolscl==1.2.3
 ```
 
-If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"]`
-before `using QMC`.
+If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"]` before `using QMC`.
 
 ## Contents
 

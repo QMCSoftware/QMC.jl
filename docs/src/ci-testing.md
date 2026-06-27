@@ -17,6 +17,7 @@ QMC.jl uses GitHub Actions for continuous integration and benchmark collection. 
 - Linux is the default fast-feedback path and runs on feature-branch pushes plus all pull requests into `develop`/`master` via `ci.yml`, testing Julia 1.10, 1.11, and 1.12. This ensures the full declared compat window (`julia = "1.10"`) is gate-verified on every PR.
 - macOS and Windows are reserved for `develop`/`master` pushes, selected pull requests, and manual runs via `ci-full.yml`.
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
+- The repository also has a fast fixture-based QMCPy release-parity gate (`make release-parity`) that complements the benchmark parity checks. It lives in the unit-test tree rather than the benchmark workflow so curated parity failures are easier to see and reproduce locally.
 - Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
 - Coverage badges are served by Codecov flag badges (`unit`, `doctest`, `notebook`, `bench`). The custom `benchmark-badges` branch is reserved for benchmark speed/memory badges.
 - The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
@@ -74,6 +75,7 @@ The benchmark workflow is separate from the test workflows.
 - Runs `make bench-all`, not the broader `make ci`, so benchmark artifacts measure the checked-in sources rather than a formatter-mutated worktree.
 - Uses `BENCH_BLAS_THREADS` for both Julia and Python-side native-kernel thread settings.
 - Treats the seeded Julia-vs-QMCPy parity checks as a guard: `make bench-compare-py` fails if no comparable `integrate` or deterministic transform/evaluate oracle rows are found or if any matched row exceeds its configured agreement bound.
+- Those benchmark parity checks are timing-artifact-driven. For a smaller release-style regression gate that does not require running the full benchmark harness, use `make release-parity`, which replays a checked-in QMCPy 2.3 fixture from the unit-test tree.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
 - Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
 - Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` Codecov flag covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
@@ -118,6 +120,26 @@ julia --project=. -e 'using Pkg; Pkg.test(coverage=true)'
 make coverage TEST_JOBS=2 TEST_THREADS=1
 ```
 
+**Curated QMCPy release parity:**
+
+```bash
+make release-parity PYTHON=/path/to/python-with-qmcpy
+```
+
+This target uses the checked-in `test/qmcpy23_release_parity_fixture.jl` fixture. It is intentionally much smaller than `make bench-compare-py`:
+
+- deterministic low-discrepancy generator samples and `spawn_dd` outputs
+- deterministic true-measure transform and integrand-evaluation oracles
+- fast seeded stopping-criterion solution/accounting checks
+- multilevel level-accounting checks
+- one resume case and one continuation case
+
+When the pinned QMCPy reference version changes, regenerate the fixture with:
+
+```bash
+make release-parity-refresh PYTHON=/path/to/python-with-qmcpy
+```
+
 **Documenter doctests:**
 
 ```bash
@@ -139,21 +161,10 @@ make bench-all-coverage REV=HEAD~1 LABEL=base BENCH_BLAS_THREADS=2
 - `make coverage` wraps `Pkg.test(coverage=true)`, converts the resulting `src/*.cov` files into `lcov.info`, and prints a `src/` summary.
 - `make doctest-coverage` runs `docs/make.jl doctest=only` with coverage enabled and then summarizes the `src/` coverage files produced by that doctest-only execution.
 - `make notebook-coverage` executes the checked-in demo notebooks with coverage enabled and summarizes `src/`.
-- `make bench-coverage`, `make bench-compare-coverage`,
-  `make bench-compare-py-coverage`, and `make bench-all-coverage` now also
-  summarize `src/` only, even though the benchmark harness itself may emit
-  temporary `benchmark/*.cov` files during the run.
+- `make bench-coverage`, `make bench-compare-coverage`, `make bench-compare-py-coverage`, and `make bench-all-coverage` now also summarize `src/` only, even though the benchmark harness itself may emit temporary `benchmark/*.cov` files during the run.
 - The benchmark coverage targets additionally enable a `BENCH_COVERAGE=1` probe pass so the benchmark Codecov flag can target at least `80%` package coverage without polluting the plain benchmark speed/memory badge runs.
 
-All user-facing `*-coverage` targets now report package coverage with respect to
-`src/`. The `covered/executable` totals are still intentionally
-target-specific. `devtools/process_coverage.jl` only counts executable lines
-that appear in the `src/*.cov` files generated by the current run, so
-different entry points can produce different denominators. In particular,
-`make doctest-coverage` measures only the code reached while Documenter runs
-the doctests, after the docs environment has already been resolved separately,
-so its `(... executable lines)` total should not be expected to match
-`make coverage`.
+All user-facing `*-coverage` targets now report package coverage with respect to `src/`. The `covered/executable` totals are still intentionally target-specific. `devtools/process_coverage.jl` only counts executable lines that appear in the `src/*.cov` files generated by the current run, so different entry points can produce different denominators. In particular, `make doctest-coverage` measures only the code reached while Documenter runs the doctests, after the docs environment has already been resolved separately, so its `(... executable lines)` total should not be expected to match `make coverage`.
 
 **A single demo notebook:**
 
@@ -233,8 +244,7 @@ All CI jobs require:
 ## Adding a New Test
 
 1. Add your `@testset` block to the appropriate `test_*.jl` file.
-2. If testing a new component category, create a new file and add an
-   `include()` line in `runtests.jl`.
+2. If testing a new component category, create a new file and add an `include()` line in `runtests.jl`.
 3. Push — CI will run the tests automatically.
 
 ## Secrets

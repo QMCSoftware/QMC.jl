@@ -28,8 +28,7 @@ julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
 
 Then open a demo notebook and select the `QMC` kernel once. Jupyter usually remembers that choice for that notebook.
 
-**Option 2 — Use VS Code:**
-Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, click the notebook kernel picker, and select `QMC` before running cells.
+**Option 2 — Use VS Code:** Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, click the notebook kernel picker, and select `QMC` before running cells.
 
 If VS Code selects `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Otherwise Julia code such as `using QMC` will fail with a Python `SyntaxError`, or a generic Julia kernel may not see this repository's dependencies.
 
