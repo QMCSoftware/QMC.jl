@@ -9,7 +9,7 @@
 [![Benchmark Memory](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/QMCSoftware/QMC.jl/benchmark-badges/badges/benchmark-memory-develop.json)](https://github.com/QMCSoftware/QMC.jl/actions/workflows/benchmarking.yml)
 
 [![Overall Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?label=Overall%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
-[![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
+[![Unit Test Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=unit&label=Unit%20Test%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![Doctest Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=doctest&label=Doctest%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![Notebook Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=notebook&label=Notebook%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
 [![Benchmark Coverage](https://img.shields.io/codecov/c/github/QMCSoftware/QMC.jl/develop?flag=bench&label=Benchmark%20Coverage)](https://codecov.io/gh/QMCSoftware/QMC.jl)
