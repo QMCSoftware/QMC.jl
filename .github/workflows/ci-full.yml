@@ -72,6 +72,10 @@ jobs:
       - name: Install dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
+      - name: Show Julia environment info
+        if: ${{ matrix.julia-version == 'nightly' }}
+        run: julia --project=. -e 'using InteractiveUtils; versioninfo(); using Pkg; Pkg.status()'
+
       - name: Run unit tests with coverage
         if: ${{ matrix.coverage && github.event_name != 'pull_request' && (github.ref_name == 'develop' || github.ref_name == 'master') }}
         run: make coverage TEST_JOBS=$TEST_JOBS TEST_THREADS=$TEST_THREADS
