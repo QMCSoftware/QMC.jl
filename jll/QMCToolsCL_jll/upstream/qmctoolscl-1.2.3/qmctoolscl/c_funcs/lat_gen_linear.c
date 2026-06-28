@@ -18,7 +18,7 @@ EXPORT void lat_gen_linear(
     unsigned long long jj_max = (d-j0)<bs_d ? (d-j0):bs_d;
     unsigned long long ll_max = (r-l0)<bs_r ? (r-l0):bs_r;
     double n_double = n;
-    double ifrac;
+    double ifrac, _v;
     unsigned long long ll,l,ii,i,jj,j;
     for(ii=0; ii<ii_max; ii++){
         i = i0+ii;
@@ -27,7 +27,7 @@ EXPORT void lat_gen_linear(
             j = j0+jj;
             for(ll=0; ll<ll_max; ll++){
                 l = l0+ll;
-                x[l*n*d+i*d+j] = (double)(fmod((double)(g[l*d+j]*ifrac),(double)(1.)));
+                _v = (double)g[l*d+j] * ifrac; x[l*n*d+i*d+j] = _v - floor(_v);
             }
         }
     }

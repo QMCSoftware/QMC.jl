@@ -26,18 +26,8 @@ EXPORT void dnb2_gen_gray_float(
     unsigned long long ll_max = (r-l0)<bs_r ? (r-l0):bs_r;
     unsigned long long b,t,ll,l,l_x,ii,i,jj,j,idx,cidx,shift_idx,state_idx;
     unsigned long long itrue,xb,val;
-    unsigned long long *xb_state;
-    double *scales;
-
-    xb_state = (unsigned long long*) malloc(r_x*d*sizeof(unsigned long long));
-    if(xb_state==NULL){
-        return;
-    }
-    scales = (double*) malloc(r*sizeof(double));
-    if(scales==NULL){
-        free(xb_state);
-        return;
-    }
+    unsigned long long xb_state[r_x*d];
+    double scales[r];
     for(ll=0; ll<ll_max; ll++){
         l = l0+ll;
         scales[l] = ldexp(1.0,-(int)tmaxes[l]);
@@ -90,6 +80,4 @@ EXPORT void dnb2_gen_gray_float(
             }
         }
     }
-    free(scales);
-    free(xb_state);
 }

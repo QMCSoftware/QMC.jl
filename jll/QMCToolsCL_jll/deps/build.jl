@@ -55,6 +55,12 @@ function build_unix_library()
     #   bit-level float reconstruction, so in practice this flag is safe here,
     #   but it must be revisited if future kernel versions add numerically
     #   sensitive float reductions.
+    # -flto: link-time optimisation across all 28 translation units. Allows the
+    #   linker to inline cross-file calls and eliminate dead code, which is
+    #   significant when hot-path functions (Gray-code generators) call helpers
+    #   defined in separate .c files.
+    # -funroll-loops: unroll inner loops over dimension d (typically 1–16) and
+    #   replications, eliminating loop-counter overhead on short iterations.
     cmd = Cmd(
         [
             compiler,
@@ -62,6 +68,8 @@ function build_unix_library()
             "-O3",
             "-march=native",
             "-ffast-math",
+            "-flto",
+            "-funroll-loops",
             "-fPIC",
             "-std=c99",
             "-I",

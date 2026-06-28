@@ -18,7 +18,7 @@ EXPORT void lat_gen_natural(
     unsigned long long ii_max = (n-i0)<bs_n ? (n-i0):bs_n;
     unsigned long long jj_max = (d-j0)<bs_d ? (d-j0):bs_d;
     unsigned long long ll_max = (r-l0)<bs_r ? (r-l0):bs_r;
-    double ifrac;
+    double ifrac, _v;
     unsigned long long p,v,itrue,igc,b,ll,l,ii,i,jj,j,idx;
     unsigned long long n0 = n_start+i0;
     p = ceil(log2((double)n0+1));
@@ -42,7 +42,7 @@ EXPORT void lat_gen_natural(
             idx = (igc-n_start)*d+j;
             for(ll=0; ll<ll_max; ll++){
                 l = l0+ll;
-                x[l*n*d+idx] = (double)(fmod((double)(g[l*d+j]*ifrac),(double)(1.)));
+                _v = (double)g[l*d+j] * ifrac; x[l*n*d+idx] = _v - floor(_v);
             }
         }
         itrue = i+n_start+1;

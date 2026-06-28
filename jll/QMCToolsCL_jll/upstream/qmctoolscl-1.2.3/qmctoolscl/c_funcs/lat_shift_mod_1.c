@@ -21,6 +21,7 @@ EXPORT void lat_shift_mod_1(
     unsigned long long ll_max = (r-l0)<bs_r ? (r-l0):bs_r;
     unsigned long long ll,l,ii,i,jj,j,idx;
     unsigned long long nelem_x = r_x*n*d;
+    double _v;
     for(ll=0; ll<ll_max; ll++){
         l = l0+ll;
         for(ii=0; ii<ii_max; ii++){
@@ -28,7 +29,7 @@ EXPORT void lat_shift_mod_1(
             for(jj=0; jj<jj_max; jj++){
                 j = j0+jj;
                 idx = l*n*d+i*d+j;
-                xr[idx] = (double)(fmod((double)(x[(idx)%nelem_x]+shifts[l*d+j]),(double)(1.)));
+                _v = x[(idx)%nelem_x] + shifts[l*d+j]; xr[idx] = _v >= 1.0 ? _v - 1.0 : _v;
             }
         }
     }
