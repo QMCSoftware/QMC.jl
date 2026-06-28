@@ -1,0 +1,12 @@
+{
+  "branch": "develop",
+  "scope": "notebook",
+  "label": "Notebook Coverage",
+  "generated_at": "2026-06-28T13:40:22Z",
+  "coverage_pct": 80.066046,
+  "covered_lines": 2667,
+  "executable_lines": 3331,
+  "source_files": 52,
+  "lcov_filename": "lcov.info",
+  "badge_file": "badges/coverage-notebook-develop.json"
+}

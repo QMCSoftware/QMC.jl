@@ -1,0 +1,15 @@
+{
+  "branch": "develop",
+  "scope": "notebook",
+  "label": "sha-61f7244",
+  "commit_sha": "61f724450627420351f51aaa554b327862ef2e32",
+  "run_id": "28323829982",
+  "run_number": "70",
+  "run_attempt": "1",
+  "badge_file": "badges/coverage-notebook-develop.json",
+  "source_manifest": "badges/coverage-source-notebook-develop.json",
+  "archived_files": [
+    "lcov.info",
+    "coverage-source-notebook-develop.json"
+  ]
+}
