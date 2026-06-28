@@ -258,14 +258,13 @@ function bench_revision(rev::AbstractString)
     wt = joinpath(parent, "wt")   # must not pre-exist; `git worktree add` creates it
     run(`git -C $PKG worktree add --quiet --detach $wt $rev`)
     try
-        # Run the CURRENT benchmark suite against the revision's package source,
-        # so an old/broken benchmarks.jl committed at `rev` doesn't break the run
-        # and both sides measure the same suite.
-        cp(
-            joinpath(PKG, "benchmark", "benchmarks.jl"),
-            joinpath(wt, "benchmark", "benchmarks.jl");
-            force=true,
-        )
+        # Use the CURRENT benchmark suite and environment files against the revision's
+        # package source, so an old/broken benchmarks.jl or Project.toml at `rev`
+        # doesn't break the run (e.g. after a package rename that dropped [sources]).
+        for fname in ("benchmarks.jl", "Project.toml", "Manifest.toml")
+            src = joinpath(PKG, "benchmark", fname)
+            isfile(src) && cp(src, joinpath(wt, "benchmark", fname); force=true)
+        end
 
         snap = snapshot_package_tree(wt)
         try
