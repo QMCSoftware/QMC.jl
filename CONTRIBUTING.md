@@ -42,10 +42,15 @@ Items marked as QuasiMC.jl-only extensions in the parity map are outside strict 
 | Tool | Version | Notes |
 |---|---|---|
 | [Julia](https://julialang.org/downloads/) | ≥ 1.10 | `brew install julia` on macOS, or download from julialang.org |
-| Python | any recent | optional: only needed for QMCPy benchmark parity or if you prefer a Python-hosted Jupyter frontend |
+| Python | any recent | optional: `make test`, `make doctest`, and `make bench-compare` work without it; required for `make bench-all` / `make bench-compare-py` (Julia-vs-QMCPy cross-language comparison) and for running demo notebooks as a Jupyter frontend |
 | Git | any recent | to clone the repo |
 
-Python is no longer a runtime dependency for the main low-discrepancy QMC generators `Lattice`, `DigitalNetB2`, and `Halton`.
+Python is not a runtime dependency for any core generator, the Julia test suite, or the Julia-only regression benchmark (`make bench-compare`).
+It is only needed for two contributor workflows:
+
+1. **Cross-language benchmarking** — `make bench-all` and `make bench-compare-py` drive the Julia-vs-QMCPy comparison. Contributors who only need the Julia-vs-Julia regression can use `make bench-compare` instead.
+2. **Demo notebooks** — Python acts as the Jupyter frontend. The notebooks still execute on the Julia kernel; Python is not involved in the computation.
+
 Conda remains optional as one way to host QMCPy benchmark tooling or a Jupyter frontend.
 
 ### 1. Clone and enter the project
@@ -261,6 +266,7 @@ QuasiMC.jl groups its public surface into the following stability levels:
 Most top-level and source subdirectories contain a local `README.md` describing their purpose. Useful starting points:
 
 - [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and Julia-vs-QMCPy comparison tooling
+- [`jll/QMCToolsCL_jll/README.md`](jll/QMCToolsCL_jll/README.md) — how to refresh the bundled QMCToolsCL backend when a new upstream version is released
 - [`demos/README.md`](demos/README.md) — notebook demos and how to run them
 - [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — Documenter build/deploy layout
 - [`RELEASING.md`](RELEASING.md) — release ladder, readiness gates, and tagging process
