@@ -1,0 +1,12 @@
+{
+  "branch": "develop",
+  "scope": "unit",
+  "label": "Unit Coverage",
+  "generated_at": "2026-06-28T13:34:41Z",
+  "coverage_pct": 94.125874,
+  "covered_lines": 4711,
+  "executable_lines": 5005,
+  "source_files": 70,
+  "lcov_filename": "lcov.info",
+  "badge_file": "badges/coverage-unit-develop.json"
+}
