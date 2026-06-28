@@ -53,6 +53,11 @@ const STRICT_ACCURACY_ENV = "QUASIMC_BENCH_REQUIRE_QMCPY_ACCURACY"
 const STRICT_ACCURACY_ENV_LEGACY = "QMC_BENCH_REQUIRE_QMCPY_ACCURACY"
 const TIME_RATIO_BOOTSTRAP_DRAWS = 1_000
 const TIME_RATIO_BOOTSTRAP_SEED = 20260619
+const RSS_RATIO_NOTE =
+    "RSS delta ratio compares retained process RSS after one warmed call; " *
+    "ratio < 1 means Python retained less RSS than Julia, and ratio > 1 " *
+    "means Python retained more. Treat it as an approximate retained-" *
+    "footprint signal, not a direct allocation metric."
 
 finite_or_nothing(x) = x isa Real && isfinite(x) ? x : nothing
 
@@ -664,6 +669,7 @@ else
         "weighted approximate RSS delta ratio = n/a  (missing Julia or QMCPy RSS delta sidecar data)",
     )
 end
+println("  note: " * RSS_RATIO_NOTE)
 println("grouped weighted time ratios:")
 for row in group_summaries
     @printf(
@@ -1015,6 +1021,7 @@ open(outfile, "w") do io
             "| weighted approximate RSS delta ratio | all matched rows | n/a | n/a | n/a | 0 |\n",
         )
     end
+    println(io, "> ℹ️ " * RSS_RATIO_NOTE)
     println(io, "")
     println(io, "## Grouped Timing Summary\n")
     println(
