@@ -1,6 +1,6 @@
 # Developer Tools
 
-This directory holds developer-only helper environments and scripts that are not part of the public QMC.jl API.
+This directory holds developer-only helper environments and scripts that are not part of the public QuasiMC.jl API.
 
 ## Contents
 

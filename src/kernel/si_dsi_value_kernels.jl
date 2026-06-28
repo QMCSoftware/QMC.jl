@@ -73,7 +73,7 @@ Combined shift-invariant (lattice) product kernel
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> k = KernelShiftInvarCombined(2)
 KernelShiftInvarCombined(d=2, scale=1.0)

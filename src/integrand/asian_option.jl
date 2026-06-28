@@ -16,7 +16,7 @@ Payoff (discounted):
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = AsianOption(BrownianMotion(Lattice(13; randomize=true, seed=7)); volatility=0.5, start_price=30.0, strike_price=25.0)
 AsianOption(call, arithmetic, d=13, S0=30.0, K=25.0, σ=0.5)
@@ -28,7 +28,7 @@ true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = AsianOption(BrownianMotion(DigitalNetB2(8; seed=7)); mean_type=:geometric, volatility=0.5, start_price=30.0, strike_price=25.0)
 AsianOption(call, geometric, d=8, S0=30.0, K=25.0, σ=0.5)

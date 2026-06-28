@@ -11,7 +11,7 @@ The 1D kernel of order `r` is based on Walsh series coefficients.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [0.0 0.0; 0.5 0.25; 0.25 0.5; 0.75 0.75];
 

@@ -9,9 +9,9 @@ orthonormal Walsh coefficients of the integrand rather than a replication-based
 confidence interval, so it samples far fewer points than the replicated
 [`CubQMCNetGRep`](@ref).
 
-For vector-valued integrands (`QMC.d_indv(f) != ()`), returns a
+For vector-valued integrands (`QuasiMC.d_indv(f) != ()`), returns a
 [`QMCVecResult`](@ref) whose combined bounds are built through
-`QMC.bound_fun(f, low, high)`.
+`QuasiMC.bound_fun(f, low, high)`.
 
 At each step the net of size `n = 2^m` is drawn, the integrand is evaluated, the
 scaled Walsh coefficients `ytilde` are formed, their indices are decay-ordered
@@ -37,7 +37,7 @@ returned in `result.data[:control_variate_beta]`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(3; randomize="LMS_DS", graycode=false, seed=2024);
 
@@ -57,7 +57,7 @@ true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; randomize="LMS_DS", graycode=false, seed=77);
 

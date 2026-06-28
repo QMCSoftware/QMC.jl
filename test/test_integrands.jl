@@ -1,39 +1,39 @@
 # Top-level helper for the Stage A multi-output interface test. Struct
 # definitions must live at top level (not inside a `@testset` block), so the toy
 # vector-valued integrand and its `d_indv` override are declared here.
-struct _VecOutputToy <: QMC.AbstractIntegrand end
-QMC.d_indv(::_VecOutputToy) = (3,)
+struct _VecOutputToy <: QuasiMC.AbstractIntegrand end
+QuasiMC.d_indv(::_VecOutputToy) = (3,)
 
-struct _AltLayoutDD <: QMC.AbstractDiscreteDistribution
+struct _AltLayoutDD <: QuasiMC.AbstractDiscreteDistribution
     d::Int
     fill_value::Float64
 end
-QMC.dimension(dd::_AltLayoutDD) = dd.d
-QMC.gen_samples(dd::_AltLayoutDD, n::Int; n_start::Int=0) = fill(dd.fill_value, n, dd.d)
+QuasiMC.dimension(dd::_AltLayoutDD) = dd.d
+QuasiMC.gen_samples(dd::_AltLayoutDD, n::Int; n_start::Int=0) = fill(dd.fill_value, n, dd.d)
 
-struct _AltLayoutTM <: QMC.AbstractTrueMeasure
+struct _AltLayoutTM <: QuasiMC.AbstractTrueMeasure
     sampler::_AltLayoutDD
     shift::Float64
 end
-QMC.discrete_distribution(tm::_AltLayoutTM) = tm.sampler
-QMC.dimension(tm::_AltLayoutTM) = QMC.dimension(tm.sampler)
-QMC.transform(tm::_AltLayoutTM, x::AbstractMatrix) = x .+ tm.shift
+QuasiMC.discrete_distribution(tm::_AltLayoutTM) = tm.sampler
+QuasiMC.dimension(tm::_AltLayoutTM) = QuasiMC.dimension(tm.sampler)
+QuasiMC.transform(tm::_AltLayoutTM, x::AbstractMatrix) = x .+ tm.shift
 
-struct _AltLayoutIntegrand <: QMC.AbstractIntegrand
+struct _AltLayoutIntegrand <: QuasiMC.AbstractIntegrand
     measure::_AltLayoutTM
     scale::Float64
 end
-QMC.true_measure(f::_AltLayoutIntegrand) = f.measure
-QMC.dimension(f::_AltLayoutIntegrand) = QMC.dimension(f.measure)
-QMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=2)[:]
+QuasiMC.true_measure(f::_AltLayoutIntegrand) = f.measure
+QuasiMC.dimension(f::_AltLayoutIntegrand) = QuasiMC.dimension(f.measure)
+QuasiMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=2)[:]
 
 @testset "Integrands" begin
     @testset "Accessor-based extensibility" begin
         f = _AltLayoutIntegrand(_AltLayoutTM(_AltLayoutDD(3, 0.25), 0.5), 2.0)
         y = sample_and_evaluate(f, 4)
         @test y == fill(4.5, 4)
-        @test QMC.dimension(f) == 3
-        @test QMC.discrete_distribution(f) isa _AltLayoutDD
+        @test QuasiMC.dimension(f) == 3
+        @test QuasiMC.discrete_distribution(f) isa _AltLayoutDD
     end
 
     @testset "CustomFun" begin
@@ -462,22 +462,22 @@ QMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims
         tm = Uniform(dd)
         f = CustomFun(tm, x -> sum(x; dims=2)[:])
         # Scalar integrands get scalar/identity defaults (no behavior change).
-        @test QMC.d_indv(f) == ()
-        @test QMC.d_comb(f) == ()
-        @test QMC.combine_fun(f, 3.0) === 3.0
-        @test QMC.bound_fun(f, -1.0, 2.0) == (-1.0, 2.0)
-        @test QMC.dependency(f, [true, false]) == [true, false]
-        @test QMC.d_indv(Keister(Gaussian(dd; covariance=0.5))) == ()
-        @test QMC.d_indv(Ishigami(Uniform(IIDStdUniform(3)))) == ()
+        @test QuasiMC.d_indv(f) == ()
+        @test QuasiMC.d_comb(f) == ()
+        @test QuasiMC.combine_fun(f, 3.0) === 3.0
+        @test QuasiMC.bound_fun(f, -1.0, 2.0) == (-1.0, 2.0)
+        @test QuasiMC.dependency(f, [true, false]) == [true, false]
+        @test QuasiMC.d_indv(Keister(Gaussian(dd; covariance=0.5))) == ()
+        @test QuasiMC.d_indv(Ishigami(Uniform(IIDStdUniform(3)))) == ()
 
         # A vector-valued integrand can override d_indv; d_comb then defaults to
         # it (identity combine) and the bound map stays identity until specialized.
         toy = _VecOutputToy()
-        @test QMC.d_indv(toy) == (3,)
-        @test QMC.d_comb(toy) == (3,)
+        @test QuasiMC.d_indv(toy) == (3,)
+        @test QuasiMC.d_comb(toy) == (3,)
         lo, hi = [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]
-        @test QMC.bound_fun(toy, lo, hi) == (lo, hi)
-        @test QMC.dependency(toy, [true, false, true]) == [true, false, true]
+        @test QuasiMC.bound_fun(toy, lo, hi) == (lo, hi)
+        @test QuasiMC.dependency(toy, [true, false, true]) == [true, false, true]
     end
 
     @testset "CustomFun (matrix output + replicated sampler)" begin

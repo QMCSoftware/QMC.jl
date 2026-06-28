@@ -17,7 +17,7 @@ with a dedicated standard-parameter fast path for `loc=0.0, scale=1.0`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 

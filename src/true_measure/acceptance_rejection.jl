@@ -24,7 +24,7 @@ target distribution. The discrete distribution must have dimension `d + 1`.
 
 # Example
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(3; randomize="none", seed=7);  # 2 target dims + 1 acceptance dim
 
@@ -189,7 +189,7 @@ distribution must therefore have dimension `d + 1` and mimic StdUniform.
 
 # Example
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; randomize="none", seed=7);  # 1 target dim + 1 acceptance dim
 

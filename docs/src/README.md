@@ -1,6 +1,6 @@
 # Documentation Sources
 
-This folder contains the Markdown pages that make up the QMC.jl documentation site.
+This folder contains the Markdown pages that make up the QuasiMC.jl documentation site.
 
 ## Current pages
 

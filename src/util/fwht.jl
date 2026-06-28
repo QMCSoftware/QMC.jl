@@ -10,7 +10,7 @@ the butterfly decomposition.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0];
 

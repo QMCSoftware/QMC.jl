@@ -21,15 +21,15 @@ Set `trace_iterations=true` to record an `IterationLog` in `data[:iteration_log]
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
-julia> struct VecDemo{TM} <: QMC.AbstractIntegrand
+julia> struct VecDemo{TM} <: QuasiMC.AbstractIntegrand
            true_measure::TM
        end
 
-julia> QMC.d_indv(::VecDemo) = (2,)
+julia> QuasiMC.d_indv(::VecDemo) = (2,)
 
-julia> function QMC.evaluate(f::VecDemo, x::AbstractMatrix)
+julia> function QuasiMC.evaluate(f::VecDemo, x::AbstractMatrix)
            y = Matrix{Float64}(undef, size(x, 1), 2)
            @views y[:, 1] .= x[:, 1]
            @views y[:, 2] .= x[:, 1] .^ 2

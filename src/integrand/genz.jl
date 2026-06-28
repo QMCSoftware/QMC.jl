@@ -15,7 +15,7 @@ Default parameters: ``a = \\mathbf{1}``, ``u = 0.5 \\cdot \\mathbf{1}``.
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> for (kind, coeff, target) in (
            (:oscillatory, 1, -0.351),

@@ -6,7 +6,7 @@ Julia counterpart of QMCPy/demos/demo_resume_data/check_resume_long.py.
 Runs a loose solve, resumes with a tighter tolerance, then compares against
 a fresh tight solve from scratch. Writes a combined text report.
 
-Usage (from QMC.jl root):
+Usage (from QuasiMC.jl root):
     julia demos/demo_resume_data/check_resume_long.jl
 From demos/demo_resume_data/:
     julia check_resume_long.jl

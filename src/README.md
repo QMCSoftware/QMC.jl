@@ -1,10 +1,10 @@
 # Source Tree
 
-This directory contains the implementation of the QMC.jl package.
+This directory contains the implementation of the QuasiMC.jl package.
 
 ## Files
 
-- `QMC.jl`: package entry point; includes source files and exports the public API.
+- `QuasiMC.jl`: package entry point; includes source files and exports the public API.
 - `abstract_types.jl`: shared abstract interfaces such as integrands, measures, and stopping criteria.
 
 ## Subdirectories

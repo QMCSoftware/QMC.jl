@@ -24,11 +24,9 @@
 
 using Pkg
 Pkg.activate(@__DIR__)
-# QMC is unregistered, so always develop it by local path — even if it is already
-# listed in this project's [deps]. benchmark/Manifest.toml is gitignored, so a
-# fresh CI checkout has no manifest and Pkg.resolve() below would otherwise try to
-# look QMC up in a registry and fail ("expected package QMC to be registered").
-Pkg.develop(; path=dirname(@__DIR__))
+# benchmark/Project.toml pins QuasiMC via `[sources] QuasiMC = { path = ".." }`,
+# so this environment resolves against the repository root without rewriting the
+# project/manifest to an absolute local path.
 let deps = keys(Pkg.project().dependencies)
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
     "JSON3" in deps || Pkg.add("JSON3")
@@ -52,7 +50,8 @@ compare_py_summary_outfile(label::AbstractString) =
     isempty(label) ? joinpath(resdir, "compare_python_summary.json") :
     joinpath(resdir, "compare_python_summary_$(label).json")
 const ARTIFACT_SKEW_WARNING_SECONDS = 10 * 60
-const STRICT_ACCURACY_ENV = "QMC_BENCH_REQUIRE_QMCPY_ACCURACY"
+const STRICT_ACCURACY_ENV = "QUASIMC_BENCH_REQUIRE_QMCPY_ACCURACY"
+const STRICT_ACCURACY_ENV_LEGACY = "QMC_BENCH_REQUIRE_QMCPY_ACCURACY"
 const TIME_RATIO_BOOTSTRAP_DRAWS = 1_000
 const TIME_RATIO_BOOTSTRAP_SEED = 20260619
 
@@ -507,7 +506,8 @@ py_oracles = maybe_get(py_data, "oracles", nothing)
 oracle_rows = collect_oracle_rows(jl_oracles, py_oracles)
 checked_oracle_rows = count(r -> r.check !== nothing, oracle_rows)
 n_flagged_oracle_rows = count(r -> r.check !== nothing && r.check.flagged, oracle_rows)
-strict_accuracy = get(ENV, STRICT_ACCURACY_ENV, "0") == "1"
+strict_accuracy =
+    get(ENV, STRICT_ACCURACY_ENV, get(ENV, STRICT_ACCURACY_ENV_LEGACY, "0")) == "1"
 
 println("Julia vs QMCPy benchmark comparison")
 println("  Julia label   : $jl_label")

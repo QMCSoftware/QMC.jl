@@ -18,7 +18,7 @@ Matches QMCPy's `CubMCCLT` algorithm.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = CustomFun(
            Uniform(IIDStdUniform(3; seed=7); lower_bound=0.0, upper_bound=1.0),

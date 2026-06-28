@@ -12,7 +12,7 @@ for in-place FFT implementations.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> bro_fft([1.0, 2.0, 3.0, 4.0])
 4-element Vector{ComplexF64}:
@@ -23,7 +23,7 @@ julia> bro_fft([1.0, 2.0, 3.0, 4.0])
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> bro_ifft(ComplexF64[10, -1 + 1im, -4, -1 - 1im])
 4-element Vector{Float64}:

@@ -1,18 +1,18 @@
 using Documenter
-using QMC
+using QuasiMC
 
 rm(joinpath(@__DIR__, "build"); force=true, recursive=true)
 
 makedocs(
-    sitename = "QMC.jl",
+    sitename = "QuasiMC.jl",
     authors = "Sou-Cheng T. Choi, Fred J. Hickernell, Aleksei Sorokin, and contributors",
-    modules = [QMC],
+    modules = [QuasiMC],
     doctest = ("doctest=fix" in ARGS) ? :fix : ("doctest=only" in ARGS) ? :only : true,
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://qmcsoftware.github.io/QMC.jl/",
-        repolink = "https://github.com/QMCSoftware/QMC.jl",
+        canonical = "https://qmcsoftware.github.io/QuasiMC.jl/",
+        repolink = "https://github.com/QMCSoftware/QuasiMC.jl",
         edit_link = nothing,
         assets = String[],
     ),
@@ -41,7 +41,7 @@ makedocs(
 # Only deploy from CI
 if get(ENV, "CI", nothing) == "true" && get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"
     deploydocs(
-        repo = "github.com/QMCSoftware/QMC.jl.git",
+        repo = "github.com/QMCSoftware/QuasiMC.jl.git",
         devbranch = "develop",
         push_preview = true,
     )

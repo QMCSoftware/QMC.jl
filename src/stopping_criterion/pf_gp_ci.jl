@@ -9,7 +9,7 @@ and credible intervals (Sorokin & Rao, arXiv:2311.07733), mirroring QMCPy's
 
 # API status
 **Experimental.** `PFGPCI` is exported for early adopters and QMCPy parity, but
-it is not yet part of QMC.jl's stable API contract. The constructor and
+it is not yet part of QuasiMC.jl's stable API contract. The constructor and
 deterministic credible-interval helpers are supported, and end-to-end
 `integrate` works once the optional Gaussian-process backend extension is
 loaded. Expect interface and backend details to evolve until the Julia GP
@@ -28,12 +28,12 @@ to `abs_tol` (or the simulation budget `n_limit` is exhausted). New batches of
 density `2 min(φ, 1-φ)`, concentrating effort near the learned failure boundary.
 
 # Gaussian-process backend
-The GP fit/predict step is supplied by the **`QMCAbstractGPsExt` package
+The GP fit/predict step is supplied by the **`QuasiMCAbstractGPsExt` package
 extension**, which loads automatically once `AbstractGPs` and `Optim` are
 present. Without them, `integrate` raises an actionable error. Unlike QMCPy's
 deterministic stopping criteria, cross-implementation *bit*-parity is not
 attainable here — the GP hyperparameters are fit by numerical optimization, so
-QMCPy (gpytorch + Adam) and QMC.jl (AbstractGPs + Optim) agree only
+QMCPy (gpytorch + Adam) and QuasiMC.jl (AbstractGPs + Optim) agree only
 *statistically* (same algorithm, same credible-interval math, convergence to
 the same probability of failure). The deterministic pieces — `φ`, the estimate,
 `emr`, the credible interval, the acceptance–rejection proposal — match QMCPy
@@ -41,7 +41,7 @@ exactly.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 
@@ -97,7 +97,7 @@ end
 # ---------------------------------------------------------------------------
 # Gaussian-process backend contract.
 #
-# Implemented by the `QMCAbstractGPsExt` extension (loaded when AbstractGPs and
+# Implemented by the `QuasiMCAbstractGPsExt` extension (loaded when AbstractGPs and
 # Optim are available). `_pfgpci_fit(x, y)` returns an opaque fitted-GP object
 # for training inputs `x` (an `n × d` matrix, one point per row) and targets
 # `y`; `_pfgpci_predict(model, xq)` returns `(mean, std)` posterior vectors at
@@ -188,7 +188,7 @@ result's `data` carries the per-batch trajectory (`:solutions`, `:error_bounds`,
 `:ci_low`, `:ci_high`, `:n_batch`), the final credible interval (`:bound_low`,
 `:bound_high`), `:n_total`, and `:converged`.
 
-**Experimental.** This method depends on QMC.jl's optional Gaussian-process
+**Experimental.** This method depends on QuasiMC.jl's optional Gaussian-process
 backend extension and may change before the API is declared stable.
 
 Requires the `AbstractGPs`/`Optim` GP backend extension to be loaded.
@@ -197,7 +197,7 @@ function integrate(sc::PFGPCI; seed=nothing, verbose::Bool=false)
     if !_pfgpci_backend_loaded()
         error(
             "PFGPCI requires a Gaussian-process backend, supplied by QMC's " *
-            "`QMCAbstractGPsExt` package extension. Install and load AbstractGPs " *
+            "`QuasiMCAbstractGPsExt` package extension. Install and load AbstractGPs " *
             "and Optim to enable it:\n\n" *
             "    using AbstractGPs, Optim   # loads QMC's GP backend\n" *
             "    integrate(PFGPCI(integrand; ...))\n",

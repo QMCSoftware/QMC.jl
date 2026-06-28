@@ -13,7 +13,7 @@ tables by Bailey, Borwein, and Crandall).
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = BoxIntegral(Uniform(DigitalNetB2(2; seed=7)); s=7.0)
 BoxIntegral(d=2, s=7.0)

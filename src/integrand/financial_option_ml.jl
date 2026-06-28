@@ -21,7 +21,7 @@ The number of levels is determined by `dimension(dd)`: the dimension must equal
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = FinancialOptionML(IIDStdUniform(32; seed=7); d_coarsest=4, option_type=:asian)
 FinancialOptionML(:asian, :call, d=32, d_coarsest=4, levels=4)
@@ -37,7 +37,7 @@ julia> cost_at_level(f, 2)
 ```
 
 ```jldoctest
-julia> using QMC, Random
+julia> using QuasiMC, Random
 
 julia> Random.seed!(7);
 
@@ -162,9 +162,9 @@ function FinancialOptionML(
     )
 end
 
-QMC.dimension_at_level(f::FinancialOptionML, level::Int) = f.d_coarsest * (1 << level)
+QuasiMC.dimension_at_level(f::FinancialOptionML, level::Int) = f.d_coarsest * (1 << level)
 
-QMC.cost_at_level(f::FinancialOptionML, level::Int) = Float64(f.d_coarsest * (1 << level))
+QuasiMC.cost_at_level(f::FinancialOptionML, level::Int) = Float64(f.d_coarsest * (1 << level))
 
 function _ml_time_horizon(f::FinancialOptionML)
     return hasproperty(f.true_measure, :time_vector) ? f.true_measure.time_vector[end] : 1.0
@@ -261,7 +261,7 @@ function _ml_payoff(f::FinancialOptionML, S::AbstractVector)
     end
 end
 
-function QMC.ml_evaluate(f::FinancialOptionML, x::AbstractMatrix, level::Int)
+function QuasiMC.ml_evaluate(f::FinancialOptionML, x::AbstractMatrix, level::Int)
     n = size(x, 1)
     d_fine = dimension_at_level(f, level)
     T = _ml_time_horizon(f)

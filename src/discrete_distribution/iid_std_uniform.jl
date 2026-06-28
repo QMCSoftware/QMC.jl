@@ -8,7 +8,7 @@ the stored RNG. Setting `seed` makes the sequence reproducible.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = IIDStdUniform(2; seed=7)
 IIDStdUniform(d=2)
@@ -29,7 +29,7 @@ julia> round.(gen_samples(dd, 4); digits=6) # new samples every call
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = gen_samples(IIDStdUniform(3; seed=7), 4);
 

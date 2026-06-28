@@ -6,17 +6,17 @@ Kumaraswamy distribution measure via inverse CDF.
     F⁻¹(u) = (1 - (1 - u)^(1/β))^(1/α)
 
 This distribution is similar to the Beta distribution but has a closed-form
-inverse CDF, making it efficient for QMC.
+inverse CDF, making it efficient for QuasiMC.
 
 # Arguments
 - `dd`: discrete distribution.
 - `alpha`: shape parameter α > 0 (scalar or d-vector). Default `2.0`.
 - `beta`: shape parameter β > 0 (scalar or d-vector). Default `2.0` (matches
-  QMCPy's `a=2, b=2`; QMC.jl's `alpha`/`beta` correspond to QMCPy's `a`/`b`).
+  QMCPy's `a=2, b=2`; QuasiMC.jl's `alpha`/`beta` correspond to QMCPy's `a`/`b`).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 

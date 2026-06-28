@@ -1,6 +1,6 @@
-# Contributing to QMC.jl
+# Contributing to QuasiMC.jl
 
-Thank you for your interest in contributing to QMC.jl. This guide walks through the full developer setup, project conventions, and how to add new components.
+Thank you for your interest in contributing to QuasiMC.jl. This guide walks through the full developer setup, project conventions, and how to add new components.
 
 Please submit **pull requests** to the `develop` branch and **issues** using a template from `.github/ISSUE_TEMPLATE/`.
 
@@ -21,7 +21,7 @@ Before requesting review, please confirm the following:
 
 ## QMCPy Parity Policy
 
-QMC.jl aims for behavioral parity with a pinned QMCPy reference release while keeping the implementation idiomatic Julia. The parity target for each component family is:
+QuasiMC.jl aims for behavioral parity with a pinned QMCPy reference release while keeping the implementation idiomatic Julia. The parity target for each component family is:
 
 | Component family | Parity target | Maintainer rule |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ QMC.jl aims for behavioral parity with a pinned QMCPy reference release while ke
 | Stopping criteria | Strict | Shared stopping criteria must preserve tolerance semantics, sample accounting, convergence behavior, and resume semantics against the pinned QMCPy reference. |
 | Kernels | Approximate | Shared kernels must preserve kernel values and Bayesian behavior within tolerance, while allowing Julia-native composition, derivative helpers, and implementation details. |
 
-Items marked as QMC.jl-only extensions in the parity map are outside strict QMCPy parity unless they are explicitly promoted to shared behavior in a future release.
+Items marked as QuasiMC.jl-only extensions in the parity map are outside strict QMCPy parity unless they are explicitly promoted to shared behavior in a future release.
 
 ## Developer Setup
 
@@ -51,7 +51,7 @@ Conda is optional; it is only one way to provide that Python environment and can
 ### 1. Clone and enter the project
 
 ```bash
-git clone https://github.com/QMCSoftware/QMC.jl.git
+git clone https://github.com/QMCSoftware/QuasiMC.jl.git
 ```
 
 ### 2. Install Julia dependencies
@@ -73,17 +73,17 @@ python3 -m pip install 'qmctoolscl>=1.2.3'
 If Julia should use a specific Python interpreter, set this before first use of those generators (no Julia restart needed):
 
 ```julia
-ENV["QMC_PYTHON"] = "/path/to/python"
+ENV["QUASIMC_PYTHON"] = "/path/to/python"
 ```
 
-### 4. Optional: install IJulia and register the `QMC` notebook kernel
+### 4. Optional: install IJulia and register the `QuasiMC` notebook kernel
 
 ```bash
 julia -e 'using Pkg; Pkg.add("IJulia")'
-julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QuasiMC", "--project=$(pwd())")'
 ```
 
-Run those commands from the repository root. This installs IJulia and creates a `QMC` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI. This step is only needed if you plan to run notebooks.
+Run those commands from the repository root. This installs IJulia and creates a `QuasiMC` kernel pinned to this repository's Julia environment, so demo notebooks use the same Julia environment as local development and CI. This step is only needed if you plan to run notebooks.
 
 ### 5. Verify everything works
 
@@ -108,8 +108,8 @@ include("test/runtests.jl")
 Individual test groups:
 
 ```julia
-using QMC, Test, Statistics, LinearAlgebra, Distributions
-import QMC: Uniform, Kumaraswamy  # resolve name conflicts with Distributions
+using QuasiMC, Test, Statistics, LinearAlgebra, Distributions
+import QuasiMC: Uniform, Kumaraswamy  # resolve name conflicts with Distributions
 
 include("test/test_discrete_distributions.jl")
 include("test/test_true_measures.jl")
@@ -119,15 +119,15 @@ include("test/test_stopping_criteria.jl")
 include("test/test_integration.jl")
 ```
 
-Note: `Uniform` and `Kumaraswamy` are exported by both QMC and Distributions.jl. When using both packages, resolve the ambiguity with `import QMC: Uniform, Kumaraswamy`.
+Note: `Uniform` and `Kumaraswamy` are exported by both QMC and Distributions.jl. When using both packages, resolve the ambiguity with `import QuasiMC: Uniform, Kumaraswamy`.
 
 ## Project Structure
 
 ```
-QMC.jl/
+QuasiMC.jl/
 ├── Project.toml                # Julia package metadata and dependencies
 ├── src/
-│   ├── QMC.jl                  # Main module: includes, exports
+│   ├── QuasiMC.jl                  # Main module: includes, exports
 │   ├── abstract_types.jl       # Type hierarchy
 │   ├── data/                   # Embedded generating vectors and direction numbers
 │   │   ├── kuo_lattice_gen_vector.jl    # 9125 Kuo lattice generating vectors
@@ -156,12 +156,12 @@ julia -e 'using IJulia; notebook(dir="demos")'
 If you have not created the project-bound kernel yet, run this once from the repository root:
 
 ```bash
-julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QuasiMC", "--project=$(pwd())")'
 ```
 
-Then select the `QMC` kernel in Jupyter or VS Code once.
+Then select the `QuasiMC` kernel in Jupyter or VS Code once.
 
-If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QMC` Julia kernel.
+If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QuasiMC` Julia kernel.
 
 Most demos use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl` to be installed in a Python visible to Julia.
 
@@ -170,10 +170,10 @@ To run a notebook in VS Code:
 1. Install the `Julia` and `Jupyter` extensions.
 2. Open this repository folder in VS Code.
 3. Open a notebook from `demos/`.
-4. Click the notebook kernel picker and select `QMC`.
+4. Click the notebook kernel picker and select `QuasiMC`.
 5. Restart the notebook kernel if it was previously attached to another interpreter.
 
-Do not use the Python `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QMC` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
+Do not use the Python `qmcpy`, or generic `Python 3.12.x` kernel for these notebooks, or Julia code such as `using QuasiMC` will fail with a Python `SyntaxError`. A generic Julia kernel may also miss repository-specific dependencies like `Plots`.
 
 ## Code Style
 
@@ -195,14 +195,14 @@ Please format your code before submitting a pull request.
 
 ## Adding a New Component
 
-QMC.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new component:
+QuasiMC.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new component:
 
 ### Discrete Distribution
 
 1. Create `src/discrete_distribution/my_dist.jl`
 2. Define a struct that subtypes `AbstractDiscreteDistribution`
 3. Implement `gen_samples(dd::MyDist, n::Int)` → `Matrix{Float64}` (n × d)
-4. Add `include` and `export` in `src/QMC.jl`
+4. Add `include` and `export` in `src/QuasiMC.jl`
 5. Add tests in `test/test_discrete_distributions.jl`
 
 ### True Measure
@@ -239,11 +239,11 @@ QMC.jl uses Julia's abstract type hierarchy with multiple dispatch. To add a new
 - A `Base.show` method for REPL display
 - Unit tests covering construction, basic operation, and edge cases
 - A demo notebook if the component is user-facing
-- `include` and `export` entries in `src/QMC.jl`
+- `include` and `export` entries in `src/QuasiMC.jl`
 
 ## API Stability
 
-QMC.jl groups its public surface into the following stability levels:
+QuasiMC.jl groups its public surface into the following stability levels:
 
 | Status | Representative symbols | Meaning |
 |---|---|---|
@@ -271,7 +271,7 @@ The top-level benchmark badges track the latest published `develop` run. The spe
 
 [VS Code](https://code.visualstudio.com) with the [Julia extension](https://www.julia-vscode.org/) is the recommended editor.
 
-- Open `QMC.jl/` as your workspace
+- Open `QuasiMC.jl/` as your workspace
 - Activate the project: `Ctrl/Cmd+Shift+P` → **Julia: Activate This Environment**
 - Use the integrated terminal for test runs
 - The Julia extension provides inline evaluation, debugging, and profiling

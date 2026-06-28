@@ -42,7 +42,7 @@ Default implementation returns `f.dimension` (same dimension at all levels).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = FinancialOptionML(GeometricBrownianMotion(IIDStdUniform(4)); d_coarsest=4);
 

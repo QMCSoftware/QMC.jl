@@ -1,10 +1,10 @@
 # Architecture
 
-This page describes the target extensible architecture for QMC.jl. The goal is not to imitate Python- or Java-style classes literally, but to make the Julia implementation behave like a clear, stable, and composable framework in the same spirit as QMCPy's discrete-distribution / true-measure / integrand / stopping-criterion design.
+This page describes the target extensible architecture for QuasiMC.jl. The goal is not to imitate Python- or Java-style classes literally, but to make the Julia implementation behave like a clear, stable, and composable framework in the same spirit as QMCPy's discrete-distribution / true-measure / integrand / stopping-criterion design.
 
 ## Purpose
 
-QMC.jl already has the right high-level decomposition:
+QuasiMC.jl already has the right high-level decomposition:
 
 - `AbstractDiscreteDistribution`
 - `AbstractTrueMeasure`
@@ -42,9 +42,9 @@ Framework orchestration should depend on interface methods rather than direct fi
 
 Current preferred accessors:
 
-- `QMC.dimension(obj)`
-- `QMC.discrete_distribution(obj)`
-- `QMC.true_measure(f)`
+- `QuasiMC.dimension(obj)`
+- `QuasiMC.discrete_distribution(obj)`
+- `QuasiMC.true_measure(f)`
 
 This keeps the pipeline compatible with existing built-in types while allowing new subtypes to choose different internal representations.
 
@@ -52,7 +52,7 @@ In performance-sensitive code, interface methods should usually be called once n
 
 ### 3. Multiple Dispatch Is the Polymorphism Mechanism
 
-In QMC.jl, polymorphism should come from dispatch, not from attaching methods to class instances.
+In QuasiMC.jl, polymorphism should come from dispatch, not from attaching methods to class instances.
 
 Representative examples:
 
@@ -79,7 +79,7 @@ An extensible framework needs tests that verify architectural contracts explicit
 
 ## Architectural Layers
 
-QMC.jl should be understood as four operational layers plus utilities:
+QuasiMC.jl should be understood as four operational layers plus utilities:
 
 ### Point Generation Layer
 
@@ -151,7 +151,7 @@ For a new subtype to plug into the framework, the minimum required behavior shou
 
 A subtype of `AbstractDiscreteDistribution` should provide:
 
-- `QMC.dimension(dd)` or a compatible stored dimension
+- `QuasiMC.dimension(dd)` or a compatible stored dimension
 - `gen_samples(dd, n; kwargs...)`
 
 Optional extension points include:
@@ -163,8 +163,8 @@ Optional extension points include:
 
 A subtype of `AbstractTrueMeasure` should provide:
 
-- `QMC.discrete_distribution(tm)` or a compatible stored `dd`
-- `QMC.dimension(tm)` or a compatible stored dimension
+- `QuasiMC.discrete_distribution(tm)` or a compatible stored `dd`
+- `QuasiMC.dimension(tm)` or a compatible stored dimension
 - `transform(tm, x)`
 
 Optional extension points include:
@@ -176,8 +176,8 @@ Optional extension points include:
 
 A subtype of `AbstractIntegrand` should provide:
 
-- `QMC.true_measure(f)` or a compatible stored true measure
-- `QMC.dimension(f)` or a compatible stored dimension
+- `QuasiMC.true_measure(f)` or a compatible stored true measure
+- `QuasiMC.dimension(f)` or a compatible stored dimension
 - `evaluate(f, x)`
 
 Optional extension points include:
@@ -293,7 +293,7 @@ These tests should focus on:
 - spawning behavior
 - failure modes for unsupported contracts
 
-The current priority is constructor- and pipeline-level interface coverage: built-in components should accept custom subtypes that overload `dimension`, `discrete_distribution`, and `true_measure` without reproducing QMC.jl's internal field names.
+The current priority is constructor- and pipeline-level interface coverage: built-in components should accept custom subtypes that overload `dimension`, `discrete_distribution`, and `true_measure` without reproducing QuasiMC.jl's internal field names.
 
 ## Documentation Plan
 

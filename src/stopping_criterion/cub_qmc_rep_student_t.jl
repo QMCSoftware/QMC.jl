@@ -30,7 +30,7 @@ algorithm doubles only the components that have not yet converged.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Genz(Uniform(DigitalNetB2(2; randomize="LMS_DS", seed=901, replications=4)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
 Genz(:continuous, d=2)

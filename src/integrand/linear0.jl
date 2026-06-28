@@ -10,7 +10,7 @@ Exact integral = 0 by symmetry.
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = Linear0(Uniform(DigitalNetB2(100; seed=7); lower_bound=-0.5, upper_bound=0.5))
 Linear0(d=100)

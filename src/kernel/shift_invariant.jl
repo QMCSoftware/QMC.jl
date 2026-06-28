@@ -14,7 +14,7 @@ obtained via a single FFT of the first column.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [0.0 0.0; 0.5 0.25; 0.25 0.5; 0.75 0.75];
 

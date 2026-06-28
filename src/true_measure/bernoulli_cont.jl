@@ -16,7 +16,7 @@ where C(λ) is the normalizing constant. The inverse CDF is:
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 

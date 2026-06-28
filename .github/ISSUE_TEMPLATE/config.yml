@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: QMC.jl community contact
+  - name: QuasiMC.jl community contact
     url: mailto:qmc-software@googlegroups.com
     about: Use the mailing list for open-ended discussion that is not yet a concrete bug or feature request.

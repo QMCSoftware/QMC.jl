@@ -1,5 +1,5 @@
 using Test
-using QMC
+using QuasiMC
 using Statistics
 
 # ── Simple multilevel test integrand ──
@@ -20,9 +20,9 @@ struct AccessorMLIntegrand <: AbstractMLIntegrand
     measure::AbstractTrueMeasure
     d0::Int
 end
-QMC.true_measure(f::AccessorMLIntegrand) = f.measure
-QMC.dimension(f::AccessorMLIntegrand) = QMC.dimension(f.measure)
-QMC.dimension_at_level(f::AccessorMLIntegrand, level::Int) = f.d0 * 2^level
+QuasiMC.true_measure(f::AccessorMLIntegrand) = f.measure
+QuasiMC.dimension(f::AccessorMLIntegrand) = QuasiMC.dimension(f.measure)
+QuasiMC.dimension_at_level(f::AccessorMLIntegrand, level::Int) = f.d0 * 2^level
 
 function TestMLIntegrand(
     dd::AbstractDiscreteDistribution;
@@ -45,9 +45,9 @@ function TestMLIntegrand(
     )
 end
 
-QMC.dimension_at_level(f::TestMLIntegrand, level::Int) = f.d_coarsest * 2^level
+QuasiMC.dimension_at_level(f::TestMLIntegrand, level::Int) = f.d_coarsest * 2^level
 
-QMC.cost_at_level(f::TestMLIntegrand, level::Int) = Float64(2 * f.d_coarsest * 2^level)
+QuasiMC.cost_at_level(f::TestMLIntegrand, level::Int) = Float64(2 * f.d_coarsest * 2^level)
 
 function _gbm_payoff(f::TestMLIntegrand, x::AbstractVector)
     d = length(x)
@@ -67,7 +67,7 @@ function _gbm_payoff(f::TestMLIntegrand, x::AbstractVector)
     return max(avg - f.strike_price, 0.0) * exp(-r * T)
 end
 
-function QMC.ml_evaluate(f::TestMLIntegrand, x::AbstractMatrix, level::Int)
+function QuasiMC.ml_evaluate(f::TestMLIntegrand, x::AbstractMatrix, level::Int)
     n = size(x, 1)
     d_fine = dimension_at_level(f, level)
     Qf = zeros(n)
@@ -191,8 +191,8 @@ end
     @testset "spawn_integrand uses accessors" begin
         f = AccessorMLIntegrand(Gaussian(IIDStdUniform(4)), 4)
         dd_l, tm_l = spawn_integrand(f, 2)
-        @test QMC.dimension(dd_l) == 16
-        @test QMC.dimension(tm_l) == 16
+        @test QuasiMC.dimension(dd_l) == 16
+        @test QuasiMC.dimension(tm_l) == 16
     end
 end
 

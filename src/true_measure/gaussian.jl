@@ -19,7 +19,7 @@ and finally adds the mean vector:
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> true_measure = Gaussian(DigitalNetB2(2; seed=7); mean=[1, 2], covariance=[9 4; 4 5]);
 
@@ -32,7 +32,7 @@ julia> round.(transform(true_measure, gen_samples(true_measure.dd, 4)); digits=8
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> tm = Gaussian(DigitalNetB2(3; seed=7, replications=2); mean=0.0, covariance=3.0);
 

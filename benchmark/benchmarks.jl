@@ -1,4 +1,4 @@
-# QMC.jl Benchmark Suite (PkgBenchmark-compatible).
+# QuasiMC.jl Benchmark Suite (PkgBenchmark-compatible).
 #
 # This file ONLY defines `const SUITE::BenchmarkGroup`; it does not run anything.
 #   * `benchmark/runbenchmarks.jl` runs SUITE standalone and saves results.
@@ -9,8 +9,8 @@
 # compare scripts bootstrap it; PkgBenchmark sets it up itself.
 
 using BenchmarkTools
-using QMC
-import QMC: Uniform
+using QuasiMC
+import QuasiMC: Uniform
 using Logging
 using LinearAlgebra
 
@@ -40,15 +40,21 @@ const BENCH_COVERAGE = get(ENV, "BENCH_COVERAGE", "0") == "1"
 # its analog — the sample/repeat count is the directly comparable knob.
 const STUDENT_T_BENCH_SAMPLES = 21
 
-const BENCH_BLAS_THREADS = let raw = get(ENV, "QMC_BENCH_BLAS_THREADS", "1")
-    threads = try
-        parse(Int, raw)
-    catch err
-        throw(ArgumentError("QMC_BENCH_BLAS_THREADS must be an integer, got $(repr(raw))"))
+const BENCH_BLAS_THREADS =
+    let raw = get(ENV, "QUASIMC_BENCH_BLAS_THREADS", get(ENV, "QMC_BENCH_BLAS_THREADS", "1"))
+        threads = try
+            parse(Int, raw)
+        catch err
+            throw(
+                ArgumentError(
+                    "QUASIMC_BENCH_BLAS_THREADS must be an integer, got $(repr(raw))",
+                ),
+            )
+        end
+        threads > 0 ||
+            throw(ArgumentError("QUASIMC_BENCH_BLAS_THREADS must be ≥ 1, got $threads"))
+        threads
     end
-    threads > 0 || throw(ArgumentError("QMC_BENCH_BLAS_THREADS must be ≥ 1, got $threads"))
-    threads
-end
 BLAS.set_num_threads(BENCH_BLAS_THREADS)
 # With multiple Julia threads, clamp BLAS to 1 thread before any threads are spawned.
 # Toggling BLAS thread count while Julia threads are live is not thread-safe and
@@ -105,8 +111,8 @@ struct _BenchBadIntegrand <: AbstractIntegrand end
 struct _BenchVecIntegrand{TM} <: AbstractIntegrand
     true_measure::TM
 end
-QMC.d_indv(::_BenchVecIntegrand) = (2,)
-function QMC.evaluate(f::_BenchVecIntegrand, x::AbstractMatrix)
+QuasiMC.d_indv(::_BenchVecIntegrand) = (2,)
+function QuasiMC.evaluate(f::_BenchVecIntegrand, x::AbstractMatrix)
     y = Matrix{Float64}(undef, size(x, 1), 2)
     @views y[:, 1] .= x[:, 1]
     @views y[:, 2] .= x[:, 1] .^ 2
@@ -125,21 +131,21 @@ end
 function _run_interface_coverage_probes()
     dd = IIDStdUniform(1; seed=7)
     sc = CubMCCLT(Keister(Gaussian(dd; covariance=0.5)); abs_tol=0.05)
-    QMC.set_tolerance!(sc; abs_tol=0.02, rel_tol=0.01)
+    QuasiMC.set_tolerance!(sc; abs_tol=0.02, rel_tol=0.01)
 
     sc_ml = CubMLMC(FinancialOptionML(IIDStdUniform(4; seed=8); d_coarsest=2); abs_tol=0.5)
-    QMC.set_tolerance!(sc_ml; rmse_tol=0.25)
+    QuasiMC.set_tolerance!(sc_ml; rmse_tol=0.25)
     _expect_exception(ArgumentError) do
-        QMC.set_tolerance!(sc_ml; rel_tol=0.01)
+        QuasiMC.set_tolerance!(sc_ml; rel_tol=0.01)
     end
     _expect_exception(ArgumentError) do
-        QMC.dimension(_BenchBadDD())
+        QuasiMC.dimension(_BenchBadDD())
     end
     _expect_exception(ArgumentError) do
-        QMC.discrete_distribution(_BenchBadTM())
+        QuasiMC.discrete_distribution(_BenchBadTM())
     end
     _expect_exception(ArgumentError) do
-        QMC.true_measure(_BenchBadIntegrand())
+        QuasiMC.true_measure(_BenchBadIntegrand())
     end
     return nothing
 end
@@ -332,10 +338,10 @@ function _run_financial_option_coverage_probes()
         x_bm,
     )
 
-    QMC.get_exact_value(
+    QuasiMC.get_exact_value(
         FinancialOption(tm_gbm; option_type=:european, call_put=:call, strike_price=100.0),
     )
-    QMC.get_exact_value(
+    QuasiMC.get_exact_value(
         FinancialOption(
             tm_gbm;
             option_type=:asian,
@@ -344,7 +350,7 @@ function _run_financial_option_coverage_probes()
             strike_price=100.0,
         ),
     )
-    QMC.get_exact_value(
+    QuasiMC.get_exact_value(
         FinancialOption(tm_gbm; option_type=:digital, call_put=:call, strike_price=100.0),
     )
     sprint(
@@ -359,7 +365,7 @@ function _run_financial_option_coverage_probes()
         ),
     )
     _expect_exception(ErrorException) do
-        QMC.get_exact_value(
+        QuasiMC.get_exact_value(
             FinancialOption(tm_gbm; option_type=:lookback, call_put=:call, strike_price=100.0),
         )
     end
@@ -383,35 +389,35 @@ function _run_control_variate_coverage_probes()
     main = CustomFun(tm, x -> x[:, 1] .+ x[:, 2])
     cv1 = CustomFun(tm, x -> x[:, 1])
     cv2 = CustomFun(tm, x -> x[:, 2])
-    spec = QMC._make_control_variate_spec(main, [cv1, cv2], [0.5, 0.5])
+    spec = QuasiMC._make_control_variate_spec(main, [cv1, cv2], [0.5, 0.5])
     xu = gen_samples(dd, 8)
-    y = vec(QMC.evaluate_on_uniform(main, xu))
-    ycv = QMC._control_variate_values(spec, xu)
-    beta = QMC._fit_control_variate_beta(y, ycv)
-    QMC._apply_control_variates(y, ycv, spec.means, beta)
+    y = vec(QuasiMC.evaluate_on_uniform(main, xu))
+    ycv = QuasiMC._control_variate_values(spec, xu)
+    beta = QuasiMC._fit_control_variate_beta(y, ycv)
+    QuasiMC._apply_control_variates(y, ycv, spec.means, beta)
     ymat = hcat(y, y .^ 2)
-    beta_mat = QMC._fit_control_variate_beta(ymat, ycv)
-    QMC._apply_control_variates(ymat, ycv, spec.means, beta_mat)
+    beta_mat = QuasiMC._fit_control_variate_beta(ymat, ycv)
+    QuasiMC._apply_control_variates(ymat, ycv, spec.means, beta_mat)
     ytilde = collect(1.0:8.0)
     ycvtilde_list = [collect(0.5:0.5:4.0), collect(1.0:8.0)]
     kappanumap = collect(0:7)
-    QMC._fit_control_variate_beta_transform(ytilde, ycvtilde_list, kappanumap, 1)
-    QMC._draw_adjusted(main, dd, 8, spec, beta)
+    QuasiMC._fit_control_variate_beta_transform(ytilde, ycvtilde_list, kappanumap, 1)
+    QuasiMC._draw_adjusted(main, dd, 8, spec, beta)
 
     dd_other = IIDStdUniform(2; seed=32)
     cv_other = CustomFun(Uniform(dd_other), x -> x[:, 1])
     cv_wrongdim = CustomFun(Uniform(IIDStdUniform(3; seed=33)), x -> x[:, 1])
     _expect_exception(ArgumentError) do
-        QMC._make_control_variate_spec(main, cv1, nothing)
+        QuasiMC._make_control_variate_spec(main, cv1, nothing)
     end
     _expect_exception(ArgumentError) do
-        QMC._make_control_variate_spec(main, [cv1, cv2], [0.5])
+        QuasiMC._make_control_variate_spec(main, [cv1, cv2], [0.5])
     end
     _expect_exception(ArgumentError) do
-        QMC._make_control_variate_spec(main, cv_other, 0.5)
+        QuasiMC._make_control_variate_spec(main, cv_other, 0.5)
     end
     _expect_exception(ArgumentError) do
-        QMC._make_control_variate_spec(main, cv_wrongdim, 0.5)
+        QuasiMC._make_control_variate_spec(main, cv_wrongdim, 0.5)
     end
     return nothing
 end
@@ -426,8 +432,8 @@ function _run_cubqmclatticeg_coverage_probes()
         CubQMCLatticeG(f_fft; abs_tol=0.05, n_init=2^5, n_max=2^8, trace_iterations=true);
         resume=loose.data,
     )
-    QMC.resume_iteration_log(loose.data, resumed.data)
-    QMC.combined_iteration_log(loose.data, resumed.data)
+    QuasiMC.resume_iteration_log(loose.data, resumed.data)
+    QuasiMC.combined_iteration_log(loose.data, resumed.data)
     sprint(show, CubQMCLatticeG(f_fft; abs_tol=0.05))
 
     dd_rep = Lattice(2; randomize=true, seed=42)

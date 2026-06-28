@@ -18,7 +18,7 @@ data[:iteration_log] = log
 
 # User-facing
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> log = IterationLog()
 IterationLog (empty)
@@ -257,7 +257,7 @@ columns are right-aligned and other columns are left-aligned.
 
 # Examples
 ```jldoctest
-julia> using QMC, Printf
+julia> using QuasiMC, Printf
 
 julia> rows = [(n=64, error=0.012345), (n=128, error=0.001234)];
 

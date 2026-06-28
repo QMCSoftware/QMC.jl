@@ -13,8 +13,9 @@ effective-dimension limit becomes `floor(21201/alpha)` unless custom generating
 matrices are supplied explicitly.
 
 This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
-before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QUASIMC_PYTHON"]`
+(`ENV["QMC_PYTHON"]` is still accepted) before the first `Lattice`,
+`DigitalNetB2`, or `Halton` use.
 
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).
@@ -59,7 +60,7 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> discrete_distrib = DigitalNetB2(2; seed=7);
 
@@ -548,7 +549,7 @@ function _lms_direction_matrix(
     # t_bits is the output width of the scrambled direction numbers.
     #
     # Default (t_bits == source_bits): lower-triangular GF(2) matrix with random bits
-    # BELOW the diagonal — the original QMC.jl convention. Output bits are source_bits wide.
+    # BELOW the diagonal — the original QuasiMC.jl convention. Output bits are source_bits wide.
     #
     # Extended precision (t_bits > source_bits, e.g. t_bits=63, source_bits=32):
     # matches qmctoolscl's convention so that MSB(V_scr[j,b]) = bit(source_bits-1)(V[j,b])
@@ -567,7 +568,7 @@ function _lms_direction_matrix(
     for j in 1:d
         L = Vector{UInt64}(undef, t_bits)
         if n_extra == 0
-            # Original QMC.jl: lower-triangular, random BELOW diagonal.
+            # Original QuasiMC.jl: lower-triangular, random BELOW diagonal.
             # Preserved exactly so the default (t=source_bits) output is backward-compatible.
             for k in 1:source_bits
                 diag_bit = UInt64(1) << (source_bits - k)
@@ -843,7 +844,7 @@ with values in [0, 1).  If `replications` was set, returns an `R × n × d` arra
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = gen_samples(DigitalNetB2(2; randomize="LMS", seed=7), 4);
 

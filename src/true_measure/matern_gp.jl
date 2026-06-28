@@ -13,7 +13,7 @@ Common special cases: ν=0.5 (exponential), ν=1.5, ν=2.5, ν→∞ (Gaussian/R
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> tm = MaternGP(IIDStdUniform(5; seed=7); nu=2.5, lengthscale=0.3)
 MaternGP(ν=2.5, ℓ=0.3, σ²=1.0)

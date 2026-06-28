@@ -1,7 +1,7 @@
 using DelimitedFiles
 using LinearAlgebra
 using Statistics
-using QMC
+using QuasiMC
 
 const HABERMAN_TRAIN_INDICES = [
     1, 2, 5, 6, 7, 8, 9, 10, 11, 13, 14, 16, 17, 18, 20, 21, 22, 24, 26, 27, 28,

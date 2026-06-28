@@ -27,7 +27,7 @@ depend only on `β0 + β1`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> k = KernelDigShiftInvarDeriv(2, 32)
 KernelDigShiftInvarDeriv(d=2, t=32, alpha=[2, 2], scale=1.0)

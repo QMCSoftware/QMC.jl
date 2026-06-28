@@ -1,9 +1,9 @@
 """
-    QMCAbstractGPsExt
+    QuasiMCAbstractGPsExt
 
-Gaussian-process backend for [`QMC.PFGPCI`](@ref), loaded automatically when
+Gaussian-process backend for [`QuasiMC.PFGPCI`](@ref), loaded automatically when
 `AbstractGPs` and `Optim` are available. Provides methods for the
-`QMC._pfgpci_fit` / `QMC._pfgpci_predict` contract: a zero-mean GP with a scaled
+`QuasiMC._pfgpci_fit` / `QuasiMC._pfgpci_predict` contract: a zero-mean GP with a scaled
 Matérn-5/2 kernel (ν = 2.5), hyperparameters fit by maximizing the log marginal
 likelihood, used as an effectively interpolating surrogate (tiny fixed jitter).
 
@@ -11,9 +11,9 @@ Mirrors QMCPy's default `ScaleKernel(MaternKernel(nu=2.5))` with a near-zero
 noise constraint. Hyperparameter optimization is numerical (Optim), so this
 agrees with QMCPy's gpytorch/Adam fit only statistically, not bit-for-bit.
 """
-module QMCAbstractGPsExt
+module QuasiMCAbstractGPsExt
 
-using QMC
+using QuasiMC
 using AbstractGPs          # re-exports KernelFunctions (Matern52Kernel, with_lengthscale, RowVecs)
 using Optim
 using LinearAlgebra
@@ -46,7 +46,7 @@ struct PFGPCIModel{P}
     post::P
 end
 
-function QMC._pfgpci_fit(x::AbstractMatrix, y::AbstractVector)
+function QuasiMC._pfgpci_fit(x::AbstractMatrix, y::AbstractVector)
     X = RowVecs(Matrix{Float64}(x))
     yv = Vector{Float64}(y)
     logθ0 = [log(0.2), log(1.0)]   # lengthscale 0.2, unit signal variance
@@ -55,7 +55,7 @@ function QMC._pfgpci_fit(x::AbstractMatrix, y::AbstractVector)
     return PFGPCIModel(posterior(f(X, _PFGPCI_JITTER), yv))
 end
 
-function QMC._pfgpci_predict(model::PFGPCIModel, xq::AbstractMatrix)
+function QuasiMC._pfgpci_predict(model::PFGPCIModel, xq::AbstractMatrix)
     Xq = RowVecs(Matrix{Float64}(xq))
     m, v = mean_and_var(model.post(Xq))
     return m, sqrt.(max.(v, 0.0))

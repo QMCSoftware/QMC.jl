@@ -1,6 +1,6 @@
 # Mathematical Components
 
-QMC.jl implements a modular framework for Quasi-Monte Carlo integration. The four main components interact as follows:
+QuasiMC.jl implements a modular framework for Quasi-Monte Carlo integration. The four main components interact as follows:
 
 ## Discrete Distribution
 
@@ -66,11 +66,11 @@ Helper functions `spawn_dd` and `spawn_tm` create new samplers at each level wit
 
 ## Extensibility Contract
 
-QMC.jl follows the same four-component architecture as QMCPy: discrete distributions, true measures, integrands, and stopping criteria. For extension work, the key framework contract is method-based rather than field-based:
+QuasiMC.jl follows the same four-component architecture as QMCPy: discrete distributions, true measures, integrands, and stopping criteria. For extension work, the key framework contract is method-based rather than field-based:
 
-- `QMC.dimension(obj)` returns the stochastic dimension of a discrete distribution, true measure, or integrand.
-- `QMC.discrete_distribution(obj)` returns the underlying point generator.
-- `QMC.true_measure(f)` returns the integrand's true measure.
+- `QuasiMC.dimension(obj)` returns the stochastic dimension of a discrete distribution, true measure, or integrand.
+- `QuasiMC.discrete_distribution(obj)` returns the underlying point generator.
+- `QuasiMC.true_measure(f)` returns the integrand's true measure.
 
 Existing built-in types satisfy this contract through their stored fields, but new subtype authors may overload these methods instead of reproducing the same field layout. That preserves encapsulation while letting the generic sampling, transform, and stopping-criterion pipeline remain plug-and-play.
 
@@ -78,7 +78,7 @@ Built-in constructors on abstract arguments are expected to honor this contract 
 
 ## API Stability
 
-QMC.jl uses four package-level stability labels for exported names:
+QuasiMC.jl uses four package-level stability labels for exported names:
 
 | Status | Representative symbols | Meaning |
 |---|---|---|

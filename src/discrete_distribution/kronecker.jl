@@ -18,7 +18,7 @@ An optional random shift Δ ~ U[0,1)^d can be applied for randomization.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> kr = Kronecker(2; seed=7)
 Kronecker(d=2, shifted)
@@ -36,7 +36,7 @@ julia> round.(gen_samples(kr, 1); digits=6) # first point in the sequence
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> round.(gen_samples(Kronecker(3), 4); digits=6)
 4×3 Matrix{Float64}:

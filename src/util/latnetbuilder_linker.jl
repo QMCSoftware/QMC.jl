@@ -12,7 +12,7 @@ vector (for ordinary lattice rules) or generating matrices (for digital nets).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> mktempdir() do d
            open(joinpath(d, "outputMachine.txt"), "w") do io

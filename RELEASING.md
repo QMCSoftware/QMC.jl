@@ -1,6 +1,6 @@
-# Releasing QMC.jl
+# Releasing QuasiMC.jl
 
-This document defines the release ladder, readiness criteria, and release procedure for QMC.jl.
+This document defines the release ladder, readiness criteria, and release procedure for QuasiMC.jl.
 
 Current target: cut the first public tag from a green commit as `v0.1.0`, then use tagged installs rather than `develop` for user-facing examples, papers, and benchmarks.
 
@@ -44,10 +44,10 @@ Additional gates by milestone:
 
 ## Registration Decision
 
-QMC.jl should decide before `v0.2.0` whether it will be registered in Julia General.
+QuasiMC.jl should decide before `v0.2.0` whether it will be registered in Julia General.
 
-- If QMC.jl is registered, audit `[compat]` bounds, package metadata, and install instructions before filing the registration PR.
-- If QMC.jl remains unregistered, every public install command and citation example must use an immutable git tag rather than a branch name.
+- If QuasiMC.jl is registered, audit `[compat]` bounds, package metadata, and install instructions before filing the registration PR.
+- If QuasiMC.jl remains unregistered, every public install command and citation example must use an immutable git tag rather than a branch name.
 
 ## Release Procedure
 

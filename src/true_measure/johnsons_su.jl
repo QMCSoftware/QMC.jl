@@ -15,12 +15,12 @@ where Φ⁻¹ is the standard normal quantile function.
 - `gamma`: shape parameter γ (scalar or d-vector). Default `1.0`.
 - `delta`: shape parameter δ > 0 (scalar or d-vector). Default `2.0`.
 
-The defaults match QMCPy (`gamma=1, xi=1, delta=2, lam=2`); QMC.jl's `lambda`
+The defaults match QMCPy (`gamma=1, xi=1, delta=2, lam=2`); QuasiMC.jl's `lambda`
 corresponds to QMCPy's `lam`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 

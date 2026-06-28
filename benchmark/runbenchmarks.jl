@@ -15,11 +15,9 @@
 
 using Pkg
 Pkg.activate(@__DIR__)
-# QMC is unregistered, so always develop it by local path — even if it is already
-# listed in this project's [deps]. benchmark/Manifest.toml is gitignored, so a
-# fresh CI checkout has no manifest and Pkg.resolve() below would otherwise try to
-# look QMC up in a registry and fail ("expected package QMC to be registered").
-Pkg.develop(; path=dirname(@__DIR__))
+# benchmark/Project.toml pins QuasiMC via `[sources] QuasiMC = { path = ".." }`,
+# so this environment resolves against the repository root without rewriting the
+# project/manifest to an absolute local path.
 let deps = keys(Pkg.project().dependencies)
     "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
 end
@@ -285,7 +283,7 @@ function print_oracle_summary(julia_oracles)
     end
 end
 
-println("\nQMC.jl Benchmarks")
+println("\nQuasiMC.jl Benchmarks")
 println("="^70)
 println(
     "Benchmark config: BLAS threads=$(BLAS.get_num_threads()), integrate samples=$(INTEGRATE_BENCH_SAMPLES), StudentT samples=$(STUDENT_T_BENCH_SAMPLES)",

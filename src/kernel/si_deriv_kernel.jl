@@ -28,7 +28,7 @@ via [`kernel_eval_deriv`](@ref). Smoothness `alpha` is bounded by `bernoulli_pol
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> k = KernelShiftInvarDeriv(2)
 KernelShiftInvarDeriv(d=2, alpha=[2, 2], scale=1.0)

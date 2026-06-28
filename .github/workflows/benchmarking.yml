@@ -73,7 +73,7 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          export QMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+          export QUASIMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
           export OPENBLAS_NUM_THREADS="$BENCH_BLAS_THREADS"
           export MKL_NUM_THREADS="$BENCH_BLAS_THREADS"
           export OMP_NUM_THREADS="$BENCH_BLAS_THREADS"
@@ -211,7 +211,7 @@ jobs:
 
       - name: Run benchmark coverage
         run: |
-          export QMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
+          export QUASIMC_BENCH_BLAS_THREADS="$BENCH_BLAS_THREADS"
           export OPENBLAS_NUM_THREADS="$BENCH_BLAS_THREADS"
           export MKL_NUM_THREADS="$BENCH_BLAS_THREADS"
           export OMP_NUM_THREADS="$BENCH_BLAS_THREADS"

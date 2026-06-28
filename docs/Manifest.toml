@@ -2,7 +2,7 @@
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "485a6de9f1e5c5be480c65960bbd449a212fe6cc"
+project_hash = "9067d06da54ab3a8c76f0c01601fa269927ff504"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -405,19 +405,6 @@ git-tree-sha1 = "4fbbafbc6251b883f4d2705356f3641f3652a7fe"
 uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
 version = "1.4.0"
 
-[[deps.QMC]]
-deps = ["Distributions", "Downloads", "FFTW", "Libdl", "LinearAlgebra", "NBInclude", "Printf", "Random", "SpecialFunctions", "Statistics"]
-path = ".."
-uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
-version = "0.1.0"
-
-    [deps.QMC.extensions]
-    QMCAbstractGPsExt = ["AbstractGPs", "Optim"]
-
-    [deps.QMC.weakdeps]
-    AbstractGPs = "99985d1d-32ba-4be9-9821-2ec096f28918"
-    Optim = "429524aa-4258-5aef-a3af-852621145aeb"
-
 [[deps.QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
 git-tree-sha1 = "5e8e8b0ab68215d7a2b14b9921a946fee794749e"
@@ -429,6 +416,19 @@ version = "2.11.3"
 
     [deps.QuadGK.weakdeps]
     Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+
+[[deps.QuasiMC]]
+deps = ["Distributions", "Downloads", "FFTW", "Libdl", "LinearAlgebra", "NBInclude", "Printf", "Random", "SpecialFunctions", "Statistics"]
+path = ".."
+uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
+version = "0.1.0"
+
+    [deps.QuasiMC.extensions]
+    QuasiMCAbstractGPsExt = ["AbstractGPs", "Optim"]
+
+    [deps.QuasiMC.weakdeps]
+    AbstractGPs = "99985d1d-32ba-4be9-9821-2ec096f28918"
+    Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "JuliaSyntaxHighlighting", "Markdown", "Sockets", "StyledStrings", "Unicode"]

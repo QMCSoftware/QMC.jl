@@ -10,7 +10,7 @@ x* ≈ (0.2017, 0.1500, 0.4769, 0.2753, 0.3117, 0.6573).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(6; seed=7);
 

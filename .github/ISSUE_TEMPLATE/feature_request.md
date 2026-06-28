@@ -10,7 +10,7 @@ What capability should be added?
 
 ## Motivation
 
-Why is this useful for QMC.jl users or maintainers?
+Why is this useful for QuasiMC.jl users or maintainers?
 
 ## Proposed design
 

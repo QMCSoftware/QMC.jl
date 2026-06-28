@@ -29,7 +29,7 @@ returned in `result.data[:control_variate_beta]`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Keister(Gaussian(IIDStdUniform(2; seed=7)));
 
@@ -46,7 +46,7 @@ true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Keister(Gaussian(IIDStdUniform(2; seed=7)));
 

@@ -1,6 +1,6 @@
 # Release Policy
 
-QMC.jl should be installed and cited from tagged releases, not moving branches. This page summarizes the release ladder. The full maintainer checklist lives in the repository root `RELEASING.md` file.
+QuasiMC.jl should be installed and cited from tagged releases, not moving branches. This page summarizes the release ladder. The full maintainer checklist lives in the repository root `RELEASING.md` file.
 
 ## Release Ladder
 
@@ -25,7 +25,7 @@ For reproducible use, prefer a tag-specific install. Replace `vX.Y.Z` with the p
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/QMC.jl", rev="vX.Y.Z")
+Pkg.add(url="https://github.com/QMCSoftware/QuasiMC.jl", rev="vX.Y.Z")
 ```
 
 If you need `Lattice`, `DigitalNetB2`, or `Halton`, also install the pinned Python dependency:
@@ -34,11 +34,11 @@ If you need `Lattice`, `DigitalNetB2`, or `Halton`, also install the pinned Pyth
 python3 -m pip install qmctoolscl==1.2.3
 ```
 
-Set `ENV["QMC_PYTHON"]` before `using QMC` if Julia should use a non-default Python interpreter.
+Set `ENV["QUASIMC_PYTHON"]` before `using QuasiMC` if Julia should use a non-default Python interpreter (legacy `ENV["QMC_PYTHON"]` is still accepted).
 
 ## Registration
 
-Before `v0.2.0`, QMC.jl should decide whether it will be registered in Julia General.
+Before `v0.2.0`, QuasiMC.jl should decide whether it will be registered in Julia General.
 
-- If registered, public install instructions can use `Pkg.add("QMC")` after registration.
+- If registered, public install instructions can use `Pkg.add("QuasiMC")` after registration.
 - If unregistered, public install instructions should always use a git tag such as `rev="vX.Y.Z"` rather than `develop`.

@@ -11,7 +11,7 @@ The exact integral value is:
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = Keister(Gaussian(DigitalNetB2(2; seed=7); covariance=0.5))
 Keister(d=2)

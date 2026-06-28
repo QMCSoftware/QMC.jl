@@ -1,5 +1,5 @@
 using Test
-using QMC
+using QuasiMC
 
 include(joinpath(@__DIR__, "qmcpy23_release_parity_fixture.jl"))
 
