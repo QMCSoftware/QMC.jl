@@ -22,7 +22,7 @@ A matrix of size `(n, 3, k)` where k is the number of index subsets:
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> si = SensitivityIndices(Keister(Gaussian(DigitalNetB2(4; seed=7); covariance=0.5)); indices=:singletons)
 SensitivityIndices(d=4, subsets=4, base=Keister)

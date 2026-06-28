@@ -4,7 +4,7 @@
 import Pkg
 Pkg.activate(joinpath(@__DIR__, "..", ".."); io=devnull)
 
-using QMC, Printf, Dates
+using QuasiMC, Printf, Dates
 
 # ── Data extraction ────────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ function _format_inputs(sc)
     end
     if hasfield(typeof(sc), :integrand)
         f = sc.integrand
-        try; push!(lines, "dimension: $(QMC.dimension(f))"); catch; end
+        try; push!(lines, "dimension: $(QuasiMC.dimension(f))"); catch; end
     end
     return join(lines, "\n")
 end

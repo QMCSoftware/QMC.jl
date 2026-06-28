@@ -13,7 +13,7 @@ Supports **resume** and optional **iteration logging** (`trace_iterations=true`)
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Genz(Uniform(DigitalNetB2(2; randomize="DS", seed=700)); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
 Genz(:gaussian_peak, d=2)

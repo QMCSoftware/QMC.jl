@@ -18,7 +18,7 @@ The true measure should be a `Gaussian` with mean 0 and appropriate covariance.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 

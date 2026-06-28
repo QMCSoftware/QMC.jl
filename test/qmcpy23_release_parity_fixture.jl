@@ -7,7 +7,7 @@ const QMCPY23_RELEASE_PARITY = Dict{String, Any}(
         "generated_at" => "2026-06-27T07:29:14Z",
         "generator_policy" => "Exact deterministic low-discrepancy samples/spawns only; randomized generator bit-parity is intentionally out of scope for this release gate.",
         "criterion_policy" => "Stopping-criterion cases compare solutions within 2*max(abs_tol, rel_tol*|reference|) and enforce exact sample-accounting contracts where the seeded QMCPy 2.3 data is stable.",
-        "multilevel_policy" => "Multilevel/continuation cases compare solutions within 2*max(abs_tol, rel_tol*|reference|), require exact levels/replications, and require QMC.jl to do no less per-level work than the pinned QMCPy 2.3 reference.",
+        "multilevel_policy" => "Multilevel/continuation cases compare solutions within 2*max(abs_tol, rel_tol*|reference|), require exact levels/replications, and require QuasiMC.jl to do no less per-level work than the pinned QMCPy 2.3 reference.",
         "resume_policy" => "Resume cases enforce QMCPy-derived monotonic accounting and solution-within-tolerance semantics; randomized resumed sample counts need not match exactly.",
     ),
     "gen_samples" => Dict{String, Any}(

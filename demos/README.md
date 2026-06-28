@@ -1,6 +1,6 @@
-# QMC.jl Demo Notebooks
+# QuasiMC.jl Demo Notebooks
 
-These notebooks contain Julia code for the QMC.jl package. Most demos use `Lattice` or `DigitalNetB2`, so Python is currently required because those generators depend on the `qmctoolscl` Python package. Conda is optional; it is only one way to provide that Python environment or to launch Jupyter. The notebooks themselves must run with a Julia kernel, not a Python kernel.
+These notebooks contain Julia code for the QuasiMC.jl package. Most demos use `Lattice` or `DigitalNetB2`, so Python is currently required because those generators depend on the `qmctoolscl` Python package. Conda is optional; it is only one way to provide that Python environment or to launch Jupyter. The notebooks themselves must run with a Julia kernel, not a Python kernel.
 
 Install `qmctoolscl` into a Python visible to Julia before running the low-discrepancy demos:
 
@@ -11,7 +11,7 @@ python3 -m pip install qmctoolscl
 If Julia should use a specific Python interpreter, set this before first use of those generators:
 
 ```julia
-ENV["QMC_PYTHON"] = "/path/to/python"
+ENV["QUASIMC_PYTHON"] = "/path/to/python"
 ```
 
 **Option 1 — Use IJulia's built-in notebook server (no separate Jupyter Python environment required):**
@@ -23,14 +23,14 @@ From the repository root, create the project-bound notebook kernel once:
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia -e 'using Pkg; Pkg.add("IJulia")'
-julia -e 'using IJulia; IJulia.installkernel("QMC", "--project=$(pwd())")'
+julia -e 'using IJulia; IJulia.installkernel("QuasiMC", "--project=$(pwd())")'
 ```
 
-Then open a demo notebook and select the `QMC` kernel once. Jupyter usually remembers that choice for that notebook.
+Then open a demo notebook and select the `QuasiMC` kernel once. Jupyter usually remembers that choice for that notebook.
 
-**Option 2 — Use VS Code:** Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, click the notebook kernel picker, and select `QMC` before running cells.
+**Option 2 — Use VS Code:** Open any `.ipynb` file in VS Code with the Jupyter and Julia extensions installed, click the notebook kernel picker, and select `QuasiMC` before running cells.
 
-If VS Code selects `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QMC` kernel, switch it before running cells. Otherwise Julia code such as `using QMC` will fail with a Python `SyntaxError`, or a generic Julia kernel may not see this repository's dependencies.
+If VS Code selects `qmcpy (Python 3.12.x)`, `Python 3.12.x`, or another non-`QuasiMC` kernel, switch it before running cells. Otherwise Julia code such as `using QuasiMC` will fail with a Python `SyntaxError`, or a generic Julia kernel may not see this repository's dependencies.
 
 **Option 3 — Use Conda + Jupyter explicitly as the frontend only:**
 ```bash
@@ -40,7 +40,7 @@ conda install jupyter
 jupyter notebook demos/quickstart.ipynb
 ```
 
-When Jupyter opens, choose the `QMC` Julia kernel for the notebook. The Python environment only launches Jupyter; it does not run the notebook code.
+When Jupyter opens, choose the `QuasiMC` Julia kernel for the notebook. The Python environment only launches Jupyter; it does not run the notebook code.
 
 Current notebook inventory:
 
@@ -61,7 +61,7 @@ Current notebook inventory:
 - `plot_proj_function.ipynb`
 - `pricing_options.ipynb`
 - `qei_demo.ipynb`
-- `qmc.jl_intro.ipynb`
+- `quasimc.jl_intro.ipynb`
 - `quickstart.ipynb`
 - `ray_tracing.ipynb`
 - `sample_scatter_plots.ipynb`

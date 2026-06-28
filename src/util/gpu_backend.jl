@@ -1,7 +1,7 @@
 """
     Experimental GPU backend placeholder
 
-Reserved space for future GPU support in QMC.jl.
+Reserved space for future GPU support in QuasiMC.jl.
 
 No working GPU execution path is shipped. The public entry points in this file
 are [`gpu_fwht`](@ref) and [`gpu_fwht!`](@ref), and their current behavior is a
@@ -23,12 +23,12 @@ _gpu_available() =
 
 Placeholder out-of-place API for a future GPU Fast Walsh-Hadamard Transform.
 
-**Placeholder.** This exported name is kept for API discoverability, but QMC.jl
+**Placeholder.** This exported name is kept for API discoverability, but QuasiMC.jl
 does not currently provide a GPU implementation. The present behavior is always
 the CPU `fwht` path, so callers should not expect GPU acceleration.
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [1.0, 2.0, 3.0, 4.0];
 
@@ -58,12 +58,12 @@ end
 
 Placeholder API for a future GPU Fast Walsh-Hadamard Transform.
 
-**Placeholder.** This exported name is kept for API discoverability, but QMC.jl
+**Placeholder.** This exported name is kept for API discoverability, but QuasiMC.jl
 does not currently provide a GPU implementation. The present behavior is always
 the CPU `fwht!` path, so callers should not expect GPU acceleration.
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [1.0, 2.0, 3.0, 4.0];
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-check_demo_parity.py — audit QMC.jl demo notebooks against their QMCPy sources.
+check_demo_parity.py — audit QuasiMC.jl demo notebooks against their QMCPy sources.
 
 Checks, selectable with --mode:
 
-  conformance   Static checks on every QMC.jl/demos notebook (no runtime needed):
+  conformance   Static checks on every QuasiMC.jl/demos notebook (no runtime needed):
                   - parses as valid JSON
                   - has an `Original QMCPy demo:` front-matter line (translated demos only)
                   - has an Open-In-Colab badge (translated demos only)
@@ -29,13 +29,13 @@ Checks, selectable with --mode:
   both          Run conformance, headings, parity, and figures (default).
 
 Usage:
-  # Run from QMCSoftware folder that contains both QMC.jl and QMCPy
-  python3 QMC.jl/devtools/check_demo_parity.py   
-  python3 QMC.jl/devtools/check_demo_parity.py --mode conformance
-  python3 QMC.jl/devtools/check_demo_parity.py --mode headings
-  python3 QMC.jl/devtools/check_demo_parity.py --mode parity --rtol 1e-2 --atol 1e-6
-  python3 QMC.jl/devtools/check_demo_parity.py --jl-root QMC.jl/demos --py-root QMCPy/demos
-  python3 QMC.jl/devtools/check_demo_parity.py --json report.json
+  # Run from QMCSoftware folder that contains both QuasiMC.jl and QMCPy
+  python3 QuasiMC.jl/devtools/check_demo_parity.py   
+  python3 QuasiMC.jl/devtools/check_demo_parity.py --mode conformance
+  python3 QuasiMC.jl/devtools/check_demo_parity.py --mode headings
+  python3 QuasiMC.jl/devtools/check_demo_parity.py --mode parity --rtol 1e-2 --atol 1e-6
+  python3 QuasiMC.jl/devtools/check_demo_parity.py --jl-root QuasiMC.jl/demos --py-root QMCPy/demos
+  python3 QuasiMC.jl/devtools/check_demo_parity.py --json report.json
 
 Exit code is non-zero if any conformance check fails (parity mismatches do not
 fail the build, since they are heuristic).
@@ -49,11 +49,11 @@ import re
 import sys
 from collections import defaultdict
 
-# --- notebook basename renames: QMC.jl side -> QMCPy side (without .ipynb) -----
+# --- notebook basename renames: QuasiMC.jl side -> QMCPy side (without .ipynb) -----
 # Only the cases where the two repos do not share an identical relative path.
 RENAME_JL_TO_PY = {
     "qei_demo": "qei-demo-for-blog",
-    "qmc.jl_intro": "qmcpy_intro",
+    "quasimc.jl_intro": "qmcpy_intro",
     "asian_option_mlqmc": "asian-option-mlqmc",
     "elliptic_pde": "elliptic-pde",
     "linear_scrambled_halton": "linear-scrambled-halton",
@@ -610,7 +610,7 @@ def main():
     ap.add_argument("--mode",
                     choices=["conformance", "headings", "parity", "figures", "both"],
                     default="both")
-    ap.add_argument("--jl-root", default="QMC.jl/demos")
+    ap.add_argument("--jl-root", default="QuasiMC.jl/demos")
     ap.add_argument("--py-root", default="QMCPy/demos")
     ap.add_argument("--rtol", type=float, default=1e-2)
     ap.add_argument("--atol", type=float, default=1e-8)

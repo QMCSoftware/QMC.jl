@@ -21,7 +21,7 @@ Returns transformed samples in [0,1)^d.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [0.25 0.5; 0.75 0.1];
 
@@ -37,7 +37,7 @@ julia> periodize(x, :BAKER)
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> x = [0.25 0.5; 0.75 0.1];
 

@@ -17,7 +17,7 @@ point function / quantile function).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> import Distributions
 

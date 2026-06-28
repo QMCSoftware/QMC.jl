@@ -10,7 +10,7 @@ Requires `dimension(dd) == 2`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> tm = UniformTriangle(IIDStdUniform(2; seed=7))
 UniformTriangle()

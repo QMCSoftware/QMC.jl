@@ -23,7 +23,7 @@ NOTEBOOK_THREADS ?= 2
 NOTEBOOK_SHARD_COUNT ?= 1
 NOTEBOOK_SHARD_INDEX ?= 1
 NOTEBOOK_OVERWRITE ?= 0
-NOTEBOOK_KERNEL ?= qmc-1.12
+NOTEBOOK_KERNEL ?= quasimc-1.12
 NOTEBOOK_TIMEOUT ?= 7200
 BENCH_COVERAGE ?= 0
 BENCH_BLAS_THREADS ?= 2
@@ -41,7 +41,7 @@ WORKFLOW_SMOKE_BENCH ?= 0
 WORKFLOW_SMOKE_REV ?= HEAD
 WORKFLOW_SMOKE_LABEL ?= workflow-smoke
 JULIA_BENCH_COVERAGE_FLAG := $(if $(filter 1,$(BENCH_COVERAGE)),--code-coverage=user,)
-BENCH_THREAD_ENV := QMC_BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) OPENBLAS_NUM_THREADS=$(BENCH_BLAS_THREADS) MKL_NUM_THREADS=$(BENCH_BLAS_THREADS) OMP_NUM_THREADS=$(BENCH_BLAS_THREADS) NUMEXPR_NUM_THREADS=$(BENCH_BLAS_THREADS) JULIA_NUM_THREADS=$(BENCH_JULIA_THREADS) QMC_PYTHON=$(PYTHON)
+BENCH_THREAD_ENV := QUASIMC_BENCH_BLAS_THREADS=$(BENCH_BLAS_THREADS) OPENBLAS_NUM_THREADS=$(BENCH_BLAS_THREADS) MKL_NUM_THREADS=$(BENCH_BLAS_THREADS) OMP_NUM_THREADS=$(BENCH_BLAS_THREADS) NUMEXPR_NUM_THREADS=$(BENCH_BLAS_THREADS) JULIA_NUM_THREADS=$(BENCH_JULIA_THREADS) QUASIMC_PYTHON=$(PYTHON)
 
 define RUN_TIMED
 	@start=$$(date +%s); \
@@ -121,7 +121,7 @@ coverage:
 # check: exact deterministic sample/transform/evaluate oracles plus fast seeded
 # stopping-criterion and multilevel accounting checks.
 release-parity:
-	$(call RUN_TIMED,QMC_PYTHON="$(PYTHON)" julia --project=. test/release_parity.jl,release-parity)
+	$(call RUN_TIMED,QUASIMC_PYTHON="$(PYTHON)" julia --project=. test/release_parity.jl,release-parity)
 
 # Regenerate the checked-in QMCPy 2.3 release-parity fixture. Requires PYTHON to
 # point at an environment with the pinned benchmark dependencies installed.
@@ -171,7 +171,7 @@ format-check:
 
 # Run a quick smoke test
 smoke:
-	julia --project=. -e 'using QMC; dd = Lattice(3; randomize=true); tm = Uniform(dd); f = Genz(tm; kind=:continuous); sc = CubQMCLatticeG(f; abs_tol=0.01); r = integrate(sc); println(r)'
+	julia --project=. -e 'using QuasiMC; dd = Lattice(3; randomize=true); tm = Uniform(dd); f = Genz(tm; kind=:continuous); sc = CubQMCLatticeG(f; abs_tol=0.01); r = integrate(sc); println(r)'
 
 # Run all demo notebooks (like Python's booktest). Override process sharding
 # with NOTEBOOK_JOBS=... and Julia threads inside each notebook process with
@@ -180,26 +180,26 @@ smoke:
 # NOTEBOOK_OVERWRITE=1 to execute with Jupyter, write fresh output cells back
 # into each notebook, and force the requested kernel via NOTEBOOK_KERNEL=...
 notebook:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
+	GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
 
 # Update notebooks in place with fresh output cells using Jupyter execution.
 notebook-update:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
+	GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT)
 
 # Update a single notebook in place: make notebook-update-quickstart
 notebook-update-%:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+	GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=1 --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
 # Run a single notebook by name: make notebook-quickstart
 notebook-%:
-	GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
+	GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) $*
 
 # Run all demo notebooks with coverage instrumentation and produce an lcov report over src/.
 # Child processes inherit --code-coverage=user via Base.julia_cmd(), so parallel jobs work.
 notebook-coverage:
-	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && GKSwstype=100 QMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --code-coverage=user --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src -name '*.cov' -delete,notebook-coverage)
+	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="$(PYTHON)" julia --threads=$(NOTEBOOK_THREADS) --code-coverage=user --project=. test/run_notebooks.jl --jobs=$(NOTEBOOK_JOBS) --shard-count=$(NOTEBOOK_SHARD_COUNT) --shard-index=$(NOTEBOOK_SHARD_INDEX) --overwrite=$(NOTEBOOK_OVERWRITE) --kernel=$(NOTEBOOK_KERNEL) --timeout=$(NOTEBOOK_TIMEOUT) && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src -name '*.cov' -delete,notebook-coverage)
 
-# Audit QMC.jl demos against QMCPy sources
+# Audit QuasiMC.jl demos against QMCPy sources
 check-demos:
 	$(PYTHON) devtools/check_demo_parity.py --jl-root demos --py-root ../QMCPy/demos
 
@@ -241,12 +241,12 @@ PY_LABEL ?= $(JL_LABEL)
 BENCH_COMPARE_OUT := $(if $(LABEL),benchmark/results/compare_$(LABEL).md,benchmark/results/compare_head.md)
 BENCH_COMPARE_PY_OUT := $(if $(LABEL),benchmark/results/compare_python_$(LABEL).md,benchmark/results/compare_python.md)
 bench-compare-py: bench check-qmcpy-python
-	$(call RUN_TIMED,$(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && $(BENCH_THREAD_ENV) QMC_BENCH_REQUIRE_QMCPY_ACCURACY=1 BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(PY_LABEL) && $(BENCH_THREAD_ENV) QUASIMC_BENCH_REQUIRE_QMCPY_ACCURACY=1 BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(JL_LABEL) $(PY_LABEL) $(LABEL),bench-compare-py)
 
 # Explicit labeled Julia-vs-QMCPy comparison flow.
 # Usage: make bench-compare-py-label LABEL=base
 bench-compare-py-label: check-qmcpy-python
-	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && $(BENCH_THREAD_ENV) QMC_BENCH_REQUIRE_QMCPY_ACCURACY=1 BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
+	$(call RUN_TIMED,$(BENCH_THREAD_ENV) BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/runbenchmarks.jl $(LABEL) && $(BENCH_THREAD_ENV) $(PYTHON) benchmark/benchmark_qmcpy.py $(LABEL) && $(BENCH_THREAD_ENV) QUASIMC_BENCH_REQUIRE_QMCPY_ACCURACY=1 BENCH_COVERAGE=$(BENCH_COVERAGE) julia $(JULIA_BENCH_COVERAGE_FLAG) benchmark/compare_py.jl $(LABEL) $(LABEL) $(LABEL),bench-compare-py-label)
 
 # Run the labeled Julia-only comparison and Julia-vs-QMCPy comparison in one task.
 # This target does not define a third ratio; inspect:

@@ -12,8 +12,9 @@ When `replications` is set to an integer R > 1, `gen_samples` returns an
 `R × n × d` array of R independently shifted copies.
 
 This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
-before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QUASIMC_PYTHON"]`
+(`ENV["QMC_PYTHON"]` is still accepted) before the first `Lattice`,
+`DigitalNetB2`, or `Halton` use.
 
 # Arguments
 - `dimension`: number of dimensions (up to 9125).
@@ -45,7 +46,7 @@ before the first `Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> discrete_distrib = Lattice(2; seed=7);
 
@@ -62,32 +63,32 @@ julia> round.(gen_samples(discrete_distrib, 1); digits=8) # first point in the s
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
-julia> x = QMC.gen_samples(Lattice(3; seed=7, replications=2), 4);
+julia> x = QuasiMC.gen_samples(Lattice(3; seed=7, replications=2), 4);
 
 julia> size(x)
 (2, 4, 3)
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
-julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="RADICAL INVERSE"), 4); digits=8)
+julia> round.(QuasiMC.gen_samples(Lattice(2; randomize=false, order="RADICAL INVERSE"), 4); digits=8)
 4×2 Matrix{Float64}:
  0.0   0.0
  0.5   0.5
  0.25  0.75
  0.75  0.25
 
-julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="GRAY"), 4); digits=8)
+julia> round.(QuasiMC.gen_samples(Lattice(2; randomize=false, order="GRAY"), 4); digits=8)
 4×2 Matrix{Float64}:
  0.0   0.0
  0.5   0.5
  0.75  0.25
  0.25  0.75
 
-julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="LINEAR"), 4); digits=8)
+julia> round.(QuasiMC.gen_samples(Lattice(2; randomize=false, order="LINEAR"), 4); digits=8)
 4×2 Matrix{Float64}:
  0.0   0.0
  0.25  0.75
@@ -96,7 +97,7 @@ julia> round.(QMC.gen_samples(Lattice(2; randomize=false, order="LINEAR"), 4); d
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = Lattice(2; randomize=false, generating_vector=[1, 3], m_max=10);
 

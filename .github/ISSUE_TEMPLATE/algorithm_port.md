@@ -1,6 +1,6 @@
 ---
 name: Algorithm port
-about: Track a port or parity task from QMCPy into QMC.jl.
+about: Track a port or parity task from QMCPy into QuasiMC.jl.
 title: "[Port] "
 ---
 
@@ -10,9 +10,9 @@ title: "[Port] "
 - QMCPy version:
 - Reference link:
 
-## Target in QMC.jl
+## Target in QuasiMC.jl
 
-Which QMC.jl component family and file paths should this touch?
+Which QuasiMC.jl component family and file paths should this touch?
 
 ## Parity target
 

@@ -12,8 +12,8 @@ When `generalize=true`, a per-dimension permutation of digits is applied
 higher dimensions.
 
 This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QMC_PYTHON"]`
-before `using QMC`.
+`qmctoolscl` into a Python visible to Julia, or set `ENV["QUASIMC_PYTHON"]`
+(`ENV["QMC_PYTHON"]` is still accepted) before `using QuasiMC`.
 
 # Arguments
 - `dimension::Int`: number of dimensions (up to 250).
@@ -26,7 +26,7 @@ before `using QMC`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> hal = Halton(2; seed=7)
 Halton(d=2, randomize=true, generalize=true, replications=nothing)

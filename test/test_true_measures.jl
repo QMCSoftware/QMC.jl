@@ -173,7 +173,7 @@
         xt_std = transform(tm_std, x)
         expected_std = Matrix{Float64}(undef, size(x))
         @inbounds for j in axes(x, 2), i in axes(x, 1)
-            p = QMC._open_unit_interval(x[i, j])
+            p = QuasiMC._open_unit_interval(x[i, j])
             expected_std[i, j] = (2.0 * p - 1.0) / sqrt(2.0 * p * (1.0 - p))
         end
         @test xt_std ≈ expected_std
@@ -193,7 +193,7 @@
         xt_std = transform(tm_std, x)
         expected_std = Matrix{Float64}(undef, size(x))
         @inbounds for j in axes(x, 2), i in axes(x, 1)
-            expected_std[i, j] = tanpi(QMC._open_unit_interval(x[i, j]) - 0.5)
+            expected_std[i, j] = tanpi(QuasiMC._open_unit_interval(x[i, j]) - 0.5)
         end
         @test xt_std ≈ expected_std
 
@@ -374,9 +374,9 @@
     end
 
     @testset "Open unit interval helper" begin
-        @test QMC._open_unit_interval(0.0f0) == eps(Float32)
-        @test QMC._open_unit_interval(1.0f0) == 1.0f0 - eps(Float32)
-        @test QMC._open_unit_interval(0) == eps(Float64)
+        @test QuasiMC._open_unit_interval(0.0f0) == eps(Float32)
+        @test QuasiMC._open_unit_interval(1.0f0) == 1.0f0 - eps(Float32)
+        @test QuasiMC._open_unit_interval(0) == eps(Float64)
 
         dd = IIDStdUniform(2; seed=101)
         tm = JohnsonsSU(dd)
@@ -441,7 +441,7 @@
     @testset "ZeroInflatedExpUniform" begin
         dd = IIDStdUniform(2; seed=7)
         tm = ZeroInflatedExpUniform(dd; p_zero=0.3, rate=2.0)
-        @test QMC.dimension(tm) == 1
+        @test QuasiMC.dimension(tm) == 1
 
         x = gen_samples(dd, 5000)
         y = transform(tm, x)
@@ -498,7 +498,7 @@
         @test all(isfinite, y_mat)
         tm_nd = Gaussian(IIDStdUniform(2; seed=203); covariance=[1.0 0.5; 0.5 1.0])
         z = randn(10, 2)
-        yr = QMC._transform_from_randn(tm_nd, z)
+        yr = QuasiMC._transform_from_randn(tm_nd, z)
         @test size(yr) == (10, 2)
         @test all(isfinite, yr)
     end

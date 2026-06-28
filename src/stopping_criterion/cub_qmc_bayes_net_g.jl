@@ -12,7 +12,7 @@ Set `trace_iterations=true` to record an `IterationLog` in
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Genz(Uniform(DigitalNetB2(3; randomize="LMS_DS", seed=7)); kind=:continuous, a=[1.0, 1.0, 1.0], u=[0.5, 0.5, 0.5])
 Genz(:continuous, d=3)

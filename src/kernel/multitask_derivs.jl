@@ -21,7 +21,7 @@ orders are supplied per evaluation.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> base = KernelShiftInvarDeriv(2);
 

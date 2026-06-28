@@ -1,6 +1,6 @@
-# QMC.jl: Quasi-Monte Carlo Software in Julia
+# QuasiMC.jl: Quasi-Monte Carlo Software in Julia
 
-QMC.jl is a Julia port of QMCPy for Quasi-Monte Carlo (QMC) numerical integration.
+QuasiMC.jl is a Julia port of QMCPy for Quasi-Monte Carlo (QMC) numerical integration.
 
 `IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library, so Python is a current runtime dependency for full QMC functionality.
 
@@ -8,7 +8,7 @@ Most core package families are implemented. A few advanced items remain partial:
 
 ## API Stability
 
-QMC.jl currently groups its public surface into the following stability levels:
+QuasiMC.jl currently groups its public surface into the following stability levels:
 
 | Status | Representative symbols | Meaning |
 |---|---|---|
@@ -31,7 +31,7 @@ QMC methods approximate multivariate integrals using four main components:
 This example uses `Lattice`, so `qmctoolscl` must be installed in a Python visible to Julia.
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = Lattice(3; randomize=true, seed=7);
 
@@ -49,7 +49,7 @@ For reproducible use, prefer a tagged artifact rather than the moving default br
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/QMCSoftware/QMC.jl", rev="vX.Y.Z")
+Pkg.add(url="https://github.com/QMCSoftware/QuasiMC.jl", rev="vX.Y.Z")
 ```
 
 For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python visible to Julia:
@@ -58,7 +58,7 @@ For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Pyth
 python3 -m pip install qmctoolscl==1.2.3
 ```
 
-If Julia should use a specific Python interpreter, set `ENV["QMC_PYTHON"]` before `using QMC`.
+If Julia should use a specific Python interpreter, set `ENV["QUASIMC_PYTHON"]` before `using QuasiMC` (legacy `ENV["QMC_PYTHON"]` still works).
 
 ## Contents
 

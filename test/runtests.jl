@@ -1,10 +1,10 @@
 using Test
-using QMC
+using QuasiMC
 using Statistics
 using LinearAlgebra
 using Distributions
-# Resolve name conflicts: prefer QMC's versions in tests
-import QMC: Uniform, Kumaraswamy
+# Resolve name conflicts: prefer QuasiMC's versions in tests
+import QuasiMC: Uniform, Kumaraswamy
 
 const TEST_FILES = [
     "test_interfaces.jl",
@@ -75,7 +75,7 @@ end
 
 function run_serial(files::Vector{String})
     times = Dict{String, Float64}()
-    @testset "QMC" begin
+    @testset "QuasiMC" begin
         for test_file in files
             elapsed = @elapsed begin
                 try

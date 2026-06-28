@@ -19,7 +19,7 @@ with factor matrix F ∈ ℝ^{T×r} and diagonal v ∈ ℝ^T.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> kmt = KernelMultiTask(KernelGaussian(lengthscale=1.0, outputscale=1.0), 3; diag=[1.0, 2.0, 3.0])
 KernelMultiTask(T=3, rank=1, base=KernelGaussian(ℓ=1.0, σ²=1.0))

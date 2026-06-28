@@ -108,13 +108,13 @@ jobs:
         # internal `wait: No child processes` despite the underlying notebook
         # harness still running, so bypass the wrapper in CI.
         run: |
-          QMC_SKIP_PKG_SETUP=1 GKSwstype=100 QMC_NOTEBOOK_PYTHON="python" julia --threads=2 --project=. \
+          QUASIMC_SKIP_PKG_SETUP=1 GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="python" julia --threads=2 --project=. \
             test/run_notebooks.jl \
             --jobs=1 \
             --shard-count=4 \
             --shard-index=${{ matrix.shard_index }} \
             --overwrite=0 \
-            --kernel=qmc-1.12 \
+            --kernel=quasimc-1.12 \
             --timeout=7200
 
   doctest_coverage:
@@ -193,13 +193,13 @@ jobs:
           set -euo pipefail
           find src -name '*.cov' -delete
           rm -f lcov.info
-          QMC_SKIP_PKG_SETUP=1 GKSwstype=100 QMC_NOTEBOOK_PYTHON="python" julia --threads=1 --code-coverage=user --project=. \
+          QUASIMC_SKIP_PKG_SETUP=1 GKSwstype=100 QUASIMC_NOTEBOOK_PYTHON="python" julia --threads=1 --code-coverage=user --project=. \
             test/run_notebooks.jl \
             --jobs=2 \
             --shard-count=1 \
             --shard-index=1 \
             --overwrite=0 \
-            --kernel=qmc-1.12 \
+            --kernel=quasimc-1.12 \
             --timeout=7200
           julia --project=. devtools/process_coverage.jl src
           find src -name '*.cov' -delete

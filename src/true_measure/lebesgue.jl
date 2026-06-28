@@ -13,7 +13,7 @@ into the density.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> tm = Lebesgue(IIDStdUniform(2; seed=7); lower_bound=0.0, upper_bound=2.0)
 Lebesgue(d=2, volume=4.0, lower=[0.0, 0.0], upper=[2.0, 2.0])

@@ -23,7 +23,7 @@ Supports Owen (NUS) scrambling and higher-order construction via interlacing
 
 # Example
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> C = zeros(Int, 2, 3, 3);
 
@@ -223,7 +223,7 @@ Uses Pascal-matrix-based generating matrices.
 
 # Example
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = Faure(3; randomize="none")
 DigitalNetAnyBases(d=3, base=3, α=1)
@@ -238,7 +238,7 @@ julia> round.(gen_samples(dd, 5); digits=6)
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd4 = Faure(4; randomize="none");
 

@@ -10,16 +10,16 @@ Uses a Bernoulli-polynomial-based shift-invariant kernel diagonalized by FFT.
 The shape parameter θ is estimated via MLE or GCV. A periodization transform
 (default C1SIN) is applied to improve convergence for non-periodic integrands.
 
-For vector-valued integrands (`QMC.d_indv(f) != ()`), returns a
+For vector-valued integrands (`QuasiMC.d_indv(f) != ()`), returns a
 [`QMCVecResult`](@ref) whose combined bounds are built through
-`QMC.bound_fun(f, low, high)`.
+`QuasiMC.bound_fun(f, low, high)`.
 
 Set `trace_iterations=true` to record an `IterationLog` in
 `result.data[:iteration_log]`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> k = Keister(Gaussian(Lattice(2; seed=123456789); covariance=0.5))
 Keister(d=2)
@@ -31,7 +31,7 @@ true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Genz(Uniform(Lattice(2; randomize=true, seed=7)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
 Genz(:continuous, d=2)
@@ -49,7 +49,7 @@ true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = Genz(Uniform(Lattice(2; randomize=true, seed=7)); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5]);
 

@@ -17,11 +17,13 @@ const _QMCTOOLSCL_LAST_SEARCH = Ref("none")
 # (available since qmctoolscl 1.2.3; probe once at init time).
 const _HAS_DNB2_FUSED = Ref(false)
 
+_python_env_keys() = ("QUASIMC_PYTHON", "QMC_PYTHON", "CONDA_PYTHON_EXE", "PYTHON")
+
 function _python_candidates()
     candidates = String[]
 
-    # Allow callers to point QMC at a specific Python interpreter.
-    for key in ("QMC_PYTHON", "CONDA_PYTHON_EXE", "PYTHON")
+    # Allow callers to point QuasiMC at a specific Python interpreter.
+    for key in _python_env_keys()
         if haskey(ENV, key) && !isempty(strip(ENV[key]))
             push!(candidates, strip(ENV[key]))
         end
@@ -126,7 +128,8 @@ Remediation (pick one):
   pip install 'qmctoolscl>=1.2.3'
 
 Or point Julia at the Python that already has it (no restart needed):
-  ENV["QMC_PYTHON"] = "/path/to/python"
+  ENV["QUASIMC_PYTHON"] = "/path/to/python"
+  # legacy alias still accepted: ENV["QMC_PYTHON"] = "/path/to/python"
 
 Searched Python interpreters: $searched_str"""
     end
@@ -140,8 +143,9 @@ Return the cached path to the QMCToolsCL shared library, raising an informative
 error if the library was not successfully loaded.
 """
 function _qmctoolscl_lib_path()
-    # Retry discovery on demand so users can set ENV["QMC_PYTHON"]
-    # after importing QMC but before first use of QMCToolsCL-backed generators.
+    # Retry discovery on demand so users can set ENV["QUASIMC_PYTHON"]
+    # (or the legacy ENV["QMC_PYTHON"]) after importing QuasiMC but before
+    # first use of QMCToolsCL-backed generators.
     isempty(_QMCTOOLSCL_LIB_PATH[]) && _init_qmctoolscl!(; warn_on_failure=false, force=true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) && error(
         "QMCToolsCL C library not loaded.\n\n" *
@@ -150,7 +154,8 @@ function _qmctoolscl_lib_path()
         "Remediation (pick one):\n" *
         "  pip install 'qmctoolscl>=1.2.3'\n\n" *
         "Or point Julia at the Python that already has it (no restart needed):\n" *
-        "  ENV[\"QMC_PYTHON\"] = \"/path/to/python\"\n\n" *
+        "  ENV[\"QUASIMC_PYTHON\"] = \"/path/to/python\"\n" *
+        "  # legacy alias still accepted: ENV[\"QMC_PYTHON\"] = \"/path/to/python\"\n\n" *
         "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).",
     )
     return _QMCTOOLSCL_LIB_PATH[]

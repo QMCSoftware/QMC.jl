@@ -1,7 +1,7 @@
 name: "Install Test (no Python)"
 
 # Verifies that:
-#   1. `using QMC` succeeds without qmctoolscl installed.
+#   1. `using QuasiMC` succeeds without qmctoolscl installed.
 #   2. Pure-Julia generators (IIDStdUniform, Kronecker) work normally.
 #   3. Sampling from qmctoolscl-backed generators (Lattice, DigitalNetB2,
 #      Halton) produces a clear, actionable error that mentions the exact pip
@@ -52,7 +52,7 @@ jobs:
       - name: Pure-Julia generators work without qmctoolscl
         run: |
           julia --project=. -e '
-            using QMC
+            using QuasiMC
             dd = IIDStdUniform(3; seed=7)
             x = gen_samples(dd, 4)
             @assert size(x) == (4, 3) "IIDStdUniform size wrong: $(size(x))"
@@ -67,7 +67,7 @@ jobs:
       - name: Lattice sampling gives a helpful error without qmctoolscl
         run: |
           julia --project=. -e '
-            using QMC
+            using QuasiMC
             dd = Lattice(3)
             try
               gen_samples(dd, 4)
@@ -84,7 +84,7 @@ jobs:
       - name: DigitalNetB2 sampling gives a helpful error without qmctoolscl
         run: |
           julia --project=. -e '
-            using QMC
+            using QuasiMC
             dd = DigitalNetB2(3)
             try
               gen_samples(dd, 4)
@@ -100,7 +100,7 @@ jobs:
       - name: Halton sampling gives a helpful error without qmctoolscl
         run: |
           julia --project=. -e '
-            using QMC
+            using QuasiMC
             dd = Halton(3)
             try
               gen_samples(dd, 4)

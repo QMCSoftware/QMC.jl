@@ -1,4 +1,4 @@
-name = "QMC"
+name = "QuasiMC"
 uuid = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
 license = "Apache-2.0"
 version = "0.1.0"
@@ -21,7 +21,7 @@ AbstractGPs = "99985d1d-32ba-4be9-9821-2ec096f28918"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 
 [extensions]
-QMCAbstractGPsExt = ["AbstractGPs", "Optim"]
+QuasiMCAbstractGPsExt = ["AbstractGPs", "Optim"]
 
 [compat]
 AbstractGPs = "0.5"

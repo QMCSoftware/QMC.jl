@@ -6,7 +6,7 @@ Returns a vector of `m` integers (0 or 1).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> to_bin(0.75, 4)
 4-element Vector{Int64}:

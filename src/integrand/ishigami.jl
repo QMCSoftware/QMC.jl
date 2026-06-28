@@ -15,7 +15,7 @@ for given a, b.
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = Ishigami(Uniform(DigitalNetB2(3; seed=7); lower_bound=-π, upper_bound=π))
 Ishigami(a=7.0, b=0.1)
@@ -83,7 +83,7 @@ Mirrors QMCPy's `Ishigami._exact_sensitivity_indices` for the singleton subsets.
 Useful as an analytical reference when validating [`SensitivityIndices`](@ref).
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> ref = ishigami_exact();
 

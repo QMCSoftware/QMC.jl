@@ -28,8 +28,8 @@ docker run -d -p 4243:4243 linusseelinger/benchmark-muq-beam-propagation:latest
 
 # Example
 ```text
-using QMC
-import QMC: Uniform
+using QuasiMC
+import QuasiMC: Uniform
 
 dd = DigitalNetB2(3; seed=7, randomize="LMS_DS", graycode=false)
 tm = Uniform(dd; lower_bound=1.0, upper_bound=1.05)

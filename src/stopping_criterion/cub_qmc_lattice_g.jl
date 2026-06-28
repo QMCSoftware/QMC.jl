@@ -13,9 +13,9 @@ When `fft_error_bound=false`, uses `n_reps` independent randomized replicates
 and a Student-t confidence interval. Control variates always use the replication
 path regardless of `fft_error_bound`.
 
-For vector-valued integrands (`QMC.d_indv(f) != ()`), returns a
+For vector-valued integrands (`QuasiMC.d_indv(f) != ()`), returns a
 [`QMCVecResult`](@ref) whose combined bounds are built through
-`QMC.bound_fun(f, low, high)`.
+`QuasiMC.bound_fun(f, low, high)`.
 
 Pass `control_variates` (an integrand or vector of integrands sharing the main
 integrand's discrete distribution and dimension) with their known
@@ -28,7 +28,7 @@ Supports **resume** and optional **iteration logging** (`trace_iterations=true`)
 
 # Example
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> k = Keister(Gaussian(Lattice(1; seed=7); covariance=0.5));
 
@@ -41,22 +41,22 @@ true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
-julia> f = BoxIntegral(QMC.Uniform(Lattice(3; seed=11)); s=-1.0);
+julia> f = BoxIntegral(QuasiMC.Uniform(Lattice(3; seed=11)); s=-1.0);
 
 julia> abs_tol = 1e-3;
 
-julia> sc = QMC.CubQMCLatticeG(f; abs_tol=abs_tol, rel_tol=0.0);
+julia> sc = QuasiMC.CubQMCLatticeG(f; abs_tol=abs_tol, rel_tol=0.0);
 
-julia> solution = QMC.integrate(sc).solution;
+julia> solution = QuasiMC.integrate(sc).solution;
 
 julia> isapprox(solution, 1.18947477; atol=2e-3) # QMCPy doctest reference
 true
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = Lattice(2; randomize=true, seed=77);
 

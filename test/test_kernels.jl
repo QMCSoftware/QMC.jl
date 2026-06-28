@@ -130,7 +130,7 @@
         @test_throws ArgumentError KernelShiftInvarCombined(3; lengthscales=[1.0, 2.0])
         @test_throws ArgumentError KernelDigShiftInvarCombined(3, 32; alpha=ones(4, 2))
         @test_throws ArgumentError KernelDigShiftInvarAdaptiveAlpha(3, 32; alpha=[1.0, 2.0])
-        @test_throws ArgumentError QMC._weighted_walsh_funcs(5, UInt64(3), 32)
+        @test_throws ArgumentError QuasiMC._weighted_walsh_funcs(5, UInt64(3), 32)
     end
 
     @testset "KernelShiftInvarDeriv (derivative orders)" begin

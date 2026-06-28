@@ -6,10 +6,18 @@
 #     julia --project=. test/run_notebooks.jl --jobs=2                   # shard notebooks
 #     julia --project=. test/run_notebooks.jl --shard-count=2 --shard-index=1
 #     julia --project=. test/run_notebooks.jl --overwrite=1              # execute with Jupyter and write outputs back
-#     julia --project=. test/run_notebooks.jl --overwrite=1 --kernel=qmc-1.12
+#     julia --project=. test/run_notebooks.jl --overwrite=1 --kernel=quasimc-1.12
 
 using Pkg
-if get(ENV, "QMC_SKIP_PKG_SETUP", "0") != "1"
+getenv_compat(primary::AbstractString, legacy::AbstractString, default::AbstractString="") =
+    get(ENV, primary, get(ENV, legacy, default))
+
+const NB_TIMING_TAG = "##QUASIMC_NB_TIMING"
+const NB_RESULT_TAG = "##QUASIMC_NB_RESULT"
+const NB_TIMING_TAG_LEGACY = "##QMC_NB_TIMING"
+const NB_RESULT_TAG_LEGACY = "##QMC_NB_RESULT"
+
+if getenv_compat("QUASIMC_SKIP_PKG_SETUP", "QMC_SKIP_PKG_SETUP", "0") != "1"
     Pkg.resolve()
     Pkg.instantiate()
 end
@@ -38,15 +46,15 @@ Base.@kwdef struct NotebookOptions
     shard_count::Int = 1
     shard_index::Int = 1
     overwrite::Bool = false
-    kernel::String = "qmc-1.12"
+    kernel::String = "quasimc-1.12"
     timeout::Int = 7200
 end
 
 # ── Notebook timing cache (LPT load balancing) ────────────────────────────────
-# Each parallel run emits ##QMC_NB_TIMING lines; run_parallel collects them and
-# persists per-notebook runtimes here.  On the next run split_work_lpt uses the
-# saved times to assign notebooks to shards so the slowest shard is minimised
-# (Longest Processing Time heuristic).
+# Each parallel run emits machine-readable timing lines; run_parallel collects
+# them and persists per-notebook runtimes here. On the next run split_work_lpt
+# uses the saved times to assign notebooks to shards so the slowest shard is
+# minimised (Longest Processing Time heuristic).
 
 const NOTEBOOK_TIMES_FILE = joinpath(@__DIR__, "notebook_times.tsv")
 
@@ -304,8 +312,9 @@ function child_cmd(notebooks::Vector{String}, opts::NotebookOptions)
         cmd,
         "JULIA_PROJECT" => current_project_dir(),
         "JULIA_NUM_THREADS" => string(Threads.nthreads()),
-        "QMC_SKIP_PKG_SETUP" => "1",
-        "QMC_NOTEBOOK_VERBOSE" => get(ENV, "QMC_NOTEBOOK_VERBOSE", "0"),
+        "QUASIMC_SKIP_PKG_SETUP" => "1",
+        "QUASIMC_NOTEBOOK_VERBOSE" =>
+            getenv_compat("QUASIMC_NOTEBOOK_VERBOSE", "QMC_NOTEBOOK_VERBOSE", "0"),
     )
 end
 
@@ -373,7 +382,8 @@ function drain_shard_output!(shard::ShardRun)
         if !isempty(chunk)
             # Strip machine-readable timing lines before echoing to the console.
             visible = filter(
-                ln -> !startswith(ln, "##QMC_NB_TIMING"),
+                ln ->
+                    !startswith(ln, NB_TIMING_TAG) && !startswith(ln, NB_TIMING_TAG_LEGACY),
                 split(chunk, '\n'; keepempty=true),
             )
             filtered = join(visible, '\n')
@@ -405,7 +415,7 @@ function maybe_print_shard_heartbeat!(shard::ShardRun; interval::Real=30)
 end
 
 function notebook_python()
-    py = get(ENV, "QMC_NOTEBOOK_PYTHON", "")
+    py = getenv_compat("QUASIMC_NOTEBOOK_PYTHON", "QMC_NOTEBOOK_PYTHON", "")
     return isempty(py) ? "python3" : py
 end
 
@@ -495,9 +505,9 @@ function run_one_notebook(
         Cmd(vcat(collect(Base.julia_cmd()), [joinpath(@__DIR__, "run_notebooks.jl")])),
         "JULIA_PROJECT" => current_project_dir(),
         "JULIA_NUM_THREADS" => string(Threads.nthreads()),
-        "QMC_SKIP_PKG_SETUP" => "1",
-        "QMC_NB_ONE" => nb,
-        "QMC_NOTEBOOK_VERBOSE" => verbose ? "1" : "0",
+        "QUASIMC_SKIP_PKG_SETUP" => "1",
+        "QUASIMC_NB_ONE" => nb,
+        "QUASIMC_NOTEBOOK_VERBOSE" => verbose ? "1" : "0",
     )
     buf = IOBuffer()
     proc = run(pipeline(ignorestatus(cmd); stdout=buf, stderr=buf); wait=false)
@@ -523,7 +533,7 @@ function run_one_notebook(
     warnings = 0
     kept = String[]
     for ln in split(String(take!(buf)), '\n')
-        m = match(r"^##QMC_NB_RESULT ok=(\w+) warnings=(\d+)$", ln)
+        m = match(r"^##(?:QUASIMC|QMC)_NB_RESULT ok=(\w+) warnings=(\d+)$", ln)
         if m === nothing
             push!(kept, ln)
         else
@@ -544,14 +554,14 @@ function run_one_notebook(
         isempty(err_text) && (err_text = "notebook failed")
         println("  x FAILED: ", err_text)
         println("  time: ", fmt_duration(elapsed))
-        println("##QMC_NB_TIMING\t$(nb)\t$(round(elapsed; digits=3))")
+        println("$(NB_TIMING_TAG)\t$(nb)\t$(round(elapsed; digits=3))")
         return false, elapsed, warnings
     end
 
     wtxt = warnings > 0 ? ", $warnings warning(s)" : ""
     println("ok [$(fmt_duration(elapsed))]$wtxt")
     # Machine-readable timing consumed by run_parallel to build the LPT timing cache.
-    println("##QMC_NB_TIMING\t$(nb)\t$(round(elapsed; digits=3))")
+    println("$(NB_TIMING_TAG)\t$(nb)\t$(round(elapsed; digits=3))")
     return true, elapsed, warnings
 end
 
@@ -560,7 +570,7 @@ function run_serial(notebooks::Vector{String}, demos_dir::AbstractString, opts::
     warnings_by_notebook = Dict{String, Int}()
     errors = String[]
     clogger = CountingLogger()
-    verbose = get(ENV, "QMC_NOTEBOOK_VERBOSE", "0") == "1"
+    verbose = getenv_compat("QUASIMC_NOTEBOOK_VERBOSE", "QMC_NOTEBOOK_VERBOSE", "0") == "1"
 
     for nb in notebooks
         ok, elapsed, warnings =
@@ -637,7 +647,8 @@ function run_parallel(notebooks::Vector{String}, opts::NotebookOptions)
             try
                 for line in eachline(result.log_path)
                     parts = split(line, '\t')
-                    if length(parts) == 3 && parts[1] == "##QMC_NB_TIMING"
+                    if length(parts) == 3 &&
+                       (parts[1] == NB_TIMING_TAG || parts[1] == NB_TIMING_TAG_LEGACY)
                         all_times[String(parts[2])] = parse(Float64, parts[3])
                     end
                 end
@@ -689,13 +700,16 @@ end
 demos_dir = joinpath(@__DIR__, "..", "demos")
 
 # Child mode: execute exactly one notebook in-process and exit. The parent
-# (`run_one_notebook`) launches this with QMC_NB_ONE set and enforces the
+# (`run_one_notebook`) launches this with QUASIMC_NB_ONE set and enforces the
 # per-notebook timeout by killing the process — the only reliable way to stop a
 # notebook stuck inside a native `ccall` (e.g. qmctoolscl).
-if haskey(ENV, "QMC_NB_ONE")
+if haskey(ENV, "QUASIMC_NB_ONE") || haskey(ENV, "QMC_NB_ONE")
     # `let` keeps these names local so the `one_ok` assignment in the `catch`
     # below is unambiguous; at global scope it would trip a soft-scope warning.
-    let one_nb = ENV["QMC_NB_ONE"], one_clog = CountingLogger(), one_ok = true
+    let one_nb = getenv_compat("QUASIMC_NB_ONE", "QMC_NB_ONE"),
+        one_clog = CountingLogger(),
+        one_ok = true
+
         one_clog.current_nb[] = one_nb
         try
             with_suppressed_display() do
@@ -710,7 +724,7 @@ if haskey(ENV, "QMC_NB_ONE")
         end
         flush(stdout)
         flush(stderr)
-        println("##QMC_NB_RESULT ok=$(one_ok) warnings=$(get(one_clog.counts, one_nb, 0))")
+        println("$(NB_RESULT_TAG) ok=$(one_ok) warnings=$(get(one_clog.counts, one_nb, 0))")
         exit(one_ok ? 0 : 1)
     end
 end

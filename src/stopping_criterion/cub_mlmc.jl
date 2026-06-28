@@ -30,7 +30,7 @@ Set `trace_iterations=true` to record an `IterationLog` in
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> f = FinancialOptionML(IIDStdUniform(32; seed=7); d_coarsest=4, option_type=:asian)
 FinancialOptionML(:asian, :call, d=32, d_coarsest=4, levels=4)

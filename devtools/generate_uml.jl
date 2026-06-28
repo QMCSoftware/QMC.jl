@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 """
-Generate UML-style class diagrams for QMC.jl source types.
+Generate UML-style class diagrams for QuasiMC.jl source types.
 
 The script scans `src/` for `abstract type`, `struct`, and `mutable struct`
 definitions, extracts subtype relations plus selected field-based associations,
@@ -129,7 +129,7 @@ function parse_types(src_dir::String)
     for (root, _, files) in walkdir(src_dir)
         for file in sort(files)
             endswith(file, ".jl") || continue
-            file == "QMC.jl" && continue
+            file == "QuasiMC.jl" && continue
             fullpath = joinpath(root, file)
             relative_path = Base.Filesystem.relpath(fullpath, src_dir)
             category = category_for(relative_path)

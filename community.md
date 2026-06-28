@@ -1,4 +1,4 @@
-# QMC.jl Community
+# QuasiMC.jl Community
 
 ## Steering Council
 
@@ -8,8 +8,10 @@
 
 ## Contributors
 
-We gratefully acknowledge all contributors to the broader QMC project and to QMC.jl.
+We gratefully acknowledge all contributors to the broader QMC project and to QuasiMC.jl.
 See the full list at the [QMCSoftware community page](https://qmcsoftware.github.io/QMCSoftware/community/).
+
+The Contributors badge in the README counts commit authors whose email resolves to a GitHub account. `copilot-swe-agent[bot]` is counted because its email follows GitHub's own noreply format (`{id}+{username}@users.noreply.github.com`). Claude's co-author trailer (`noreply@anthropic.com`) does not resolve to a GitHub account and is therefore not counted by the badge, even though Claude contributed substantially to the codebase. Both AI tools are acknowledged here.
 
 ## Julia Community Resources
 
@@ -21,7 +23,7 @@ See the full list at the [QMCSoftware community page](https://qmcsoftware.github
 
 ## Select References
 
-The mathematical and algorithmic foundations used by QMC.jl are documented in the [QMCPy publications page](https://qmcpy.org/publications/) and the [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
+The mathematical and algorithmic foundations used by QuasiMC.jl are documented in the [QMCPy publications page](https://qmcpy.org/publications/) and the [select references](https://qmcsoftware.github.io/QMCSoftware/community/#select-references).
 
 ### (Q)MC Courses
 

@@ -24,7 +24,7 @@ and adding the deterministic mean `initial_value + drift * t[j]`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> bm = BrownianMotion(DigitalNetB2(4; seed=7); t_final=2.0, drift=2.0)
 BrownianMotion(d=4, drift=2.0, initial_value=0.0, diffusion=1.0, t=[0.5,…,2.0])

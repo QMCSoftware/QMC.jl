@@ -1,5 +1,5 @@
 """
-Matérn kernel family for Bayesian QMC.
+Matérn kernel family for Bayesian QuasiMC.
 
 Provides Matérn-1/2, Matérn-3/2, Matérn-5/2, and Gaussian (RBF / squared
 exponential) kernels. These kernels are parameterized by a length-scale ℓ
@@ -33,7 +33,7 @@ Matérn-1/2 (exponential) kernel: k(r) = σ² exp(-r/ℓ).
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> k = KernelMatern12(; lengthscale=1.0, outputscale=1.0)
 KernelMatern12(ℓ=1.0, σ²=1.0)

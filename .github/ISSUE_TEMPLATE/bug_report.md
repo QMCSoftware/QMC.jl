@@ -18,7 +18,7 @@ Provide the smallest reproducible example, including deterministic seeds if appl
 
 ## Environment
 
-- QMC.jl commit or version:
+- QuasiMC.jl commit or version:
 - Julia version:
 - Python and `qmctoolscl` versions if relevant:
 - OS:

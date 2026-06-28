@@ -1,6 +1,6 @@
 # CI/CD Testing
 
-QMC.jl uses GitHub Actions for continuous integration and benchmark collection. The main feedback paths live in four active workflow files under `.github/workflows/` plus `TagBot.yml`. For local linting and repeatable smoke runs of those workflows, see [Workflow Debugging](workflow-debugging.md).
+QuasiMC.jl uses GitHub Actions for continuous integration and benchmark collection. The main feedback paths live in four active workflow files under `.github/workflows/` plus `TagBot.yml`. For local linting and repeatable smoke runs of those workflows, see [Workflow Debugging](workflow-debugging.md).
 
 ## Workflow Overview
 
@@ -102,7 +102,7 @@ Guards against the qmctoolscl external-dependency hazard: Julia users expect `Pk
 
 - Triggers on pushes to `develop`/`master`, on pull requests that touch `src/` or `Project.toml`, and via manual dispatch.
 - Runs on `ubuntu-latest` with Julia 1.10 and 1.12. **Intentionally installs no Python and no qmctoolscl.**
-- Asserts that `using QMC` succeeds and that pure-Julia generators (`IIDStdUniform`, `Kronecker`) produce correct output without the C library.
+- Asserts that `using QuasiMC` succeeds and that pure-Julia generators (`IIDStdUniform`, `Kronecker`) produce correct output without the C library.
 - Asserts that `gen_samples(Lattice(3), 4)`, `gen_samples(DigitalNetB2(3), 4)`, and `gen_samples(Halton(3), 4)` each throw an error whose message mentions `qmctoolscl`, `pip install`, and the minimum version `1.2.3` — so a first-time user sees an actionable remediation rather than a cryptic symbol-lookup failure.
 - Does not run `Pkg.test()` — the full test suite requires qmctoolscl and is covered by the other CI workflows.
 
@@ -187,9 +187,9 @@ make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 **Overwrite notebooks with fresh executed outputs:**
 
 ```bash
-make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=qmc-1.12
+make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=quasimc-1.12
 # or
-make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
+make notebook-update-quickstart NOTEBOOK_KERNEL=quasimc-1.12
 ```
 
 `NOTEBOOK_JOBS` shards the runnable notebook list across separate Julia processes. If there are 34 runnable notebooks and `NOTEBOOK_JOBS=2`, the run is split into two 17-notebook shards. Set `NOTEBOOK_JOBS=1` when you want one sequential pass over the entire notebook set.
@@ -209,7 +209,7 @@ make bench-all REV=HEAD~1 BENCH_BLAS_THREADS=2
 
 ## Coverage Reports
 
-QMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
+QuasiMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
 
 - The repository README `Overall Coverage` badge points at Codecov's unflagged branch report for `develop`.
 - `Overall Coverage` is the combined `src/` coverage for that branch commit across all uploaded protected-branch reports. It reflects lines hit by at least one coverage-producing workflow.

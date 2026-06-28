@@ -9,7 +9,7 @@
 #
 # AbstractGPs/Optim are weak (extension-trigger) dependencies, so they are absent
 # from the default test environment: this preamble loads them if present (which
-# auto-triggers the QMCAbstractGPsExt extension) and otherwise exercises the
+# auto-triggers the QuasiMCAbstractGPsExt extension) and otherwise exercises the
 # "backend not loaded" error path, keeping the suite green either way.
 const _PFGPCI_HAS_BACKEND = try
     @eval using AbstractGPs
@@ -22,20 +22,20 @@ end
 @testset "PFGPCI" begin
     @testset "deterministic helpers" begin
         # φ(x) = Φ(μ/σ); reference from scipy.stats.norm.cdf
-        phi = QMC._pfgpci_phi([-2.0, -0.5, 0.0, 0.5, 2.0], ones(5))
+        phi = QuasiMC._pfgpci_phi([-2.0, -0.5, 0.0, 0.5, 2.0], ones(5))
         @test isapprox(phi, [0.02275, 0.308538, 0.5, 0.691462, 0.97725]; atol=1e-5)
         # error / acquisition density 2·min(φ, 1-φ)
         @test isapprox(
-            QMC._pfgpci_error_udens(phi),
+            QuasiMC._pfgpci_error_udens(phi),
             [0.0455, 0.617075, 1.0, 0.617075, 0.0455];
             atol=1e-5,
         )
         # σ = 0 guard: pinned to the failure side (μ≥0 ⇒ 1) or safe side (⇒ 0)
-        @test QMC._pfgpci_phi([1.0, -1.0, 0.0], zeros(3)) == [1.0, 0.0, 1.0]
+        @test QuasiMC._pfgpci_phi([1.0, -1.0, 0.0], zeros(3)) == [1.0, 0.0, 1.0]
 
         # credible-interval arithmetic (QMCPy PFGPCIData.update_data)
         phi2 = [0.01, 0.2, 0.5, 0.49, 0.8, 0.99, 0.999]
-        sol, emr, lo, hi, eb = QMC._pfgpci_credible_interval(phi2, 0.05)
+        sol, emr, lo, hi, eb = QuasiMC._pfgpci_credible_interval(phi2, 0.05)
         @test isapprox(sol, 4 / 7; atol=1e-12)          # mean(φ ≥ 0.5)
         @test isapprox(emr, 0.201571; atol=1e-5)        # mean(min(φ,1-φ))
         @test lo == 0.0 && hi == 1.0                    # γ = emr/α clamps to [0,1]
@@ -43,7 +43,7 @@ end
 
         # a tight (low-emr) φ gives a narrow, unclamped interval centered on sol
         phi3 = vcat(fill(0.999, 50), fill(0.001, 50))   # confident, half failing
-        s3, e3, l3, h3, eb3 = QMC._pfgpci_credible_interval(phi3, 0.01)
+        s3, e3, l3, h3, eb3 = QuasiMC._pfgpci_credible_interval(phi3, 0.01)
         @test isapprox(s3, 0.5; atol=1e-12)
         @test isapprox(e3, 0.001; atol=1e-9)
         @test isapprox(h3 - l3, 2 * (e3 / 0.01); atol=1e-9)  # width = 2γ, unclamped
@@ -56,8 +56,8 @@ end
         sc_above = PFGPCI(f; failure_threshold=2.0, failure_above_threshold=true)
         sc_below = PFGPCI(f; failure_threshold=2.0, failure_above_threshold=false)
         y = [1.0, 2.0, 3.0]
-        @test QMC._pfgpci_affine_tf(sc_above, y) == [-1.0, 0.0, 1.0]   # failure: y ≥ 2
-        @test QMC._pfgpci_affine_tf(sc_below, y) == [1.0, 0.0, -1.0]   # failure: y ≤ 2
+        @test QuasiMC._pfgpci_affine_tf(sc_above, y) == [-1.0, 0.0, 1.0]   # failure: y ≥ 2
+        @test QuasiMC._pfgpci_affine_tf(sc_below, y) == [1.0, 0.0, -1.0]   # failure: y ≤ 2
 
         @test_throws ArgumentError PFGPCI(f; alpha=0.0)
         @test_throws ArgumentError PFGPCI(f; alpha=1.0)
@@ -65,7 +65,7 @@ end
         @test_throws ArgumentError PFGPCI(f; n_batch=0)
     end
 
-    if QMC._pfgpci_backend_loaded()
+    if QuasiMC._pfgpci_backend_loaded()
         @testset "Ishigami probability of failure (end-to-end)" begin
             dd = DigitalNetB2(3; seed=7)
             tm = Uniform(dd; lower_bound=(-π), upper_bound=π)
@@ -88,8 +88,8 @@ end
             @test length(r.data[:solutions]) == r.data[:n_iter]
 
             # statistical agreement with a QMC reference PF = mean(y ≥ threshold)
-            ref_pts = QMC._sample_uniform_points(DigitalNetB2(3; seed=99), 2^16)
-            ref_y = QMC.evaluate_on_uniform(f, ref_pts)
+            ref_pts = QuasiMC._sample_uniform_points(DigitalNetB2(3; seed=99), 2^16)
+            ref_y = QuasiMC.evaluate_on_uniform(f, ref_pts)
             ref_pf = count(>=(0.0), ref_y) / length(ref_y)
             @test isapprox(r.solution, ref_pf; atol=0.1)     # loose: GP-backend dependent
             @test r.data[:bound_low] <= ref_pf <= r.data[:bound_high]  # CI covers truth

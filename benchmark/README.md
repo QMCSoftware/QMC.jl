@@ -1,4 +1,4 @@
-# Benchmarking QMC.jl
+# Benchmarking QuasiMC.jl
 
 This directory contains the standalone benchmark suite, the git-revision comparison tooling, and the Julia-vs-QMCPy comparison tooling.
 

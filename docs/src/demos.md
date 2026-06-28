@@ -2,12 +2,12 @@
 
 ## Quick Start
 
-Add the package with `import Pkg; Pkg.add("QMC")`, or `Pkg.develop(path=pwd())` from the repository root. Examples using `Lattice` also require `qmctoolscl` installed in a Python visible to Julia.
+Add the package with `import Pkg; Pkg.add("QuasiMC")`, or `Pkg.develop(path=pwd())` from the repository root. Examples using `Lattice` also require `qmctoolscl` installed in a Python visible to Julia.
 
 **1. IID Monte Carlo** — integrate ``\sin(\pi x_1)\cos(\pi x_2)`` over ``[0,1]^2`` (exact value = 0):
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = IIDStdUniform(2; seed=42);
 
@@ -22,7 +22,7 @@ true
 **2. QMC with a lattice rule** — Genz continuous integrand in 3D:
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = Lattice(3; randomize=true, seed=7);
 
@@ -37,7 +37,7 @@ true
 **3. Asian option pricing** — arithmetic-average call with 52 monitoring dates:
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = Lattice(52; randomize=true, seed=7);
 
@@ -73,7 +73,7 @@ The `demos/` directory currently contains 26 notebooks. Current inventory:
 - `plot_proj_function.ipynb`
 - `pricing_options.ipynb`
 - `qei_demo.ipynb`
-- `qmc.jl_intro.ipynb`
+- `quasimc.jl_intro.ipynb`
 - `quickstart.ipynb`
 - `ray_tracing.ipynb`
 - `sample_scatter_plots.ipynb`
@@ -95,10 +95,9 @@ julia --project=. test/run_notebooks.jl
 make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 ```
 
-To execute notebooks with the `qmc-1.12` kernel and overwrite output cells in place:
+To execute notebooks with the `quasimc-1.12` kernel and overwrite output cells in place:
 ```bash
-make notebook-update NOTEBOOK_KERNEL=qmc-1.12
+make notebook-update NOTEBOOK_KERNEL=quasimc-1.12
 ```
 
 Both `make notebook` and `make notebook-update` shard the runnable notebook list across `NOTEBOOK_JOBS` processes. Set `NOTEBOOK_JOBS=1` if you want a single sequential pass over all runnable notebooks.
-

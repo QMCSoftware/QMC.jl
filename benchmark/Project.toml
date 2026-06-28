@@ -4,8 +4,11 @@ JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-QMC = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
+QuasiMC = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[sources]
+QuasiMC = {path = ".."}
 
 [compat]
 BenchmarkTools = "1"

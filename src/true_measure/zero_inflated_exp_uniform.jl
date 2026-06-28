@@ -12,7 +12,7 @@ Requires `dimension(dd) == 2`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> tm = ZeroInflatedExpUniform(IIDStdUniform(2; seed=7); p_zero=0.3, rate=2.0)
 ZeroInflatedExpUniform(p_zero=0.30, rate=2.00)

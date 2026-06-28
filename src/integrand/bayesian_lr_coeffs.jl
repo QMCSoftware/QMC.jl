@@ -20,7 +20,7 @@ coefficient space via the Gaussian true measure.
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> X = [0.0 1.0; 2.0 3.0; 4.0 5.0; 6.0 7.0];
 

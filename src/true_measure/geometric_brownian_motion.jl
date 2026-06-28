@@ -17,7 +17,7 @@ where BM is a standard Brownian motion, γ is the drift, and σ² is the diffusi
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> gbm = GeometricBrownianMotion(DigitalNetB2(4; seed=7); t_final=2.0, drift=0.1, diffusion=0.2)
 GeometricBrownianMotion(d=4, S₀=1.0, γ=0.1, σ²=0.2)

@@ -1,11 +1,11 @@
 # Top-level multi-output integrand for the CubMCCLTVec vector tests (structs must
 # be defined at top level, not inside a @testset). Two outputs over U[0,1]:
 # output 1 = x₁ (mean 0.5), output 2 = x₁² (mean 1/3).
-struct _VecCLTIntegrand{TM} <: QMC.AbstractIntegrand
+struct _VecCLTIntegrand{TM} <: QuasiMC.AbstractIntegrand
     true_measure::TM
 end
-QMC.d_indv(::_VecCLTIntegrand) = (2,)
-function QMC.evaluate(f::_VecCLTIntegrand, x::AbstractMatrix)
+QuasiMC.d_indv(::_VecCLTIntegrand) = (2,)
+function QuasiMC.evaluate(f::_VecCLTIntegrand, x::AbstractMatrix)
     Y = Matrix{Float64}(undef, size(x, 1), 2)
     @views Y[:, 1] .= x[:, 1]
     @views Y[:, 2] .= x[:, 1] .^ 2
@@ -15,30 +15,30 @@ end
 # Top-level ratio integrand for the non-identity combine_fun test. Two individual
 # outputs over U[0,1]: numerator = x₁ (mean 0.5), denominator = 1 + x₁ (mean 1.5);
 # one combined output = numerator / denominator (ratio of means = 1/3).
-struct _RatioIntegrand{TM} <: QMC.AbstractIntegrand
+struct _RatioIntegrand{TM} <: QuasiMC.AbstractIntegrand
     true_measure::TM
 end
-QMC.d_indv(::_RatioIntegrand) = (2,)
-QMC.d_comb(::_RatioIntegrand) = (1,)
-function QMC.evaluate(f::_RatioIntegrand, x::AbstractMatrix)
+QuasiMC.d_indv(::_RatioIntegrand) = (2,)
+QuasiMC.d_comb(::_RatioIntegrand) = (1,)
+function QuasiMC.evaluate(f::_RatioIntegrand, x::AbstractMatrix)
     Y = Matrix{Float64}(undef, size(x, 1), 2)
     @views Y[:, 1] .= x[:, 1]
     @views Y[:, 2] .= 1.0 .+ x[:, 1]
     return Y
 end
-QMC.combine_fun(::_RatioIntegrand, sol) = [sol[1] / sol[2]]
-QMC.bound_fun(::_RatioIntegrand, lo, hi) = ([lo[1] / hi[2]], [hi[1] / lo[2]])
-QMC.dependency(::_RatioIntegrand, comb_flags) = [comb_flags[1], comb_flags[1]]
+QuasiMC.combine_fun(::_RatioIntegrand, sol) = [sol[1] / sol[2]]
+QuasiMC.bound_fun(::_RatioIntegrand, lo, hi) = ([lo[1] / hi[2]], [hi[1] / lo[2]])
+QuasiMC.dependency(::_RatioIntegrand, comb_flags) = [comb_flags[1], comb_flags[1]]
 
 # Top-level fast/slow integrand for the compute_flags freezing test. Output 1 is
 # constant (0.5, zero variance → converges at n_init and freezes); output 2 is
 # 3·x₁ (mean 1.5, needs many more samples). With per-output freezing the constant
 # output stops drawing samples far earlier than the variable one.
-struct _FreezeIntegrand{TM} <: QMC.AbstractIntegrand
+struct _FreezeIntegrand{TM} <: QuasiMC.AbstractIntegrand
     true_measure::TM
 end
-QMC.d_indv(::_FreezeIntegrand) = (2,)
-function QMC.evaluate(f::_FreezeIntegrand, x::AbstractMatrix)
+QuasiMC.d_indv(::_FreezeIntegrand) = (2,)
+function QuasiMC.evaluate(f::_FreezeIntegrand, x::AbstractMatrix)
     Y = Matrix{Float64}(undef, size(x, 1), 2)
     @views Y[:, 1] .= 0.5
     @views Y[:, 2] .= 3.0 .* x[:, 1]
@@ -85,10 +85,10 @@ end
         let
             y = [1.0, 2.0, 3.0, 4.0, 5.0]
             ycv = reshape([2.0, 4.0, 6.0, 8.0, 10.0], 5, 1)
-            beta = QMC._fit_control_variate_beta(y, ycv)
+            beta = QuasiMC._fit_control_variate_beta(y, ycv)
             @test length(beta) == 1
             @test beta[1] ≈ 0.5
-            yadj = QMC._apply_control_variates(y, ycv, [6.0], beta)
+            yadj = QuasiMC._apply_control_variates(y, ycv, [6.0], beta)
             @test all(v -> isapprox(v, 3.0; atol=1e-12), yadj)  # fully explained ⇒ constant
             @test mean(yadj) ≈ 3.0
         end
@@ -96,9 +96,9 @@ end
         let
             y = [1.5, -0.5, 2.0, 3.5, 0.0, 1.0]
             ycv = [1.0 0.2; 0.0 0.1; 2.0 0.4; 3.0 0.5; 0.5 0.0; 1.0 0.3]
-            beta = QMC._fit_control_variate_beta(y, ycv)
+            beta = QuasiMC._fit_control_variate_beta(y, ycv)
             @test beta ≈ [1.1666666666666667, 0.8333333333333331] rtol = 1e-9
-            yadj = QMC._apply_control_variates(y, ycv, [1.25, 0.30], beta)
+            yadj = QuasiMC._apply_control_variates(y, ycv, [1.25, 0.30], beta)
             @test mean(yadj) ≈ 1.2916666666666665 rtol = 1e-9
         end
 

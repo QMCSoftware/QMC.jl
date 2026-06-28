@@ -1,6 +1,6 @@
 # Documentation Build
 
-This directory contains the Documenter.jl configuration and source files for the QMC.jl documentation site.
+This directory contains the Documenter.jl configuration and source files for the QuasiMC.jl documentation site.
 
 ## Files
 

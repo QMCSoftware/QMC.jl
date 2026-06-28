@@ -1,32 +1,32 @@
 using Test
-using QMC
+using QuasiMC
 using Statistics
 
-struct InterfaceDD <: QMC.AbstractDiscreteDistribution
+struct InterfaceDD <: QuasiMC.AbstractDiscreteDistribution
     d::Int
     fill_value::Float64
 end
 
-QMC.dimension(dd::InterfaceDD) = dd.d
-QMC.gen_samples(dd::InterfaceDD, n::Int; n_start::Int=0) = fill(dd.fill_value, n, dd.d)
+QuasiMC.dimension(dd::InterfaceDD) = dd.d
+QuasiMC.gen_samples(dd::InterfaceDD, n::Int; n_start::Int=0) = fill(dd.fill_value, n, dd.d)
 
-struct InterfaceTM <: QMC.AbstractTrueMeasure
+struct InterfaceTM <: QuasiMC.AbstractTrueMeasure
     sampler::InterfaceDD
     shift::Float64
 end
 
-QMC.discrete_distribution(tm::InterfaceTM) = tm.sampler
-QMC.dimension(tm::InterfaceTM) = QMC.dimension(tm.sampler)
-QMC.transform(tm::InterfaceTM, x::AbstractMatrix) = x .+ tm.shift
+QuasiMC.discrete_distribution(tm::InterfaceTM) = tm.sampler
+QuasiMC.dimension(tm::InterfaceTM) = QuasiMC.dimension(tm.sampler)
+QuasiMC.transform(tm::InterfaceTM, x::AbstractMatrix) = x .+ tm.shift
 
-struct InterfaceIntegrand <: QMC.AbstractIntegrand
+struct InterfaceIntegrand <: QuasiMC.AbstractIntegrand
     measure::InterfaceTM
     scale::Float64
 end
 
-QMC.true_measure(f::InterfaceIntegrand) = f.measure
-QMC.dimension(f::InterfaceIntegrand) = QMC.dimension(f.measure)
-QMC.evaluate(f::InterfaceIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=2)[:]
+QuasiMC.true_measure(f::InterfaceIntegrand) = f.measure
+QuasiMC.dimension(f::InterfaceIntegrand) = QuasiMC.dimension(f.measure)
+QuasiMC.evaluate(f::InterfaceIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=2)[:]
 
 @testset "Interface Contracts" begin
     @testset "Accessor-based toy subtypes" begin
@@ -34,11 +34,11 @@ QMC.evaluate(f::InterfaceIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=
         tm = InterfaceTM(dd, 0.5)
         f = InterfaceIntegrand(tm, 2.0)
 
-        @test QMC.dimension(dd) == 3
-        @test QMC.discrete_distribution(tm) === dd
-        @test QMC.dimension(tm) == 3
-        @test QMC.true_measure(f) === tm
-        @test QMC.discrete_distribution(f) === dd
+        @test QuasiMC.dimension(dd) == 3
+        @test QuasiMC.discrete_distribution(tm) === dd
+        @test QuasiMC.dimension(tm) == 3
+        @test QuasiMC.true_measure(f) === tm
+        @test QuasiMC.discrete_distribution(f) === dd
         @test sample_and_evaluate(f, 4) == fill(4.5, 4)
     end
 
@@ -76,19 +76,19 @@ QMC.evaluate(f::InterfaceIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=
             tm_dist,
             tm_gp,
         )
-            @test QMC.discrete_distribution(tm) isa InterfaceDD
-            @test QMC.dimension(tm) == 3
+            @test QuasiMC.discrete_distribution(tm) isa InterfaceDD
+            @test QuasiMC.dimension(tm) == 3
             @test size(transform(tm, gen_samples(dd3, 4)), 2) == 3
         end
 
-        @test QMC.dimension(tm_ut) == 2
+        @test QuasiMC.dimension(tm_ut) == 2
         @test size(transform(tm_ut, gen_samples(dd2, 4))) == (4, 2)
 
-        @test QMC.dimension(tm_zieu) == 1
+        @test QuasiMC.dimension(tm_zieu) == 1
         @test size(transform(tm_zieu, gen_samples(dd2, 4))) == (4, 1)
 
-        @test QMC.dimension(tm_ar) == 2
-        @test QMC.discrete_distribution(tm_ar) isa InterfaceDD
+        @test QuasiMC.dimension(tm_ar) == 2
+        @test QuasiMC.discrete_distribution(tm_ar) isa InterfaceDD
     end
 
     @testset "Built-in integrands accept interface TMs" begin
@@ -98,17 +98,17 @@ QMC.evaluate(f::InterfaceIntegrand, x::AbstractMatrix) = f.scale .* sum(x; dims=
         tm4 = InterfaceTM(InterfaceDD(4, 0.25), 0.0)
         tm6 = InterfaceTM(InterfaceDD(6, 0.25), 0.0)
 
-        @test QMC.dimension(Keister(tm3)) == 3
-        @test QMC.dimension(Genz(tm3; kind=:continuous)) == 3
-        @test QMC.dimension(BoxIntegral(tm3; s=2.0)) == 3
-        @test QMC.dimension(Linear0(tm3)) == 3
-        @test QMC.dimension(Sin1D(tm1)) == 1
-        @test QMC.dimension(Ishigami(tm3)) == 3
-        @test QMC.dimension(Hartmann6D(tm6)) == 6
-        @test QMC.dimension(Multimodal2D(tm2)) == 2
-        @test QMC.dimension(FourBranch2D(tm2)) == 2
-        @test QMC.dimension(AsianOption(tm4)) == 4
-        @test QMC.dimension(FinancialOption(tm4; option_type=:european)) == 4
+        @test QuasiMC.dimension(Keister(tm3)) == 3
+        @test QuasiMC.dimension(Genz(tm3; kind=:continuous)) == 3
+        @test QuasiMC.dimension(BoxIntegral(tm3; s=2.0)) == 3
+        @test QuasiMC.dimension(Linear0(tm3)) == 3
+        @test QuasiMC.dimension(Sin1D(tm1)) == 1
+        @test QuasiMC.dimension(Ishigami(tm3)) == 3
+        @test QuasiMC.dimension(Hartmann6D(tm6)) == 6
+        @test QuasiMC.dimension(Multimodal2D(tm2)) == 2
+        @test QuasiMC.dimension(FourBranch2D(tm2)) == 2
+        @test QuasiMC.dimension(AsianOption(tm4)) == 4
+        @test QuasiMC.dimension(FinancialOption(tm4; option_type=:european)) == 4
         @test FinancialOptionML(InterfaceDD(8, 0.25); d_coarsest=2).nb_of_levels == 3
     end
 end

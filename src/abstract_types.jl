@@ -21,7 +21,7 @@ multilevel criteria expose `rmse_tol` or `target_tol`. Throws if the criterion
 has no field for a requested tolerance. Returns `sc`.
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = IIDStdUniform(3; seed=42);
 
@@ -101,7 +101,7 @@ function dimension end
     hasfield(typeof(dd), :dimension) ? getfield(dd, :dimension) :
     throw(
         ArgumentError(
-            "dimension(::$(typeof(dd))) is not defined; add a `dimension` field or overload `QMC.dimension`",
+            "dimension(::$(typeof(dd))) is not defined; add a `dimension` field or overload `QuasiMC.dimension`",
         ),
     )
 
@@ -124,7 +124,7 @@ function discrete_distribution end
     hasfield(typeof(tm), :dd) ? getfield(tm, :dd) :
     throw(
         ArgumentError(
-            "discrete_distribution(::$(typeof(tm))) is not defined; add a `dd` field or overload `QMC.discrete_distribution`",
+            "discrete_distribution(::$(typeof(tm))) is not defined; add a `dd` field or overload `QuasiMC.discrete_distribution`",
         ),
     )
 
@@ -142,7 +142,7 @@ function true_measure end
     hasfield(typeof(f), :true_measure) ? getfield(f, :true_measure) :
     throw(
         ArgumentError(
-            "true_measure(::$(typeof(f))) is not defined; add a `true_measure` field or overload `QMC.true_measure`",
+            "true_measure(::$(typeof(f))) is not defined; add a `true_measure` field or overload `QuasiMC.true_measure`",
         ),
     )
 
@@ -216,7 +216,7 @@ function evaluate end
 # integrand whose `evaluate` returns an `n × s₁ × … × sₖ` array overrides
 # `d_indv` to return `(s₁, …, sₖ)`; the stopping criteria can then loop over the
 # individual outputs, apply `bound_fun`, and report `combine_fun` of the result.
-# These are intentionally unexported (access as `QMC.d_indv`, etc.) while the
+# These are intentionally unexported (access as `QuasiMC.d_indv`, etc.) while the
 # interface stabilizes through the staged roll-out.
 
 """

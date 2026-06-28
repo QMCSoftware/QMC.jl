@@ -1,10 +1,10 @@
-# Python dependencies required by QMC.jl's tests, docs, and notebooks.
+# Python dependencies required by QuasiMC.jl's tests, docs, and notebooks.
 #
-# QMC.jl's Lattice, DigitalNetB2, and Halton generators call into the compiled
+# QuasiMC.jl's Lattice, DigitalNetB2, and Halton generators call into the compiled
 # C library shipped inside the `qmctoolscl` Python package (loaded at runtime
 # via Libdl). The exact build matters: different qmctoolscl releases export
 # different symbols (e.g. the fused `dnb2_gen_gray_float` kernel), which selects
-# different code paths in QMC.jl. Pinning keeps CI reproducible so a silent
+# different code paths in QuasiMC.jl. Pinning keeps CI reproducible so a silent
 # upstream change can't flip the active path and break a build without a code
 # change of our own.
 #

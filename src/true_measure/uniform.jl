@@ -13,14 +13,14 @@ The Jacobian factor is `prod(upper_bound - lower_bound)`.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> tm = Uniform(DigitalNetB2(2; seed=7); lower_bound=[0.0, 0.5], upper_bound=[2.0, 3.0])
 Uniform(d=2, lower=[0.0, 0.5], upper=[2.0, 3.0])
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = IIDStdUniform(3; seed=42);
 
@@ -35,7 +35,7 @@ julia> round.(transform(tm, x); digits=6)
  -1.74206   -1.78592   -1.42564
  -0.088629  -0.787628  -1.16509
 
-julia> QMC.jacobian(tm)
+julia> QuasiMC.jacobian(tm)
 64.0
 ```
 """

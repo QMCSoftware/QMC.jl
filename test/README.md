@@ -1,6 +1,6 @@
 # Test Suite
 
-This directory contains the automated test suite for QMC.jl.
+This directory contains the automated test suite for QuasiMC.jl.
 
 ## Entry points
 
@@ -44,10 +44,10 @@ julia --project=. test/run_notebooks.jl
 make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1
 
 # Execute notebooks with Jupyter and overwrite output cells in place
-make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=qmc-1.12
+make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=quasimc-1.12
 
 # Update a single notebook in place
-make notebook-update-quickstart NOTEBOOK_KERNEL=qmc-1.12
+make notebook-update-quickstart NOTEBOOK_KERNEL=quasimc-1.12
 ```
 
 `make coverage` also processes the raw `*.cov` files locally, writes `lcov.info`, and prints a source-coverage summary for `src/`.

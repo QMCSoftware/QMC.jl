@@ -30,7 +30,7 @@ The up/down direction is determined automatically from `start_price` vs `barrier
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = FinancialOption(
            GeometricBrownianMotion(DigitalNetB2(3; seed=7); t_final=1.0, drift=0.0, diffusion=0.25, initial_value=30.0);
@@ -50,7 +50,7 @@ true
 ```
 
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = FinancialOption(
            GeometricBrownianMotion(DigitalNetB2(64; seed=7); t_final=1.0, drift=0.0, diffusion=0.25, initial_value=30.0);

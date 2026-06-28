@@ -13,7 +13,7 @@ Each dimension is independently transformed through the triangular PPF.
 
 # Examples
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = DigitalNetB2(2; seed=7);
 

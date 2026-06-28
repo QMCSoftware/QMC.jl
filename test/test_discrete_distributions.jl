@@ -316,18 +316,18 @@
             gen_samples(DigitalNetB2(3; randomize="NUS", seed=7, replications=2, alpha=2), 8)
         @test size(x_alpha_nus_rep) == (2, 8, 3)
         @test all(0.0 .<= x_alpha_nus_rep .< 1.0)
-        if QMC._HAS_DNB2_FUSED[]
-            old_fused = QMC._HAS_DNB2_FUSED[]
+        if QuasiMC._HAS_DNB2_FUSED[]
+            old_fused = QuasiMC._HAS_DNB2_FUSED[]
             try
-                QMC._HAS_DNB2_FUSED[] = true
+                QuasiMC._HAS_DNB2_FUSED[] = true
                 x_alpha_fused =
                     gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
-                QMC._HAS_DNB2_FUSED[] = false
+                QuasiMC._HAS_DNB2_FUSED[] = false
                 x_alpha_unfused =
                     gen_samples(DigitalNetB2(3; randomize="LMS_DS", seed=7, alpha=2), 8)
                 @test x_alpha_fused ≈ x_alpha_unfused
             finally
-                QMC._HAS_DNB2_FUSED[] = old_fused
+                QuasiMC._HAS_DNB2_FUSED[] = old_fused
             end
         end
 

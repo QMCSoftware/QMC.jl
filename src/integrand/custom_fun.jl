@@ -6,7 +6,7 @@ of transformed sample points (n×d). Returns a vector of length n.
 
 # Examples
 ```jldoctest
-julia> using QMC, Statistics
+julia> using QuasiMC, Statistics
 
 julia> f = CustomFun(
            Gaussian(DigitalNetB2(2; seed=7); mean=[1, 2]),
@@ -21,7 +21,7 @@ julia> round(mean(y); digits=4)
 ```
 
 ```jldoctest
-julia> using QMC
+julia> using QuasiMC
 
 julia> dd = IIDStdUniform(2; seed=7);
 

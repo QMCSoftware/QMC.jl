@@ -1,4 +1,4 @@
-module QMC
+module QuasiMC
 
 using LinearAlgebra,
     Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf, Downloads
