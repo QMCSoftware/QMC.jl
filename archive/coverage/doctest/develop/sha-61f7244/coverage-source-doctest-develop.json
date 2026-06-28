@@ -1,0 +1,12 @@
+{
+  "branch": "develop",
+  "scope": "doctest",
+  "label": "Doctest Coverage",
+  "generated_at": "2026-06-28T13:34:12Z",
+  "coverage_pct": 80.778709,
+  "covered_lines": 3278,
+  "executable_lines": 4058,
+  "source_files": 70,
+  "lcov_filename": "lcov.info",
+  "badge_file": "badges/coverage-doctest-develop.json"
+}
