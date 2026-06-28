@@ -46,11 +46,22 @@ function build_unix_library()
     compiler = unix_compiler()
     output = joinpath(usr_lib_dir, unix_library_name())
     sources = source_files()
+    # -march=native: emit instructions for the host CPU (enables AVX2/AVX-512
+    #   autovectorisation where available). The resulting library is not portable
+    #   to other machines, which is fine for a locally staged jll.
+    # -ffast-math: permits the compiler to reorder and approximate floating-point
+    #   operations (non-associative transforms, no-NaN/Inf assumptions). The
+    #   qmctoolscl kernels are dominated by integer Gray-code arithmetic and
+    #   bit-level float reconstruction, so in practice this flag is safe here,
+    #   but it must be revisited if future kernel versions add numerically
+    #   sensitive float reductions.
     cmd = Cmd(
         [
             compiler,
             unix_linker_flag(),
             "-O3",
+            "-march=native",
+            "-ffast-math",
             "-fPIC",
             "-std=c99",
             "-I",

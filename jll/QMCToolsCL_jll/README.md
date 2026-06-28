@@ -77,7 +77,7 @@ Four places reference the version and must all agree:
 
 | File | What to change |
 |---|---|
-| `jll/QMCToolsCL_jll/deps/build.jl` | `QMCTOOLSCL_VERSION = "X.Y.Z"` constant and the `upstream/qmctoolscl-X.Y.Z/...` path in `source_root` |
+| `jll/QMCToolsCL_jll/deps/build.jl` | `QMCTOOLSCL_VERSION = "X.Y.Z"` constant and the `upstream/qmctoolscl-X.Y.Z/...` path in `source_root`; keep `-march=native` and `-ffast-math` unless the new release adds numerically sensitive float reductions |
 | `jll/QMCToolsCL_jll/src/QMCToolsCL_jll.jl` | `qmctoolscl_version = "X.Y.Z"` fallback constant |
 | `jll/QMCToolsCL_jll/Project.toml` | `version = "X.Y.Z+0"` |
 | `Project.toml` (repo root) | `[compat] QMCToolsCL_jll = "X.Y.Z"` |
