@@ -240,9 +240,9 @@ jobs:
       - name: Publish benchmark coverage badge
         env:
           BADGE_BRANCH: benchmark-badges
-          BADGE_DIR: coverage_badges
+          BADGE_DIR: ${{ github.workspace }}/coverage_badges
           COVERAGE_SCOPE: bench
-          LCOV_PATH: lcov.info
+          LCOV_PATH: ${{ github.workspace }}/lcov.info
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |

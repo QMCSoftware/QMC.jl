@@ -14,27 +14,38 @@ set -euo pipefail
 : "${GITHUB_RUN_NUMBER:?GITHUB_RUN_NUMBER is required}"
 : "${GITHUB_RUN_ATTEMPT:?GITHUB_RUN_ATTEMPT is required}"
 
+abspath() {
+  case "$1" in
+    /*) printf '%s\n' "$1" ;;
+    *) printf '%s/%s\n' "$PWD" "$1" ;;
+  esac
+}
+
 scope_slug="$(printf '%s' "$COVERAGE_SCOPE" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g')"
 branch_slug="$(printf '%s' "$GITHUB_REF_NAME" | sed 's#/#-#g')"
 badge_file="coverage-${scope_slug}-${branch_slug}.json"
 source_manifest_file="coverage-source-${scope_slug}-${branch_slug}.json"
+badge_dir_abs="$(abspath "$BADGE_DIR")"
+lcov_path_abs="$(abspath "$LCOV_PATH")"
 
-test -f "$BADGE_DIR/$badge_file"
-test -f "$BADGE_DIR/$source_manifest_file"
-test -f "$LCOV_PATH"
+test -f "$badge_dir_abs/$badge_file"
+test -f "$badge_dir_abs/$source_manifest_file"
+test -f "$lcov_path_abs"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
 write_badge_tree() {
   mkdir -p badges
-  cp "$BADGE_DIR/$badge_file" "badges/$badge_file"
-  cp "$BADGE_DIR/$source_manifest_file" "badges/$source_manifest_file"
+  cp "$badge_dir_abs/$badge_file" "badges/$badge_file"
+  cp "$badge_dir_abs/$source_manifest_file" "badges/$source_manifest_file"
+  test -f "badges/$badge_file"
+  test -f "badges/$source_manifest_file"
 
   snapshot_dir="archive/coverage/${scope_slug}/${GITHUB_REF_NAME}/${COVERAGE_LABEL}"
   mkdir -p "$snapshot_dir"
-  cp "$LCOV_PATH" "$snapshot_dir/lcov.info"
-  cp "$BADGE_DIR/$source_manifest_file" "$snapshot_dir/"
+  cp "$lcov_path_abs" "$snapshot_dir/lcov.info"
+  cp "$badge_dir_abs/$source_manifest_file" "$snapshot_dir/"
 
   cat > "$snapshot_dir/manifest.json" <<EOF
 {
