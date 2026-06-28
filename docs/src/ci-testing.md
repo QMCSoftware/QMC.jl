@@ -19,7 +19,7 @@ QuasiMC.jl uses GitHub Actions for continuous integration and benchmark collecti
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - The repository also has a fast fixture-based QMCPy release-parity gate (`make release-parity`) that complements the benchmark parity checks. It lives in the unit-test tree rather than the benchmark workflow so curated parity failures are easier to see and reproduce locally.
 - Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
-- Coverage badges are served by Codecov flag badges (`unit`, `doctest`, `notebook`, `bench`). The custom `benchmark-badges` branch is reserved for benchmark speed/memory badges.
+- Coverage badges are served by repo-hosted Shields JSON on the `benchmark-badges` branch (`unit`, `doctest`, `notebook`, `bench`). Codecov uploads are retained as a best-effort secondary sink, but the repository README no longer depends on live Codecov badge resolution.
 - The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
 - On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
 - `concurrency` cancels superseded runs, and the CI and benchmarking groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
@@ -49,7 +49,7 @@ Pushes to `develop` or `master`, pull requests into those branches, and manual d
 - macOS on Julia 1.12.
 - Windows on Julia 1.12.
 - Linux on `nightly` with `continue-on-error: true` (see [The `nightly` Julia version](#the-nightly-julia-version) below).
-- The Linux Julia 1.11 lane is the unit-coverage lane. On `develop`/`master` push/manual runs it executes `make coverage`, uploads `lcov.info`, and updates the develop/master Codecov `unit` flag badge. On pull requests, that same lane falls back to plain test execution so coverage stays branch-only.
+- The Linux Julia 1.11 lane is the unit-coverage lane. On `develop`/`master` push/manual runs it executes `make coverage`, uploads `lcov.info`, and publishes the develop/master repo-hosted `unit` coverage badge. On pull requests, that same lane falls back to plain test execution so coverage stays branch-only.
 - Linux Julia 1.11 and 1.12 still run `make doctest`, so the full mode subsumes the previous fast-workflow doctest coverage of current stable Julia versions.
 - Non-Linux lanes run plain `Pkg.test()` rather than the Linux sharded `make test` wrapper.
 
@@ -82,7 +82,7 @@ The benchmark workflow is separate from the test workflows.
 - Those benchmark parity checks are timing-artifact-driven. For a smaller release-style regression gate that does not require running the full benchmark harness, use `make release-parity`, which replays a checked-in QMCPy 2.3 fixture from the unit-test tree.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
 - Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
-- Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` Codecov flag covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
+- Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` coverage badge covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
 - When `BENCH_COVERAGE=1`, the benchmark harness also runs a small coverage-only probe pass over uncovered `src/` branches such as control variates, additional `FinancialOption` variants, `DigitalNetB2` validation paths, and lattice resume/diagnostics flows. Those probes are coverage-only and are not part of the published timing or memory badges.
 - The published Julia-vs-QMCPy report now exposes the headline weighted time ratio, a 95% within-run bootstrap interval, `StudentT` split summaries, grouped timing totals for `gen_samples` / `transform` / `evaluate` / end-to-end `integrate`, and approximate memory ratios with explicit provenance manifests.
 
@@ -94,7 +94,7 @@ Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 - Also triggered on pull requests into `develop`/`master` when `docs/`, `src/`, `Project.toml`, `Manifest.toml`, `Makefile`, `test/requirements.txt`, or the workflow file itself changes.
 - The documentation job uses `julia --project=docs` to resolve the docs-specific dependency set and deploys via `deploydocs()` only on push events.
 - The demos job remains push/manual only and does not run on pull requests.
-- On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and update dedicated Codecov `doctest`/`notebook` flag badges.
+- On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and publish dedicated repo-hosted `doctest`/`notebook` coverage badges.
 
 ## Install Test (`install-test.yml`)
 
@@ -211,12 +211,11 @@ make bench-all REV=HEAD~1 BENCH_BLAS_THREADS=2
 
 QuasiMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
 
-- The repository README `Overall Coverage` badge points at Codecov's unflagged branch report for `develop`.
-- `Overall Coverage` is the combined `src/` coverage for that branch commit across all uploaded protected-branch reports. It reflects lines hit by at least one coverage-producing workflow.
-- `Overall Coverage` is not tied to a single workflow and is not the arithmetic mean of the `unit`, `doctest`, `notebook`, and `bench` coverage badges.
-- The Linux Julia 1.11 lane in `ci-full.yml` runs `make coverage` for `develop` and `master`, uploads `lcov.info` to Codecov, and updates the `unit` flag badge.
-- `doc_demo.yml` updates separate develop/master Codecov flag badges for `make doctest-coverage` and notebook coverage.
-- `benchmarking.yml` updates the develop/master Codecov `bench` flag badge from `make bench-all-coverage`, which exercises the standalone benchmark suite together with the Julia-vs-Julia and Julia-vs-QMCPy comparison flows and the `BENCH_COVERAGE=1` probe pass, while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
+- The repository README publishes four scope-specific coverage badges from the `benchmark-badges` branch: `unit`, `doctest`, `notebook`, and `bench`.
+- No merged `Overall Coverage` badge is published. The protected-branch coverage workflows intentionally exercise different slices of `src/`, so the public badges remain scope-specific rather than pretending to be a single aggregate number.
+- The Linux Julia 1.11 lane in `ci-full.yml` runs `make coverage` for `develop` and `master`, uploads `lcov.info` to Codecov, and publishes the `unit` badge.
+- `doc_demo.yml` publishes separate develop/master `doctest` and `notebook` badges for `make doctest-coverage` and notebook coverage, while still attempting Codecov uploads.
+- `benchmarking.yml` publishes the develop/master `bench` badge from `make bench-all-coverage`, which exercises the standalone benchmark suite together with the Julia-vs-Julia and Julia-vs-QMCPy comparison flows and the `BENCH_COVERAGE=1` probe pass, while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
 - Each coverage-producing workflow also uploads its `lcov.info` as a GitHub Actions artifact.
 
 The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.

@@ -226,6 +226,8 @@ When reading the weighted ratios in `compare_python*.md`:
 
 - ratio `< 1` means the Python metric is smaller than the Julia total
 - ratio `> 1` means the Python metric is larger than the Julia total
+- for `weighted approximate RSS delta ratio` specifically, this is retained
+  process RSS after one warmed call rather than a direct allocation metric
 
 If one memory ratio is `< 1` and the other is `> 1`, that is normal rather than contradictory. It usually means Python allocated more temporary memory during the call but released most of it afterward, or conversely retained more process memory even though its traced Python-level peak was modest. Use:
 

@@ -104,9 +104,9 @@ jobs:
           else
             git checkout --orphan "$BADGE_BRANCH"
           fi
-          rm -rf badges
           mkdir -p archive/${{ github.ref_name }}/${BENCH_LABEL}
-          cp -R "$GITHUB_WORKSPACE/benchmark/results/badges" .
+          mkdir -p badges
+          cp -R "$GITHUB_WORKSPACE/benchmark/results/badges/." badges/
           snapshot_dir="archive/${{ github.ref_name }}/${BENCH_LABEL}"
           cp "$GITHUB_WORKSPACE/benchmark/results/${BENCH_LABEL}.json" "$snapshot_dir/"
           cp "$GITHUB_WORKSPACE/benchmark/results/${BENCH_LABEL}_memory.json" "$snapshot_dir/"
@@ -148,9 +148,10 @@ jobs:
           }
           EOF
           cat > README.md <<'EOF'
-          Benchmark badge JSON and archived source snapshots for Shields.io.
+          Benchmark and coverage badge JSON plus archived source snapshots for Shields.io.
           Latest badge source manifests live under `badges/`.
-          Historical snapshots of the exact benchmark result files used for each badge update live under `archive/<branch>/<label>/`.
+          Historical benchmark snapshots live under `archive/<branch>/<label>/`.
+          Historical coverage snapshots live under `archive/coverage/<scope>/<branch>/<label>/`.
           EOF
           git add badges archive README.md
           git commit -m "Update benchmark badges for ${GITHUB_SHA}" || exit 0
@@ -232,3 +233,18 @@ jobs:
           flags: bench
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+      - name: Generate benchmark coverage badge
+        run: julia --project=. devtools/generate_coverage_badges.jl lcov.info bench "${{ github.ref_name }}" coverage_badges
+
+      - name: Publish benchmark coverage badge
+        env:
+          BADGE_BRANCH: benchmark-badges
+          BADGE_DIR: coverage_badges
+          COVERAGE_SCOPE: bench
+          LCOV_PATH: lcov.info
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          export COVERAGE_LABEL="sha-${GITHUB_SHA::7}"
+          bash devtools/publish_coverage_badges.sh
