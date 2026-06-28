@@ -1,0 +1,20 @@
+{
+    "time_ratio": 4.369033382413124,
+    "rss_ratio": null,
+    "py_generated_at": "2026-06-28T08:42:05",
+    "time_ratio_student_t": 100.43100069723288,
+    "jl_generated_at": "2026-06-28T08:30:23",
+    "py_file_mtime": "2026-06-28T08:42:05",
+    "total_rows": 111,
+    "artifact_skew_seconds": 330.0412392616272,
+    "n_flagged_accuracy_rows": 0,
+    "py_label": "sha-aeae336",
+    "time_ratio_excluding_student_t": 3.9120165881333775,
+    "peak_rows": 111,
+    "matched_rows": 111,
+    "jl_label": "sha-aeae336",
+    "rss_rows": 111,
+    "report_generated_at": "2026-06-28T08:42:10",
+    "peak_ratio": 4.376638830542354,
+    "jl_file_mtime": "2026-06-28T08:36:35"
+}
