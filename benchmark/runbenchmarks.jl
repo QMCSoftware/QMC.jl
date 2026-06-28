@@ -42,6 +42,7 @@ function benchmark_metadata(label::AbstractString)
         "label" => label,
         "generated_at" => generated_at,
         "julia_version" => string(VERSION),
+        "coverage_mode" => BENCH_COVERAGE,
         "blas_threads" => BLAS.get_num_threads(),
         "julia_threads" => Threads.nthreads(),
         "benchmark_config" => Dict(
@@ -61,6 +62,11 @@ current_rss_kib() =
     end
 
 function measure_rss_delta_kib(bench::BenchmarkTools.Benchmark)
+    # The coverage workflows use benchmark runs as a correctness/coverage harness,
+    # not as a memory badge source. On Julia 1.12, forcing repeated GC sweeps
+    # around coverage-instrumented benchmark samples can segfault in CI, so skip
+    # the RSS sidecar in that mode.
+    BENCH_COVERAGE && return nothing
     # Warm once so retained-memory deltas reflect steady-state behavior rather
     # than first-call compilation/cache effects inside the benchmarkable body.
     # NOTE: `seconds` is a per-benchmark time limit and BenchmarkTools requires it
@@ -78,6 +84,9 @@ function measure_rss_delta_kib(bench::BenchmarkTools.Benchmark)
     (rss_before === nothing || rss_after === nothing) && return nothing
     return max(rss_after - rss_before, 0.0)
 end
+
+run_leaf(bench::BenchmarkTools.Benchmark) =
+    BENCH_COVERAGE ? run(bench; gctrial=false, gcsample=false) : run(bench)
 
 function collect_rss_deltas(group::BenchmarkTools.BenchmarkGroup)
     out = Dict{String, Any}()
@@ -145,7 +154,7 @@ function run_suite(suite)
             i += 1
             @printf("(%d/%d) benchmarking %s / %s ...\n", i, total, g, name)
             t0 = time()
-            results[g][name] = run(suite[g][name])
+            results[g][name] = run_leaf(suite[g][name])
             @printf("  done (took %.3f seconds)\n", time() - t0)
         end
     end
@@ -288,6 +297,8 @@ println("="^70)
 println(
     "Benchmark config: BLAS threads=$(BLAS.get_num_threads()), integrate samples=$(INTEGRATE_BENCH_SAMPLES), StudentT samples=$(STUDENT_T_BENCH_SAMPLES)",
 )
+BENCH_COVERAGE &&
+    println("Coverage mode: disabling BenchmarkTools GC scrubs and RSS sidecar probes")
 
 results = run_suite(SUITE)
 julia_memory = collect_rss_deltas(SUITE)
@@ -303,7 +314,8 @@ for group_name in sort(collect(keys(results)))
     group = results[group_name]
     for bench_name in sort(collect(keys(group)))
         med = median(group[bench_name])
-        rss_entry = julia_memory[string(group_name)][string(bench_name)]
+        rss_group = get(julia_memory, string(group_name), Dict{String, Any}())
+        rss_entry = get(rss_group, string(bench_name), Dict{String, Any}())
         rss_delta = haskey(rss_entry, "rss_delta_kib") ? rss_entry["rss_delta_kib"] : nothing
         rss_txt = rss_delta === nothing ? "n/a" : @sprintf("%.1f KiB", rss_delta)
         @printf(
