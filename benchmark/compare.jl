@@ -26,11 +26,10 @@ Pkg.activate(@__DIR__)
 # benchmark/Project.toml pins QuasiMC via `[sources] QuasiMC = { path = ".." }`,
 # so this environment resolves against the repository root without rewriting the
 # project/manifest to an absolute local path.
-let deps = keys(Pkg.project().dependencies)
-    "BenchmarkTools" in deps || Pkg.add("BenchmarkTools")
-    "PkgBenchmark" in deps || Pkg.add("PkgBenchmark")
-end
+Pkg.instantiate()
 # Keep the benchmark manifest in sync when the local path package changes deps.
+# On a fresh CI runner, `instantiate()` must happen before `resolve()` so Pkg can
+# materialize a registry checkout before it tries to re-resolve this environment.
 Pkg.resolve()
 Pkg.instantiate()
 
