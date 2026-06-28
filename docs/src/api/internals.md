@@ -13,6 +13,6 @@ The default methods intentionally bridge existing storage conventions into the i
 That compatibility layer keeps existing concrete types simple while allowing new subtype authors to define method-based interfaces instead of copying the same field names.
 
 ```@autodocs
-Modules = [QMC]
+Modules = [QuasiMC]
 Public = false
 ```
