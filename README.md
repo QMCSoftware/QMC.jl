@@ -1,3 +1,4 @@
-Benchmark badge JSON and archived source snapshots for Shields.io.
+Benchmark and coverage badge JSON plus archived source snapshots for Shields.io.
 Latest badge source manifests live under `badges/`.
-Historical snapshots of the exact benchmark result files used for each badge update live under `archive/<branch>/<label>/`.
+Historical benchmark snapshots live under `archive/<branch>/<label>/`.
+Historical coverage snapshots live under `archive/coverage/<scope>/<branch>/<label>/`.

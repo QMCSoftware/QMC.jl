@@ -1,8 +1,8 @@
 {
   "branch": "develop",
   "scope": "unit",
-  "label": "sha-04bf604",
-  "commit_sha": "04bf6041a72228f223f67629acef86d5a11fbb73",
-  "snapshot_dir": "archive/coverage/unit/develop/sha-04bf604",
+  "label": "sha-7af4839",
+  "commit_sha": "7af483956642f91878f990c058faee0a15c5cdec",
+  "snapshot_dir": "archive/coverage/unit/develop/sha-7af4839",
   "source_manifest": "badges/coverage-source-unit-develop.json"
 }
