@@ -100,7 +100,7 @@ See the [contributing guidelines](CONTRIBUTING.md) for the full developer setup,
 If you find QuasiMC.jl helpful in your work, please cite:
 
 ```bibtex
-@misc{qmcjl2026,
+@misc{quasimcjl2026,
   author = {Sou-Cheng T. Choi and Fred J. Hickernell and Aleksei G. Sorokin and contributors},
   title  = {{QuasiMC.jl}: Quasi-Monte Carlo Community Software in Julia},
   year   = {2026},
