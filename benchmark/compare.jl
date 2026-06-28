@@ -21,17 +21,14 @@
 # package source — an old or broken benchmarks.jl committed at the revision does
 # not affect the comparison.
 
-using Pkg
-Pkg.activate(@__DIR__)
+using Pkg, TOML
+include(joinpath(@__DIR__, "bootstrap_env.jl"))
+using .BenchmarkEnvBootstrap: bootstrap_benchmark_env
+
 # benchmark/Project.toml pins QuasiMC via `[sources] QuasiMC = { path = ".." }`,
 # so this environment resolves against the repository root without rewriting the
 # project/manifest to an absolute local path.
-Pkg.instantiate()
-# Keep the benchmark manifest in sync when the local path package changes deps.
-# On a fresh CI runner, `instantiate()` must happen before `resolve()` so Pkg can
-# materialize a registry checkout before it tries to re-resolve this environment.
-Pkg.resolve()
-Pkg.instantiate()
+bootstrap_benchmark_env(@__DIR__)
 
 using PkgBenchmark
 using BenchmarkTools: median
@@ -222,8 +219,7 @@ end
 function with_benchmark_env(project_dir::AbstractString, pkgdir::AbstractString, f::Function)
     original_project = Base.active_project()
     try
-        Pkg.activate(project_dir; io=devnull)
-        Pkg.instantiate(; io=devnull)
+        bootstrap_benchmark_env(project_dir; io=devnull)
         return f()
     finally
         if original_project !== nothing
@@ -240,6 +236,23 @@ function snapshot_package_tree(src::AbstractString)
         cp(entry, joinpath(dest, basename(entry)); force=true)
     end
     return dest
+end
+
+"Copy [sources] path entries from `src_benchmark_dir` into `dst_benchmark_dir` when they are absent from the destination (e.g. a jll added after the baseline revision)."
+function _copy_missing_sources(
+    src_benchmark_dir::AbstractString,
+    dst_benchmark_dir::AbstractString,
+)
+    proj_path = joinpath(src_benchmark_dir, "Project.toml")
+    isfile(proj_path) || return
+    sources = get(TOML.parsefile(proj_path), "sources", Dict{String, Any}())
+    for (_, spec) in sources
+        rel = get(spec, "path", nothing)
+        rel === nothing && continue
+        src = normpath(joinpath(src_benchmark_dir, rel))
+        dst = normpath(joinpath(dst_benchmark_dir, rel))
+        isdir(src) && !ispath(dst) && (mkpath(dirname(dst)); cp(src, dst; force=true))
+    end
 end
 
 "Benchmark a committed `rev` in a throwaway git worktree, leaving PKG untouched.
@@ -264,6 +277,9 @@ function bench_revision(rev::AbstractString)
             src = joinpath(PKG, "benchmark", fname)
             isfile(src) && cp(src, joinpath(wt, "benchmark", fname); force=true)
         end
+        # Copy any local [sources] packages missing from the baseline worktree
+        # (e.g. a jll directory added after the baseline revision was committed).
+        _copy_missing_sources(joinpath(PKG, "benchmark"), joinpath(wt, "benchmark"))
 
         snap = snapshot_package_tree(wt)
         try

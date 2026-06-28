@@ -1,0 +1,12 @@
+name = "QMCToolsCL_jll"
+uuid = "fbf80111-92a0-47de-bc4b-bc3a97bf3ada"
+license = "Apache-2.0"
+version = "1.2.3+0"
+authors = ["QMCSoftware contributors"]
+
+[deps]
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+
+[compat]
+Libdl = "1.10"
+julia = "1.10"

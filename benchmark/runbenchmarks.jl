@@ -14,16 +14,13 @@
 #   judge(median(new), median(base))   # time + memory ratios per benchmark
 
 using Pkg
-Pkg.activate(@__DIR__)
+include(joinpath(@__DIR__, "bootstrap_env.jl"))
+using .BenchmarkEnvBootstrap: bootstrap_benchmark_env
+
 # benchmark/Project.toml pins QuasiMC via `[sources] QuasiMC = { path = ".." }`,
 # so this environment resolves against the repository root without rewriting the
 # project/manifest to an absolute local path.
-Pkg.instantiate()
-# Keep the benchmark manifest in sync when the local path package changes deps.
-# On a fresh CI runner, `instantiate()` must happen before `resolve()` so Pkg can
-# materialize a registry checkout before it tries to re-resolve this environment.
-Pkg.resolve()
-Pkg.instantiate()
+bootstrap_benchmark_env(@__DIR__)
 
 using BenchmarkTools
 using Dates

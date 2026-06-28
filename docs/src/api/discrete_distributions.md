@@ -1,6 +1,9 @@
 # Discrete Distributions
 
-`IIDStdUniform` is Julia-native. `Lattice`, `DigitalNetB2`, and `Halton` currently require the QMCToolsCL shared library, so Python is a current runtime dependency for those generators.
+`IIDStdUniform` is Julia-native. `Lattice`, `DigitalNetB2`, and `Halton`
+currently require the QMCToolsCL shared library shipped with QuasiMC's staged
+`QMCToolsCL_jll` dependency, so no Python setup is required for those
+generators.
 
 ## Abstract Type
 

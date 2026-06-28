@@ -66,17 +66,8 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-          cache: 'pip'
-          cache-dependency-path: test/requirements.txt
-
-      - name: Install qmctoolscl
-        run: pip install -r test/requirements.txt
-
       - name: Install dependencies
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
 
       - name: Show Julia environment info
         if: ${{ matrix.julia-version == 'nightly' }}

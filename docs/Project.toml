@@ -1,7 +1,9 @@
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+QMCToolsCL_jll = "fbf80111-92a0-47de-bc4b-bc3a97bf3ada"
 QuasiMC = "b8e7c4a1-3f5d-4e9a-b2c6-1a8d9f0e7c3b"
 
 [sources]
+QMCToolsCL_jll = {path = "../jll/QMCToolsCL_jll"}
 QuasiMC = {path = ".."}

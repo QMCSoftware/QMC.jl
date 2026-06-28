@@ -19,7 +19,7 @@ Every tagged release must satisfy all of the following:
 - The benchmark workflow has produced an archived report for the release commit.
 - The quickstart example and core examples are reproducible from the tagged artifact.
 - `Project.toml` version matches the intended git tag exactly.
-- Python runtime requirements needed for QMCToolsCL-backed generators are documented with pinned versions.
+- The packaged QMCToolsCL backend version and refresh procedure are documented, including the staged Windows binary source.
 
 Additional gates by milestone:
 
@@ -33,7 +33,7 @@ Additional gates by milestone:
 
 - At least one public GitHub release has been published.
 - A versioned install command using `Pkg.add(..., rev="vX.Y.Z")` is documented.
-- Release notes summarize major features, known limitations, and required Python setup.
+- Release notes summarize major features, known limitations, and the current staged-vs-published `QMCToolsCL_jll` status.
 - Benchmark summaries for time and memory versus QMCPy are archived with the release.
 
 ### `v1.0.0` stable public release
@@ -54,7 +54,8 @@ QuasiMC.jl should decide before `v0.2.0` whether it will be registered in Julia 
 1. Select the release commit on `develop`.
 2. Ensure the version in `Project.toml` matches the intended tag.
 3. Run the required validation locally or in CI:
-   - `julia --project=. -e 'using Pkg; Pkg.test()'`
+   - `julia --project=. -e 'using Pkg; Pkg.build("QMCToolsCL_jll"); Pkg.test()'`
+   - `julia --project=. -e 'using QuasiMC; println(size(gen_samples(Lattice(3; seed=7), 4))); println(size(gen_samples(DigitalNetB2(3; seed=7), 4))); println(size(gen_samples(Halton(3; seed=7), 4)))'`
    - `make doctest`
    - `make notebook NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1`
    - `julia --project=docs docs/make.jl`
@@ -68,4 +69,5 @@ QuasiMC.jl should decide before `v0.2.0` whether it will be registered in Julia 
 
 - A branch name such as `develop` is not a reproducible public artifact.
 - A release tag is the minimum artifact that papers, courses, and benchmark reports should cite.
-- When the package depends on external Python components such as `qmctoolscl`, release notes should record the pinned Python requirements file used for validation.
+- Core QuasiMC runtime no longer depends on Python. Only QMCPy benchmark and notebook-frontend workflows should mention pinned Python requirements.
+- Until `QMCToolsCL_jll` is published outside this repository, release notes should state that the current package uses a staged in-repo binary package and should record the exact upstream C-source snapshot plus the Windows wheel/binary provenance used for validation.

@@ -9,7 +9,7 @@ QuasiMC.jl uses GitHub Actions for continuous integration and benchmark collecti
 | **CI** | `ci-full.yml` | all `push` events; PRs into `develop`/`master`; manual | Linux-only fast mode on feature branches; Linux/macOS/Windows/nightly full mode on protected branches and PRs | Unit tests across the declared Julia compat window, Linux doctests, and one protected-branch unit-coverage lane |
 | **Benchmarking** | `benchmarking.yml` | `push` to `develop`/`master` on benchmark-relevant paths; manual | Linux | Julia-vs-Julia + Julia-vs-QMCPy benchmarks + benchmark-driven `src/` coverage |
 | **Docs and Demos** | `doc_demo.yml` | `push` on docs, demo, and source paths; docs-smoke PRs on docs/source changes; manual | Linux | Documenter build + deploy + notebook regression + develop/master doctest/notebook coverage |
-| **Install Test** | `install-test.yml` | `push` to `develop`/`master`; PRs touching `src/` or `Project.toml`; manual | Linux | Clean install without Python — verifies pure-Julia generators work and qmctoolscl-backed generators give actionable errors |
+| **Install Test** | `install-test.yml` | `push` to `develop`/`master`; PRs touching `src/` or `Project.toml`; manual | Linux/macOS/Windows | Clean install without Python dependency for core generators — verifies pure-Julia generators work, QMCToolsCL-backed generators run, and invalid library overrides fail clearly |
 
 ## Policy
 
@@ -20,7 +20,7 @@ QuasiMC.jl uses GitHub Actions for continuous integration and benchmark collecti
 - The repository also has a fast fixture-based QMCPy release-parity gate (`make release-parity`) that complements the benchmark parity checks. It lives in the unit-test tree rather than the benchmark workflow so curated parity failures are easier to see and reproduce locally.
 - Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
 - Coverage badges are served by repo-hosted Shields JSON on the `benchmark-badges` branch (`unit`, `doctest`, `notebook`, `bench`). Codecov uploads are retained as a best-effort secondary sink, but the repository README no longer depends on live Codecov badge resolution.
-- The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
+- The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases.
 - On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
 - `concurrency` cancels superseded runs, and the CI and benchmarking groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
 - There is no nightly CI schedule.
@@ -37,7 +37,7 @@ Feature-branch pushes run the fast Linux-only mode:
 - `make test` runs on all three Julia versions.
 - `make doctest` runs on the Julia 1.11 and 1.12 lanes. Julia 1.10 remains in the matrix for package-functionality compatibility testing.
 - This mode keeps the full declared compat window (`julia = "1.10"` in `Project.toml`) gate-verified on every feature-branch push.
-- It installs Python 3.13 plus pinned `qmctoolscl` from `test/requirements.txt`.
+- It no longer installs Python for the core generator runtime. The QMCToolsCL backend comes from the staged `QMCToolsCL_jll` dependency.
 - It uses `make test`, so Linux fast-mode lanes keep the existing sharded test execution (`TEST_JOBS`, `TEST_THREADS`) rather than falling back to a single monolithic `Pkg.test()` process.
 - It does not upload `lcov.info`; coverage publication is reserved for protected-branch push/manual runs.
 
@@ -90,21 +90,24 @@ The benchmark workflow is separate from the test workflows.
 
 Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 
-- Triggered on pushes to `develop`/`master` when `docs/`, `demos/`, `src/`, `test/run_notebooks.jl`, `Makefile`, `Project.toml`, `Manifest.toml`, `test/requirements.txt`, or the workflow file itself changes.
-- Also triggered on pull requests into `develop`/`master` when `docs/`, `src/`, `Project.toml`, `Manifest.toml`, `Makefile`, `test/requirements.txt`, or the workflow file itself changes.
+- Triggered on pushes to `develop`/`master` when `docs/`, `demos/`, `src/`, `test/run_notebooks.jl`, `Makefile`, `Project.toml`, `Manifest.toml`, or the workflow file itself changes.
+- Also triggered on pull requests into `develop`/`master` when `docs/`, `src/`, `Project.toml`, `Manifest.toml`, `Makefile`, or the workflow file itself changes.
 - The documentation job uses `julia --project=docs` to resolve the docs-specific dependency set and deploys via `deploydocs()` only on push events.
 - The demos job remains push/manual only and does not run on pull requests.
 - On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and publish dedicated repo-hosted `doctest`/`notebook` coverage badges.
 
 ## Install Test (`install-test.yml`)
 
-Guards against the qmctoolscl external-dependency hazard: Julia users expect `Pkg.add` to fully instantiate a package, but `Lattice`, `DigitalNetB2`, and `Halton` require a separately installed Python package with a compiled C library.
+Guards the staged QMCToolsCL binary-install path: Julia users expect `Pkg.add`
+to fully instantiate QuasiMC, including the packaged backend used by
+`Lattice`, `DigitalNetB2`, and `Halton`.
 
 - Triggers on pushes to `develop`/`master`, on pull requests that touch `src/` or `Project.toml`, and via manual dispatch.
-- Runs on `ubuntu-latest` with Julia 1.10 and 1.12. **Intentionally installs no Python and no qmctoolscl.**
-- Asserts that `using QuasiMC` succeeds and that pure-Julia generators (`IIDStdUniform`, `Kronecker`) produce correct output without the C library.
-- Asserts that `gen_samples(Lattice(3), 4)`, `gen_samples(DigitalNetB2(3), 4)`, and `gen_samples(Halton(3), 4)` each throw an error whose message mentions `qmctoolscl`, `pip install`, and the minimum version `1.2.3` — so a first-time user sees an actionable remediation rather than a cryptic symbol-lookup failure.
-- Does not run `Pkg.test()` — the full test suite requires qmctoolscl and is covered by the other CI workflows.
+- Runs on `ubuntu-latest` with Julia 1.10 and 1.12, plus macOS and Windows with Julia 1.12. **Intentionally installs no Python for the core generator path.**
+- Asserts that `using QuasiMC` succeeds and that pure-Julia generators (`IIDStdUniform`, `Kronecker`) produce correct output.
+- Asserts that `gen_samples(Lattice(3), 4)`, `gen_samples(DigitalNetB2(3), 4)`, and `gen_samples(Halton(3), 4)` succeed on a clean install with no Python dependency.
+- Asserts that an invalid `QUASIMC_QMCTOOLSCL_LIB` override yields a clear error mentioning the override variable and the bad path.
+- Does not run `Pkg.test()` — the full test suite is covered by the other CI workflows.
 
 ## Running Tests Locally
 
@@ -241,7 +244,7 @@ Tests are organized to mirror the Python QMCSoftware test suite:
 All CI jobs require:
 
 - **Julia** 1.10+ (pinned versions in each workflow matrix)
-- **Python** 3.13 with `qmctoolscl` (`pip install qmctoolscl`)
+- **Python** 3.13 only where a workflow actually needs QMCPy or `jupyter` as a frontend
 - Julia package dependencies installed via `Pkg.instantiate()`
 
 ## Adding a New Test

@@ -11,10 +11,11 @@ Points: x_i = frac(i · z / n), with optional random shift Δ ~ U[0,1)^d.
 When `replications` is set to an integer R > 1, `gen_samples` returns an
 `R × n × d` array of R independently shifted copies.
 
-This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QUASIMC_PYTHON"]`
-(`ENV["QMC_PYTHON"]` is still accepted) before the first `Lattice`,
-`DigitalNetB2`, or `Halton` use.
+This generator currently relies on the QMCToolsCL shared library shipped with
+QuasiMC's `QMCToolsCL_jll` dependency. Advanced users can override the shared
+library path by setting
+`ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"` before the first
+`Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Arguments
 - `dimension`: number of dimensions (up to 9125).

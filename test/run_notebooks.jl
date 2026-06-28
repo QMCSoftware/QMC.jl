@@ -20,6 +20,7 @@ const NB_RESULT_TAG_LEGACY = "##QMC_NB_RESULT"
 if getenv_compat("QUASIMC_SKIP_PKG_SETUP", "QMC_SKIP_PKG_SETUP", "0") != "1"
     Pkg.resolve()
     Pkg.instantiate()
+    Pkg.build("QMCToolsCL_jll")
 end
 
 import NBInclude: @nbinclude

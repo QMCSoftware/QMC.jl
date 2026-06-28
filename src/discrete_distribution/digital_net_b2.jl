@@ -12,10 +12,11 @@ raw dimensions are interlaced in groups of `alpha`, so the bundled
 effective-dimension limit becomes `floor(21201/alpha)` unless custom generating
 matrices are supplied explicitly.
 
-This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QUASIMC_PYTHON"]`
-(`ENV["QMC_PYTHON"]` is still accepted) before the first `Lattice`,
-`DigitalNetB2`, or `Halton` use.
+This generator currently relies on the QMCToolsCL shared library shipped with
+QuasiMC's `QMCToolsCL_jll` dependency. Advanced users can override the shared
+library path by setting
+`ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"` before the first
+`Lattice`, `DigitalNetB2`, or `Halton` use.
 
 # Randomization options
 - `"LMS_DS"`: linear matrix scramble followed by a digital shift (default).

@@ -279,7 +279,7 @@ The repository's GitHub Actions benchmark workflow lives in `.github/workflows/b
 - It checks out full git history so the previous-commit baseline is available for `git worktree`-based Julia-to-Julia comparisons.
 - It uploads `benchmark/results/` as an artifact instead of committing machine-specific outputs back into the repository.
 - It also archives the exact result snapshot behind each published benchmark badge on the dedicated `benchmark-badges` branch so the README badge values remain auditable after later runs.
-- It installs pinned Python dependencies from `benchmark/requirements.txt` so benchmark reports stay comparable across repository commits. Changes to the shared `test/requirements.txt` pin file also retrigger the workflow.
+- It installs pinned Python dependencies from `benchmark/requirements.txt` so benchmark reports stay comparable across repository commits.
 
 If the Python interpreter should be overridden:
 
