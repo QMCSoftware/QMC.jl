@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "label": "Benchmark Coverage",
+  "message": "84.94%",
+  "color": "yellowgreen",
+  "namedLogo": "julia"
+}
