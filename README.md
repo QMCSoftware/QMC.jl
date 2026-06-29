@@ -81,15 +81,16 @@ using Pkg
 Pkg.add(url="https://github.com/QMCSoftware/QuasiMC.jl")
 ```
 
-For `Lattice`, `DigitalNetB2`, and `Halton`, also install the QMCToolsCL runtime (version ≥ 1.2.3) into a Python visible to Julia:
+`IIDStdUniform` is fully Julia-native. `Lattice`, `DigitalNetB2`, and `Halton`
+use the packaged QMCToolsCL shared library that ships through QuasiMC's staged
+`QMCToolsCL_jll` dependency, so no Python setup is required for core package
+usage.
 
-```bash
-pip install 'qmctoolscl>=1.2.3'
+Advanced users can override that shared library path before first use:
+
+```julia
+ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
 ```
-
-`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and stopping criteria, work without this step.
-
-If Julia should use a specific Python interpreter, set `ENV["QUASIMC_PYTHON"] = "/path/to/python"` before first use of those generators (legacy `ENV["QMC_PYTHON"]` is still accepted).
 
 ### For contributors
 

@@ -90,7 +90,7 @@ update:
 
 # Instantiate project dependencies (includes Plots and all other deps). Download what Manifest.toml says.
 setup:
-	julia --project=. -e 'using Pkg; Pkg.instantiate()'
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
 
 # Clean build artifacts
 clean:
@@ -107,13 +107,13 @@ COVERAGE_REPORT_ROOTS := src
 # Run all unit tests. Override file-level process sharding with TEST_JOBS=... and
 # Julia threads inside each test process with TEST_THREADS=...
 test: 
-	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll"); Pkg.test(; julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
 
 # Run unit tests with Julia coverage instrumentation.
 coverage:
 	find src test -name '*.cov' -delete
 	rm -f lcov.info
-	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test(; coverage=true, julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
+	julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll"); Pkg.test(; coverage=true, julia_args=["--threads=$(TEST_THREADS)"], test_args=["--jobs=$(TEST_JOBS)"])'
 	julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS)
 	find src test -name '*.cov' -delete
 
@@ -138,7 +138,7 @@ test-%:
 
 # Build documentation
 doc:
-	$(call RUN_TIMED,rm -rf docs/build && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl,doc)
+	$(call RUN_TIMED,rm -rf docs/build && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.resolve(); Pkg.build("QMCToolsCL_jll")' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl,doc)
 
 # Generate UML diagrams from the current src/ type graph.
 uml:
@@ -146,12 +146,12 @@ uml:
 
 # Run Documenter doctests only (manual pages + src docstrings) without a full render.
 doctest:
-	$(call RUN_TIMED,JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl doctest=only,doctest)
+	$(call RUN_TIMED,JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve(); Pkg.build("QMCToolsCL_jll")' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs docs/make.jl doctest=only,doctest)
 
 # Run Documenter doctests with coverage instrumentation and produce an lcov report over src/.
 # The pkg-setup step runs without --code-coverage so only doctest execution is measured.
 doctest-coverage:
-	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve()' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --code-coverage=user --project=docs docs/make.jl doctest=only && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src -name '*.cov' -delete,doctest-coverage)
+	$(call RUN_TIMED,find src -name '*.cov' -delete && rm -f lcov.info && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --project=docs -e 'import Pkg; Pkg.develop(Pkg.PackageSpec(path=".")); Pkg.instantiate(); Pkg.resolve(); Pkg.build("QMCToolsCL_jll")' && JULIA_DEPOT_PATH="$(DOC_DEPOT):$(HOME)/.julia" julia --code-coverage=user --project=docs docs/make.jl doctest=only && julia --project=. devtools/process_coverage.jl $(COVERAGE_REPORT_ROOTS) && find src -name '*.cov' -delete,doctest-coverage)
 
 # ============================================================================
 # Formatting

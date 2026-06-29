@@ -166,15 +166,7 @@ function _update_data_mlqmc!(sc::CubMLQMC, state::_MLQMCState)
         tm_l = state.level_tm[l + 1]
 
         rep_sums = zeros(R)
-        for r in 1:R
-            x_uniform = gen_samples(dd_l, n_new)
-            if ndims(x_uniform) == 3
-                x_uniform = x_uniform[r, :, :]
-            end
-            x_transformed = transform(tm_l, x_uniform)
-            Qc, Qf = ml_evaluate(sc.integrand, x_transformed, l)
-            rep_sums[r] = sum(Qf .- Qc)
-        end
+        _ml_replication_sums!(rep_sums, sc.integrand, dd_l, tm_l, n_new, l)
 
         prev_sum = state.mean_level_reps[l + 1] .* state.n_level[l + 1]
         state.mean_level_reps[l + 1] = (rep_sums .+ prev_sum) ./ n_max

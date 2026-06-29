@@ -8,6 +8,7 @@ import QuasiMC: Uniform, Kumaraswamy
 
 const TEST_FILES = [
     "test_interfaces.jl",
+    "test_qmctoolscl_backend.jl",
     "test_discrete_distributions.jl",
     "test_true_measures.jl",
     "test_integrands.jl",

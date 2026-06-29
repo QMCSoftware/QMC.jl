@@ -11,9 +11,10 @@ When `generalize=true`, a per-dimension permutation of digits is applied
 (generalized Halton / Faure permutation style) to improve uniformity in
 higher dimensions.
 
-This generator currently relies on the QMCToolsCL shared library. Install
-`qmctoolscl` into a Python visible to Julia, or set `ENV["QUASIMC_PYTHON"]`
-(`ENV["QMC_PYTHON"]` is still accepted) before `using QuasiMC`.
+This generator currently relies on the QMCToolsCL shared library shipped with
+QuasiMC's `QMCToolsCL_jll` dependency. Advanced users can override the shared
+library path by setting
+`ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"` before first use.
 
 # Arguments
 - `dimension::Int`: number of dimensions (up to 250).

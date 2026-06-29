@@ -19,20 +19,18 @@
 # BenchmarkTools and, when available, a coarse retained `rss_delta_kib` sidecar
 # captured by `runbenchmarks.jl`. Python reports `tracemalloc_peak_kib` and a
 # coarse retained `rss_delta_kib` from one warmed call.
-# C-kernel rows (Lattice, DigitalNetB2, Halton gen_samples) measure the same C
-# library on both sides; they are NOT a language comparison (see benchmark_qmcpy.py).
+# C-kernel rows (Lattice, DigitalNetB2, Halton gen_samples) measure the same
+# QMCToolsCL C-kernel family on both sides; they are NOT a language comparison
+# (see benchmark_qmcpy.py).
 
 using Pkg
-Pkg.activate(@__DIR__)
+include(joinpath(@__DIR__, "bootstrap_env.jl"))
+using .BenchmarkEnvBootstrap: bootstrap_benchmark_env
+
 # benchmark/Project.toml pins QuasiMC via `[sources] QuasiMC = { path = ".." }`,
 # so this environment resolves against the repository root without rewriting the
 # project/manifest to an absolute local path.
-Pkg.instantiate()
-# Keep the benchmark manifest in sync when the local path package changes deps.
-# On a fresh CI runner, `instantiate()` must happen before `resolve()` so Pkg can
-# materialize a registry checkout before it tries to re-resolve this environment.
-Pkg.resolve()
-Pkg.instantiate()
+bootstrap_benchmark_env(@__DIR__)
 
 using BenchmarkTools
 using Dates
@@ -534,7 +532,7 @@ println(
 )
 println()
 println("  NOTE: C-kernel rows [C] (Lattice/DigitalNetB2/Halton gen_samples) use the")
-println("  same qmctoolscl library on both sides and are NOT a language comparison.")
+println("  same QMCToolsCL C-kernel family on both sides and are NOT a language comparison.")
 if summary_student_t.total > 0
     println("  NOTE: StudentT rows are also summarized separately because they can dominate")
     println("  the weighted cross-language time ratio.")
@@ -879,7 +877,7 @@ open(outfile, "w") do io
     )
     println(
         io,
-        "> `qmctoolscl` library on both sides and are **not** a Julia vs Python comparison.",
+        "> QMCToolsCL C-kernel family on both sides and are **not** a Julia vs Python comparison.",
     )
     if summary_student_t.total > 0
         println(

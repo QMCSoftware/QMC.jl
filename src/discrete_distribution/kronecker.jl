@@ -115,12 +115,17 @@ function gen_samples(kr::Kronecker, n::Int; n_start::Int=0)
     x = Matrix{Float64}(undef, n, d)
 
     # Julia matrices are column-major, so fill one column at a time rather than
-    # striding by `n` across rows in the inner loop.
+    # striding by `n` across rows in the inner loop. Advancing with the
+    # fractional step avoids a full `mod` call for every point.
     @inbounds for j in 1:d
-        αj = kr.alpha[j]
-        shiftj = kr.shift[j]
+        step = mod(kr.alpha[j], 1.0)
+        value = mod((n_start + 1) * step + kr.shift[j], 1.0)
         for i in 1:n
-            x[i, j] = mod((n_start + i) * αj + shiftj, 1.0)
+            x[i, j] = value
+            value += step
+            if value >= 1.0
+                value -= 1.0
+            end
         end
     end
 

@@ -103,6 +103,26 @@ function transform(tm::GeometricBrownianMotion, x::AbstractMatrix)
 end
 
 _has_randn_transform(::GeometricBrownianMotion) = true
+_supports_transform_into(::GeometricBrownianMotion) = true
+
+function _transform_into!(
+    tm::GeometricBrownianMotion,
+    x::AbstractMatrix,
+    z_scratch::Matrix{Float64},
+    dst::Matrix{Float64},
+)
+    _transform_into!(tm._bm, x, z_scratch, dst)
+    drift_offset = tm.drift - 0.5 * tm.diffusion
+    S0 = tm.initial_value
+    tv = tm.time_vector
+    @inbounds for j in axes(dst, 2)
+        oj = drift_offset * tv[j]
+        @simd for i in axes(dst, 1)
+            dst[i, j] = S0 * exp(oj + dst[i, j])
+        end
+    end
+    return dst
+end
 
 function _transform_from_randn(tm::GeometricBrownianMotion, z::AbstractMatrix)
     bm_samples = _transform_from_randn(tm._bm, z)

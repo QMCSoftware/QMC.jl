@@ -1,15 +1,15 @@
-name: "Install Test (no Python)"
+name: "Install Test"
 
 # Verifies that:
 #   1. `using QuasiMC` succeeds without qmctoolscl installed.
 #   2. Pure-Julia generators (IIDStdUniform, Kronecker) work normally.
-#   3. Sampling from qmctoolscl-backed generators (Lattice, DigitalNetB2,
-#      Halton) produces a clear, actionable error that mentions the exact pip
-#      command.
+#   3. QMCToolsCL-backed generators (Lattice, DigitalNetB2, Halton) work on a
+#      clean install with no Python dependency.
+#   4. An invalid QUASIMC_QMCTOOLSCL_LIB override yields a clear error.
 #
-# This is a v0.1.0 external-user hazard guard: Julia users expect `Pkg.add` to
-# instantiate all dependencies, but qmctoolscl is a Python package that must be
-# installed separately.  This workflow catches regressions in the error path.
+# This guards the external-user install path after the staged QMCToolsCL_jll
+# migration: QuasiMC should be usable after `Pkg.add` alone, with no Python
+# needed for the built-in low-discrepancy generators.
 
 on:
   push:
@@ -28,12 +28,23 @@ concurrency:
 
 jobs:
   install-test:
-    name: No-Python install — Julia ${{ matrix.julia-version }}
-    runs-on: ubuntu-latest
+    name: Binary install smoke — Julia ${{ matrix.julia-version }} — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.10', '1.12']
+        include:
+          - os: ubuntu-latest
+            julia-version: '1.10'
+          - os: ubuntu-latest
+            julia-version: '1.12'
+          - os: macos-latest
+            julia-version: '1.12'
+          - os: windows-latest
+            julia-version: '1.12'
 
     steps:
       - uses: actions/checkout@v4
@@ -44,15 +55,14 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
-      # Intentionally skip Python / qmctoolscl installation.
-
       - name: Install Julia dependencies
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+        run: julia --project=. devtools/bootstrap_root_env.jl
 
-      - name: Pure-Julia generators work without qmctoolscl
+      - name: Generators work without Python
         run: |
           julia --project=. -e '
             using QuasiMC
+
             dd = IIDStdUniform(3; seed=7)
             x = gen_samples(dd, 4)
             @assert size(x) == (4, 3) "IIDStdUniform size wrong: $(size(x))"
@@ -62,53 +72,34 @@ jobs:
             y = gen_samples(kron, 4)
             @assert size(y) == (4, 3) "Kronecker size wrong: $(size(y))"
             println("Kronecker OK: ", size(y))
+
+            lat = gen_samples(Lattice(3; seed=7), 4)
+            @assert size(lat) == (4, 3) "Lattice size wrong: $(size(lat))"
+            println("Lattice OK: ", size(lat))
+
+            dnb2 = gen_samples(DigitalNetB2(3; seed=7), 4)
+            @assert size(dnb2) == (4, 3) "DigitalNetB2 size wrong: $(size(dnb2))"
+            println("DigitalNetB2 OK: ", size(dnb2))
+
+            hal = gen_samples(Halton(3; seed=7), 4)
+            @assert size(hal) == (4, 3) "Halton size wrong: $(size(hal))"
+            println("Halton OK: ", size(hal))
           '
 
-      - name: Lattice sampling gives a helpful error without qmctoolscl
+      - name: Invalid library override gives a clear error
         run: |
           julia --project=. -e '
+            ENV["QUASIMC_QMCTOOLSCL_LIB"] = joinpath(pwd(), "definitely-missing-qmctoolscl")
             using QuasiMC
-            dd = Lattice(3)
             try
-              gen_samples(dd, 4)
-              error("Expected gen_samples(Lattice(...)) to error when qmctoolscl is missing")
+              QuasiMC._qmctoolscl_lib_path()
+              error("Expected invalid QUASIMC_QMCTOOLSCL_LIB to fail")
             catch e
               msg = sprint(showerror, e)
-              occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
-              occursin("pip install", msg) || error("Error did not mention pip install:\n", msg)
-              occursin("1.2.3", msg)       || error("Error did not mention version 1.2.3:\n", msg)
-              println("Lattice missing-library error is actionable: OK")
-            end
-          '
-
-      - name: DigitalNetB2 sampling gives a helpful error without qmctoolscl
-        run: |
-          julia --project=. -e '
-            using QuasiMC
-            dd = DigitalNetB2(3)
-            try
-              gen_samples(dd, 4)
-              error("Expected gen_samples(DigitalNetB2(...)) to error when qmctoolscl is missing")
-            catch e
-              msg = sprint(showerror, e)
-              occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
-              occursin("pip install", msg) || error("Error did not mention pip install:\n", msg)
-              println("DigitalNetB2 missing-library error is actionable: OK")
-            end
-          '
-
-      - name: Halton sampling gives a helpful error without qmctoolscl
-        run: |
-          julia --project=. -e '
-            using QuasiMC
-            dd = Halton(3)
-            try
-              gen_samples(dd, 4)
-              error("Expected gen_samples(Halton(...)) to error when qmctoolscl is missing")
-            catch e
-              msg = sprint(showerror, e)
-              occursin("qmctoolscl", msg) || error("Error did not mention qmctoolscl:\n", msg)
-              occursin("pip install", msg) || error("Error did not mention pip install:\n", msg)
-              println("Halton missing-library error is actionable: OK")
+              occursin("QUASIMC_QMCTOOLSCL_LIB", msg) ||
+                error("Error did not mention QUASIMC_QMCTOOLSCL_LIB:\n", msg)
+              occursin("definitely-missing-qmctoolscl", msg) ||
+                error("Error did not mention the bad path:\n", msg)
+              println("Invalid override error is actionable: OK")
             end
           '

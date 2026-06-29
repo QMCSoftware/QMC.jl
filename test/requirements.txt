@@ -1,14 +1,7 @@
-# Python dependencies required by QuasiMC.jl's tests, docs, and notebooks.
+# No additional Python packages are required for QuasiMC.jl's core tests or
+# docs after the staged QMCToolsCL_jll migration.
 #
-# QuasiMC.jl's Lattice, DigitalNetB2, and Halton generators call into the compiled
-# C library shipped inside the `qmctoolscl` Python package (loaded at runtime
-# via Libdl). The exact build matters: different qmctoolscl releases export
-# different symbols (e.g. the fused `dnb2_gen_gray_float` kernel), which selects
-# different code paths in QuasiMC.jl. Pinning keeps CI reproducible so a silent
-# upstream change can't flip the active path and break a build without a code
-# change of our own.
-#
-# Bump this deliberately. Benchmarking uses its own pinned
-# `benchmark/requirements.txt` so benchmark artifacts remain comparable across
-# repository commits. Last reviewed against qmctoolscl 1.2.3.
-qmctoolscl==1.2.3
+# Notebook workflows may still provision a plain Python interpreter as a
+# `jupyter` frontend, but that setup is independent from QuasiMC's own runtime
+# generator backend. Benchmarking keeps its separate pinned requirements in
+# `benchmark/requirements.txt`.

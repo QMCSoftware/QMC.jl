@@ -165,6 +165,34 @@ end
 
 _has_randn_transform(::Gaussian) = true
 
+# Pre-allocated in-place transform: writes erfinv result into z_scratch, then GEMM into dst.
+# For the diagonal path, z_scratch is unused and erfinv is fused directly into dst.
+# Avoids two n×d heap allocations per replicate in the CubQMCNetGRep fast path.
+_supports_transform_into(::Gaussian) = true
+
+function _transform_into!(
+    tm::Gaussian,
+    x::AbstractMatrix,
+    z_scratch::Matrix{Float64},
+    dst::Matrix{Float64},
+)
+    dvec = tm._decomp_diag
+    if dvec === nothing
+        @. z_scratch =
+            sqrt(2.0) * SpecialFunctions.erfinv(2.0 * clamp(x, _OPEN01_LOW, _OPEN01_HIGH) - 1.0)
+        mul!(dst, z_scratch, transpose(tm._decomp))
+        dst .+= transpose(tm.mean)
+    else
+        dvec_t = transpose(dvec)
+        mean_t = transpose(tm.mean)
+        @. dst =
+            sqrt(2.0) *
+            SpecialFunctions.erfinv(2.0 * clamp(x, _OPEN01_LOW, _OPEN01_HIGH) - 1.0) *
+            dvec_t + mean_t
+    end
+    return dst
+end
+
 _transform_from_randn(tm::Gaussian, z::AbstractMatrix) =
     if tm._decomp_diag !== nothing
         dvec_t = transpose(tm._decomp_diag)

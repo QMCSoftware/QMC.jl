@@ -113,6 +113,20 @@ function transform(tm::BrownianMotion, x::AbstractMatrix)
 end
 
 _has_randn_transform(::BrownianMotion) = true
+_supports_transform_into(::BrownianMotion) = true
+
+function _transform_into!(
+    tm::BrownianMotion,
+    x::AbstractMatrix,
+    z_scratch::Matrix{Float64},
+    dst::Matrix{Float64},
+)
+    _transform_into!(tm._gaussian, x, z_scratch, dst)
+    if tm.initial_value != 0.0 || tm.drift != 0.0
+        dst .+= (tm.initial_value .+ tm.drift .* tm.time_vector)'
+    end
+    return dst
+end
 
 function _transform_from_randn(tm::BrownianMotion, z::AbstractMatrix)
     y = _transform_from_randn(tm._gaussian, z)

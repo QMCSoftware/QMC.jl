@@ -42,11 +42,16 @@ Items marked as QuasiMC.jl-only extensions in the parity map are outside strict 
 | Tool | Version | Notes |
 |---|---|---|
 | [Julia](https://julialang.org/downloads/) | ≥ 1.10 | `brew install julia` on macOS, or download from julialang.org |
-| Python | any recent | currently required for the QMCToolsCL-backed generators `Lattice`, `DigitalNetB2`, and `Halton` |
+| Python | any recent | optional: `make test`, `make doctest`, and `make bench-compare` work without it; required for `make bench-all` / `make bench-compare-py` (Julia-vs-QMCPy cross-language comparison) and for running demo notebooks as a Jupyter frontend |
 | Git | any recent | to clone the repo |
 
-Python is currently a runtime dependency for the main low-discrepancy QMC generators `Lattice`, `DigitalNetB2`, and `Halton`, because they rely on the QMCToolsCL shared library.
-Conda is optional; it is only one way to provide that Python environment and can also host an optional Jupyter frontend.
+Python is not a runtime dependency for any core generator, the Julia test suite, or the Julia-only regression benchmark (`make bench-compare`).
+It is only needed for two contributor workflows:
+
+1. **Cross-language benchmarking** — `make bench-all` and `make bench-compare-py` drive the Julia-vs-QMCPy comparison. Contributors who only need the Julia-vs-Julia regression can use `make bench-compare` instead.
+2. **Demo notebooks** — Python acts as the Jupyter frontend. The notebooks still execute on the Julia kernel; Python is not involved in the computation.
+
+Conda remains optional as one way to host QMCPy benchmark tooling or a Jupyter frontend.
 
 ### 1. Clone and enter the project
 
@@ -57,23 +62,25 @@ git clone https://github.com/QMCSoftware/QuasiMC.jl.git
 ### 2. Install Julia dependencies
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
 ```
 
-### 3. Install QMCToolsCL for `Lattice`, `DigitalNetB2`, and `Halton`
+### 3. QMCToolsCL backend for `Lattice`, `DigitalNetB2`, and `Halton`
 
-The main low-discrepancy generators are backed by the compiled C library inside the `qmctoolscl` Python package (version ≥ 1.2.3). Install it into a Python visible to Julia:
+The main low-discrepancy generators are backed by the QMCToolsCL shared
+library (version ≥ 1.2.3), now supplied through the staged
+`QMCToolsCL_jll` dependency in this repository. No Python setup is required for
+core development or CI.
 
-```bash
-python3 -m pip install 'qmctoolscl>=1.2.3'
-```
+`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and
+stopping criteria, work without touching that backend directly.
 
-`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and stopping criteria, work without this step. Only `Lattice`, `DigitalNetB2`, and `Halton` need qmctoolscl.
-
-If Julia should use a specific Python interpreter, set this before first use of those generators (no Julia restart needed):
+If you need to force QuasiMC to load a specific custom library during local
+debugging, set this before first use of those generators (no Julia restart
+needed):
 
 ```julia
-ENV["QUASIMC_PYTHON"] = "/path/to/python"
+ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
 ```
 
 ### 4. Optional: install IJulia and register the `QuasiMC` notebook kernel
@@ -163,7 +170,9 @@ Then select the `QuasiMC` kernel in Jupyter or VS Code once.
 
 If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QuasiMC` Julia kernel.
 
-Most demos use `Lattice` or `DigitalNetB2`, so they also require `qmctoolscl` to be installed in a Python visible to Julia.
+Most demos use `Lattice` or `DigitalNetB2`, so they exercise the packaged
+QMCToolsCL backend. Python is only needed there as a notebook frontend
+(`jupyter`), not for QuasiMC's own generator runtime.
 
 To run a notebook in VS Code:
 
@@ -257,6 +266,7 @@ QuasiMC.jl groups its public surface into the following stability levels:
 Most top-level and source subdirectories contain a local `README.md` describing their purpose. Useful starting points:
 
 - [`benchmark/README.md`](benchmark/README.md) — standalone benchmarking and Julia-vs-QMCPy comparison tooling
+- [`jll/QMCToolsCL_jll/README.md`](jll/QMCToolsCL_jll/README.md) — how to refresh the bundled QMCToolsCL backend when a new upstream version is released
 - [`demos/README.md`](demos/README.md) — notebook demos and how to run them
 - [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — Documenter build/deploy layout
 - [`RELEASING.md`](RELEASING.md) — release ladder, readiness gates, and tagging process

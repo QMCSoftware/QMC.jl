@@ -171,6 +171,24 @@ end
         end
     end
 
+    @testset "ml_sample_and_evaluate_reps" begin
+        f_dn = FinancialOptionML(
+            DigitalNetB2(32; seed=7, randomize="LMS_DS", replications=8);
+            d_coarsest=4,
+            option_type=:asian,
+        )
+        dd_l = spawn_dd(
+            QuasiMC.discrete_distribution(QuasiMC.true_measure(f_dn)),
+            dimension_at_level(f_dn, 2),
+        )
+        tm_l = spawn_tm(QuasiMC.true_measure(f_dn), dd_l)
+        rep_means, cost = ml_sample_and_evaluate_reps(f_dn, dd_l, tm_l, 16, 2, 8)
+
+        @test length(rep_means) == 8
+        @test all(isfinite, rep_means)
+        @test cost == 8 * 16 * cost_at_level(f_dn, 2)
+    end
+
     @testset "spawn_tm" begin
         dd = IIDStdUniform(4)
         tm = Gaussian(dd)

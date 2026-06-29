@@ -1,7 +1,15 @@
 module QuasiMC
 
 using LinearAlgebra,
-    Libdl, Random, Statistics, FFTW, SpecialFunctions, Distributions, Printf, Downloads
+    Libdl,
+    Random,
+    Statistics,
+    FFTW,
+    SpecialFunctions,
+    Distributions,
+    Printf,
+    Downloads,
+    QMCToolsCL_jll
 
 # Utilities
 include("util/bernoulli.jl")

@@ -2,136 +2,86 @@
 # QMCToolsCL C library bridge
 #
 # Provides low-level ccall wrappers around the compiled C functions in the
-# QMCToolsCL Python package. The shared library is discovered on demand by
-# asking Python where it installed qmctoolscl.
+# QMCToolsCL binary package. The shared library is loaded from the local staged
+# `QMCToolsCL_jll` dependency unless the user explicitly overrides it with an
+# absolute library path.
 #
-# Requires:  pip install qmctoolscl
+# Optional override:  ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
 # ──────────────────────────────────────────────────────────────────────────────
 
 const _QMCTOOLSCL_LIB_PATH = Ref{String}("")
 const _QMCTOOLSCL_HANDLE = Ref{Ptr{Cvoid}}(C_NULL)
 const _QMCTOOLSCL_INIT_ATTEMPTED = Ref(false)
 const _QMCTOOLSCL_LAST_SEARCH = Ref("none")
+const _QMCTOOLSCL_LAST_ERROR = Ref("none")
 
 # True when the loaded library exports the fused gen+shift+float functions
 # (available since qmctoolscl 1.2.3; probe once at init time).
 const _HAS_DNB2_FUSED = Ref(false)
 
-_python_env_keys() = ("QUASIMC_PYTHON", "QMC_PYTHON", "CONDA_PYTHON_EXE", "PYTHON")
+const _QMCTOOLSCL_OVERRIDE_ENV = "QUASIMC_QMCTOOLSCL_LIB"
 
-function _python_candidates()
-    candidates = String[]
+function _qmctoolscl_override_path()
+    raw = get(ENV, _QMCTOOLSCL_OVERRIDE_ENV, "")
+    raw = strip(raw)
+    return isempty(raw) ? nothing : abspath(expanduser(raw))
+end
 
-    # Allow callers to point QuasiMC at a specific Python interpreter.
-    for key in _python_env_keys()
-        if haskey(ENV, key) && !isempty(strip(ENV[key]))
-            push!(candidates, strip(ENV[key]))
-        end
+function _qmctoolscl_candidates()
+    override = _qmctoolscl_override_path()
+    if override !== nothing
+        return [(label="ENV[\"$(_QMCTOOLSCL_OVERRIDE_ENV)\"]", path=override)]
     end
-
-    # Prefer an active Conda environment when one is available.
-    if haskey(ENV, "CONDA_PREFIX") && !isempty(strip(ENV["CONDA_PREFIX"]))
-        push!(candidates, joinpath(strip(ENV["CONDA_PREFIX"]), "bin", "python"))
-    end
-
-    # Fall back to common user-level Conda installs, checking named environments
-    # BEFORE the base interpreter. A named env often carries a newer qmctoolscl
-    # (with fused gen+float C functions) while the base env may have an older one.
-    for root in ("miniconda3", "miniforge3", "mambaforge", "anaconda3")
-        conda_base = joinpath(homedir(), root)
-        envs_dir = joinpath(conda_base, "envs")
-        if isdir(envs_dir)
-            for env_name in sort(readdir(envs_dir))
-                push!(candidates, joinpath(envs_dir, env_name, "bin", "python"))
-            end
-        end
-        push!(candidates, joinpath(conda_base, "bin", "python"))
-    end
-
-    for py_cmd in ("python3", "python")
-        exe = Sys.which(py_cmd)
-        isnothing(exe) || push!(candidates, exe)
-    end
-
-    seen = Set{String}()
-    unique_candidates = String[]
-    for candidate in candidates
-        path = abspath(expanduser(candidate))
-        if isfile(path) && !(path in seen)
-            push!(unique_candidates, path)
-            push!(seen, path)
-        end
-    end
-
-    return unique_candidates
+    return [(label="QMCToolsCL_jll.libqmctoolscl", path=QMCToolsCL_jll.libqmctoolscl)]
 end
 
 """
     _init_qmctoolscl!(; warn_on_failure=true, force=false)
 
-Locate the QMCToolsCL compiled C library via Python and pre-load it with
-`Libdl.RTLD_GLOBAL` so that subsequent `ccall`s can resolve symbols by name.
-Returns `true` on success, `false` (with a warning) if the library is not found.
+Locate the QMCToolsCL compiled C library and pre-load it with `Libdl.RTLD_GLOBAL`
+so that subsequent `ccall`s can resolve symbols by name. Returns `true` on
+success, `false` (with a warning) if the library is not found.
 """
 function _init_qmctoolscl!(; warn_on_failure::Bool=true, force::Bool=false)
     !isempty(_QMCTOOLSCL_LIB_PATH[]) && return true
     _QMCTOOLSCL_INIT_ATTEMPTED[] && !force && return false
     _QMCTOOLSCL_INIT_ATTEMPTED[] = true
 
-    py_script = """import glob, os
-try:
-    import qmctoolscl
-    pattern = os.path.dirname(os.path.abspath(qmctoolscl.__file__)) + "/c_lib*"
-    matches = glob.glob(pattern)
-    if matches:
-        print(matches[0])
-    else:
-        print("")
-except Exception:
-    print("")
-"""
     searched = String[]
-    fallback_path = ""   # best non-fused library found so far
-    for exe in _python_candidates()
-        push!(searched, exe)
+    _QMCTOOLSCL_LAST_ERROR[] = "none"
+
+    for candidate in _qmctoolscl_candidates()
+        push!(searched, "$(candidate.label) => $(candidate.path)")
+        if !isfile(candidate.path)
+            _QMCTOOLSCL_LAST_ERROR[] = "$(candidate.label) => file not found"
+            continue
+        end
         try
-            path = strip(read(`$exe -c $py_script`, String))
-            if !isempty(path) && isfile(path)
-                hdl = Libdl.dlopen(path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
-                has_fused = Libdl.dlsym_e(hdl, :dnb2_gen_gray_float) != C_NULL
-                if has_fused
-                    _QMCTOOLSCL_LIB_PATH[] = path
-                    _QMCTOOLSCL_HANDLE[] = hdl
-                    _HAS_DNB2_FUSED[] = true
-                    return true
-                end
-                Libdl.dlclose(hdl)
-                isempty(fallback_path) && (fallback_path = path)
-            end
-        catch
+            hdl = Libdl.dlopen(candidate.path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
+            _QMCTOOLSCL_LIB_PATH[] = candidate.path
+            _QMCTOOLSCL_HANDLE[] = hdl
+            _HAS_DNB2_FUSED[] = Libdl.dlsym_e(hdl, :dnb2_gen_gray_float) != C_NULL
+            _QMCTOOLSCL_LAST_SEARCH[] = join(searched, ", ")
+            return true
+        catch err
+            _QMCTOOLSCL_LAST_ERROR[] =
+                "$(candidate.label) => " * sprint(showerror, err, catch_backtrace())
         end
     end
-    if !isempty(fallback_path)
-        _QMCTOOLSCL_LIB_PATH[] = fallback_path
-        hdl = Libdl.dlopen(fallback_path, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY)
-        _QMCTOOLSCL_HANDLE[] = hdl
-        _HAS_DNB2_FUSED[] = false
-        return true
-    end
+
     searched_str = isempty(searched) ? "none" : join(searched, ", ")
     _QMCTOOLSCL_LAST_SEARCH[] = searched_str
     if warn_on_failure
-        @warn """QMCToolsCL C library not found.
+        @warn """QMCToolsCL library not found.
 Lattice, DigitalNetB2, and Halton require it (IIDStdUniform and Kronecker work without it).
 
-Remediation (pick one):
-  pip install 'qmctoolscl>=1.2.3'
+QuasiMC expects the staged or published `QMCToolsCL_jll` binary package.
 
-Or point Julia at the Python that already has it (no restart needed):
-  ENV["QUASIMC_PYTHON"] = "/path/to/python"
-  # legacy alias still accepted: ENV["QMC_PYTHON"] = "/path/to/python"
+Optional advanced override (authoritative when set):
+  ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
 
-Searched Python interpreters: $searched_str"""
+Searched library paths: $searched_str
+Last load error: $(_QMCTOOLSCL_LAST_ERROR[])"""
     end
     return false
 end
@@ -143,20 +93,19 @@ Return the cached path to the QMCToolsCL shared library, raising an informative
 error if the library was not successfully loaded.
 """
 function _qmctoolscl_lib_path()
-    # Retry discovery on demand so users can set ENV["QUASIMC_PYTHON"]
-    # (or the legacy ENV["QMC_PYTHON"]) after importing QuasiMC but before
-    # first use of QMCToolsCL-backed generators.
+    # Retry discovery on demand so users can set QUASIMC_QMCTOOLSCL_LIB after
+    # importing QuasiMC but before first use of QMCToolsCL-backed generators.
     isempty(_QMCTOOLSCL_LIB_PATH[]) && _init_qmctoolscl!(; warn_on_failure=false, force=true)
     isempty(_QMCTOOLSCL_LIB_PATH[]) && error(
-        "QMCToolsCL C library not loaded.\n\n" *
-        "Lattice, DigitalNetB2, and Halton require qmctoolscl ≥ 1.2.3.\n" *
+        "QMCToolsCL library not loaded.\n\n" *
+        "Lattice, DigitalNetB2, and Halton require QMCToolsCL ≥ 1.2.3.\n" *
         "IIDStdUniform and Kronecker work without it.\n\n" *
-        "Remediation (pick one):\n" *
-        "  pip install 'qmctoolscl>=1.2.3'\n\n" *
-        "Or point Julia at the Python that already has it (no restart needed):\n" *
-        "  ENV[\"QUASIMC_PYTHON\"] = \"/path/to/python\"\n" *
-        "  # legacy alias still accepted: ENV[\"QMC_PYTHON\"] = \"/path/to/python\"\n\n" *
-        "Searched Python interpreters: $(_QMCTOOLSCL_LAST_SEARCH[]).",
+        "QuasiMC expects the staged or published `QMCToolsCL_jll` binary package.\n\n" *
+        "Optional advanced override (authoritative when set):\n" *
+        "  ENV[\"QUASIMC_QMCTOOLSCL_LIB\"] = \"/absolute/path/to/library\"\n\n" *
+        "Clear that variable to fall back to the packaged library.\n\n" *
+        "Searched library paths: $(_QMCTOOLSCL_LAST_SEARCH[])\n" *
+        "Last load error: $(_QMCTOOLSCL_LAST_ERROR[])",
     )
     return _QMCTOOLSCL_LIB_PATH[]
 end
@@ -181,6 +130,16 @@ end
 function _rowmaj_to_nxd(buf::Vector{Float64}, n::Int, d::Int)
     # buf: row-major n×d  →  Julia n×d Matrix
     return permutedims(reshape(buf, d, n), (2, 1))
+end
+
+function _rowmaj_to_nxd!(dst::Matrix{Float64}, src::Vector{Float64}, n::Int, d::Int)
+    # In-place transpose: src row-major n×d  →  dst Julia n×d (column-major), no allocation
+    @inbounds for j in 1:d
+        @simd for i in 1:n
+            dst[i, j] = src[(i - 1) * d + j]
+        end
+    end
+    return dst
 end
 
 function _rowmaj_to_Rnxd(buf::Vector{Float64}, R::Int, n::Int, d::Int)

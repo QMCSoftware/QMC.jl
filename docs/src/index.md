@@ -2,7 +2,10 @@
 
 QuasiMC.jl is a Julia port of QMCPy for Quasi-Monte Carlo (QMC) numerical integration.
 
-`IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`, `DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library, so Python is a current runtime dependency for full QMC functionality.
+`IIDStdUniform` is Julia-native. The main low-discrepancy generators `Lattice`,
+`DigitalNetB2`, and `Halton` currently rely on the QMCToolsCL shared library
+shipped with QuasiMC's staged `QMCToolsCL_jll` dependency, so no Python setup
+is required for full core QMC functionality.
 
 Most core package families are implemented. A few advanced items remain partial: `PFGPCI` is currently an exported experimental feature that depends on an optional Julia GP backend, and `gpu_fwht`/`gpu_fwht!` are presently placeholder names whose implementation is only the CPU `fwht`/`fwht!` fallback.
 
@@ -28,7 +31,8 @@ QMC methods approximate multivariate integrals using four main components:
 
 ## Quick Start
 
-This example uses `Lattice`, so `qmctoolscl` must be installed in a Python visible to Julia.
+This example uses `Lattice`, which now works through QuasiMC's packaged
+QMCToolsCL backend.
 
 ```jldoctest
 julia> using QuasiMC
@@ -52,13 +56,15 @@ using Pkg
 Pkg.add(url="https://github.com/QMCSoftware/QuasiMC.jl", rev="vX.Y.Z")
 ```
 
-For `Lattice`, `DigitalNetB2`, and `Halton`, also install QMCToolsCL into a Python visible to Julia:
+`IIDStdUniform` is fully Julia-native. `Lattice`, `DigitalNetB2`, and `Halton`
+use the packaged QMCToolsCL shared library supplied through QuasiMC's staged
+`QMCToolsCL_jll` dependency, so no Python setup is required for core use.
 
-```bash
-python3 -m pip install qmctoolscl==1.2.3
+Advanced users can override the library path before `using QuasiMC`:
+
+```julia
+ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
 ```
-
-If Julia should use a specific Python interpreter, set `ENV["QUASIMC_PYTHON"]` before `using QuasiMC` (legacy `ENV["QMC_PYTHON"]` still works).
 
 ## Contents
 

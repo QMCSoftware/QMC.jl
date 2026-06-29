@@ -20,7 +20,8 @@ Provide the smallest reproducible example, including deterministic seeds if appl
 
 - QuasiMC.jl commit or version:
 - Julia version:
-- Python and `qmctoolscl` versions if relevant:
+- `QMCToolsCL_jll` version or `QUASIMC_QMCTOOLSCL_LIB` override path if relevant:
+- Python / `qmctoolscl` versions if the bug involves QMCPy benchmarks or notebook tooling:
 - OS:
 
 ## Mathematical or numerical impact

@@ -749,6 +749,11 @@
         x = gen_samples(kr, 10)
         @test size(x) == (10, 2)
         @test all(0.0 .<= x .< 1.0)
+        alpha_mixed = [0.6180339887498949, -1.4142135623730951, 5.23606797749979]
+        kr_mixed = Kronecker(3; seed=9, generator=alpha_mixed)
+        x_full = gen_samples(kr_mixed, 64)
+        x_tail = gen_samples(kr_mixed, 16; n_start=32)
+        @test x_tail ≈ x_full[33:48, :] atol=1e-12 rtol=1e-12
         @test_throws ArgumentError Kronecker(2; generator=:invalid)
     end
 end
