@@ -84,13 +84,62 @@ function build_unix_library()
     return output
 end
 
-function install_windows_library()
-    src = joinpath(vendor_dir, "c_lib.cp312-win_amd64.pyd")
-    isfile(src) || error("Missing vendored Windows QMCToolsCL binary at $(repr(src)).")
-    dst = joinpath(usr_lib_dir, "c_lib.cp312-win_amd64.pyd")
-    cp(src, dst; force=true)
-    return dst
+function windows_compiler()
+    # GitHub Actions windows-latest ships MSYS2 MinGW64 at a known path; check
+    # those first so the build works without PATH manipulation in the workflow.
+    explicit = [
+        "C:\\msys64\\mingw64\\bin\\gcc.exe",
+        "C:\\msys64\\usr\\bin\\gcc.exe",
+        "C:\\mingw64\\bin\\gcc.exe",
+    ]
+    for p in explicit
+        isfile(p) && return p
+    end
+    # Fall back to whatever the shell PATH offers.
+    for candidate in ("gcc", "cc", "clang")
+        p = Sys.which(candidate)
+        p === nothing || return p
+    end
+    return nothing
 end
 
-libpath = Sys.iswindows() ? install_windows_library() : build_unix_library()
+function build_windows_library()
+    compiler = windows_compiler()
+    if compiler === nothing
+        # No compiler found — try the pre-built vendored binary.
+        src = joinpath(vendor_dir, "c_lib.cp312-win_amd64.pyd")
+        isfile(src) || error(
+            "No Windows C compiler (gcc/clang) found and no vendored binary " *
+            "at $(repr(src)).\n" *
+            "Install MinGW (e.g. via MSYS2) so gcc is reachable, or provide " *
+            "the pre-built library.",
+        )
+        dst = joinpath(usr_lib_dir, "c_lib.cp312-win_amd64.pyd")
+        cp(src, dst; force=true)
+        return dst
+    end
+    output = joinpath(usr_lib_dir, "libqmctoolscl.dll")
+    sources = source_files()
+    # -O2 / -ffast-math: optimise without the LTO/march flags that can be
+    #   fragile on some MinGW versions shipped with MSYS2.
+    # -Wl,--export-all-symbols: make every non-static C symbol visible so that
+    #   Julia's Libdl.dlsym can resolve function names without a .def file.
+    cmd = Cmd([
+        compiler,
+        "-shared",
+        "-O2",
+        "-ffast-math",
+        "-funroll-loops",
+        "-std=c99",
+        "-I", source_root,
+        "-o", output,
+        sources...,
+        "-lm",
+        "-Wl,--export-all-symbols",
+    ])
+    run(cmd)
+    return output
+end
+
+libpath = Sys.iswindows() ? build_windows_library() : build_unix_library()
 write_statefile(libpath)
