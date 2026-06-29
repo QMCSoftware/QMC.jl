@@ -132,6 +132,16 @@ function _rowmaj_to_nxd(buf::Vector{Float64}, n::Int, d::Int)
     return permutedims(reshape(buf, d, n), (2, 1))
 end
 
+function _rowmaj_to_nxd!(dst::Matrix{Float64}, src::Vector{Float64}, n::Int, d::Int)
+    # In-place transpose: src row-major n×d  →  dst Julia n×d (column-major), no allocation
+    @inbounds for j in 1:d
+        @simd for i in 1:n
+            dst[i, j] = src[(i - 1) * d + j]
+        end
+    end
+    return dst
+end
+
 function _rowmaj_to_Rnxd(buf::Vector{Float64}, R::Int, n::Int, d::Int)
     # buf: row-major R×n×d  →  Julia R×n×d Array
     return permutedims(reshape(buf, d, n, R), (3, 2, 1))

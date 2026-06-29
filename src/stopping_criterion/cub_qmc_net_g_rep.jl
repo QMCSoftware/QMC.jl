@@ -38,6 +38,7 @@ mutable struct CubQMCNetGRep{I <: AbstractIntegrand} <: AbstractStoppingCriterio
     n_max::Int
     n_reps::Int
     alpha::Float64
+    _t_crit::Float64
     trace_iterations::Bool
 end
 
@@ -59,6 +60,7 @@ function CubQMCNetGRep(
         n_max,
         n_reps,
         alpha,
+        quantile(TDist(n_reps - 1), 1.0 - alpha / 2.0),
         trace_iterations,
     )
 end
@@ -99,9 +101,66 @@ function _replicate_means!(
     return nothing
 end
 
+# Specialization for DigitalNetB2: on the single-threaded path, pre-allocate the
+# C output buffer and sample matrix once and reuse them across all R replicates,
+# avoiding 2×R large n×d allocations for the LMS_DS/LMS graycode alpha=1 case.
+function _replicate_means!(
+    estimates::Vector{Float64},
+    f::AbstractIntegrand,
+    tm::AbstractTrueMeasure,
+    dd::DigitalNetB2,
+    n::Int,
+)
+    R = length(estimates)
+
+    if Threads.nthreads() == 1
+        if (dd.randomize == "LMS_DS" || dd.randomize == "LMS") &&
+           dd.alpha == 1 &&
+           isnothing(dd.replications) &&
+           dd.graycode
+            x_buf = Vector{Float64}(undef, n * dd.dimension)
+            xu = Matrix{Float64}(undef, n, dd.dimension)
+            if _supports_transform_into(tm)
+                tm_dim = dimension(tm)
+                z_scratch = Matrix{Float64}(undef, n, tm_dim)
+                xy = Matrix{Float64}(undef, n, tm_dim)
+                @inbounds for r in 1:R
+                    _gen_samples_lms_into!(dd, n, x_buf, xu)
+                    _transform_into!(tm, xu, z_scratch, xy)
+                    estimates[r] = mean(evaluate(f, xy))
+                end
+            else
+                @inbounds for r in 1:R
+                    _gen_samples_lms_into!(dd, n, x_buf, xu)
+                    estimates[r] = mean(evaluate(f, transform(tm, xu)))
+                end
+            end
+            return nothing
+        end
+        @inbounds for r in 1:R
+            xu = gen_samples(dd, n)
+            xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+            estimates[r] = mean(evaluate(f, transform(tm, xu)))
+        end
+        return nothing
+    end
+
+    samples = Vector{Matrix{Float64}}(undef, R)
+    for r in 1:R
+        xu = gen_samples(dd, n)
+        samples[r] = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+    end
+
+    Threads.@threads for r in 1:R
+        y = evaluate(f, transform(tm, samples[r]))
+        @inbounds estimates[r] = mean(y)
+    end
+    return nothing
+end
+
 function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     R = sc.n_reps
-    t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
+    t_crit = sc._t_crit
 
     if resume !== nothing
         n_prev = haskey(resume, :n_per_rep) ? Int(resume[:n_per_rep]) : Int(resume[:n])

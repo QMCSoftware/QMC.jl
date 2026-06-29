@@ -150,6 +150,9 @@ function true_measure end
     hasfield(typeof(tm), :dimension) ? getfield(tm, :dimension) :
     dimension(discrete_distribution(tm))
 
+# Default: this measure type does not have a pre-allocated _transform_into! variant.
+_supports_transform_into(::AbstractTrueMeasure) = false
+
 @inline dimension(f::AbstractIntegrand) =
     hasfield(typeof(f), :dimension) ? getfield(f, :dimension) : dimension(true_measure(f))
 

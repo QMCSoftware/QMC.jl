@@ -566,8 +566,8 @@ function _lms_direction_matrix(
     V_scr = Matrix{UInt64}(undef, d, mmax)
     n_extra = t_bits - source_bits
     source_mask = source_bits < 64 ? (UInt64(1) << source_bits) - UInt64(1) : typemax(UInt64)
+    L = Vector{UInt64}(undef, t_bits)  # pre-allocated once, reused across dimensions
     for j in 1:d
-        L = Vector{UInt64}(undef, t_bits)
         if n_extra == 0
             # Original QuasiMC.jl: lower-triangular, random BELOW diagonal.
             # Preserved exactly so the default (t=source_bits) output is backward-compatible.
@@ -589,14 +589,11 @@ function _lms_direction_matrix(
                 L[source_bits + k] = rand(rng, UInt64) & source_mask
             end
         end
-        for b in 1:mmax
+        @inbounds for b in 1:mmax
             v = UInt64(V[j, b])
             newv = UInt64(0)
             for k in 1:t_bits
-                u = L[k] & v
-                if isodd(count_ones(u))
-                    newv |= UInt64(1) << (t_bits - k)
-                end
+                newv |= UInt64(count_ones(L[k] & v) & 1) << (t_bits - k)
             end
             V_scr[j, b] = newv
         end
@@ -834,6 +831,73 @@ function _gen_single_replication(dd::DigitalNetB2, n::Int; n_start::Int=0)
         _c_dnb2_integer_to_float!(1, n, d, tmaxes, xrb_buf, x_buf)
     end
     return _rowmaj_to_nxd(x_buf, n, d)
+end
+
+# Internal fast-path: generate one LMS_DS/LMS replication (alpha=1, graycode) into
+# caller-supplied pre-allocated buffers, avoiding the two large n×d allocations that
+# _gen_single_replication emits (x_buf + permutedims result) on every call.
+# Used by _replicate_means! to amortize allocation pressure across all R replicates.
+function _gen_samples_lms_into!(
+    dd::DigitalNetB2,
+    n::Int,
+    x_buf::Vector{Float64},
+    dst::Matrix{Float64},
+)
+    d = dd.dimension
+    V = dd.direction_nums
+    mmax = size(V, 2)
+    lms_bits = dd.t
+    curr_bits = dd.t
+    V_scr = _lms_direction_matrix(V, d, dd.source_bits, dd.rng; t_bits=lms_bits)
+    C_flat = _direction_matrix_to_C(V_scr, d)
+    shiftsb = _rand_tbit_uint64s(dd.rng, dd.t, d)
+    lshifts = _left_shift_words(dd.t, curr_bits, 1)
+    tmaxes = fill(UInt64(dd.t), 1)
+    if _HAS_DNB2_FUSED[]
+        if dd.graycode
+            _c_dnb2_gen_gray_float!(
+                1,
+                n,
+                d,
+                0,
+                mmax,
+                1,
+                0x01,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
+        else
+            _c_dnb2_gen_natural_float!(
+                1,
+                n,
+                d,
+                0,
+                mmax,
+                1,
+                0x01,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
+        end
+    else
+        xb_buf = Vector{UInt64}(undef, n * d)
+        xrb_buf = Vector{UInt64}(undef, n * d)
+        if dd.graycode
+            _c_dnb2_gen_gray!(1, n, d, 0, mmax, C_flat, xb_buf)
+        else
+            _c_dnb2_gen_natural!(1, n, d, 0, mmax, C_flat, xb_buf)
+        end
+        _c_dnb2_digital_shift!(1, n, d, 1, lshifts, xb_buf, shiftsb, xrb_buf)
+        _c_dnb2_integer_to_float!(1, n, d, tmaxes, xrb_buf, x_buf)
+    end
+    _rowmaj_to_nxd!(dst, x_buf, n, d)
+    return dst
 end
 
 """
