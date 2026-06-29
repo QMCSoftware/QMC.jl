@@ -84,7 +84,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install dependencies
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
+        run: julia --project=. devtools/bootstrap_root_env.jl
 
       - name: Run demo notebooks
         timeout-minutes: 60
@@ -171,7 +171,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install dependencies
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
+        run: julia --project=. devtools/bootstrap_root_env.jl
 
       - name: Run notebook coverage
         shell: bash

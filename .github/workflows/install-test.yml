@@ -56,7 +56,7 @@ jobs:
       - uses: julia-actions/cache@v2
 
       - name: Install Julia dependencies
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
+        run: julia --project=. devtools/bootstrap_root_env.jl
 
       - name: Generators work without Python
         run: |
