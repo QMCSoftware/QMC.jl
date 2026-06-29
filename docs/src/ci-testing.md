@@ -83,7 +83,7 @@ The benchmark workflow is separate from the test workflows.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
 - Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
 - Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` Codecov flag covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
-- When `BENCH_COVERAGE=1`, the benchmark harness also runs a small coverage-only probe pass over uncovered `src/` branches such as control variates, additional `FinancialOption` variants, `DigitalNetB2` validation paths, and lattice resume/diagnostics flows. Those probes are coverage-only and are not part of the published timing or memory badges.
+- When `BENCH_COVERAGE=1`, the benchmark harness also runs a small coverage-only probe pass over uncovered `src/` branches such as control variates, additional `FinancialOption` variants, `DigitalNetB2` validation paths, and lattice resume/diagnostics flows. Those probes now come from the shared `devtools/coverage_probes.jl` helper so the doctest/notebook coverage lanes can reuse the same low-coverage branch checks.
 - The published Julia-vs-QMCPy report now exposes the headline weighted time ratio, a 95% within-run bootstrap interval, `StudentT` split summaries, grouped timing totals for `gen_samples` / `transform` / `evaluate` / end-to-end `integrate`, and approximate memory ratios with explicit provenance manifests.
 
 ## Docs and Demos (`doc_demo.yml`)
@@ -94,7 +94,7 @@ Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 - Also triggered on pull requests into `develop`/`master` when `docs/`, `src/`, `Project.toml`, `Manifest.toml`, `Makefile`, or the workflow file itself changes.
 - The documentation job uses `julia --project=docs` to resolve the docs-specific dependency set and deploys via `deploydocs()` only on push events.
 - The demos job remains push/manual only and does not run on pull requests.
-- On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and publish dedicated repo-hosted `doctest`/`notebook` coverage badges.
+- On `develop`/`master` push/manual runs, additional jobs run `make doctest-coverage` and the notebook-coverage job body, upload their `lcov.info` files as artifacts, and publish dedicated repo-hosted `doctest`/`notebook` coverage badges. Those coverage-only jobs also reuse the shared probe pass after the public doctests/notebooks complete, so the badges reflect a broader `src/` slice without bloating the rendered docs or checked-in notebooks.
 
 ## Install Test (`install-test.yml`)
 
@@ -166,8 +166,8 @@ make bench-all-coverage REV=HEAD~1 LABEL=base BENCH_BLAS_THREADS=2
 ```
 
 - `make coverage` wraps `Pkg.test(coverage=true)`, converts the resulting `src/*.cov` files into `lcov.info`, and prints a `src/` summary.
-- `make doctest-coverage` runs `docs/make.jl doctest=only` with coverage enabled and then summarizes the `src/` coverage files produced by that doctest-only execution.
-- `make notebook-coverage` executes the checked-in demo notebooks with coverage enabled and summarizes `src/`.
+- `make doctest-coverage` runs `docs/make.jl doctest=only` with coverage enabled, then executes the shared `devtools/coverage_probes.jl` coverage-only probe pass, and finally summarizes the resulting `src/` coverage files.
+- `make notebook-coverage` executes the checked-in demo notebooks with coverage enabled, then runs that same shared probe pass before summarizing `src/`.
 - `make bench-coverage`, `make bench-compare-coverage`, `make bench-compare-py-coverage`, and `make bench-all-coverage` now also summarize `src/` only, even though the benchmark harness itself may emit temporary `benchmark/*.cov` files during the run.
 - The benchmark coverage targets additionally enable a `BENCH_COVERAGE=1` probe pass so the benchmark Codecov flag can target at least `80%` package coverage without polluting the plain benchmark speed/memory badge runs.
 

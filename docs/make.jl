@@ -1,5 +1,7 @@
 using Documenter
 using QuasiMC
+include(joinpath(@__DIR__, "..", "devtools", "coverage_probes.jl"))
+using .CoverageProbes: run_shared_coverage_probes
 
 rm(joinpath(@__DIR__, "build"); force=true, recursive=true)
 
@@ -37,6 +39,11 @@ makedocs(
         "Community" => "community.md",
     ],
 )
+
+if Base.JLOptions().code_coverage != 0 && "doctest=only" in ARGS
+    @info "Running coverage-only probes after doctest pass."
+    run_shared_coverage_probes()
+end
 
 # Only deploy from CI
 if get(ENV, "CI", nothing) == "true" && get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"

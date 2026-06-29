@@ -293,7 +293,10 @@ function bench_revision(rev::AbstractString)
                 ),
             )
         finally
-            BENCH_COVERAGE && copy_coverage_files(snap, PKG)
+            # Do NOT copy coverage files from the baseline revision: its source
+            # files may have different line counts than the current tree, which
+            # causes process_coverage.jl to error with "length mismatch". We
+            # only need coverage of the current-tree code.
             rm(snap; force=true, recursive=true)
         end
     finally

@@ -11,6 +11,8 @@
 using Pkg
 getenv_compat(primary::AbstractString, legacy::AbstractString, default::AbstractString="") =
     get(ENV, primary, get(ENV, legacy, default))
+include(joinpath(@__DIR__, "..", "devtools", "coverage_probes.jl"))
+using .CoverageProbes: run_shared_coverage_probes
 
 const NB_TIMING_TAG = "##QUASIMC_NB_TIMING"
 const NB_RESULT_TAG = "##QUASIMC_NB_RESULT"
@@ -292,6 +294,16 @@ function current_project_dir()
     active_project = Base.active_project()
     active_project === nothing && return dirname(@__DIR__)
     return dirname(active_project)
+end
+
+coverage_enabled() = Base.JLOptions().code_coverage != 0
+
+function maybe_run_coverage_probes(opts::NotebookOptions)
+    coverage_enabled() || return
+    opts.overwrite && return
+    println()
+    println("Running coverage-only probes after notebook pass.")
+    run_shared_coverage_probes()
 end
 
 function child_cmd(notebooks::Vector{String}, opts::NotebookOptions)
@@ -739,3 +751,4 @@ if opts.jobs == 1 || length(notebooks) <= 1
 else
     run_parallel(notebooks, opts)
 end
+maybe_run_coverage_probes(opts)
