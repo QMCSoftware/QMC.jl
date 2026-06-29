@@ -63,6 +63,42 @@ function CubQMCNetGRep(
     )
 end
 
+function _replicate_means!(
+    estimates::Vector{Float64},
+    f::AbstractIntegrand,
+    tm::AbstractTrueMeasure,
+    dd,
+    n::Int,
+)
+    R = length(estimates)
+
+    if Threads.nthreads() == 1
+        # On the single-threaded benchmark path it is cheaper to stream each
+        # replicate through transform/evaluate immediately than to retain all R
+        # sample matrices and revisit them in a second pass.
+        @inbounds for r in 1:R
+            xu = gen_samples(dd, n)
+            xu = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+            estimates[r] = mean(evaluate(f, transform(tm, xu)))
+        end
+        return nothing
+    end
+
+    # With multiple Julia threads, keep the original two-pass structure so the
+    # transform/evaluate work can still be distributed across replicates.
+    samples = Vector{Matrix{Float64}}(undef, R)
+    for r in 1:R
+        xu = gen_samples(dd, n)
+        samples[r] = ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
+    end
+
+    Threads.@threads for r in 1:R
+        y = evaluate(f, transform(tm, samples[r]))
+        @inbounds estimates[r] = mean(y)
+    end
+    return nothing
+end
+
 function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
     R = sc.n_reps
     t_crit = quantile(TDist(R - 1), 1.0 - sc.alpha / 2.0)
@@ -88,26 +124,7 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
 
     while n <= sc.n_max
         n_iter += 1
-
-        # Step 1: generate all R sample matrices sequentially.
-        # gen_samples advances dd.rng on each call, so this must stay serial.
-        samples = Vector{Matrix{Float64}}(undef, R)
-        for r in 1:R
-            xu = gen_samples(dd, n)
-            samples[r] =
-                ndims(xu) == 3 ? reshape(xu, size(xu, 1) * size(xu, 2), size(xu, 3)) : xu
-        end
-
-        # Step 2: transform + evaluate, parallelised over replicates when nthreads > 1.
-        # With nthreads == 1 Threads.@threads is a plain for loop — no overhead.
-        # tm and f are read-only; each replicate owns its sample matrix → thread-safe.
-        # Callers running with multiple Julia threads must call BLAS.set_num_threads(1)
-        # once at process startup (before any Julia threads are live); toggling the BLAS
-        # thread count while threads are active is not thread-safe and crashes OpenBLAS.
-        Threads.@threads for r in 1:R
-            y = evaluate(f, transform(tm, samples[r]))
-            @inbounds estimates[r] = mean(y)
-        end
+        _replicate_means!(estimates, f, tm, dd, n)
 
         mu_hat = mean(estimates)
         sigma_reps = std(estimates; corrected=true)

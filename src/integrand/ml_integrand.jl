@@ -251,6 +251,43 @@ function ml_sample_and_evaluate(
     return dp, cost
 end
 
+function _ml_replication_sums!(
+    rep_sums::Vector{Float64},
+    f::AbstractMLIntegrand,
+    dd::AbstractDiscreteDistribution,
+    tm::AbstractTrueMeasure,
+    n::Int,
+    level::Int,
+)
+    R = length(rep_sums)
+    x_uniform = gen_samples(dd, n)
+
+    if ndims(x_uniform) == 3
+        size(x_uniform, 1) == R || throw(
+            ArgumentError(
+                "replicated sampler returned $(size(x_uniform, 1)) replications, expected $R",
+            ),
+        )
+        x_transformed = transform(
+            tm,
+            reshape(x_uniform, size(x_uniform, 1) * size(x_uniform, 2), size(x_uniform, 3)),
+        )
+        Qc, Qf = ml_evaluate(f, x_transformed, level)
+        rep_sums .= vec(sum(reshape(Qf .- Qc, R, size(x_uniform, 2)); dims=2))
+        return nothing
+    end
+
+    x_transformed = transform(tm, x_uniform)
+    Qc, Qf = ml_evaluate(f, x_transformed, level)
+    rep_sums[1] = sum(Qf .- Qc)
+    @inbounds for r in 2:R
+        x_transformed = transform(tm, gen_samples(dd, n))
+        Qc, Qf = ml_evaluate(f, x_transformed, level)
+        rep_sums[r] = sum(Qf .- Qc)
+    end
+    return nothing
+end
+
 """
     ml_sample_and_evaluate_reps(f::AbstractMLIntegrand,
                                  dd::AbstractDiscreteDistribution,
@@ -270,12 +307,7 @@ function ml_sample_and_evaluate_reps(
     level::Int,
     R::Int,
 )
-    rep_means = zeros(R)
-    total_cost = 0.0
-    for r in 1:R
-        dp, c = ml_sample_and_evaluate(f, dd, tm, n, level)
-        rep_means[r] = mean(dp)
-        total_cost += c
-    end
-    return rep_means, total_cost
+    rep_sums = zeros(R)
+    _ml_replication_sums!(rep_sums, f, dd, tm, n, level)
+    return rep_sums ./ n, cost_at_level(f, level) * n * R
 end
