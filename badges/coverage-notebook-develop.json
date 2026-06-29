@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "Notebook Coverage",
-  "message": "80.07%",
-  "color": "yellowgreen",
+  "message": "78.70%",
+  "color": "yellow",
   "namedLogo": "julia"
 }
