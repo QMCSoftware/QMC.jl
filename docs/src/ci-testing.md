@@ -19,8 +19,8 @@ QuasiMC.jl uses GitHub Actions for continuous integration and benchmark collecti
 - Benchmark collection is separated from unit testing. `benchmarking.yml` is Linux-only, path-filtered, and uploads `benchmark/results/` as an artifact.
 - The repository also has a fast fixture-based QMCPy release-parity gate (`make release-parity`) that complements the benchmark parity checks. It lives in the unit-test tree rather than the benchmark workflow so curated parity failures are easier to see and reproduce locally.
 - Coverage uploads and coverage badge publication are restricted to `develop` and `master` push/manual runs. Feature-branch CI and pull-request CI still run correctness checks, but they do not publish `lcov.info` or coverage badges.
-- Coverage badges are served by repo-hosted Shields JSON on the `benchmark-badges` branch (`unit`, `doctest`, `notebook`, `bench`). Codecov uploads are retained as a best-effort secondary sink, but the repository README no longer depends on live Codecov badge resolution.
-- The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases.
+- Coverage badges are served by Codecov flag badges (`unit`, `doctest`, `notebook`, `bench`). The custom `benchmark-badges` branch is reserved for benchmark speed/memory badges.
+- The benchmarking workflow pins its Python dependencies through `benchmark/requirements.txt` so cross-commit comparisons are not invalidated by unrelated upstream package releases. Changes to the shared `test/requirements.txt` pin file also retrigger the benchmark workflow.
 - On push-triggered benchmark runs, the Julia-vs-Julia comparison uses the previous pushed commit as the reference revision when GitHub provides one; manual runs fall back to `REV=HEAD`.
 - `concurrency` cancels superseded runs, and the CI and benchmarking groups include the event name so a pull request run does not cancel the sibling push run for the same ref.
 - There is no nightly CI schedule.
@@ -82,7 +82,7 @@ The benchmark workflow is separate from the test workflows.
 - Those benchmark parity checks are timing-artifact-driven. For a smaller release-style regression gate that does not require running the full benchmark harness, use `make release-parity`, which replays a checked-in QMCPy 2.3 fixture from the unit-test tree.
 - Uploads the generated `benchmark/results/` directory as a GitHub Actions artifact for later inspection.
 - Publishes Shields badge JSON plus an archived snapshot of the exact result files behind each published benchmark badge on the `benchmark-badges` branch.
-- Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` coverage badge covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
+- Runs a separate `make bench-all-coverage` job on `develop`/`master` push/manual events so the `bench` Codecov flag covers the standalone benchmark suite plus the Julia-vs-Julia and Julia-vs-QMCPy comparison paths, without affecting the benchmark speed/memory badges.
 - When `BENCH_COVERAGE=1`, the benchmark harness also runs a small coverage-only probe pass over uncovered `src/` branches such as control variates, additional `FinancialOption` variants, `DigitalNetB2` validation paths, and lattice resume/diagnostics flows. Those probes are coverage-only and are not part of the published timing or memory badges.
 - The published Julia-vs-QMCPy report now exposes the headline weighted time ratio, a 95% within-run bootstrap interval, `StudentT` split summaries, grouped timing totals for `gen_samples` / `transform` / `evaluate` / end-to-end `integrate`, and approximate memory ratios with explicit provenance manifests.
 
