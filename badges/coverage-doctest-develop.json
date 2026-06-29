@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "Doctest Coverage",
-  "message": "79.65%",
-  "color": "yellow",
+  "message": "85.71%",
+  "color": "yellowgreen",
   "namedLogo": "julia"
 }
