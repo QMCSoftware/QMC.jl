@@ -13,7 +13,7 @@ classDiagram
   CubMCCLT : abs_tol : Float64
   CubMCCLT : rel_tol : Float64
   CubMCCLT : n_init : Int
-  CubMCCLT : n_max : Int
+  CubMCCLT : n_limit : Int
   CubMCCLT : alpha : Float64
   CubMCCLT : inflate : Float64
   CubMCCLT : trace_iterations : Bool
@@ -24,7 +24,7 @@ classDiagram
   CubMCCLTVec : abs_tol : Float64
   CubMCCLTVec : rel_tol : Float64
   CubMCCLTVec : n_init : Int
-  CubMCCLTVec : n_max : Int
+  CubMCCLTVec : n_limit : Int
   CubMCCLTVec : alpha : Float64
   CubMCCLTVec : trace_iterations : Bool
   class CubMCG
@@ -33,7 +33,7 @@ classDiagram
   CubMCG : abs_tol : Float64
   CubMCG : rel_tol : Float64
   CubMCG : n_init : Int
-  CubMCG : n_max : Int
+  CubMCG : n_limit : Int
   CubMCG : alpha : Float64
   CubMCG : inflate : Float64
   CubMCG : alpha_sigma : Float64
@@ -96,7 +96,7 @@ classDiagram
   CubQMCBayesLatticeG : abs_tol : Float64
   CubQMCBayesLatticeG : rel_tol : Float64
   CubQMCBayesLatticeG : n_init : Int
-  CubQMCBayesLatticeG : n_max : Int
+  CubQMCBayesLatticeG : n_limit : Int
   CubQMCBayesLatticeG : order : Int
   CubQMCBayesLatticeG : ptransform : Symbol
   CubQMCBayesLatticeG : errbd_type : Symbol
@@ -108,7 +108,7 @@ classDiagram
   CubQMCBayesNetG : abs_tol : Float64
   CubQMCBayesNetG : rel_tol : Float64
   CubQMCBayesNetG : n_init : Int
-  CubQMCBayesNetG : n_max : Int
+  CubQMCBayesNetG : n_limit : Int
   CubQMCBayesNetG : order : Int
   CubQMCBayesNetG : ptransform : Symbol
   CubQMCBayesNetG : errbd_type : Symbol
@@ -120,7 +120,7 @@ classDiagram
   CubQMCLatticeG : abs_tol : Float64
   CubQMCLatticeG : rel_tol : Float64
   CubQMCLatticeG : n_init : Int
-  CubQMCLatticeG : n_max : Int
+  CubQMCLatticeG : n_limit : Int
   CubQMCLatticeG : n_reps : Int
   CubQMCLatticeG : alpha : Float64
   CubQMCLatticeG : trace_iterations : Bool
@@ -131,7 +131,7 @@ classDiagram
   CubQMCNetG : abs_tol : Float64
   CubQMCNetG : rel_tol : Float64
   CubQMCNetG : n_init : Int
-  CubQMCNetG : n_max : Int
+  CubQMCNetG : n_limit : Int
   CubQMCNetG : r_lag : Int
   CubQMCNetG : trace_iterations : Bool
   CubQMCNetG : cv_spec : Union{Nothing, _ControlVariateSpec}
@@ -141,7 +141,7 @@ classDiagram
   CubQMCNetGRep : abs_tol : Float64
   CubQMCNetGRep : rel_tol : Float64
   CubQMCNetGRep : n_init : Int
-  CubQMCNetGRep : n_max : Int
+  CubQMCNetGRep : n_limit : Int
   CubQMCNetGRep : n_reps : Int
   CubQMCNetGRep : alpha : Float64
   CubQMCNetGRep : trace_iterations : Bool

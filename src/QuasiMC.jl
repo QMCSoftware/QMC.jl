@@ -106,7 +106,8 @@ include("stopping_criterion/pf_gp_ci.jl")
 __init__() = _init_qmctoolscl!(; warn_on_failure=false)
 
 # Exports — abstract types
-export AbstractDiscreteDistribution, AbstractTrueMeasure, AbstractIntegrand
+export AbstractDiscreteDistribution,
+    AbstractLDDiscreteDistribution, AbstractTrueMeasure, AbstractIntegrand
 export AbstractStoppingCriterion, AbstractKernel, AbstractStationaryKernel
 export AbstractMLIntegrand
 

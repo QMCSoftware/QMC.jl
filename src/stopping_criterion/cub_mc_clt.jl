@@ -1,6 +1,6 @@
 """
     CubMCCLT(integrand; abs_tol=0.01, rel_tol=0.0, n_init=1024,
-             n_max=2^30, alpha=0.01, inflate=1.2, trace_iterations=false)
+             n_limit=2^30, alpha=0.01, inflate=1.2, trace_iterations=false)
 
 IID Monte Carlo cubature with CLT-based confidence interval (two-stage method).
 
@@ -26,7 +26,7 @@ julia> f = CustomFun(
        )
 CustomFun(d=3)
 
-julia> sc = CubMCCLT(f; abs_tol=0.1, n_init=256, n_max=10^6)
+julia> sc = CubMCCLT(f; abs_tol=0.1, n_init=256, n_limit=10^6)
 CubMCCLT(abs_tol=0.1, rel_tol=0.0, inflate=1.2)
 
 julia> result = integrate(sc);
@@ -43,7 +43,7 @@ mutable struct CubMCCLT{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     alpha::Float64
     inflate::Float64
     trace_iterations::Bool
@@ -55,14 +55,14 @@ function CubMCCLT(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=1024,
-    n_max::Int=2^30,
+    n_limit::Int=2^30,
     alpha::Float64=0.01,
     inflate::Float64=1.2,
     trace_iterations::Bool=false,
     control_variates=nothing,
     control_variate_means=nothing,
 )
-    n_max > 2 * n_init || throw(ArgumentError("n_max must be > 2 * n_init"))
+    n_limit > 2 * n_init || throw(ArgumentError("n_limit must be > 2 * n_init"))
     inflate >= 1.0 || throw(ArgumentError("inflate must be ≥ 1.0"))
     0.0 < alpha < 1.0 || throw(ArgumentError("alpha must be in (0, 1)"))
     cv_spec = _make_control_variate_spec(integrand, control_variates, control_variate_means)
@@ -71,7 +71,7 @@ function CubMCCLT(
         abs_tol,
         rel_tol,
         n_init,
-        n_max,
+        n_limit,
         alpha,
         inflate,
         trace_iterations,
@@ -119,10 +119,10 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     n_mu = ceil(Int, (z_star * sc.inflate * sig_hat0 / tol)^2)
     n_mu = max(n_mu, sc.n_init)  # at least n_init
 
-    if (sc.n_init + n_mu) > sc.n_max
-        @warn "CubMCCLT: requested n_mu=$n_mu new samples would exceed n_max=$(sc.n_max). " *
-              "Generating $(sc.n_max - sc.n_init) instead."
-        n_mu = sc.n_max - sc.n_init
+    if (sc.n_init + n_mu) > sc.n_limit
+        @warn "CubMCCLT: requested n_mu=$n_mu new samples would exceed n_limit=$(sc.n_limit). " *
+              "Generating $(sc.n_limit - sc.n_init) instead."
+        n_mu = sc.n_limit - sc.n_init
     end
 
     # ── Stage 2: Main sample ──
@@ -152,7 +152,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
     # non-convergence warning even when the sample cap is far from exhausted.
     tol_final = max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
     err = z_star * sc.inflate * sig_hat / sqrt(n_mu)
-    max_main = sc.n_max - sc.n_init
+    max_main = sc.n_limit - sc.n_init
     while err > tol_final && n_mu < max_main
         n_required = ceil(Int, (z_star * sc.inflate * sig_hat / tol_final)^2)
         n_add = min(max(n_required - n_mu, 1), max_main - n_mu)
@@ -172,7 +172,7 @@ function integrate(sc::CubMCCLT; resume::Union{Nothing, Dict{Symbol, Any}}=nothi
 
     converged = err <= tol_final
     if !converged
-        @warn "CubMCCLT: did not converge within n_max=$(sc.n_max). " *
+        @warn "CubMCCLT: did not converge within n_limit=$(sc.n_limit). " *
               "Error bound: $err, tolerance: $tol_final"
     end
     if sc.trace_iterations

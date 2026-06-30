@@ -1,6 +1,6 @@
 """
     CubMCG(integrand; abs_tol=0.01, rel_tol=0.0, n_init=1024,
-           n_max=2^30, alpha=0.01, inflate=1.2, trace_iterations=false)
+           n_limit=2^30, alpha=0.01, inflate=1.2, trace_iterations=false)
 
 Guaranteed IID Monte Carlo stopping criterion using Berry-Esseen inequalities.
 
@@ -15,7 +15,7 @@ functions with bounded kurtosis.
 - `rel_tol`: Relative error tolerance. When > 0, effective tolerance is
   `max(abs_tol, rel_tol * |μ̂|)`.
 - `n_init`: Number of initial samples for variance estimation.
-- `n_max`: Maximum total number of samples.
+- `n_limit`: Maximum total number of samples.
 - `alpha`: Uncertainty level in (0, 1).
 - `inflate`: Inflation factor ≥ 1 for conservative variance estimation.
 - `trace_iterations`: record an `IterationLog` in `result.data[:iteration_log]`.
@@ -50,7 +50,7 @@ julia> using QuasiMC
 
 julia> f = Keister(Gaussian(IIDStdUniform(2; seed=7)));
 
-julia> r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_max=2^18, trace_iterations=true));
+julia> r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_limit=2^18, trace_iterations=true));
 
 julia> isfinite(r.solution)
 true
@@ -68,7 +68,7 @@ mutable struct CubMCG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     alpha::Float64
     inflate::Float64
     alpha_sigma::Float64
@@ -82,7 +82,7 @@ function CubMCG(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=1024,
-    n_max::Int=2^30,
+    n_limit::Int=2^30,
     alpha::Float64=0.01,
     inflate::Float64=1.2,
     trace_iterations::Bool=false,
@@ -106,7 +106,7 @@ function CubMCG(
         abs_tol,
         rel_tol,
         n_init,
-        n_max,
+        n_limit,
         alpha,
         inflate,
         alpha_sigma,
@@ -259,9 +259,9 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
             )
         end
         toloversig = sc.abs_tol / max(sigma_up, 1e-300)
-        n_mu, bound_hw = _nchebe(toloversig, alpha_mu, sc.kurtmax, sc.n_max, sigma_up)
+        n_mu, bound_hw = _nchebe(toloversig, alpha_mu, sc.kurtmax, sc.n_limit, sigma_up)
 
-        n_mu = min(n_mu, sc.n_max - sc.n_init)
+        n_mu = min(n_mu, sc.n_limit - sc.n_init)
         if n_mu > 0
             y1 = _draw_adjusted(f, dd, n_mu, cv, cv_beta)
             solution = mean(y1)
@@ -300,7 +300,7 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
 
         while true
             tol_eff = max(sc.abs_tol, sc.rel_tol * abs(solution))
-            if bound_hw <= tol_eff || n_total >= sc.n_max
+            if bound_hw <= tol_eff || n_total >= sc.n_limit
                 break
             end
 
@@ -310,8 +310,8 @@ function integrate(sc::CubMCG; resume::Union{Nothing, Dict{Symbol, Any}}=nothing
 
             toloversig = bound_hw / max(sigma_up, 1e-300)
             alphai = 2^tau * (sc.alpha - sc.alpha_sigma) / (1 - sc.alpha_sigma)
-            n_new, _ = _nchebe(toloversig, min(alphai, 0.99), sc.kurtmax, sc.n_max, sigma_up)
-            n_new = min(n_new, sc.n_max - n_total)
+            n_new, _ = _nchebe(toloversig, min(alphai, 0.99), sc.kurtmax, sc.n_limit, sigma_up)
+            n_new = min(n_new, sc.n_limit - n_total)
             if n_new <= 0
                 break
             end

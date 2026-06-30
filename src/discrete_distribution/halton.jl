@@ -57,14 +57,14 @@ julia> size(gen_samples(Halton(3; seed=7, replications=2), 4))
 # Struct
 # ──────────────────────────────────────────────────────────────────────────────
 """
-    Halton <: AbstractDiscreteDistribution
+    Halton <: AbstractLDDiscreteDistribution
 
 Halton sequence backed by the QMCToolsCL `halton_qrng` C function.
 Supports up to 250 dimensions.  See the outer constructor for full documentation.
 
 QMCToolsCL is required for sample generation.
 """
-mutable struct Halton{R <: AbstractRNG} <: AbstractDiscreteDistribution
+mutable struct Halton{R <: AbstractRNG} <: AbstractLDDiscreteDistribution
     dimension::Int
     randomize::Bool
     generalize::Bool

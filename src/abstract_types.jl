@@ -1,6 +1,9 @@
 """Abstract base for all discrete distributions (point generators)."""
 abstract type AbstractDiscreteDistribution end
 
+"""Abstract base for low-discrepancy point generators (Lattice, DigitalNetB2, Halton, DigitalNetAnyBases)."""
+abstract type AbstractLDDiscreteDistribution <: AbstractDiscreteDistribution end
+
 """Abstract base for all true measures."""
 abstract type AbstractTrueMeasure end
 

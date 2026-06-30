@@ -89,7 +89,7 @@ end
         # false non-convergence warning.
         dd_topup = IIDStdUniform(1; seed=2)
         f_topup = CustomFun(Uniform(dd_topup), x -> exp.(4 .* x[:, 1]))
-        sc_topup = CubMCCLT(f_topup; abs_tol=0.1, n_init=64, n_max=2^18)
+        sc_topup = CubMCCLT(f_topup; abs_tol=0.1, n_init=64, n_limit=2^18)
         result_topup = integrate(sc_topup)
         z_star = quantile(Normal(), 1.0 - sc_topup.alpha / 2.0)
         pilot_n_mu = max(
@@ -157,13 +157,13 @@ end
             main = CustomFun(tm, x -> exp.(x[:, 1]))
             cv = CustomFun(tm, x -> x[:, 1])           # known mean 0.5
             truth = exp(1) - 1
-            r0 = integrate(CubMCCLT(main; abs_tol=5e-3, n_init=2^12, n_max=2^20))
+            r0 = integrate(CubMCCLT(main; abs_tol=5e-3, n_init=2^12, n_limit=2^20))
             r1 = integrate(
                 CubMCCLT(
                     main;
                     abs_tol=5e-3,
                     n_init=2^12,
-                    n_max=2^20,
+                    n_limit=2^20,
                     control_variates=cv,
                     control_variate_means=0.5,
                 ),
@@ -181,13 +181,13 @@ end
             main = CustomFun(tm, x -> exp.(x[:, 1]))
             cv = CustomFun(tm, x -> x[:, 1])           # known mean 0.5
             truth = exp(1) - 1
-            r0 = integrate(CubMCG(main; abs_tol=5e-3, n_init=2^12, n_max=2^24))
+            r0 = integrate(CubMCG(main; abs_tol=5e-3, n_init=2^12, n_limit=2^24))
             r1 = integrate(
                 CubMCG(
                     main;
                     abs_tol=5e-3,
                     n_init=2^12,
-                    n_max=2^24,
+                    n_limit=2^24,
                     control_variates=cv,
                     control_variate_means=0.5,
                 ),
@@ -280,7 +280,7 @@ end
         dd = Lattice(1; randomize=true, seed=601)
         tm = Uniform(dd)
         f = _VecCLTIntegrand(tm)
-        r = integrate(CubQMCLatticeG(f; abs_tol=0.02, n_init=2^8, n_max=2^18, n_reps=16))
+        r = integrate(CubQMCLatticeG(f; abs_tol=0.02, n_init=2^8, n_limit=2^18, n_reps=16))
         @test r isa QMCVecResult
         @test length(r.solution) == 2
         @test isapprox(r.solution[1], 0.5; atol=0.05)
@@ -298,7 +298,7 @@ end
                 f;
                 abs_tol=1e-3,
                 n_init=2^8,
-                n_max=2^18,
+                n_limit=2^18,
                 n_reps=16,
                 control_variates=[cv1, cv2],
                 control_variate_means=[0.5, 1 / 3],
@@ -335,7 +335,7 @@ end
         dd = DigitalNetB2(1; randomize="LMS_DS", graycode=false, seed=602)
         tm = Uniform(dd)
         f = _VecCLTIntegrand(tm)
-        r = integrate(CubQMCNetG(f; abs_tol=0.02, n_init=2^8, n_max=2^18))
+        r = integrate(CubQMCNetG(f; abs_tol=0.02, n_init=2^8, n_limit=2^18))
         @test r isa QMCVecResult
         @test length(r.solution) == 2
         @test isapprox(r.solution[1], 0.5; atol=0.05)
@@ -346,7 +346,8 @@ end
         @test size(r.data[:comb_bound_low]) == (2,)
         @test all(r.data[:comb_bound_low] .<= r.solution .<= r.data[:comb_bound_high])
 
-        ratio = integrate(CubQMCNetG(_RatioIntegrand(tm); abs_tol=0.03, n_init=2^8, n_max=2^18))
+        ratio =
+            integrate(CubQMCNetG(_RatioIntegrand(tm); abs_tol=0.03, n_init=2^8, n_limit=2^18))
         @test ratio isa QMCVecResult
         @test length(ratio.solution) == 1
         @test isapprox(ratio.solution[1], 1 / 3; atol=0.05)
@@ -370,7 +371,7 @@ end
                 f;
                 abs_tol=1e-3,
                 n_init=2^8,
-                n_max=2^18,
+                n_limit=2^18,
                 control_variates=[cv1, cv2],
                 control_variate_means=[0.5, 1 / 3],
             ),
@@ -410,16 +411,16 @@ end
         f_r1 = Genz(Uniform(dd_r1); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
         r1 = integrate(CubQMCNetGRep(f_r1; abs_tol=2.0, n_init=2^8, n_reps=8))
         r2 = integrate(
-            CubQMCNetGRep(f_r1; abs_tol=0.1, n_init=2^8, n_max=2^14, n_reps=8);
+            CubQMCNetGRep(f_r1; abs_tol=0.1, n_init=2^8, n_limit=2^14, n_reps=8);
             resume=r1.data,
         )
         @test r2.data[:n] >= r1.data[:n]
 
-        # Non-convergence warning: very tight tol with tiny n_max (covers lines 129-130, 134).
+        # Non-convergence warning: very tight tol with tiny n_limit (covers lines 129-130, 134).
         dd_nc = DigitalNetB2(2; randomize="DS", seed=703)
         f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[5.0, 5.0], u=[0.5, 0.5])
         @test_logs (:warn, r"CubQMCNetGRep") integrate(
-            CubQMCNetGRep(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10, n_reps=4),
+            CubQMCNetGRep(f_nc; abs_tol=1e-8, n_init=2^8, n_limit=2^10, n_reps=4),
         )
 
         dd_lms = DigitalNetB2(2; randomize="LMS_DS", seed=704)
@@ -464,7 +465,7 @@ end
         tm = Uniform(dd)
         f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
         exact = genz_exact(f)
-        sc = CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12)
+        sc = CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_limit=2^12)
         result = integrate(sc)
         @test result.solution isa Float64
         @test !isnan(result.solution)
@@ -473,7 +474,13 @@ end
         @test result.data[:n_total] == result.data[:n]
         @test result.data[:n_per_rep] == result.data[:n]
         traced = integrate(
-            CubQMCBayesLatticeG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, trace_iterations=true),
+            CubQMCBayesLatticeG(
+                f;
+                abs_tol=0.1,
+                n_init=2^8,
+                n_limit=2^12,
+                trace_iterations=true,
+            ),
         )
         @test haskey(traced.data, :iteration_log)
         @test length(traced.data[:iteration_log]) >= 1
@@ -487,7 +494,7 @@ end
         f = Sin1D(tm; k=1)
         for pt in [:C1, :C2SIN, :C3]
             r = integrate(
-                CubQMCBayesLatticeG(f; abs_tol=0.5, n_init=2^8, n_max=2^10, ptransform=pt),
+                CubQMCBayesLatticeG(f; abs_tol=0.5, n_init=2^8, n_limit=2^10, ptransform=pt),
             )
             @test r.solution isa Float64
             @test isfinite(r.solution)
@@ -498,7 +505,7 @@ end
         dd = Lattice(1; randomize=true, seed=603)
         tm = Uniform(dd)
         f = _VecCLTIntegrand(tm)
-        r = integrate(CubQMCBayesLatticeG(f; abs_tol=0.02, n_init=2^8, n_max=2^12))
+        r = integrate(CubQMCBayesLatticeG(f; abs_tol=0.02, n_init=2^8, n_limit=2^12))
         @test r isa QMCVecResult
         @test length(r.solution) == 2
         @test isapprox(r.solution[1], 0.5; atol=0.05)
@@ -515,7 +522,7 @@ end
         tm = Uniform(dd)
         f = Genz(tm; kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
         exact = genz_exact(f)
-        sc = CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_max=2^12)
+        sc = CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_limit=2^12)
         result = integrate(sc)
         @test result.solution isa Float64
         @test !isnan(result.solution)
@@ -524,7 +531,7 @@ end
         @test result.data[:n_total] == result.data[:n]
         @test result.data[:n_per_rep] == result.data[:n]
         traced = integrate(
-            CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_max=2^12, trace_iterations=true),
+            CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_limit=2^12, trace_iterations=true),
         )
         @test haskey(traced.data, :iteration_log)
         @test length(traced.data[:iteration_log]) >= 1
@@ -630,7 +637,7 @@ end
         dd = IIDStdUniform(1; seed=303)
         tm = Uniform(dd)
         f = _VecCLTIntegrand(tm)
-        r = integrate(CubMCCLTVec(f; abs_tol=0.02, n_max=2^20))
+        r = integrate(CubMCCLTVec(f; abs_tol=0.02, n_limit=2^20))
         @test r isa QMCVecResult
         @test length(r.solution) == 2
         @test isapprox(r.solution[1], 0.5; atol=0.05)         # E[x] = 1/2
@@ -655,7 +662,7 @@ end
         dd = IIDStdUniform(1; seed=55)
         tm = Uniform(dd)
         f = _RatioIntegrand(tm)
-        r = integrate(CubMCCLTVec(f; abs_tol=0.01, n_max=2^22))
+        r = integrate(CubMCCLTVec(f; abs_tol=0.01, n_limit=2^22))
         @test r isa QMCVecResult
         @test length(r.solution) == 1                          # one combined output
         @test isapprox(r.solution[1], 1 / 3; atol=0.02)        # ratio of means
@@ -679,7 +686,7 @@ end
         dd = IIDStdUniform(1; seed=11)
         tm = Uniform(dd)
         f = _FreezeIntegrand(tm)
-        r = integrate(CubMCCLTVec(f; abs_tol=0.02, n_max=2^20))
+        r = integrate(CubMCCLTVec(f; abs_tol=0.02, n_limit=2^20))
         @test r isa QMCVecResult
         @test r.data[:converged]
         @test isapprox(r.solution[1], 0.5; atol=0.02)          # constant output
@@ -745,12 +752,8 @@ end
     end
 
     @testset "_combined_bounds_stats" begin
-        low, high, sol, flags, err, tol = QuasiMC._combined_bounds_stats(
-            0.1,
-            0.0,
-            [1.0, NaN],
-            [1.2, 2.0],
-        )
+        low, high, sol, flags, err, tol =
+            QuasiMC._combined_bounds_stats(0.1, 0.0, [1.0, NaN], [1.2, 2.0])
         @test low[1] == 1.0
         @test isnan(low[2])
         @test high == [1.2, 2.0]
@@ -858,7 +861,7 @@ end
     @testset "CubMCG (rel_tol iterative mode)" begin
         dd = IIDStdUniform(3; seed=2001)
         f = Keister(Gaussian(dd; covariance=0.5))
-        r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_max=2^18))
+        r = integrate(CubMCG(f; abs_tol=0.01, rel_tol=0.05, n_init=256, n_limit=2^18))
         @test r.solution isa Float64
         @test isfinite(r.solution)
         r2 = integrate(
@@ -867,7 +870,7 @@ end
                 abs_tol=0.01,
                 rel_tol=0.05,
                 n_init=256,
-                n_max=2^18,
+                n_limit=2^18,
                 trace_iterations=true,
             ),
         )
@@ -878,31 +881,31 @@ end
     @testset "CubQMCBayesNetG (order=2, order=3, GCV, resume, non-conv)" begin
         dd2 = DigitalNetB2(2; randomize="LMS_DS", seed=2002)
         f2 = Genz(Uniform(dd2); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
-        r2 = integrate(CubQMCBayesNetG(f2; abs_tol=0.1, n_init=2^8, n_max=2^12, order=2))
+        r2 = integrate(CubQMCBayesNetG(f2; abs_tol=0.1, n_init=2^8, n_limit=2^12, order=2))
         @test r2.solution isa Float64
         @test isfinite(r2.solution)
         dd3 = DigitalNetB2(2; randomize="LMS_DS", seed=2003)
         f3 = Genz(Uniform(dd3); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
-        r3 = integrate(CubQMCBayesNetG(f3; abs_tol=0.1, n_init=2^8, n_max=2^12, order=3))
+        r3 = integrate(CubQMCBayesNetG(f3; abs_tol=0.1, n_init=2^8, n_limit=2^12, order=3))
         @test r3.solution isa Float64
         dd_gcv = DigitalNetB2(2; randomize="LMS_DS", seed=2004)
         f_gcv = Genz(Uniform(dd_gcv); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
         r_gcv = integrate(
-            CubQMCBayesNetG(f_gcv; abs_tol=0.1, n_init=2^8, n_max=2^12, errbd_type=:GCV),
+            CubQMCBayesNetG(f_gcv; abs_tol=0.1, n_init=2^8, n_limit=2^12, errbd_type=:GCV),
         )
         @test r_gcv.solution isa Float64
         dd_res = DigitalNetB2(2; randomize="LMS_DS", seed=2005)
         f_res = Genz(Uniform(dd_res); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
-        r_r1 = integrate(CubQMCBayesNetG(f_res; abs_tol=2.0, n_init=2^8, n_max=2^10))
+        r_r1 = integrate(CubQMCBayesNetG(f_res; abs_tol=2.0, n_init=2^8, n_limit=2^10))
         r_r2 = integrate(
-            CubQMCBayesNetG(f_res; abs_tol=0.01, n_init=2^8, n_max=2^14);
+            CubQMCBayesNetG(f_res; abs_tol=0.01, n_init=2^8, n_limit=2^14);
             resume=r_r1.data,
         )
         @test r_r2.data[:n] >= r_r1.data[:n]
         dd_nc = DigitalNetB2(2; randomize="LMS_DS", seed=2006)
         f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[10.0, 10.0], u=[0.5, 0.5])
         @test_logs (:warn, r"CubQMCBayesNetG") integrate(
-            CubQMCBayesNetG(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10),
+            CubQMCBayesNetG(f_nc; abs_tol=1e-8, n_init=2^8, n_limit=2^10),
         )
     end
 
@@ -915,13 +918,15 @@ end
         dd_nc = Lattice(2; randomize=true, seed=2008)
         f_nc = Genz(Uniform(dd_nc); kind=:discontinuous, a=[10.0, 10.0], u=[0.5, 0.5])
         @test_logs (:warn, r"CubQMCLatticeG") integrate(
-            CubQMCLatticeG(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10),
+            CubQMCLatticeG(f_nc; abs_tol=1e-8, n_init=2^8, n_limit=2^10),
         )
         dd_r = Lattice(2; randomize=true, seed=2009)
         f_r = Genz(Uniform(dd_r); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
-        r1 = integrate(CubQMCLatticeG(f_r; abs_tol=2.0, n_init=2^8, n_max=2^10))
-        r_res =
-            integrate(CubQMCLatticeG(f_r; abs_tol=0.01, n_init=2^8, n_max=2^14); resume=r1.data)
+        r1 = integrate(CubQMCLatticeG(f_r; abs_tol=2.0, n_init=2^8, n_limit=2^10))
+        r_res = integrate(
+            CubQMCLatticeG(f_r; abs_tol=0.01, n_init=2^8, n_limit=2^14);
+            resume=r1.data,
+        )
         @test r_res.data[:n] >= r1.data[:n]
     end
 
@@ -947,7 +952,7 @@ end
                 f_nc;
                 abs_tol=1e-8,
                 n_init=2^8,
-                n_max=2^10,
+                n_limit=2^10,
                 n_reps=8,
                 fft_error_bound=false,
             ),
@@ -959,7 +964,7 @@ end
                 f_r;
                 abs_tol=2.0,
                 n_init=2^8,
-                n_max=2^10,
+                n_limit=2^10,
                 n_reps=8,
                 fft_error_bound=false,
             ),
@@ -969,7 +974,7 @@ end
                 f_r;
                 abs_tol=0.01,
                 n_init=2^8,
-                n_max=2^14,
+                n_limit=2^14,
                 n_reps=8,
                 fft_error_bound=false,
             );
@@ -988,13 +993,13 @@ end
         dd_nc = Lattice(1; randomize=true, seed=2015)
         f_nc = _VecCLTIntegrand(Uniform(dd_nc))
         @test_logs (:warn, r"CubQMCLatticeG") integrate(
-            CubQMCLatticeG(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10),
+            CubQMCLatticeG(f_nc; abs_tol=1e-8, n_init=2^8, n_limit=2^10),
         )
         dd_r = Lattice(1; randomize=true, seed=2016)
         f_r = _VecCLTIntegrand(Uniform(dd_r))
-        r1 = integrate(CubQMCLatticeG(f_r; abs_tol=2.0, n_init=2^8, n_max=2^10))
+        r1 = integrate(CubQMCLatticeG(f_r; abs_tol=2.0, n_init=2^8, n_limit=2^10))
         r_res = integrate(
-            CubQMCLatticeG(f_r; abs_tol=0.005, n_init=2^8, n_max=2^14);
+            CubQMCLatticeG(f_r; abs_tol=0.005, n_init=2^8, n_limit=2^14);
             resume=r1.data,
         )
         @test r_res.data[:n] >= r1.data[:n]

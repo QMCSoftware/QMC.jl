@@ -20,8 +20,8 @@
         @test all(isfinite, eig2)
 
         frac_t = 0.3
-        @test QuasiMC._kernel_1d_shift(3, 1.3) ≈
-              1.0 + QuasiMC.bernoulli_poly(6, frac_t) atol = 1e-12
+        @test QuasiMC._kernel_1d_shift(3, 1.3) ≈ 1.0 + QuasiMC.bernoulli_poly(6, frac_t) atol =
+            1e-12
     end
 
     @testset "KernelDigShiftInvar" begin

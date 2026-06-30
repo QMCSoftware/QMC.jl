@@ -1,6 +1,6 @@
 """
     CubQMCLatticeG(integrand; abs_tol=0.01, rel_tol=0.0,
-                   n_init=2^10, n_max=2^30, fft_error_bound=true,
+                   n_init=2^10, n_limit=2^30, fft_error_bound=true,
                    n_reps=16, alpha=0.01, trace_iterations=false)
 
 Guaranteed QMC cubature using a randomized lattice rule.
@@ -77,7 +77,7 @@ mutable struct CubQMCLatticeG{I <: AbstractIntegrand} <: AbstractStoppingCriteri
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     n_reps::Int
     fft_error_bound::Bool
     alpha::Float64
@@ -90,7 +90,7 @@ function CubQMCLatticeG(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=2^10,
-    n_max::Int=2^30,
+    n_limit::Int=2^30,
     n_reps::Int=16,
     fft_error_bound::Bool=true,
     alpha::Float64=0.01,
@@ -104,7 +104,7 @@ function CubQMCLatticeG(
         abs_tol,
         rel_tol,
         n_init,
-        n_max,
+        n_limit,
         n_reps,
         fft_error_bound,
         alpha,
@@ -213,7 +213,7 @@ function _integrate_cubqmclatticeg_fft(
     ytilde = ComplexF64[]
     flip_mask = Vector{Bool}(undef, 0)
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
 
         # Apply locked shift (prevents gen_samples from regenerating a new one)
@@ -264,10 +264,10 @@ function _integrate_cubqmclatticeg_fft(
 
         converged = err <= tol
         converged && break
-        n = min(2n, sc.n_max + 1)
+        n = min(2n, sc.n_limit + 1)
     end
 
-    !converged && @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
+    !converged && @warn "CubQMCLatticeG: did not converge within n_limit=$(sc.n_limit)."
 
     t_elapsed = time() - t_start
     data = Dict{Symbol, Any}(
@@ -324,7 +324,7 @@ function _integrate_cubqmclatticeg_fft_multi(
     kappanumaps = [Int[] for _ in 1:m_indv]
     flip_mask = Vector{Bool}(undef, 0)
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
 
         if locked_shift !== nothing && dd isa Lattice
@@ -387,10 +387,10 @@ function _integrate_cubqmclatticeg_fft_multi(
         end
 
         converged && break
-        n = min(2n, sc.n_max + 1)
+        n = min(2n, sc.n_limit + 1)
     end
 
-    !converged && @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
+    !converged && @warn "CubQMCLatticeG: did not converge within n_limit=$(sc.n_limit)."
 
     t_elapsed = time() - t_start
     data = Dict{Symbol, Any}(
@@ -464,7 +464,7 @@ function _integrate_cubqmclatticeg_multi(
     n_iter = 0
     n_final = n
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
         estimates = Matrix{Float64}(undef, R, m_indv)
 
@@ -533,11 +533,11 @@ function _integrate_cubqmclatticeg_multi(
         end
 
         converged && break
-        n = min(2n, sc.n_max + 1)
+        n = min(2n, sc.n_limit + 1)
     end
 
     if !converged
-        @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
+        @warn "CubQMCLatticeG: did not converge within n_limit=$(sc.n_limit)."
     end
 
     t_elapsed = time() - t_start
@@ -617,7 +617,7 @@ function _integrate_cubqmclatticeg_replication(
         cv_beta = _fit_control_variate_beta(y_pilot, ycv_pilot)
     end
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
         estimates = Vector{Float64}(undef, R)
 
@@ -673,16 +673,16 @@ function _integrate_cubqmclatticeg_replication(
         end
 
         err <= tol && break
-        n = min(2n, sc.n_max + 1)
+        n = min(2n, sc.n_limit + 1)
     end
 
     converged = err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
     if !converged
-        @warn "CubQMCLatticeG: did not converge within n_max=$(sc.n_max)."
+        @warn "CubQMCLatticeG: did not converge within n_limit=$(sc.n_limit)."
     end
 
     t_elapsed = time() - t_start
-    n_per_rep = n > sc.n_max ? sc.n_max : n
+    n_per_rep = n > sc.n_limit ? sc.n_limit : n
     data = Dict{Symbol, Any}(
         :n => n_per_rep,
         :n_per_rep => n_per_rep,

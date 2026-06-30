@@ -1,6 +1,6 @@
 """
     CubQMCNetGRep(integrand; abs_tol=0.01, rel_tol=0.0,
-                  n_init=2^10, n_max=2^30, n_reps=16, alpha=0.01,
+                  n_init=2^10, n_limit=2^30, n_reps=16, alpha=0.01,
                   trace_iterations=false)
 
 Guaranteed QMC cubature using replicated randomized digital nets.
@@ -37,7 +37,7 @@ mutable struct CubQMCNetGRep{I <: AbstractIntegrand} <: AbstractStoppingCriterio
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     n_reps::Int
     alpha::Float64
     _t_crit::Float64
@@ -49,7 +49,7 @@ function CubQMCNetGRep(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=2^10,
-    n_max::Int=2^30,
+    n_limit::Int=2^30,
     n_reps::Int=16,
     alpha::Float64=0.01,
     trace_iterations::Bool=false,
@@ -59,7 +59,7 @@ function CubQMCNetGRep(
         abs_tol,
         rel_tol,
         n_init,
-        n_max,
+        n_limit,
         n_reps,
         alpha,
         quantile(TDist(n_reps - 1), 1.0 - alpha / 2.0),
@@ -184,7 +184,7 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
     tm = true_measure(f)
     estimates = Vector{Float64}(undef, R)
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
         _replicate_means!(estimates, f, tm, dd, n)
 
@@ -205,16 +205,16 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
         end
 
         err <= tol && break
-        n = min(2n, sc.n_max + 1)
+        n = min(2n, sc.n_limit + 1)
     end
 
     converged = err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
     if !converged
-        @warn "CubQMCNetGRep: did not converge within n_max=$(sc.n_max)."
+        @warn "CubQMCNetGRep: did not converge within n_limit=$(sc.n_limit)."
     end
 
     t_elapsed = time() - t_start
-    n_per_rep = n > sc.n_max ? sc.n_max : n
+    n_per_rep = n > sc.n_limit ? sc.n_limit : n
     data = Dict{Symbol, Any}(
         :n => n_per_rep,
         :n_per_rep => n_per_rep,

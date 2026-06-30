@@ -1,6 +1,6 @@
 """
     CubQMCBayesNetG(integrand; abs_tol=0.01, rel_tol=0.0,
-                    n_init=2^8, n_max=2^22, order=2,
+                    n_init=2^8, n_limit=2^22, order=2,
                     ptransform=:NONE, errbd_type=:MLE, alpha=0.01,
                     trace_iterations=false)
 
@@ -17,7 +17,7 @@ julia> using QuasiMC
 julia> f = Genz(Uniform(DigitalNetB2(3; randomize="LMS_DS", seed=7)); kind=:continuous, a=[1.0, 1.0, 1.0], u=[0.5, 0.5, 0.5])
 Genz(:continuous, d=3)
 
-julia> sc = CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_max=2^12)
+julia> sc = CubQMCBayesNetG(f; abs_tol=0.1, n_init=2^8, n_limit=2^12)
 CubQMCBayesNetG(abs_tol=0.1, order=2, ptransform=NONE)
 
 julia> result = integrate(sc);
@@ -34,7 +34,7 @@ mutable struct CubQMCBayesNetG{I <: AbstractIntegrand} <: AbstractStoppingCriter
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     order::Int
     ptransform::Symbol
     errbd_type::Symbol
@@ -47,7 +47,7 @@ function CubQMCBayesNetG(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=2^8,
-    n_max::Int=2^22,
+    n_limit::Int=2^22,
     order::Int=2,
     ptransform::Symbol=:NONE,
     errbd_type::Symbol=:MLE,
@@ -55,7 +55,7 @@ function CubQMCBayesNetG(
     trace_iterations::Bool=false,
 )
     @assert ispow2(n_init) "n_init must be a power of 2"
-    @assert ispow2(n_max) "n_max must be a power of 2"
+    @assert ispow2(n_limit) "n_limit must be a power of 2"
     @assert order in (1, 2, 3)
     @assert errbd_type in (:MLE, :GCV, :FULL)
     @assert 0 < alpha < 1
@@ -64,7 +64,7 @@ function CubQMCBayesNetG(
         abs_tol,
         rel_tol,
         n_init,
-        n_max,
+        n_limit,
         order,
         ptransform,
         errbd_type,
@@ -215,7 +215,7 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
     dd = discrete_distribution(f)
     tm = true_measure(f)
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
         x_uniform = gen_samples(dd, n)
 
@@ -234,8 +234,8 @@ function integrate(sc::CubQMCBayesNetG; resume::Union{Nothing, Dict{Symbol, Any}
         end
         err <= tol && break
 
-        2n > sc.n_max &&
-            (@warn "CubQMCBayesNetG: n_max=$(sc.n_max) reached. err=$err tol=$tol"; break)
+        2n > sc.n_limit &&
+            (@warn "CubQMCBayesNetG: n_limit=$(sc.n_limit) reached. err=$err tol=$tol"; break)
         n *= 2
     end
 

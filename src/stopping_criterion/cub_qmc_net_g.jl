@@ -1,6 +1,6 @@
 """
     CubQMCNetG(integrand; abs_tol=0.01, rel_tol=0.0,
-               n_init=2^10, n_max=2^30, r_lag=4,
+               n_init=2^10, n_limit=2^30, r_lag=4,
                trace_iterations=false)
 
 Guaranteed QMC cubature on a **single randomized digital net** (no replications),
@@ -20,7 +20,7 @@ scaled Walsh coefficients `ytilde` are formed, their indices are decay-ordered
     fudge(m) · Σ |ytilde[kappanumap[nllstart : 2·nllstart]]|,
     fudge(m) = 5·2⁻ᵐ,   nllstart = 2^(m − r_lag − 1).
 
-Sampling doubles until the bound meets the tolerance or `n_max` is reached.
+Sampling doubles until the bound meets the tolerance or `n_limit` is reached.
 
 The discrete distribution must be a non-replicated [`DigitalNetB2`](@ref) in
 **natural (radical-inverse) order**, i.e. constructed with `graycode=false` and
@@ -78,7 +78,7 @@ mutable struct CubQMCNetG{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     r_lag::Int
     trace_iterations::Bool
     cv_spec::Union{Nothing, _ControlVariateSpec}
@@ -89,7 +89,7 @@ function CubQMCNetG(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=2^10,
-    n_max::Int=2^30,
+    n_limit::Int=2^30,
     r_lag::Int=4,
     trace_iterations::Bool=false,
     control_variates=nothing,
@@ -115,7 +115,7 @@ function CubQMCNetG(
         abs_tol,
         rel_tol,
         n_init,
-        n_max,
+        n_limit,
         r_lag,
         trace_iterations,
         cv_spec,
@@ -150,7 +150,7 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
     n_iter = 0
     n_final = n
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
         m = round(Int, log2(n))
 
@@ -223,7 +223,7 @@ function _integrate_cubqmcnetg_multi(sc::CubQMCNetG, resume::Union{Nothing, Dict
     end
 
     if !converged
-        @warn "CubQMCNetG: did not converge within n_max=$(sc.n_max)."
+        @warn "CubQMCNetG: did not converge within n_limit=$(sc.n_limit)."
     end
 
     t_elapsed = time() - t_start
@@ -272,7 +272,7 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
     cv_beta = nothing
     log = IterationLog()
 
-    while n <= sc.n_max
+    while n <= sc.n_limit
         n_iter += 1
         m = round(Int, log2(n))
 
@@ -330,17 +330,17 @@ function integrate(sc::CubQMCNetG; resume::Union{Nothing, Dict{Symbol, Any}}=not
 
         err <= tol && break
         # Only ever sample at powers of two; the `while` guard stops once the
-        # next doubling would exceed n_max (so n_max need not be a power of two).
+        # next doubling would exceed n_limit (so n_limit need not be a power of two).
         n *= 2
     end
 
     converged = err <= max(sc.abs_tol, sc.rel_tol * abs(mu_hat))
     if !converged
-        @warn "CubQMCNetG: did not converge within n_max=$(sc.n_max)."
+        @warn "CubQMCNetG: did not converge within n_limit=$(sc.n_limit)."
     end
 
     t_elapsed = time() - t_start
-    n_per_rep = n > sc.n_max ? sc.n_max : n
+    n_per_rep = n > sc.n_limit ? sc.n_limit : n
     data = Dict{Symbol, Any}(
         :n => n_final,
         :n_per_rep => n_final,

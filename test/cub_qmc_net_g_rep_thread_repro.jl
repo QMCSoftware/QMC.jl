@@ -20,7 +20,7 @@ function scenario_result(name::AbstractString)
                 f;
                 abs_tol=0.02,
                 n_init=2^8,
-                n_max=2^14,
+                n_limit=2^14,
                 n_reps=8,
                 trace_iterations=true,
             ),
@@ -33,7 +33,7 @@ function scenario_result(name::AbstractString)
                 f;
                 abs_tol=0.005,
                 n_init=2^8,
-                n_max=2^14,
+                n_limit=2^14,
                 n_reps=8,
                 trace_iterations=true,
             ),

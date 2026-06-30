@@ -167,7 +167,7 @@ function run_release_parity()
             ref = stop_fixture["CubQMCNetG Keister"]
             dd = DigitalNetB2(3; seed=42, graycode=false)
             f = Keister(Gaussian(dd; covariance=0.5))
-            result = integrate(CubQMCNetG(f; abs_tol=0.05, n_init=2^8, n_max=2^12))
+            result = integrate(CubQMCNetG(f; abs_tol=0.05, n_init=2^8, n_limit=2^12))
             assert_solution_within_qmcpy_tolerance(
                 result.solution,
                 Float64(ref["solution"]),

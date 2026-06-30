@@ -311,7 +311,7 @@ end
 # Struct
 # ──────────────────────────────────────────────────────────────────────────────
 """
-    DigitalNetB2 <: AbstractDiscreteDistribution
+    DigitalNetB2 <: AbstractLDDiscreteDistribution
 
 Digital net in base 2 (Sobol' sequence) with optional scrambling.
 Supports up to 21201 raw Sobol' dimensions when using the bundled Joe-Kuo
@@ -320,7 +320,7 @@ See the outer constructor for full documentation.
 
 QMCToolsCL is required for sample generation.
 """
-mutable struct DigitalNetB2{R <: AbstractRNG} <: AbstractDiscreteDistribution
+mutable struct DigitalNetB2{R <: AbstractRNG} <: AbstractLDDiscreteDistribution
     dimension::Int
     randomize::String
     graycode::Bool

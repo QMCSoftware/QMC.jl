@@ -111,7 +111,7 @@ julia> all(0.0 .<= gen_samples(dd2, 4) .< 1.0)
 true
 ```
 """
-mutable struct Lattice{R <: AbstractRNG} <: AbstractDiscreteDistribution
+mutable struct Lattice{R <: AbstractRNG} <: AbstractLDDiscreteDistribution
     dimension::Int
     randomize::Bool
     order::String

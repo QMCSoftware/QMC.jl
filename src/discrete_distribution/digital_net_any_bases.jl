@@ -47,7 +47,7 @@ julia> round.(gen_samples(dd, 9); digits=6)
  0.888889  0.37037
 ```
 """
-mutable struct DigitalNetAnyBases{R <: AbstractRNG} <: AbstractDiscreteDistribution
+mutable struct DigitalNetAnyBases{R <: AbstractRNG} <: AbstractLDDiscreteDistribution
     dimension::Int
     d_gen::Int               # dimension of generating matrices (may differ from dimension if alpha > 1)
     bases::Vector{Int}       # base per gen-dimension

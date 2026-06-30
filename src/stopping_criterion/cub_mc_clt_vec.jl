@@ -1,6 +1,6 @@
 """
     CubMCCLTVec(integrand; abs_tol=0.01, rel_tol=0.0, n_init=256,
-                n_max=2^30, alpha=0.01, trace_iterations=false)
+                n_limit=2^30, alpha=0.01, trace_iterations=false)
 
 Vectorized IID Monte Carlo stopping criterion based on the Central Limit
 Theorem with doubling sample sizes.
@@ -58,7 +58,7 @@ mutable struct CubMCCLTVec{I <: AbstractIntegrand} <: AbstractStoppingCriterion
     abs_tol::Float64
     rel_tol::Float64
     n_init::Int
-    n_max::Int
+    n_limit::Int
     alpha::Float64
     trace_iterations::Bool
 end
@@ -68,7 +68,7 @@ function CubMCCLTVec(
     abs_tol::Float64=0.01,
     rel_tol::Float64=0.0,
     n_init::Int=256,
-    n_max::Int=2^30,
+    n_limit::Int=2^30,
     alpha::Float64=0.01,
     trace_iterations::Bool=false,
 )
@@ -77,7 +77,7 @@ function CubMCCLTVec(
     n_init > 0 || throw(ArgumentError("n_init must be > 0"))
     0 < alpha < 1 || throw(ArgumentError("alpha must be in (0,1)"))
 
-    return CubMCCLTVec(integrand, abs_tol, rel_tol, n_init, n_max, alpha, trace_iterations)
+    return CubMCCLTVec(integrand, abs_tol, rel_tol, n_init, n_limit, alpha, trace_iterations)
 end
 
 function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=nothing)
@@ -113,8 +113,8 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=no
     solution = n_total > 0 ? running_sum / n_total : 0.0
     err = Inf
 
-    while n_total < sc.n_max
-        n_batch = min(n, sc.n_max - n_total)
+    while n_total < sc.n_limit
+        n_batch = min(n, sc.n_limit - n_total)
         x = transform(tm, gen_samples(dd, n_batch))
         y = evaluate(f, x)
 
@@ -142,7 +142,7 @@ function integrate(sc::CubMCCLTVec; resume::Union{Nothing, Dict{Symbol, Any}}=no
 
         err <= tol && break
 
-        n = min(2 * n, sc.n_max - n_total)
+        n = min(2 * n, sc.n_limit - n_total)
         n <= 0 && break
     end
 
@@ -214,11 +214,11 @@ function _integrate_cubmccltvec_multi(
     mc = prod(cshape)
 
     # Per-output accumulators and sample counts so converged outputs can freeze
-    # (stop drawing new samples) while the rest keep doubling. `n_max` doubles
+    # (stop drawing new samples) while the rest keep doubling. `n_limit` doubles
     # each iteration; an active output's count grows toward it, a frozen one keeps
     # the count it had when it converged — mirroring QMCPy's per-output `n`.
     n_min = 0
-    n_max = sc.n_init
+    n_limit = sc.n_init
     recheck_only = false
     if resume !== nothing
         running_sum = collect(Float64, resume[:_running_sum])
@@ -228,7 +228,7 @@ function _integrate_cubmccltvec_multi(
         # Re-evaluate the (possibly tighter) tolerance from existing samples before
         # drawing more: unfreeze everything and skip generation on the first pass.
         n_min = maximum(n_indv)
-        n_max = n_min
+        n_limit = n_min
         recheck_only = true
     else
         running_sum = zeros(Float64, m)
@@ -250,7 +250,7 @@ function _integrate_cubmccltvec_multi(
 
     while true
         if !recheck_only
-            n_new = n_max - n_min
+            n_new = n_limit - n_min
             if n_new > 0
                 x = transform(tm, gen_samples(dd, n_new))
                 Y = reshape(evaluate(f, x, compute_flags), n_new, m)
@@ -337,9 +337,9 @@ function _integrate_cubmccltvec_multi(
         end
 
         count(compute_flags) == 0 && break        # all outputs sufficiently estimated
-        2 * maximum(n_indv) > sc.n_max && break    # next doubling would exceed n_max
-        n_min = n_max
-        n_max = 2 * n_max
+        2 * maximum(n_indv) > sc.n_limit && break    # next doubling would exceed n_limit
+        n_min = n_limit
+        n_limit = 2 * n_limit
     end
 
     t_elapsed = time() - t_start
