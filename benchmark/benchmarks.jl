@@ -13,7 +13,9 @@ using QuasiMC
 import QuasiMC: Uniform
 using Logging
 using LinearAlgebra
-include(joinpath(dirname(@__DIR__), "devtools", "coverage_probes.jl"))
+# PkgBenchmark stages `benchmark/benchmarks.jl` under a temporary `benchmark/`
+# tree, so helpers loaded here must live alongside this file.
+include(joinpath(@__DIR__, "coverage_probes.jl"))
 using .CoverageProbes: run_shared_coverage_probes
 
 # Silence expected, non-actionable warnings (notably CubMCCLT's single-pass
