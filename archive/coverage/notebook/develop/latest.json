@@ -1,8 +1,8 @@
 {
   "branch": "develop",
   "scope": "notebook",
-  "label": "sha-1aebd47",
-  "commit_sha": "1aebd47c46cd0dd423e6fa23e83ea04ec09472d7",
-  "snapshot_dir": "archive/coverage/notebook/develop/sha-1aebd47",
+  "label": "sha-ff1a4d1",
+  "commit_sha": "ff1a4d13647616e527d78381e50b63c9bb7eaab5",
+  "snapshot_dir": "archive/coverage/notebook/develop/sha-ff1a4d1",
   "source_manifest": "badges/coverage-source-notebook-develop.json"
 }
