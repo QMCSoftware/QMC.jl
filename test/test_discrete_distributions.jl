@@ -22,6 +22,7 @@
         x = gen_samples(dd, 64)
         @test size(x) == (64, 2)
         @test all(0.0 .<= x .< 1.0)
+        @test x[1, :] ≈ [0.0, 0.0] atol = 1e-12
         # Deterministic reproducibility
         dd2 = Lattice(2; randomize=false, seed=7)
         x2 = gen_samples(dd2, 64)
@@ -167,6 +168,8 @@
         @test_throws ArgumentError Lattice(2; generating_vector=1)
         @test_throws ArgumentError Lattice(2; generating_vector=27)
         @test_throws ArgumentError Lattice(2; generating_vector="missing-vector.txt")
+        @test_throws ArgumentError Lattice(0)
+        @test_throws ArgumentError Lattice(-1)
     end
 
     @testset "DigitalNetB2" begin
@@ -439,6 +442,8 @@
             alpha=2,
             generating_matrices=V8,
         )
+        @test_throws ArgumentError DigitalNetB2(0)
+        @test_throws ArgumentError DigitalNetB2(-1)
     end
 
     @testset "DigitalNetB2 QMCPy cross-validation" begin
@@ -557,6 +562,8 @@
         @test xrep0[1, :, :] == xrep0[2, :, :]
         @test_throws ArgumentError Halton(2; replications=0)
         @test_throws ArgumentError Halton(2; replications=-1)
+        @test_throws ArgumentError Halton(0)
+        @test_throws ArgumentError Halton(-1)
     end
 
     @testset "Owen/NUS Scrambling" begin

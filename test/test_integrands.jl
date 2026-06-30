@@ -210,6 +210,30 @@ QuasiMC.evaluate(f::_AltLayoutIntegrand, x::AbstractMatrix) = f.scale .* sum(x; 
         @test all(y_as .>= 0.0)
     end
 
+    @testset "Input dimension guards" begin
+        f_keister = Keister(Gaussian(IIDStdUniform(3; seed=402); covariance=0.5))
+        @test_throws DimensionMismatch evaluate(f_keister, rand(5, 2))
+        @test_throws DimensionMismatch evaluate(f_keister, rand(5, 4))
+
+        f_genz = Genz(Uniform(IIDStdUniform(3; seed=403)); kind=:continuous)
+        @test_throws DimensionMismatch evaluate(f_genz, rand(5, 2))
+        @test_throws DimensionMismatch evaluate(f_genz, rand(5, 4))
+
+        tm_bm = BrownianMotion(IIDStdUniform(4; seed=404))
+        f_asian = AsianOption(tm_bm; volatility=0.2, start_price=100.0, strike_price=100.0)
+        f_fin = FinancialOption(
+            tm_bm;
+            option_type=:asian,
+            volatility=0.2,
+            start_price=100.0,
+            strike_price=100.0,
+        )
+        @test_throws DimensionMismatch evaluate(f_asian, rand(5, 3))
+        @test_throws DimensionMismatch evaluate(f_asian, rand(5, 5))
+        @test_throws DimensionMismatch evaluate(f_fin, rand(5, 3))
+        @test_throws DimensionMismatch evaluate(f_fin, rand(5, 5))
+    end
+
     @testset "BoxIntegral" begin
         dd = IIDStdUniform(3; seed=410)
         tm = Uniform(dd)

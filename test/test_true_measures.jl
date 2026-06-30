@@ -30,6 +30,25 @@
         @test abs(mean(xt[:, 2]) - (-1.0)) < 0.2
     end
 
+    @testset "Gaussian decomposition semantics" begin
+        Σ = [3.0 1.0 0.5; 1.0 2.0 0.25; 0.5 0.25 1.5]
+        μ = [0.5, -1.0, 2.0]
+        tm_pca = Gaussian(IIDStdUniform(3; seed=21); mean=μ, covariance=Σ, decomp_type=:PCA)
+        tm_chol =
+            Gaussian(IIDStdUniform(3; seed=21); mean=μ, covariance=Σ, decomp_type=:Cholesky)
+        @test tm_pca._decomp * transpose(tm_pca._decomp) ≈ Σ atol = 1e-12 rtol = 1e-12
+        @test tm_chol._decomp * transpose(tm_chol._decomp) ≈ Σ atol = 1e-12 rtol = 1e-12
+
+        x = gen_samples(DigitalNetB2(3; randomize="none", seed=21), 2^12)
+        for y in (transform(tm_pca, x), transform(tm_chol, x))
+            @test maximum(abs.(vec(mean(y; dims=1)) .- μ)) < 0.05
+            @test maximum(abs.(cov(y) .- Σ)) < 0.2
+        end
+
+        @test_throws DimensionMismatch transform(tm_pca, rand(8, 2))
+        @test_throws DimensionMismatch transform(tm_pca, rand(8, 4))
+    end
+
     @testset "Deterministic inverse-CDF boundaries" begin
         dd = DigitalNetB2(2; randomize="none", seed=31)
         x = gen_samples(dd, 8)
@@ -127,6 +146,29 @@
         @test abs(var(paths[:, end]) - 4.0 * 2.0) < 0.8      # diffusion · t_final = 8
     end
 
+    @testset "BrownianMotion decomposition semantics" begin
+        tv = [0.2, 0.5, 1.25, 2.0]
+        diffusion = 0.7
+        expected_cov = diffusion .* [min(ti, tj) for ti in tv, tj in tv]
+        bm_pca = BrownianMotion(
+            IIDStdUniform(length(tv); seed=41);
+            time_vector=tv,
+            diffusion=diffusion,
+        )
+        bm_chol = BrownianMotion(
+            IIDStdUniform(length(tv); seed=41);
+            time_vector=tv,
+            diffusion=diffusion,
+            decomp_type=:Cholesky,
+        )
+        @test bm_pca._gaussian.covariance ≈ expected_cov atol = 1e-12 rtol = 1e-12
+        @test bm_chol._gaussian.covariance ≈ expected_cov atol = 1e-12 rtol = 1e-12
+        @test bm_pca._gaussian._decomp * transpose(bm_pca._gaussian._decomp) ≈ expected_cov atol =
+            1e-12 rtol = 1e-12
+        @test bm_chol._gaussian._decomp * transpose(bm_chol._gaussian._decomp) ≈ expected_cov atol =
+            1e-12 rtol = 1e-12
+    end
+
     @testset "Lebesgue" begin
         dd = IIDStdUniform(2; seed=50)
         tm = Lebesgue(dd; lower_bound=0.0, upper_bound=3.0)
@@ -153,6 +195,23 @@
         # Mean of GBM at time T: S₀ exp(γ T)
         expected_mean_T = 100.0 * exp(0.05 * 1.0)
         @test abs(mean(paths[:, end]) - expected_mean_T) / expected_mean_T < 0.1
+    end
+
+    @testset "GeometricBrownianMotion log-path semantics" begin
+        dd = DigitalNetB2(4; randomize="none", seed=61)
+        gbm = GeometricBrownianMotion(
+            dd;
+            t_final=2.0,
+            initial_value=50.0,
+            drift=0.03,
+            diffusion=0.09,
+            decomp_type=:Cholesky,
+        )
+        x = gen_samples(dd, 32)
+        log_paths = log.(transform(gbm, x) ./ gbm.initial_value)
+        bm_paths = transform(gbm._bm, x)
+        drift_row = ((gbm.drift - 0.5 * gbm.diffusion) .* gbm.time_vector)'
+        @test log_paths ≈ bm_paths .+ drift_row atol = 1e-12 rtol = 1e-12
     end
 
     @testset "StudentT" begin
