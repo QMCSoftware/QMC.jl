@@ -1,0 +1,15 @@
+{
+  "branch": "develop",
+  "scope": "bench",
+  "label": "sha-63ecfcd",
+  "commit_sha": "63ecfcddbcafd7d9f261ac53d344a7ddaa8ea00f",
+  "run_id": "28414575210",
+  "run_number": "50",
+  "run_attempt": "1",
+  "badge_file": "badges/coverage-bench-develop.json",
+  "source_manifest": "badges/coverage-source-bench-develop.json",
+  "archived_files": [
+    "lcov.info",
+    "coverage-source-bench-develop.json"
+  ]
+}
