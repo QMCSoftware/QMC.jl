@@ -10,6 +10,8 @@ It estimates the mean from `n_reps` independently randomized digital nets and
 uses a Student's t half-width across the replication means as its stopping rule.
 
 Supports **resume** and optional **iteration logging** (`trace_iterations=true`).
+The returned `result.data` also includes the final `:replicate_means` vector so
+fixed-seed runs can be audited for exact reproducibility across execution modes.
 
 # Examples
 ```jldoctest
@@ -174,6 +176,7 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
     t_start = time()
     mu_hat = 0.0
     err = Inf
+    sigma_reps = NaN
     n_iter = 0
     log = IterationLog()
     f = sc.integrand
@@ -218,6 +221,8 @@ function integrate(sc::CubQMCNetGRep; resume::Union{Nothing, Dict{Symbol, Any}}=
         :n_total => n_per_rep * R,
         :n_reps => R,
         :error_bound => err,
+        :replicate_means => copy(estimates),
+        :replicate_std => sigma_reps,
         :n_iterations => n_iter,
         :converged => converged,
         :time_integrate => prev_time + t_elapsed,

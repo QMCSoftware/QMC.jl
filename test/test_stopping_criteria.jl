@@ -1,3 +1,5 @@
+using Serialization
+
 # Top-level multi-output integrand for the CubMCCLTVec vector tests (structs must
 # be defined at top level, not inside a @testset). Two outputs over U[0,1]:
 # output 1 = x₁ (mean 0.5), output 2 = x₁² (mean 1/3).
@@ -43,6 +45,32 @@ function QuasiMC.evaluate(f::_FreezeIntegrand, x::AbstractMatrix)
     @views Y[:, 1] .= 0.5
     @views Y[:, 2] .= 3.0 .* x[:, 1]
     return Y
+end
+
+_stopping_criteria_project_dir() =
+    Base.active_project() === nothing ? dirname(@__DIR__) : dirname(Base.active_project())
+
+_stopping_criteria_coverage_flags() =
+    Base.JLOptions().code_coverage == 0 ? String[] : ["--code-coverage=user"]
+
+function _run_cubqmcnetgrep_thread_probe(threads::Int, scenario::AbstractString)
+    script = joinpath(@__DIR__, "cub_qmc_net_g_rep_thread_repro.jl")
+    julia = joinpath(Sys.BINDIR, Base.julia_exename())
+    mktemp() do path, io
+        close(io)
+        argv = String[
+            julia,
+            "--startup-file=no",
+            "--project=$(_stopping_criteria_project_dir())",
+            "--threads=$(threads)",
+        ]
+        append!(argv, _stopping_criteria_coverage_flags())
+        append!(argv, [script, scenario, path])
+        run(Cmd(argv))
+        open(path, "r") do data_io
+            return Serialization.deserialize(data_io)
+        end
+    end
 end
 
 @testset "Stopping Criteria" begin
@@ -365,6 +393,8 @@ end
         @test result.data[:n] >= 2^10
         @test result.data[:n_per_rep] == result.data[:n]
         @test result.data[:n_total] == result.data[:n] * result.data[:n_reps]
+        @test length(result.data[:replicate_means]) == result.data[:n_reps]
+        @test result.data[:replicate_std] >= 0.0
 
         # trace_iterations fills iteration_log; also covers line 150 (log in data).
         dd_tr = DigitalNetB2(2; randomize="DS", seed=701)
@@ -391,6 +421,27 @@ end
         @test_logs (:warn, r"CubQMCNetGRep") integrate(
             CubQMCNetGRep(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10, n_reps=4),
         )
+    end
+
+    @testset "CubQMCNetGRep threaded reproducibility" begin
+        for scenario in ("ds", "lms_ds")
+            single = _run_cubqmcnetgrep_thread_probe(1, scenario)
+            threaded = _run_cubqmcnetgrep_thread_probe(2, scenario)
+
+            @test single.threads == 1
+            @test threaded.threads == 2
+            @test single.solution == threaded.solution
+            @test single.error_bound == threaded.error_bound
+            @test single.n == threaded.n
+            @test single.n_per_rep == threaded.n_per_rep
+            @test single.n_total == threaded.n_total
+            @test single.n_reps == threaded.n_reps
+            @test single.n_iterations == threaded.n_iterations
+            @test single.converged == threaded.converged
+            @test single.replicate_std == threaded.replicate_std
+            @test single.replicate_means == threaded.replicate_means
+            @test single.iteration_diagnostics == threaded.iteration_diagnostics
+        end
     end
 
     @testset "CubQMCNetGSingle alias" begin

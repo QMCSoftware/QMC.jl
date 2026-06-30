@@ -7,6 +7,7 @@ lcov.info
 settings.json
 /.codex-julia-depot
 /.julia_depot
+/.julia_test
 
 # Ignore the root package lockfile and the formatter tool lockfile.
 # Keep docs/Manifest.toml trackable for reproducible documentation builds.
