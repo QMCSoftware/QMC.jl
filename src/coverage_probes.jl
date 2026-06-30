@@ -415,7 +415,14 @@ function _run_cubqmcnetgrep_coverage_probes()
     f = Genz(Uniform(dd); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
     loose = integrate(CubQMCNetGRep(f; abs_tol=0.5, n_init=2^4, n_limit=2^5, n_reps=4))
     integrate(
-        CubQMCNetGRep(f; abs_tol=0.05, n_init=2^4, n_limit=2^7, n_reps=4, trace_iterations=true);
+        CubQMCNetGRep(
+            f;
+            abs_tol=0.05,
+            n_init=2^4,
+            n_limit=2^7,
+            n_reps=4,
+            trace_iterations=true,
+        );
         resume=loose.data,
     )
     sprint(show, CubQMCNetGRep(f; abs_tol=0.1, n_reps=4))
