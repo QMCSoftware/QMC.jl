@@ -247,9 +247,12 @@
         push!(log_nan; n=10, solution=1.0, error_bound=0.1, tol=0.1, elapsed=NaN)
         txt_nan = sprint(show, log_nan)
         @test occursin("-", txt_nan)
+        html_nan = sprint(io -> show(io, MIME("text/html"), log_nan))
+        @test occursin("<caption>IterationLog (1 iterations)</caption>", html_nan)
         log_tiny = IterationLog()
         push!(log_tiny; n=10, solution=1.0, error_bound=0.1, tol=0.1, elapsed=1e-5)
         txt_tiny = sprint(show, log_tiny)
         @test occursin("e", txt_tiny)
+        @test QuasiMC._format_iteration_entry(:label, :custom) == "custom"
     end
 end

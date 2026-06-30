@@ -189,6 +189,30 @@ end
         @test cost == 8 * 16 * cost_at_level(f_dn, 2)
     end
 
+    @testset "ml_sample_and_evaluate helper branches" begin
+        f_iid = TestMLIntegrand(IIDStdUniform(8; seed=17); d_coarsest=2)
+        dd_iid, tm_iid = spawn_integrand(f_iid, 1)
+        dp_iid, cost_iid = ml_sample_and_evaluate(f_iid, dd_iid, tm_iid, 8, 1)
+        @test length(dp_iid) == 8
+        @test all(isfinite, dp_iid)
+        @test cost_iid == 8 * cost_at_level(f_iid, 1)
+
+        rep_sums = zeros(3)
+        @test QuasiMC._ml_replication_sums!(rep_sums, f_iid, dd_iid, tm_iid, 8, 1) === nothing
+        @test all(isfinite, rep_sums)
+
+        f_rep = FinancialOptionML(
+            DigitalNetB2(16; seed=9, randomize="LMS_DS", replications=2);
+            d_coarsest=4,
+            option_type=:asian,
+        )
+        dd_rep, tm_rep = spawn_integrand(f_rep, 1)
+        dp_rep, cost_rep = ml_sample_and_evaluate(f_rep, dd_rep, tm_rep, 4, 1)
+        @test length(dp_rep) == 8
+        @test all(isfinite, dp_rep)
+        @test cost_rep == 4 * cost_at_level(f_rep, 1)
+    end
+
     @testset "spawn_tm" begin
         dd = IIDStdUniform(4)
         tm = Gaussian(dd)

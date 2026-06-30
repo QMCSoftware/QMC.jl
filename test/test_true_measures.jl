@@ -49,6 +49,18 @@
         @test_throws DimensionMismatch transform(tm_pca, rand(8, 4))
     end
 
+    @testset "Gaussian in-place dense transform path" begin
+        dd = IIDStdUniform(2; seed=202)
+        Σ = [2.0 0.25; 0.25 1.5]
+        tm = Gaussian(dd; mean=[0.5, -0.25], covariance=Σ, decomp_type=:Cholesky)
+        x = [0.0 0.25; 0.5 0.75; 1.0 0.125]
+        z_scratch = Matrix{Float64}(undef, size(x)...)
+        dst = Matrix{Float64}(undef, size(x)...)
+        @test QuasiMC._transform_into!(tm, x, z_scratch, dst) === dst
+        @test dst ≈ transform(tm, x) atol = 1e-12 rtol = 1e-12
+        @test_throws ArgumentError Gaussian(dd; covariance=(1.0, 2.0))
+    end
+
     @testset "Deterministic inverse-CDF boundaries" begin
         dd = DigitalNetB2(2; randomize="none", seed=31)
         x = gen_samples(dd, 8)
@@ -430,6 +442,7 @@
         y = transform(dw, x)
         @test size(y) == (100, 2)
         @test abs(mean(y[:, 1])) < 0.5
+        @test_throws ArgumentError DistributionsWrapper(dd)
     end
 
     @testset "Open unit interval helper" begin
@@ -465,6 +478,10 @@
         tm15 = MaternGP(IIDStdUniform(4; seed=2); nu=1.5, lengthscale=0.5)
         y15 = transform(tm15, gen_samples(tm15.dd, 50))
         @test all(isfinite, y15)
+
+        c_near = QuasiMC._matern_cov(0.2, 3.5, 0.7, 1.2)
+        c_far = QuasiMC._matern_cov(0.4, 3.5, 0.7, 1.2)
+        @test 0.0 < c_far < c_near < 1.2
 
         # show method.
         @test repr(tm) == "MaternGP(ν=2.5, ℓ=0.3, σ²=1.0)"

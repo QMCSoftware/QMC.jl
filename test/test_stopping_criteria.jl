@@ -421,6 +421,12 @@ end
         @test_logs (:warn, r"CubQMCNetGRep") integrate(
             CubQMCNetGRep(f_nc; abs_tol=1e-8, n_init=2^8, n_max=2^10, n_reps=4),
         )
+
+        dd_lms = DigitalNetB2(2; randomize="LMS_DS", seed=704)
+        f_lms = Genz(Uniform(dd_lms); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
+        r_lms = integrate(CubQMCNetGRep(f_lms; abs_tol=0.2, n_init=2^8, n_reps=4))
+        @test isfinite(r_lms.solution)
+        @test r_lms.data[:n_reps] == 4
     end
 
     @testset "CubQMCNetGRep threaded reproducibility" begin
@@ -734,6 +740,26 @@ end
             sprint(show, QMCResult(1.0, Dict{Symbol, Any}(:n_total => 16, :error_bound => 0.1)))
         @test occursin("n_total=16", txt)
         @test occursin("error_bound=", txt)
+        txt_n = sprint(show, QMCResult(1.0, Dict{Symbol, Any}(:n => 8)))
+        @test occursin("n=8", txt_n)
+    end
+
+    @testset "_combined_bounds_stats" begin
+        low, high, sol, flags, err, tol = QuasiMC._combined_bounds_stats(
+            0.1,
+            0.0,
+            [1.0, NaN],
+            [1.2, 2.0],
+        )
+        @test low[1] == 1.0
+        @test isnan(low[2])
+        @test high == [1.2, 2.0]
+        @test sol[1] ≈ 1.1
+        @test flags[1]
+        @test isnan(sol[2])
+        @test !flags[2]
+        @test err ≈ 0.1
+        @test tol ≈ 0.1
     end
 
     @testset "set_tolerance!" begin
@@ -754,6 +780,7 @@ end
 
         @test_throws ArgumentError set_tolerance!(sc; abs_tol=-1.0)
         @test_throws ArgumentError set_tolerance!(sc; rel_tol=-0.5)
+        @test_throws ArgumentError set_tolerance!(sc; rmse_tol=0.1)
 
         dd_ml = DigitalNetB2(16; randomize="LMS_DS", seed=7)
         gbm = GeometricBrownianMotion(
