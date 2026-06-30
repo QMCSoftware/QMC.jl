@@ -1,8 +1,8 @@
 {
   "branch": "develop",
   "scope": "bench",
-  "label": "sha-63ecfcd",
-  "commit_sha": "63ecfcddbcafd7d9f261ac53d344a7ddaa8ea00f",
-  "snapshot_dir": "archive/coverage/bench/develop/sha-63ecfcd",
+  "label": "sha-1aebd47",
+  "commit_sha": "1aebd47c46cd0dd423e6fa23e83ea04ec09472d7",
+  "snapshot_dir": "archive/coverage/bench/develop/sha-1aebd47",
   "source_manifest": "badges/coverage-source-bench-develop.json"
 }
