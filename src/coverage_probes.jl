@@ -330,10 +330,10 @@ function _run_cubqmclatticeg_coverage_probes()
     dd_fft = Lattice(2; randomize=true, seed=41)
     f_fft = Genz(Uniform(dd_fft); kind=:continuous, a=[1.0, 1.0], u=[0.5, 0.5])
     loose = integrate(
-        CubQMCLatticeG(f_fft; abs_tol=2.0, n_init=2^5, n_max=2^6, trace_iterations=true),
+        CubQMCLatticeG(f_fft; abs_tol=2.0, n_init=2^5, n_limit=2^6, trace_iterations=true),
     )
     resumed = integrate(
-        CubQMCLatticeG(f_fft; abs_tol=0.05, n_init=2^5, n_max=2^8, trace_iterations=true);
+        CubQMCLatticeG(f_fft; abs_tol=0.05, n_init=2^5, n_limit=2^8, trace_iterations=true);
         resume=loose.data,
     )
     QuasiMC.resume_iteration_log(loose.data, resumed.data)
@@ -347,7 +347,7 @@ function _run_cubqmclatticeg_coverage_probes()
             f_rep;
             abs_tol=1.0,
             n_init=2^4,
-            n_max=2^5,
+            n_limit=2^5,
             n_reps=4,
             fft_error_bound=false,
             trace_iterations=true,
@@ -358,7 +358,7 @@ function _run_cubqmclatticeg_coverage_probes()
             f_rep;
             abs_tol=0.05,
             n_init=2^4,
-            n_max=2^7,
+            n_limit=2^7,
             n_reps=4,
             fft_error_bound=false,
             trace_iterations=true,
@@ -373,7 +373,7 @@ function _run_cubqmclatticeg_coverage_probes()
             g;
             abs_tol=1e-3,
             n_init=2^5,
-            n_max=2^7,
+            n_limit=2^7,
             control_variates=g,
             control_variate_means=5 / 6,
         ),
@@ -382,10 +382,10 @@ function _run_cubqmclatticeg_coverage_probes()
     dd_vec = Lattice(1; randomize=true, seed=44)
     f_vec = _ProbeVecIntegrand(Uniform(dd_vec))
     vec_loose = integrate(
-        CubQMCLatticeG(f_vec; abs_tol=0.2, n_init=2^5, n_max=2^6, trace_iterations=true),
+        CubQMCLatticeG(f_vec; abs_tol=0.2, n_init=2^5, n_limit=2^6, trace_iterations=true),
     )
     integrate(
-        CubQMCLatticeG(f_vec; abs_tol=0.05, n_init=2^5, n_max=2^8, trace_iterations=true);
+        CubQMCLatticeG(f_vec; abs_tol=0.05, n_init=2^5, n_limit=2^8, trace_iterations=true);
         resume=vec_loose.data,
     )
     integrate(
@@ -393,7 +393,7 @@ function _run_cubqmclatticeg_coverage_probes()
             f_vec;
             abs_tol=0.2,
             n_init=2^4,
-            n_max=2^6,
+            n_limit=2^6,
             n_reps=4,
             fft_error_bound=false,
         ),
@@ -413,9 +413,9 @@ end
 function _run_cubqmcnetgrep_coverage_probes()
     dd = DigitalNetB2(2; randomize="DS", seed=52)
     f = Genz(Uniform(dd); kind=:gaussian_peak, a=[1.0, 1.0], u=[0.5, 0.5])
-    loose = integrate(CubQMCNetGRep(f; abs_tol=0.5, n_init=2^4, n_max=2^5, n_reps=4))
+    loose = integrate(CubQMCNetGRep(f; abs_tol=0.5, n_init=2^4, n_limit=2^5, n_reps=4))
     integrate(
-        CubQMCNetGRep(f; abs_tol=0.05, n_init=2^4, n_max=2^7, n_reps=4, trace_iterations=true);
+        CubQMCNetGRep(f; abs_tol=0.05, n_init=2^4, n_limit=2^7, n_reps=4, trace_iterations=true);
         resume=loose.data,
     )
     sprint(show, CubQMCNetGRep(f; abs_tol=0.1, n_reps=4))
