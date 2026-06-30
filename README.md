@@ -81,10 +81,7 @@ using Pkg
 Pkg.add(url="https://github.com/QMCSoftware/QuasiMC.jl")
 ```
 
-`IIDStdUniform` is fully Julia-native. `Lattice`, `DigitalNetB2`, and `Halton`
-use the packaged QMCToolsCL shared library that ships through QuasiMC's staged
-`QMCToolsCL_jll` dependency, so no Python setup is required for core package
-usage.
+`IIDStdUniform` is fully Julia-native. `Lattice`, `DigitalNetB2`, and `Halton` use the packaged QMCToolsCL shared library that ships through QuasiMC's staged `QMCToolsCL_jll` dependency, so no Python setup is required for core package usage.
 
 Advanced users can override that shared library path before first use:
 

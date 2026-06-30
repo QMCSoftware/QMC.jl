@@ -198,8 +198,7 @@ To keep the benchmark coverage badge above the repository target without distort
 
 In that same coverage mode, `benchmark/runbenchmarks.jl` also disables BenchmarkTools' per-benchmark GC scrubs and skips the Julia RSS sidecar probe pass. That keeps the coverage workflows focused on exercising code paths and avoids Julia 1.12 CI instability seen when repeated forced GCs are mixed with coverage-instrumented benchmark samples. The published speed and memory badges still come only from plain `make bench-all`.
 
-These targets still execute the benchmark harness under coverage, but their final `lcov.info` and printed totals are now filtered to `src/` only, so the reported percentage is package coverage rather than benchmark-harness coverage.
-Their `executable lines` denominators are still target-specific because Julia's `*.cov` output only records the `src/` lines exercised by the current run.
+These targets still execute the benchmark harness under coverage, but their final `lcov.info` and printed totals are now filtered to `src/` only, so the reported percentage is package coverage rather than benchmark-harness coverage. Their `executable lines` denominators are still target-specific because Julia's `*.cov` output only records the `src/` lines exercised by the current run.
 
 The Julia runner now also writes a sidecar memory file per label:
 

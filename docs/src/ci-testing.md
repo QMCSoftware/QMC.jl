@@ -98,9 +98,7 @@ Builds the Documenter.jl documentation and runs the checked-in demo notebooks.
 
 ## Install Test (`install-test.yml`)
 
-Guards the staged QMCToolsCL binary-install path: Julia users expect `Pkg.add`
-to fully instantiate QuasiMC, including the packaged backend used by
-`Lattice`, `DigitalNetB2`, and `Halton`.
+Guards the staged QMCToolsCL binary-install path: Julia users expect `Pkg.add` to fully instantiate QuasiMC, including the packaged backend used by `Lattice`, `DigitalNetB2`, and `Halton`.
 
 - Triggers on pushes to `develop`/`master`, on pull requests that touch `src/` or `Project.toml`, and via manual dispatch.
 - Runs on `ubuntu-latest` with Julia 1.10 and 1.12, plus macOS and Windows with Julia 1.12. **Intentionally installs no Python for the core generator path.**
@@ -221,8 +219,7 @@ QuasiMC.jl publishes coverage only from `develop`/`master` push/manual lanes.
 - `benchmarking.yml` publishes the develop/master `bench` badge from `make bench-all-coverage`, which exercises the standalone benchmark suite together with the Julia-vs-Julia and Julia-vs-QMCPy comparison flows and the `BENCH_COVERAGE=1` probe pass, while keeping the benchmark speed/memory badges tied to plain `make bench-all`.
 - Each coverage-producing workflow also uploads its `lcov.info` as a GitHub Actions artifact.
 
-The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI.
-`make coverage` additionally processes the raw `*.cov` files into `lcov.info` and prints a source-coverage summary for `src/`. The other `*-coverage` targets reuse the same post-processing script, now also report against `src/` only, and still measure different execution slices, so they may report different `executable lines` totals.
+The local `Pkg.test(coverage=true)` command is the same instrumentation mode used by CI. `make coverage` additionally processes the raw `*.cov` files into `lcov.info` and prints a source-coverage summary for `src/`. The other `*-coverage` targets reuse the same post-processing script, now also report against `src/` only, and still measure different execution slices, so they may report different `executable lines` totals.
 
 ## Test File Structure
 

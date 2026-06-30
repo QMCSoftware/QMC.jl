@@ -50,10 +50,7 @@ make notebook-update NOTEBOOK_JOBS=2 NOTEBOOK_THREADS=1 NOTEBOOK_KERNEL=quasimc-
 make notebook-update-quickstart NOTEBOOK_KERNEL=quasimc-1.12
 ```
 
-`make coverage` also processes the raw `*.cov` files locally, writes `lcov.info`, and prints a source-coverage summary for `src/`.
-`make release-parity` is intentionally narrower than `make test`: it runs a small checked-in QMCPy 2.3 fixture that covers deterministic low-discrepancy samples/spawns, true-measure transforms, integrand values, stopping-criterion sample accounting, multilevel level accounting, and one resume case. Exact bit-level parity is required for the deterministic cases; seeded stopping criteria compare solutions within the same `2 * max(abs_tol, rel_tol * |value|)` agreement budget used by the benchmark parity harness.
-`make doctest` runs the `jldoctest` examples in the package docstrings under `src/` and any docs pages that contain doctests, without rendering the full HTML docs.
-CI uploads the same LCOV-style output to Codecov and stores it as a workflow artifact.
+`make coverage` also processes the raw `*.cov` files locally, writes `lcov.info`, and prints a source-coverage summary for `src/`. `make release-parity` is intentionally narrower than `make test`: it runs a small checked-in QMCPy 2.3 fixture that covers deterministic low-discrepancy samples/spawns, true-measure transforms, integrand values, stopping-criterion sample accounting, multilevel level accounting, and one resume case. Exact bit-level parity is required for the deterministic cases; seeded stopping criteria compare solutions within the same `2 * max(abs_tol, rel_tol * |value|)` agreement budget used by the benchmark parity harness. `make doctest` runs the `jldoctest` examples in the package docstrings under `src/` and any docs pages that contain doctests, without rendering the full HTML docs. CI uploads the same LCOV-style output to Codecov and stores it as a workflow artifact.
 
 `TEST_JOBS` and `NOTEBOOK_JOBS` shard whole test files or notebooks across multiple Julia processes. `TEST_THREADS` and `NOTEBOOK_THREADS` control Julia threads inside each shard. The conservative default is `1` thread per shard to avoid oversubscribing CI runners.
 

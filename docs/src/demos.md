@@ -2,9 +2,7 @@
 
 ## Quick Start
 
-Add the package with `import Pkg; Pkg.add("QuasiMC")`, or `Pkg.develop(path=pwd())`
-from the repository root. Examples using `Lattice` now rely on the packaged
-QMCToolsCL backend and do not require Python for QuasiMC itself.
+Add the package with `import Pkg; Pkg.add("QuasiMC")`, or `Pkg.develop(path=pwd())` from the repository root. Examples using `Lattice` now rely on the packaged QMCToolsCL backend and do not require Python for QuasiMC itself.
 
 **1. IID Monte Carlo** — integrate ``\sin(\pi x_1)\cos(\pi x_2)`` over ``[0,1]^2`` (exact value = 0):
 

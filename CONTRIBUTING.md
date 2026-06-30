@@ -45,8 +45,7 @@ Items marked as QuasiMC.jl-only extensions in the parity map are outside strict 
 | Python | any recent | optional: `make test`, `make doctest`, and `make bench-compare` work without it; required for `make bench-all` / `make bench-compare-py` (Julia-vs-QMCPy cross-language comparison) and for running demo notebooks as a Jupyter frontend |
 | Git | any recent | to clone the repo |
 
-Python is not a runtime dependency for any core generator, the Julia test suite, or the Julia-only regression benchmark (`make bench-compare`).
-It is only needed for two contributor workflows:
+Python is not a runtime dependency for any core generator, the Julia test suite, or the Julia-only regression benchmark (`make bench-compare`). It is only needed for two contributor workflows:
 
 1. **Cross-language benchmarking** — `make bench-all` and `make bench-compare-py` drive the Julia-vs-QMCPy comparison. Contributors who only need the Julia-vs-Julia regression can use `make bench-compare` instead.
 2. **Demo notebooks** — Python acts as the Jupyter frontend. The notebooks still execute on the Julia kernel; Python is not involved in the computation.
@@ -67,17 +66,11 @@ julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("QMCToolsCL_jll")'
 
 ### 3. QMCToolsCL backend for `Lattice`, `DigitalNetB2`, and `Halton`
 
-The main low-discrepancy generators are backed by the QMCToolsCL shared
-library (version ≥ 1.2.3), now supplied through the staged
-`QMCToolsCL_jll` dependency in this repository. No Python setup is required for
-core development or CI.
+The main low-discrepancy generators are backed by the QMCToolsCL shared library (version ≥ 1.2.3), now supplied through the staged `QMCToolsCL_jll` dependency in this repository. No Python setup is required for core development or CI.
 
-`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and
-stopping criteria, work without touching that backend directly.
+`IIDStdUniform` and `Kronecker`, and all true measures, integrands, and stopping criteria, work without touching that backend directly.
 
-If you need to force QuasiMC to load a specific custom library during local
-debugging, set this before first use of those generators (no Julia restart
-needed):
+If you need to force QuasiMC to load a specific custom library during local debugging, set this before first use of those generators (no Julia restart needed):
 
 ```julia
 ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
@@ -170,9 +163,7 @@ Then select the `QuasiMC` kernel in Jupyter or VS Code once.
 
 If you prefer to launch Jupyter from Python or Conda, that is also fine, but Python is only the notebook frontend in that setup. The notebook must still execute on the `QuasiMC` Julia kernel.
 
-Most demos use `Lattice` or `DigitalNetB2`, so they exercise the packaged
-QMCToolsCL backend. Python is only needed there as a notebook frontend
-(`jupyter`), not for QuasiMC's own generator runtime.
+Most demos use `Lattice` or `DigitalNetB2`, so they exercise the packaged QMCToolsCL backend. Python is only needed there as a notebook frontend (`jupyter`), not for QuasiMC's own generator runtime.
 
 To run a notebook in VS Code:
 

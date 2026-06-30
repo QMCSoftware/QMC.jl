@@ -1,13 +1,8 @@
 # QuasiMC.jl Demo Notebooks
 
-These notebooks contain Julia code for the QuasiMC.jl package. Most demos use
-`Lattice` or `DigitalNetB2`, but those generators now use the packaged
-QMCToolsCL backend supplied through QuasiMC itself. Python is only needed here
-as a Jupyter frontend if you choose to launch notebooks that way. The notebooks
-themselves must run with a Julia kernel, not a Python kernel.
+These notebooks contain Julia code for the QuasiMC.jl package. Most demos use `Lattice` or `DigitalNetB2`, but those generators now use the packaged QMCToolsCL backend supplied through QuasiMC itself. Python is only needed here as a Jupyter frontend if you choose to launch notebooks that way. The notebooks themselves must run with a Julia kernel, not a Python kernel.
 
-If you need to force QuasiMC to load a custom QMCToolsCL build while debugging,
-set this before first use of those generators:
+If you need to force QuasiMC to load a custom QMCToolsCL build while debugging, set this before first use of those generators:
 
 ```julia
 ENV["QUASIMC_QMCTOOLSCL_LIB"] = "/absolute/path/to/library"
@@ -39,9 +34,7 @@ conda install jupyter
 jupyter notebook demos/quickstart.ipynb
 ```
 
-When Jupyter opens, choose the `QuasiMC` Julia kernel for the notebook. The
-Python environment only launches Jupyter; it does not run the notebook code or
-provide QuasiMC's QMCToolsCL backend.
+When Jupyter opens, choose the `QuasiMC` Julia kernel for the notebook. The Python environment only launches Jupyter; it does not run the notebook code or provide QuasiMC's QMCToolsCL backend.
 
 Current notebook inventory:
 
