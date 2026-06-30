@@ -405,10 +405,7 @@ function _run_cubmccltvec_coverage_probes()
     dd = IIDStdUniform(1; seed=51)
     f = _ProbeVecIntegrand(Uniform(dd))
     loose = integrate(CubMCCLTVec(f; abs_tol=0.2, n_init=32, trace_iterations=true))
-    integrate(
-        CubMCCLTVec(f; abs_tol=0.05, n_init=32, trace_iterations=true);
-        resume=loose.data,
-    )
+    integrate(CubMCCLTVec(f; abs_tol=0.05, n_init=32, trace_iterations=true); resume=loose.data)
     sprint(show, CubMCCLTVec(f; abs_tol=0.1, n_init=32))
     return nothing
 end
@@ -437,17 +434,20 @@ end
 
 function _run_latnetbuilder_coverage_probes()
     mktempdir() do dir
-        ordinary = join([
-            "Ordinary  // type",
-            "8  // n_points",
-            "3  // dim",
-            "comment",
-            "comment",
-            "1  // gen1",
-            "3  // gen2",
-            "5  // gen3",
-            "",
-        ], "\n")
+        ordinary = join(
+            [
+                "Ordinary  // type",
+                "8  // n_points",
+                "3  // dim",
+                "comment",
+                "comment",
+                "1  // gen1",
+                "3  // gen2",
+                "5  // gen3",
+                "",
+            ],
+            "\n",
+        )
         open(joinpath(dir, "outputMachine.txt"), "w") do io
             write(io, ordinary)
         end
@@ -455,23 +455,26 @@ function _run_latnetbuilder_coverage_probes()
     end
 
     mktempdir() do dir
-        digital = join([
-            "2  // nb_cols",
-            "2  // nb_rows",
-            "4  // n_points",
-            "2  // dim",
-            "comment",
-            "Sobol  // set_type",
-            "comment",
-            "comment",
-            "---",
-            "1 0",
-            "0 1",
-            "---",
-            "1 1",
-            "0 1",
-            "",
-        ], "\n")
+        digital = join(
+            [
+                "2  // nb_cols",
+                "2  // nb_rows",
+                "4  // n_points",
+                "2  // dim",
+                "comment",
+                "Sobol  // set_type",
+                "comment",
+                "comment",
+                "---",
+                "1 0",
+                "0 1",
+                "---",
+                "1 1",
+                "0 1",
+                "",
+            ],
+            "\n",
+        )
         open(joinpath(dir, "outputMachine.txt"), "w") do io
             write(io, digital)
         end

@@ -873,7 +873,7 @@ open(outfile, "w") do io
     println(io, "")
     println(
         io,
-        "> ⚠️ C-kernel rows `[C]` (Lattice/DigitalNetB2/Halton `gen_samples`) call the same",
+        "> WARNING: C-kernel rows `[C]` (Lattice/DigitalNetB2/Halton `gen_samples`) call the same",
     )
     println(
         io,
@@ -909,7 +909,7 @@ open(outfile, "w") do io
     if artifact_skew_seconds > ARTIFACT_SKEW_WARNING_SECONDS
         println(
             io,
-            "> ℹ️ The Julia and QMCPy input artifacts are more than 10 minutes apart. If that was not intentional, rerun `make bench-compare-py` to refresh both sides together.",
+            "> NOTE: The Julia and QMCPy input artifacts are more than 10 minutes apart. If that was not intentional, rerun `make bench-compare-py` to refresh both sides together.",
         )
     end
     println(io, "")
@@ -1019,7 +1019,7 @@ open(outfile, "w") do io
             "| weighted approximate RSS delta ratio | all matched rows | n/a | n/a | n/a | 0 |\n",
         )
     end
-    println(io, "> ℹ️ " * RSS_RATIO_NOTE)
+    println(io, "> NOTE: " * RSS_RATIO_NOTE)
     println(io, "")
     println(io, "## Grouped Timing Summary\n")
     println(

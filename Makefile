@@ -1,4 +1,4 @@
-.PHONY: test coverage release-parity release-parity-refresh doctest doctest-coverage doc uml format format-check lint clean bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
+.PHONY: test coverage release-parity release-parity-refresh doctest doctest-coverage doc uml format format-check lint clean unicode-audit bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
 .NOTPARALLEL: notebook notebook-update notebook-update-% notebook-% ci-doc-demo workflow-smoke
 
 # ============================================================================
@@ -8,7 +8,7 @@
 FORMATTER_PROJECT=devtools/formatter
 DOC_DEPOT ?= $(if $(TMPDIR),$(TMPDIR),/tmp/)qmcju-doc-depot
 QMCPY_PYTHON_AUTO := $(shell \
-	for py in python python3 "$(HOME)/miniconda3/bin/python" "$(HOME)/miniconda3/envs/qmcpy/bin/python" "$(HOME)/miniconda3/envs/qmcpy-leadership/bin/python"; do \
+	for py in "$(HOME)/miniconda3/envs/qmcpy/bin/python" "$(HOME)/miniconda3/envs/qmcpy-leadership/bin/python" "$(HOME)/miniconda3/bin/python" python3 python; do \
 		if { [ -x "$$py" ] || command -v "$$py" >/dev/null 2>&1; } && "$$py" -c "import qmcpy" >/dev/null 2>&1; then \
 			printf "%s" "$$py"; \
 			break; \
@@ -103,6 +103,7 @@ clean:
 # ============================================================================
 
 COVERAGE_REPORT_ROOTS := src
+UNICODE_AUDIT_PATHS ?= .github Project.toml README.md src test docs benchmark
 
 # Run all unit tests. Override file-level process sharding with TEST_JOBS=... and
 # Julia threads inside each test process with TEST_THREADS=...
@@ -156,6 +157,10 @@ doctest-coverage:
 # ============================================================================
 # Formatting
 # ============================================================================
+
+# Audit release-critical text files for hidden/bidirectional/control Unicode.
+unicode-audit:
+	$(PYTHON) devtools/unicode_audit.py $(UNICODE_AUDIT_PATHS)
 
 # Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:
