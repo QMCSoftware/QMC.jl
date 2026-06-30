@@ -1,4 +1,4 @@
-.PHONY: test coverage release-parity release-parity-refresh doctest doctest-coverage doc uml format format-check lint clean unicode-audit bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
+.PHONY: test coverage release-parity release-parity-refresh doctest doctest-coverage doc uml format format-check lint clean unicode-audit markdown-unwrap markdown-unwrap-check bench bench-compare bench-compare-py bench-compare-py-label bench-all bench-compare-labels bench-coverage bench-compare-coverage bench-compare-py-coverage bench-all-coverage notebook-coverage local-ci workflow-smoke check-qmcpy-python ci-doc-demo ci-bench
 .NOTPARALLEL: notebook notebook-update notebook-update-% notebook-% ci-doc-demo workflow-smoke
 
 # ============================================================================
@@ -80,6 +80,19 @@ ifneq ($(filter bench-compare-labels,$(firstword $(MAKECMDGOALS))),)
   endif
 endif
 
+# Allow `make markdown-unwrap path/to/file.md` or
+# `make markdown-unwrap-check demos/quickstart.ipynb` as shorthand for
+# `MARKDOWN_UNWRAP_PATH=...`.
+ifneq ($(filter markdown-unwrap markdown-unwrap-check,$(firstword $(MAKECMDGOALS))),)
+  EXTRA_MARKDOWN_UNWRAP_GOALS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  ifneq ($(strip $(EXTRA_MARKDOWN_UNWRAP_GOALS)),)
+    MARKDOWN_UNWRAP_PATH ?= $(firstword $(EXTRA_MARKDOWN_UNWRAP_GOALS))
+    .PHONY: $(EXTRA_MARKDOWN_UNWRAP_GOALS)
+    $(EXTRA_MARKDOWN_UNWRAP_GOALS):
+	@:
+  endif
+endif
+
 # ============================================================================
 # Project maintenance and setup
 # ============================================================================
@@ -104,6 +117,7 @@ clean:
 
 COVERAGE_REPORT_ROOTS := src
 UNICODE_AUDIT_PATHS ?= .github Project.toml README.md src test docs benchmark
+MARKDOWN_UNWRAP_PATH ?= .
 
 # Run all unit tests. Override file-level process sharding with TEST_JOBS=... and
 # Julia threads inside each test process with TEST_THREADS=...
@@ -161,6 +175,19 @@ doctest-coverage:
 # Audit release-critical text files for hidden/bidirectional/control Unicode.
 unicode-audit:
 	$(PYTHON) devtools/unicode_audit.py $(UNICODE_AUDIT_PATHS)
+
+# Unwrap hard-wrapped Markdown prose in a .md file or notebook markdown cells.
+# Usage:
+#   make markdown-unwrap
+#   make markdown-unwrap README.md
+#   make markdown-unwrap demos/quickstart.ipynb
+#   make markdown-unwrap MARKDOWN_UNWRAP_PATH=docs
+markdown-unwrap:
+	$(PYTHON) devtools/unwrap_markdown.py "$(MARKDOWN_UNWRAP_PATH)"
+
+# Check whether Markdown prose would be unwrapped without editing in place.
+markdown-unwrap-check:
+	$(PYTHON) devtools/unwrap_markdown.py --check "$(MARKDOWN_UNWRAP_PATH)"
 
 # Format code with JuliaFormatter (uses the repo .JuliaFormatter.toml for all paths)
 format:
