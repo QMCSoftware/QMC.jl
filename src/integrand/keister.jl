@@ -33,6 +33,7 @@ end
 Keister(tm::AbstractTrueMeasure) = Keister(tm, dimension(tm))
 
 function evaluate(f::Keister, x::AbstractMatrix)
+    _require_sample_dimension(f.dimension, x, nameof(typeof(f)))
     coeff = π^(f.dimension / 2)
     # sum(abs2, x; dims=2) sweeps column-by-column (cache-friendly for column-major
     # Julia arrays), avoiding row-stride cache misses in the original loop.

@@ -224,6 +224,7 @@ function _barrier_payoff(f::FinancialOption, S::AbstractVector)
 end
 
 function evaluate(f::FinancialOption, x::AbstractMatrix)
+    _require_sample_dimension(f.dimension, x, nameof(typeof(f)))
     r = f.interest_rate
     T = f._time_vector[end]
     discount = exp(-r * T)

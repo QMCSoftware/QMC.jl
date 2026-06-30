@@ -156,6 +156,13 @@ _supports_transform_into(::AbstractTrueMeasure) = false
 @inline dimension(f::AbstractIntegrand) =
     hasfield(typeof(f), :dimension) ? getfield(f, :dimension) : dimension(true_measure(f))
 
+@inline function _require_sample_dimension(expected::Int, x::AbstractMatrix, who)
+    actual = size(x, 2)
+    actual == expected ||
+        throw(DimensionMismatch("$(who) expects an n×$expected matrix, got n×$actual"))
+    return nothing
+end
+
 """
     gen_samples(dd::AbstractDiscreteDistribution, n::Int; kwargs...)
 

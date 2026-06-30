@@ -135,6 +135,7 @@ function _compute_decomp(cov::Matrix{Float64}, decomp_type::Symbol)
 end
 
 function transform(tm::Gaussian, x::AbstractMatrix)
+    _require_sample_dimension(tm.dimension, x, nameof(typeof(tm)))
     # x is n×d with entries in [0,1); compute  y = Φ⁻¹(x) * Aᵀ .+ μᵀ.
     # Φ⁻¹(u) = √2·erfinv(2u-1) — avoids per-element Distributions.Normal() dispatch.
     # Clamp into (0,1) so deterministic digital-net points at exactly 0 stay finite.

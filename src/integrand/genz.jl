@@ -70,6 +70,9 @@ end
 
 function evaluate(f::Genz, x::AbstractMatrix)
     n, d = size(x)
+    d == f.dimension || throw(
+        DimensionMismatch("$(nameof(typeof(f))) expects an n×$(f.dimension) matrix, got n×$d"),
+    )
     a = f.a
     u = f.u
     y = Vector{Float64}(undef, n)

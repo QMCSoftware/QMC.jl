@@ -82,6 +82,9 @@ end
 
 function evaluate(f::AsianOption, x::AbstractMatrix)
     n, d = size(x)
+    d == f.dimension || throw(
+        DimensionMismatch("$(nameof(typeof(f))) expects an n×$(f.dimension) matrix, got n×$d"),
+    )
     σ = f.volatility
     S0 = f.start_price
     K = f.strike_price
