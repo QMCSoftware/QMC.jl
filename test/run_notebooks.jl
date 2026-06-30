@@ -297,9 +297,12 @@ function current_project_dir()
 end
 
 coverage_enabled() = Base.JLOptions().code_coverage != 0
+coverage_probes_enabled() =
+    coverage_enabled() &&
+    getenv_compat("QUASIMC_NOTEBOOK_RUN_PROBES", "QMC_NOTEBOOK_RUN_PROBES", "1") == "1"
 
 function maybe_run_coverage_probes(opts::NotebookOptions)
-    coverage_enabled() || return
+    coverage_probes_enabled() || return
     opts.overwrite && return
     println()
     println("Running coverage-only probes after notebook pass.")
@@ -326,6 +329,7 @@ function child_cmd(notebooks::Vector{String}, opts::NotebookOptions)
         "JULIA_PROJECT" => current_project_dir(),
         "JULIA_NUM_THREADS" => string(Threads.nthreads()),
         "QUASIMC_SKIP_PKG_SETUP" => "1",
+        "QUASIMC_NOTEBOOK_RUN_PROBES" => "0",
         "QUASIMC_NOTEBOOK_VERBOSE" =>
             getenv_compat("QUASIMC_NOTEBOOK_VERBOSE", "QMC_NOTEBOOK_VERBOSE", "0"),
     )
@@ -519,6 +523,7 @@ function run_one_notebook(
         "JULIA_PROJECT" => current_project_dir(),
         "JULIA_NUM_THREADS" => string(Threads.nthreads()),
         "QUASIMC_SKIP_PKG_SETUP" => "1",
+        "QUASIMC_NOTEBOOK_RUN_PROBES" => "0",
         "QUASIMC_NB_ONE" => nb,
         "QUASIMC_NOTEBOOK_VERBOSE" => verbose ? "1" : "0",
     )
