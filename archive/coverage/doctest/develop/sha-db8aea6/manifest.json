@@ -1,0 +1,15 @@
+{
+  "branch": "develop",
+  "scope": "doctest",
+  "label": "sha-db8aea6",
+  "commit_sha": "db8aea61879a91b9a74110ae385ec820533261e5",
+  "run_id": "28436084974",
+  "run_number": "78",
+  "run_attempt": "1",
+  "badge_file": "badges/coverage-doctest-develop.json",
+  "source_manifest": "badges/coverage-source-doctest-develop.json",
+  "archived_files": [
+    "lcov.info",
+    "coverage-source-doctest-develop.json"
+  ]
+}
