@@ -1,0 +1,118 @@
+{
+    "label": "sha-4b18255",
+    "julia_threads": 1,
+    "julia_version": "1.12.6",
+    "coverage_mode": false,
+    "benchmark_config": {
+        "integrate_samples": 9,
+        "leaf_samples": 5,
+        "student_t_samples": 21
+    },
+    "generated_at": "2026-06-30T15:17:44",
+    "blas_threads": 2,
+    "solutions": {
+        "CubQMCNetG Keister": {
+            "effective_tol": 0.01,
+            "rel_error": 0.00033893262397318704,
+            "allowed_error": 0.02,
+            "exact_value": 2.168309102165481,
+            "abs_tol": 0.01,
+            "exact_flagged": 0,
+            "solution": 2.167574191471899,
+            "rel_tol": 0,
+            "abs_error": 0.0007349106935818916
+        },
+        "CubMCCLT AsianOption": {
+            "abs_tol": 0.5,
+            "solution": 5.795162357732646,
+            "rel_tol": 0
+        },
+        "CubQMCLatticeG Keister": {
+            "effective_tol": 0.01,
+            "rel_error": 5.129687165802701e-5,
+            "allowed_error": 0.02,
+            "exact_value": 2.168309102165481,
+            "abs_tol": 0.01,
+            "exact_flagged": 0,
+            "solution": 2.168197874691752,
+            "rel_tol": 0,
+            "abs_error": 0.00011122747372871444
+        },
+        "CubQMCNetGRep Keister": {
+            "effective_tol": 0.01,
+            "rel_error": 0.00036260520173406907,
+            "allowed_error": 0.02,
+            "exact_value": 2.168309102165481,
+            "abs_tol": 0.01,
+            "exact_flagged": 0,
+            "solution": 2.1690953423248933,
+            "rel_tol": 0,
+            "abs_error": 0.0007862401594125323
+        },
+        "CubMCCLT EuropeanOption": {
+            "effective_tol": 0.5,
+            "rel_error": 0.03553484474557902,
+            "allowed_error": 1,
+            "exact_value": 10.450583572185574,
+            "abs_tol": 0.5,
+            "exact_flagged": 0,
+            "solution": 10.821943436923886,
+            "rel_tol": 0,
+            "abs_error": 0.37135986473831295
+        },
+        "CubQMCNetGRep EuropeanOption": {
+            "effective_tol": 0.5,
+            "rel_error": 0.0009018822146475837,
+            "allowed_error": 1,
+            "exact_value": 10.450583572185574,
+            "abs_tol": 0.5,
+            "exact_flagged": 0,
+            "solution": 10.460008767642016,
+            "rel_tol": 0,
+            "abs_error": 0.009425195456442381
+        },
+        "CubQMCNetG EuropeanOption": {
+            "effective_tol": 0.5,
+            "rel_error": 0.025867690536574683,
+            "allowed_error": 1,
+            "exact_value": 10.450583572185574,
+            "abs_tol": 0.5,
+            "exact_flagged": 0,
+            "solution": 10.720916033957481,
+            "rel_tol": 0,
+            "abs_error": 0.2703324617719076
+        },
+        "CubQMCNetGRep AsianOption": {
+            "abs_tol": 0.5,
+            "solution": 5.859858230138708,
+            "rel_tol": 0
+        },
+        "CubQMCLatticeG EuropeanOption": {
+            "effective_tol": 0.5,
+            "rel_error": 0.01073625467215989,
+            "allowed_error": 1,
+            "exact_value": 10.450583572185574,
+            "abs_tol": 0.5,
+            "exact_flagged": 0,
+            "solution": 10.338383445481899,
+            "rel_tol": 0,
+            "abs_error": 0.11220012670367474
+        },
+        "CubMCCLT Keister": {
+            "effective_tol": 0.01,
+            "rel_error": 0.0006118954604069801,
+            "allowed_error": 0.02,
+            "exact_value": 2.168309102165481,
+            "abs_tol": 0.01,
+            "exact_flagged": 0,
+            "solution": 2.169635880661855,
+            "rel_tol": 0,
+            "abs_error": 0.0013267784963741924
+        },
+        "CubQMCNetG AsianOption": {
+            "abs_tol": 0.5,
+            "solution": 5.86985220360926,
+            "rel_tol": 0
+        }
+    }
+}
