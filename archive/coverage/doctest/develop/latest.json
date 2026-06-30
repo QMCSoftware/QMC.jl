@@ -1,8 +1,8 @@
 {
   "branch": "develop",
   "scope": "doctest",
-  "label": "sha-bd7ba8a",
-  "commit_sha": "bd7ba8a7729c65b07535a9fba07afd8cfc08ba49",
-  "snapshot_dir": "archive/coverage/doctest/develop/sha-bd7ba8a",
+  "label": "sha-63ecfcd",
+  "commit_sha": "63ecfcddbcafd7d9f261ac53d344a7ddaa8ea00f",
+  "snapshot_dir": "archive/coverage/doctest/develop/sha-63ecfcd",
   "source_manifest": "badges/coverage-source-doctest-develop.json"
 }
