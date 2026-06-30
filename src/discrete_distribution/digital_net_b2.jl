@@ -623,6 +623,74 @@ end
 _left_shift_words(t::Int, bits::Int, R::Int) = fill(UInt64(t - bits), R)
 _interlaced_bits(alpha::Int, source_bits::Int, t::Int) = min(alpha * source_bits, t)
 
+# ── In-place helpers for the CubQMCNetGRep fast path ─────────────────────────
+# These mirror _lms_direction_matrix / _direction_matrix_to_C / _rand_tbit_uint64s
+# but fill pre-allocated buffers instead of allocating new ones, cutting per-rep
+# allocation pressure from ~26 KiB (d=50) to zero inside the replication loop.
+
+function _lms_direction_matrix_into!(
+    V_scr::Matrix{UInt64},
+    L::Vector{UInt64},
+    V::AbstractMatrix{<:Unsigned},
+    d::Int,
+    source_bits::Int,
+    rng::AbstractRNG;
+    t_bits::Int=source_bits,
+)
+    mmax = size(V, 2)
+    n_extra = t_bits - source_bits
+    source_mask = source_bits < 64 ? (UInt64(1) << source_bits) - UInt64(1) : typemax(UInt64)
+    for j in 1:d
+        if n_extra == 0
+            for k in 1:source_bits
+                diag_bit = UInt64(1) << (source_bits - k)
+                L[k] = diag_bit | (rand(rng, UInt64) & (diag_bit - UInt64(1)))
+            end
+        else
+            for k in 1:source_bits
+                diag_bit = UInt64(1) << (source_bits - k)
+                above_mask = source_mask & ~(diag_bit | (diag_bit - UInt64(1)))
+                L[k] = diag_bit | (rand(rng, UInt64) & above_mask)
+            end
+            for k in 1:n_extra
+                L[source_bits + k] = rand(rng, UInt64) & source_mask
+            end
+        end
+        @inbounds for b in 1:mmax
+            v = UInt64(V[j, b])
+            newv = UInt64(0)
+            for k in 1:t_bits
+                newv |= UInt64(count_ones(L[k] & v) & 1) << (t_bits - k)
+            end
+            V_scr[j, b] = newv
+        end
+    end
+    return V_scr
+end
+
+function _direction_matrix_to_C_into!(
+    C_flat::Vector{UInt64},
+    V_mat::AbstractMatrix{UInt64},
+    d::Int,
+)
+    mmax = size(V_mat, 2)
+    @inbounds for j in 1:d, b in 1:mmax
+        C_flat[(j - 1) * mmax + (b - 1) + 1] = V_mat[j, b]
+    end
+    return C_flat
+end
+
+function _rand_tbit_uint64s_into!(rng::AbstractRNG, t::Int, buf::Vector{UInt64})
+    rand!(rng, buf)
+    if t != 64
+        mask = (UInt64(1) << t) - UInt64(1)
+        @inbounds @simd for i in eachindex(buf)
+            buf[i] &= mask
+        end
+    end
+    return buf
+end
+
 # The fused `dnb2_gen_*_float` kernels fold the t-bit alignment left-shift
 # (`lshifts`) into the digital-shift pass, which they skip entirely when
 # `apply_shift == 0x00`. Whenever `t` exceeds the current bit width the points
@@ -853,6 +921,80 @@ function _gen_samples_lms_into!(
     shiftsb = _rand_tbit_uint64s(dd.rng, dd.t, d)
     lshifts = _left_shift_words(dd.t, curr_bits, 1)
     tmaxes = fill(UInt64(dd.t), 1)
+    if _HAS_DNB2_FUSED[]
+        if dd.graycode
+            _c_dnb2_gen_gray_float!(
+                1,
+                n,
+                d,
+                0,
+                mmax,
+                1,
+                0x01,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
+        else
+            _c_dnb2_gen_natural_float!(
+                1,
+                n,
+                d,
+                0,
+                mmax,
+                1,
+                0x01,
+                lshifts,
+                shiftsb,
+                tmaxes,
+                C_flat,
+                x_buf,
+            )
+        end
+    else
+        xb_buf = Vector{UInt64}(undef, n * d)
+        xrb_buf = Vector{UInt64}(undef, n * d)
+        if dd.graycode
+            _c_dnb2_gen_gray!(1, n, d, 0, mmax, C_flat, xb_buf)
+        else
+            _c_dnb2_gen_natural!(1, n, d, 0, mmax, C_flat, xb_buf)
+        end
+        _c_dnb2_digital_shift!(1, n, d, 1, lshifts, xb_buf, shiftsb, xrb_buf)
+        _c_dnb2_integer_to_float!(1, n, d, tmaxes, xrb_buf, x_buf)
+    end
+    _rowmaj_to_nxd!(dst, x_buf, n, d)
+    return dst
+end
+
+# Pre-buffer overload: same as above but takes caller-supplied V_scr / L / C_flat /
+# shiftsb / lshifts / tmaxes so the per-rep LMS setup allocations drop to zero.
+# Callers are responsible for pre-allocating:
+#   V_scr   = Matrix{UInt64}(undef, d, mmax)
+#   L       = Vector{UInt64}(undef, dd.t)
+#   C_flat  = Vector{UInt64}(undef, d * mmax)
+#   shiftsb = Vector{UInt64}(undef, d)
+#   lshifts = [UInt64(0)]          (curr_bits == dd.t ⟹ always 0)
+#   tmaxes  = [UInt64(dd.t)]
+function _gen_samples_lms_into!(
+    dd::DigitalNetB2,
+    n::Int,
+    x_buf::Vector{Float64},
+    dst::Matrix{Float64},
+    V_scr::Matrix{UInt64},
+    L::Vector{UInt64},
+    C_flat::Vector{UInt64},
+    shiftsb::Vector{UInt64},
+    lshifts::Vector{UInt64},
+    tmaxes::Vector{UInt64},
+)
+    d = dd.dimension
+    V = dd.direction_nums
+    mmax = size(V, 2)
+    _lms_direction_matrix_into!(V_scr, L, V, d, dd.source_bits, dd.rng; t_bits=dd.t)
+    _direction_matrix_to_C_into!(C_flat, V_scr, d)
+    _rand_tbit_uint64s_into!(dd.rng, dd.t, shiftsb)
     if _HAS_DNB2_FUSED[]
         if dd.graycode
             _c_dnb2_gen_gray_float!(

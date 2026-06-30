@@ -368,6 +368,74 @@ function evaluate(f::FinancialOption, x::AbstractMatrix)
     return y
 end
 
+# Pre-allocated in-place evaluate for the GBM fast paths (European and Asian).
+# Fills `y` directly, avoiding the intermediate `avg` or output-broadcast allocation
+# that `evaluate` creates. Other option types fall back to `evaluate` + `copyto!`.
+_supports_evaluate_into(f::FinancialOption) = f._use_gbm_transform
+
+function _evaluate_into!(f::FinancialOption, x::AbstractMatrix, y::AbstractVector)
+    r = f.interest_rate
+    T = f._time_vector[end]
+    discount = exp(-r * T)
+
+    if f.option_type == :european
+        S_T = @view x[:, end]
+        K = f.strike_price
+        if f.call_put == :call
+            @inbounds @simd for i in eachindex(y)
+                y[i] = discount * max(S_T[i] - K, 0.0)
+            end
+        else
+            @inbounds @simd for i in eachindex(y)
+                y[i] = discount * max(K - S_T[i], 0.0)
+            end
+        end
+        return y
+    end
+
+    if f.option_type == :asian
+        n, d = size(x)
+        K = f.strike_price
+        fill!(y, 0.0)
+        if f.mean_type == :arithmetic
+            @inbounds for j in 1:d
+                @simd for i in 1:n
+                    y[i] += x[i, j]
+                end
+            end
+            if f.call_put == :call
+                @inbounds @simd for i in 1:n
+                    y[i] = discount * max(y[i] / d - K, 0.0)
+                end
+            else
+                @inbounds @simd for i in 1:n
+                    y[i] = discount * max(K - y[i] / d, 0.0)
+                end
+            end
+        else  # geometric
+            @inbounds for j in 1:d
+                @simd for i in 1:n
+                    y[i] += log(x[i, j])
+                end
+            end
+            if f.call_put == :call
+                @inbounds @simd for i in 1:n
+                    y[i] = discount * max(exp(y[i] / d) - K, 0.0)
+                end
+            else
+                @inbounds @simd for i in 1:n
+                    y[i] = discount * max(K - exp(y[i] / d), 0.0)
+                end
+            end
+        end
+        return y
+    end
+
+    # Fallback for barrier, lookback, digital: call evaluate and copy result.
+    copyto!(y, evaluate(f, x))
+    return y
+end
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Exact analytic pricing
 # ──────────────────────────────────────────────────────────────────────────────

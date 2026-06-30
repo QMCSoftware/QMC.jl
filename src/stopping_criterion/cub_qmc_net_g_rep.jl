@@ -122,18 +122,69 @@ function _replicate_means!(
            dd.graycode
             x_buf = Vector{Float64}(undef, n * dd.dimension)
             xu = Matrix{Float64}(undef, n, dd.dimension)
+            # Pre-allocate LMS setup buffers once instead of per replicate.
+            mmax = size(dd.direction_nums, 2)
+            V_scr_buf = Matrix{UInt64}(undef, dd.dimension, mmax)
+            L_buf = Vector{UInt64}(undef, dd.t)
+            C_flat_buf = Vector{UInt64}(undef, dd.dimension * mmax)
+            shiftsb_buf = Vector{UInt64}(undef, dd.dimension)
+            lshifts_buf = [UInt64(0)]     # curr_bits == dd.t ⟹ shift is always 0
+            tmaxes_buf = [UInt64(dd.t)]
             if _supports_transform_into(tm)
                 tm_dim = dimension(tm)
                 z_scratch = Matrix{Float64}(undef, n, tm_dim)
                 xy = Matrix{Float64}(undef, n, tm_dim)
-                @inbounds for r in 1:R
-                    _gen_samples_lms_into!(dd, n, x_buf, xu)
-                    _transform_into!(tm, xu, z_scratch, xy)
-                    estimates[r] = mean(evaluate(f, xy))
+                if _supports_evaluate_into(f)
+                    y_buf = Vector{Float64}(undef, n)
+                    @inbounds for r in 1:R
+                        _gen_samples_lms_into!(
+                            dd,
+                            n,
+                            x_buf,
+                            xu,
+                            V_scr_buf,
+                            L_buf,
+                            C_flat_buf,
+                            shiftsb_buf,
+                            lshifts_buf,
+                            tmaxes_buf,
+                        )
+                        _transform_into!(tm, xu, z_scratch, xy)
+                        _evaluate_into!(f, xy, y_buf)
+                        estimates[r] = mean(y_buf)
+                    end
+                else
+                    @inbounds for r in 1:R
+                        _gen_samples_lms_into!(
+                            dd,
+                            n,
+                            x_buf,
+                            xu,
+                            V_scr_buf,
+                            L_buf,
+                            C_flat_buf,
+                            shiftsb_buf,
+                            lshifts_buf,
+                            tmaxes_buf,
+                        )
+                        _transform_into!(tm, xu, z_scratch, xy)
+                        estimates[r] = mean(evaluate(f, xy))
+                    end
                 end
             else
                 @inbounds for r in 1:R
-                    _gen_samples_lms_into!(dd, n, x_buf, xu)
+                    _gen_samples_lms_into!(
+                        dd,
+                        n,
+                        x_buf,
+                        xu,
+                        V_scr_buf,
+                        L_buf,
+                        C_flat_buf,
+                        shiftsb_buf,
+                        lshifts_buf,
+                        tmaxes_buf,
+                    )
                     estimates[r] = mean(evaluate(f, transform(tm, xu)))
                 end
             end

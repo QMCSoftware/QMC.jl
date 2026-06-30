@@ -41,6 +41,23 @@ function evaluate(f::Keister, x::AbstractMatrix)
     return @. coeff * cos(norms)
 end
 
+_supports_evaluate_into(::Keister) = true
+
+function _evaluate_into!(f::Keister, x::AbstractMatrix, y::AbstractVector)
+    n, d = size(x)
+    coeff = π^(f.dimension / 2)
+    fill!(y, 0.0)
+    @inbounds for j in 1:d
+        @simd for i in 1:n
+            y[i] += x[i, j]^2
+        end
+    end
+    @inbounds @simd for i in 1:n
+        y[i] = coeff * cos(sqrt(y[i]))
+    end
+    return y
+end
+
 """
     keister_exact(d::Int)
 

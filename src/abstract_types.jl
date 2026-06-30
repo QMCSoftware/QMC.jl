@@ -156,6 +156,9 @@ function true_measure end
 # Default: this measure type does not have a pre-allocated _transform_into! variant.
 _supports_transform_into(::AbstractTrueMeasure) = false
 
+# Default: this integrand type does not have a pre-allocated _evaluate_into! variant.
+_supports_evaluate_into(::AbstractIntegrand) = false
+
 @inline dimension(f::AbstractIntegrand) =
     hasfield(typeof(f), :dimension) ? getfield(f, :dimension) : dimension(true_measure(f))
 

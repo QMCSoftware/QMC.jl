@@ -6,6 +6,7 @@
 
 ```@docs
 AbstractDiscreteDistribution
+AbstractLDDiscreteDistribution
 ```
 
 ## Generators
