@@ -1,1 +1,1 @@
-include(joinpath(@__DIR__, "..", "benchmark", "coverage_probes.jl"))
+include(joinpath(@__DIR__, "..", "src", "coverage_probes.jl"))

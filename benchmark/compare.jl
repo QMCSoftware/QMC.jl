@@ -277,6 +277,15 @@ function bench_revision(rev::AbstractString)
             src = joinpath(PKG, "benchmark", fname)
             isfile(src) && cp(src, joinpath(wt, "benchmark", fname); force=true)
         end
+        helper = joinpath(PKG, "src", "coverage_probes.jl")
+        if isfile(helper)
+            # `benchmarks.jl` loads this shared coverage-only helper from the
+            # package `src/` tree when BENCH_COVERAGE=1, so benchmarking an
+            # older revision needs the current helper copied into the worktree.
+            helper_dst = joinpath(wt, "src", "coverage_probes.jl")
+            mkpath(dirname(helper_dst))
+            cp(helper, helper_dst; force=true)
+        end
         # Copy any local [sources] packages missing from the baseline worktree
         # (e.g. a jll directory added after the baseline revision was committed).
         _copy_missing_sources(joinpath(PKG, "benchmark"), joinpath(wt, "benchmark"))
