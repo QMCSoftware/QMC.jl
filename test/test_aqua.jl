@@ -6,7 +6,7 @@ using Aqua
     Aqua.test_all(
         QuasiMC;
         ambiguities=false,       # skip for now — many methods with Union types
-        stale_deps=(ignore=[:Downloads],),  # Downloads is loaded dynamically via Base.require for remote LDData fetches.
+        stale_deps=(ignore=[:Downloads, :NBInclude],),  # Downloads: loaded dynamically for remote LDData fetches. NBInclude: used in test/run_notebooks.jl (invoked with --project=., not Pkg.test), not in src/.
         deps_compat=true,
         piracies=false,          # we extend Base.push! for IterationLog
         project_extras=true,
