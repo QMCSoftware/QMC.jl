@@ -1,0 +1,15 @@
+{
+  "branch": "develop",
+  "scope": "unit",
+  "label": "sha-97d5380",
+  "commit_sha": "97d5380f50a6581e4e82d576431ec4ec66cc4c69",
+  "run_id": "28487182645",
+  "run_number": "170",
+  "run_attempt": "1",
+  "badge_file": "badges/coverage-unit-develop.json",
+  "source_manifest": "badges/coverage-source-unit-develop.json",
+  "archived_files": [
+    "lcov.info",
+    "coverage-source-unit-develop.json"
+  ]
+}
